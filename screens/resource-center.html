@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="zh-CN"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1, user-scalable=no">
+<title>课程资源 · 教研培训部</title>
+<style>
+  :root {
+    --bg: #f0f5f5; --surface: #ffffff; --fg: #1a1916;
+    --muted: #868686; --border: #e0e8e8; --accent: #189b91;
+    --accent-dark: #067e76; --accent-light: #e8f5f4;
+    --green: #4b9a5a; --green-light: #eaf5ed;
+    --amber: #feaf06; --amber-light: #fff7e3;
+    --blue: #3388fc; --blue-light: #eaf2ff;
+    --font: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', system-ui, sans-serif;
+    --radius: 12px; --radius-sm: 8px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; background: transparent; font-family: var(--font); color: var(--fg); -webkit-font-smoothing: antialiased; }
+  button, input { font: inherit; }
+  .phone { width: 390px; height: 844px; background: var(--bg); display: flex; flex-direction: column; overflow: hidden; border-radius: 40px; position: relative; }
+  .status-bar { display: flex; justify-content: space-between; align-items: center; padding: 14px 28px 8px; font-size: 13px; font-weight: 600; background: var(--bg); }
+  .nav-bar { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; padding: 8px 12px 12px; background: var(--bg); }
+  .nav-bar a { display: grid; place-items: center; width: 36px; height: 36px; color: var(--fg); text-decoration: none; }
+  .nav-title { text-align: center; font-size: 17px; font-weight: 600; }
+  .scroll { flex: 1; overflow-y: auto; padding: 0 16px 84px; scroll-behavior: smooth; }
+  .scroll::-webkit-scrollbar { display: none; }
+  .search-bar { display: flex; align-items: center; gap: 10px; background: var(--surface); border-radius: 24px; padding: 10px 14px; margin-bottom: 14px; border: 1px solid var(--border); }
+  .search-bar svg { flex-shrink: 0; }
+  .search-bar input { flex: 1; min-width: 0; border: none; outline: none; font-size: 14px; color: var(--fg); background: transparent; }
+  .search-bar input::placeholder { color: var(--muted); }
+  .search-action { border: none; background: var(--accent); color: var(--surface); border-radius: 999px; padding: 5px 10px; font-size: 12px; font-weight: 600; }
+  .hub-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+  .hub-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 14px; cursor: pointer; text-decoration: none; color: inherit; display: flex; flex-direction: column; gap: 12px; min-height: 116px; }
+  .hub-card:active { transform: translateY(1px); }
+  .hub-card.resource { background: linear-gradient(180deg, var(--accent-light) 0%, var(--surface) 82%); }
+  .hub-card.case { background: linear-gradient(180deg, var(--green-light) 0%, var(--surface) 82%); }
+  .hub-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .hub-icon { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; background: var(--surface); border: 1px solid var(--border); color: var(--accent); flex: 0 0 auto; }
+  .hub-card.case .hub-icon { color: var(--green); }
+  .arrow { color: var(--muted); font-size: 18px; line-height: 1; }
+  .hub-card h3 { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+  .hub-card p { font-size: 12px; color: var(--muted); line-height: 1.45; }
+  .sec { font-size: 16px; font-weight: 700; margin: 20px 0 10px; display: flex; align-items: center; justify-content: space-between; }
+  .sec .more { font-size: 12px; color: var(--muted); font-weight: 500; text-decoration: none; }
+  .resource-list, .case-list { display: flex; flex-direction: column; gap: 10px; }
+  .resource-card, .case-card { display: flex; gap: 12px; align-items: stretch; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 12px; text-decoration: none; color: inherit; }
+  .resource-card:active, .case-card:active { background: color-mix(in oklab, var(--surface), var(--bg) 38%); }
+  .thumb { width: 58px; border-radius: 12px; background: var(--accent-light); border: 1px solid var(--border); display: grid; place-items: center; color: var(--accent-dark); flex: 0 0 auto; }
+  .thumb.green { background: var(--green-light); color: var(--green); }
+  .thumb.amber { background: var(--amber-light); color: color-mix(in oklab, var(--amber), var(--fg) 42%); }
+  .thumb.blue { background: var(--blue-light); color: var(--blue); }
+  .card-body { flex: 1; min-width: 0; }
+  .card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 5px; }
+  .name { font-size: 15px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .badge { flex: 0 0 auto; font-size: 10px; color: var(--accent-dark); background: var(--accent-light); border-radius: 999px; padding: 3px 7px; }
+  .meta { font-size: 12px; color: var(--muted); line-height: 1.45; }
+  .summary { font-size: 12px; color: var(--fg); line-height: 1.5; margin-top: 6px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .tabs { position: absolute; bottom: 0; left: 0; right: 0; z-index: 10; display: flex; justify-content: space-around; align-items: center; padding: 8px 8px 28px; background: var(--surface); border-top: 1px solid var(--border); }
+  .tabs a { display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; text-decoration: none; color: var(--muted); font-size: 10px; padding: 4px; }
+  .tabs a.on { color: var(--accent); }
+  .tabs svg { width: 22px; height: 22px; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="status-bar"><span class="time">9:41</span><span class="status-icons" style="font-size:12px">WiFi · ▮▮▮▮</span></div>
+  <div class="nav-bar">
+    <a href="training-center.html" aria-label="返回教研培训部"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"></path></svg></a>
+    <div class="nav-title">课程资源</div>
+    <span></span>
+  </div>
+  <div class="scroll">
+    <form class="search-bar" id="searchForm">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      <input id="searchInput" type="search" placeholder="搜索资源、案例、活动主题">
+      <button class="search-action" type="submit">搜索</button>
+    </form>
+
+    <div class="hub-row">
+      <a class="hub-card resource" href="resource-library.html">
+        <div class="hub-top">
+          <div class="hub-icon">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"></path><path d="M4 4.5A2.5 2.5 0 016.5 2H20v20H6.5A2.5 2.5 0 014 19.5z"></path></svg>
+          </div>
+          <span class="arrow">›</span>
+        </div>
+        <div><h3>课程资源库</h3><p>按衣食住行艺进入主题资源</p></div>
+      </a>
+      <a class="hub-card case" href="case-library.html">
+        <div class="hub-top">
+          <div class="hub-icon">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="M3 6h.01"></path><path d="M3 12h.01"></path><path d="M3 18h.01"></path></svg>
+          </div>
+          <span class="arrow">›</span>
+        </div>
+        <div><h3>课程案例库</h3><p>按年级、领域、活动类型筛选</p></div>
+      </a>
+    </div>
+
+    <section>
+      <div class="sec">推荐资源 <a class="more" href="resource-library.html">全部</a></div>
+      <div class="resource-list">
+        <a class="resource-card" href="resource-detail.html">
+          <div class="thumb"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21h18"></path><path d="M5 21V9l7-5 7 5v12"></path><path d="M9 21v-6h6v6"></path></svg></div>
+          <div class="card-body">
+            <div class="card-top"><div class="name">沙湾留耕堂 · 何氏宗祠</div><span class="badge">住</span></div>
+            <div class="meta">传统建筑 · 大班可转化 · 关联 2 个案例</div>
+            <div class="summary">从祠堂空间、宗族故事与家庭团聚经验进入，帮助幼儿理解家庭与社区的情感纽带。</div>
+          </div>
+        </a>
+        <a class="resource-card" href="resource-detail.html">
+          <div class="thumb green"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8-4.3-4.1 5.9-.9L12 3z"></path></svg></div>
+          <div class="card-body">
+            <div class="card-top"><div class="name">沙湾砖雕 · 岭南纹样</div><span class="badge">艺</span></div>
+            <div class="meta">民间艺术 · 中大班 · 关联 3 个案例</div>
+            <div class="summary">观察砖雕纹样的线条与对称结构，转化为拓印、线描与积木建构活动。</div>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <section>
+      <div class="sec">推荐案例 <a class="more" href="case-library.html">全部</a></div>
+      <div class="case-list">
+        <a class="case-card" href="case-detail.html">
+          <div class="thumb"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V5a2 2 0 012-2h12a2 2 0 012 2v14"></path><path d="M8 7h8"></path><path d="M8 11h8"></path><path d="M8 15h5"></path></svg></div>
+          <div class="card-body">
+            <div class="card-top"><div class="name">祠堂里的故事</div><span class="badge">大班</span></div>
+            <div class="meta">社会 · 住 · 留耕堂资源转化</div>
+            <div class="summary">观察祠堂实景、聆听绘本故事、分享家庭团聚经历，再合作搭建祠堂模型。</div>
+          </div>
+        </a>
+        <a class="case-card" href="case-detail.html">
+          <div class="thumb amber"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v18"></path><path d="M5 8c4 0 4 3 7 3s3-3 7-3"></path><path d="M5 16c4 0 4-3 7-3s3 3 7 3"></path></svg></div>
+          <div class="card-body">
+            <div class="card-top"><div class="name">龙舟竞渡</div><span class="badge">大班</span></div>
+            <div class="meta">健康 · 行 · 集体教学</div>
+            <div class="summary">把龙舟节奏、协作和身体动作经验转化为合作运动游戏。</div>
+          </div>
+        </a>
+      </div>
+    </section>
+  </div>
+
+  <div class="tabs">
+    <a href="home.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg><span>首页</span></a>
+    <a href="school-affairs.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg><span>党建管理</span></a>
+    <a href="comprehensive-coordination.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M4 12h16M4 18h10"></path><circle cx="18" cy="18" r="2"></circle></svg><span>综合协调</span></a>
+    <a class="on" href="training-center.html"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="5"></circle><path d="M5 21v-3a7 7 0 0114 0v3"></path></svg><span>教研培训</span></a>
+    <a href="home-school.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 00-3-3.87"></path><path d="M16 3.13a4 4 0 010 7.75"></path></svg><span>家园共育</span></a>
+  </div>
+</div>
+
+<script>
+  const searchForm = document.getElementById('searchForm');
+  const searchInput = document.getElementById('searchInput');
+  searchForm.addEventListener('submit', event => {
+    event.preventDefault();
+    const query = searchInput.value.trim();
+    if (query) window.location.href = `resource-library.html?q=${encodeURIComponent(query)}`;
+  });
+</script>
+
+
+</body></html>

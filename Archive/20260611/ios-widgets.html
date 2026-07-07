@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>iOS Widgets · 幼儿园教师端</title>
+<style>
+  :root {
+    --bg: #fafafa; --surface: #ffffff; --fg: #111111; --muted: #6b6b6b;
+    --border: #e5e5e5; --accent: #2f6feb; --warn: #eab308; --success: #17a34a;
+    --font: -apple-system, BlinkMacSystemFont, 'PingFang SC', system-ui, sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--fg);
+    font-family: var(--font); -webkit-font-smoothing: antialiased;
+    padding: 40px 20px;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 32px;
+  }
+  h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; text-align: center; }
+  .subtitle { color: var(--muted); font-size: 14px; text-align: center; }
+
+  .widget-group { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; }
+
+  /* Home Screen Widget */
+  .widget-home {
+    width: 320px; background: var(--surface);
+    border-radius: 24px; padding: 18px;
+    box-shadow: 0 8px 30px rgba(0,0,0,.06);
+  }
+  .widget-home .header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 14px;
+  }
+  .widget-home .title { font-size: 14px; font-weight: 600; }
+  .widget-home .time { font-size: 12px; color: var(--muted); }
+  .widget-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 0; border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .widget-item:last-child { border-bottom: none; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .dot.warn { background: var(--warn); }
+  .dot.success { background: var(--success); }
+  .dot.info { background: var(--accent); }
+
+  /* Lock Screen Widget */
+  .widget-lock {
+    width: 280px; background: #1c1c1e;
+    border-radius: 20px; padding: 14px 16px;
+    color: #ffffff; box-shadow: 0 8px 30px rgba(0,0,0,.15);
+  }
+  .widget-lock .header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 10px; font-size: 11px; opacity: .6;
+  }
+  .widget-lock .title { font-size: 13px; font-weight: 600; margin-bottom: 10px; }
+  .widget-lock .item {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; padding: 4px 0;
+  }
+
+  /* Small widget */
+  .widget-small {
+    width: 150px; height: 150px;
+    background: var(--surface); border-radius: 24px;
+    padding: 14px; box-shadow: 0 8px 30px rgba(0,0,0,.06);
+    display: flex; flex-direction: column; justify-content: space-between;
+  }
+  .widget-small .top { font-size: 11px; color: var(--muted); }
+  .widget-small .num { font-size: 36px; font-weight: 700; color: var(--accent); }
+  .widget-small .label { font-size: 11px; color: var(--muted); }
+
+  .back-link {
+    margin-top: 16px; color: var(--accent); text-decoration: none;
+    font-size: 14px;
+  }
+  .back-link:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<h1>iOS 小组件预览</h1>
+<p class="subtitle">桌面小组件 · 锁屏小组件 · 快捷查看</p>
+
+<div class="widget-group">
+  <!-- Home Screen Widget -->
+  <div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:8px;text-align:center;">桌面小组件 (Medium)</p>
+    <div class="widget-home">
+      <div class="header">
+        <span class="title">幼儿园教师端</span>
+        <span class="time">今日</span>
+      </div>
+      <div class="widget-item"><span class="dot warn"></span> 资源审核 · 3 条待处理</div>
+      <div class="widget-item"><span class="dot success"></span> 共建任务 · 2 项已完成</div>
+      <div class="widget-item"><span class="dot info"></span> 在园时光 · 今日待上传</div>
+      <div class="widget-item" style="color:var(--muted);">亲子任务 · 大班 5 人未提交</div>
+    </div>
+  </div>
+
+  <!-- Lock Screen Widget -->
+  <div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:8px;text-align:center;">锁屏小组件</p>
+    <div class="widget-lock">
+      <div class="header"><span>幼儿园教师端</span><span>6月11日</span></div>
+      <div class="title">今日待办</div>
+      <div class="item"><span class="dot warn"></span> 亲子任务 · 大班 — 5 人未提交</div>
+      <div class="item"><span class="dot warn"></span> 在园时光 · 本周第 1 次待上传</div>
+      <div class="item"><span class="dot info"></span> 培训学习 · 6月12日 14:00</div>
+    </div>
+  </div>
+
+  <!-- Small Widget -->
+  <div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:8px;text-align:center;">小型小组件</p>
+    <div class="widget-small">
+      <div class="top">今日待办</div>
+      <div class="num">7</div>
+      <div class="label">3 条待处理</div>
+    </div>
+  </div>
+</div>
+
+<a class="back-link" href="../landing.html">← 返回落地页</a>
+</body>
+</html>

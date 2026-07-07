@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="zh-CN"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1, user-scalable=no">
+<title>上传资料 · 幼儿园教师端</title>
+<style>
+  :root {
+    --bg:#f0f5f5; --surface:#fff; --fg:#1a1916; --muted:#868686; --border:#e0e8e8;
+    --accent:#189b91; --accent-dark:#067e76; --accent-light:#e8f5f4;
+    --green:#4b9a5a; --green-light:#eaf5ed; --amber:#feaf06; --amber-light:#fff7e3;
+    --blue:#3388fc; --blue-light:#eaf2ff; --font:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',system-ui,sans-serif;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{display:flex;justify-content:center;min-height:100vh;background:transparent;font-family:var(--font);color:var(--fg);-webkit-font-smoothing:antialiased}
+  button,input,textarea,select{font:inherit;color:inherit}
+  .phone{width:390px;height:844px;background:var(--bg);display:flex;flex-direction:column;overflow:hidden;border-radius:40px;position:relative}
+  .status-bar{display:flex;justify-content:space-between;align-items:center;padding:14px 28px 8px;font-size:13px;font-weight:600}
+  .nav-bar{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;padding:8px 12px 12px}
+  .back{display:grid;place-items:center;width:36px;height:36px;text-decoration:none;color:var(--fg);font-size:24px}.nav-title{text-align:center;font-size:17px;font-weight:700}
+  .scroll{flex:1;overflow-y:auto;padding:0 16px 28px}.scroll::-webkit-scrollbar{display:none}
+  .banner{border-radius:18px;padding:18px;margin-bottom:14px;background:linear-gradient(135deg,#0f766e,#189b91,#4fc4b9);color:#fff;overflow:hidden;position:relative}
+  .banner::after{content:"";position:absolute;right:-34px;top:-38px;width:148px;height:148px;border-radius:50%;border:20px solid rgba(255,255,255,.18)}
+  .kicker{display:inline-flex;border-radius:999px;background:rgba(255,255,255,.18);padding:4px 10px;font-size:11px;font-weight:800}.banner h1{font-size:22px;margin-top:12px}.banner p{font-size:12px;line-height:1.5;margin-top:7px;width:270px;color:rgba(255,255,255,.92)}
+  .chunk{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:15px;margin-bottom:10px}
+  .section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}.sec{font-size:16px;font-weight:750}.hint{font-size:12px;color:var(--muted);line-height:1.45}
+  .target-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.target{min-height:82px;border:1px solid var(--border);border-radius:14px;background:#fff;padding:11px;display:flex;flex-direction:column;gap:8px;cursor:pointer;text-align:left}.target.on{border-color:var(--accent);background:var(--accent-light)}.target span:first-child{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;background:var(--accent-light);color:var(--accent-dark);font-size:12px;font-weight:800}.target strong{font-size:14px;line-height:1.2}.target small{font-size:11px;color:var(--muted);line-height:1.35}
+  .form{display:grid;gap:11px}.field label{display:block;font-size:12px;font-weight:750;margin-bottom:6px}.input,.textarea,.select{width:100%;border:1px solid var(--border);border-radius:12px;background:#fbfdfd;padding:11px 12px;font-size:13px;outline:none}.textarea{min-height:78px;resize:none;line-height:1.55}.input:focus,.textarea:focus,.select:focus{border-color:var(--accent)}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:8px}.limit{float:right;font-size:11px;color:var(--muted);font-weight:500}.pick-row,.upload-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px;border:1px solid var(--border);background:#fbfdfd;border-radius:12px;padding:11px}.pick-name,.upload-name{font-size:13px;font-weight:700}.pick-meta,.upload-note{font-size:11px;color:var(--muted);margin-top:3px}.image-upload{display:grid;gap:6px}.image-title{font-size:12px;font-weight:750}.image-box{min-height:40px;border:1px solid var(--border);background:#fbfdfd;border-radius:12px;padding:0 11px;display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer}.image-box strong{border-radius:999px;background:var(--accent-light);color:var(--accent-dark);font-size:12px;font-weight:800;padding:7px 10px;white-space:nowrap}.image-box span{font-size:11px;color:var(--muted);white-space:nowrap}.mini-btn{border:0;border-radius:999px;background:var(--accent-light);color:var(--accent-dark);font-size:12px;font-weight:800;padding:8px 11px}
+  .file-input{position:relative;overflow:hidden}.file-input input{position:absolute;inset:0;opacity:0;cursor:pointer}.file-input .mini-btn{display:inline-flex;align-items:center;justify-content:center}
+  .profile{display:grid;grid-template-columns:1fr 1fr;gap:8px}.actions{display:flex;gap:8px;margin-top:4px}.btn{flex:1;border:0;border-radius:13px;padding:12px 14px;font-weight:800;font-size:14px;text-align:center}.btn.ghost{background:#fff;border:1px solid var(--border)}.btn.primary{background:var(--accent);color:#fff}
+  .sheet{position:absolute;inset:0;background:rgba(0,0,0,.28);display:none;align-items:flex-end;padding:14px;z-index:5}.sheet.show{display:flex}.panel{width:100%;max-height:650px;background:#fff;border-radius:22px;padding:14px;box-shadow:0 -18px 40px rgba(0,0,0,.16);display:flex;flex-direction:column}.panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.panel-title{font-size:16px;font-weight:800}.close{border:0;background:#f2f6f6;border-radius:999px;width:32px;height:32px;font-size:18px}.filters{display:flex;gap:7px;overflow-x:auto;padding-bottom:8px}.filters::-webkit-scrollbar{display:none}.chip{border:1px solid var(--border);background:#fff;border-radius:999px;padding:7px 10px;font-size:12px;font-weight:750;white-space:nowrap}.chip.on{border-color:var(--accent);background:var(--accent-light);color:var(--accent-dark)}
+  .option-list{display:grid;gap:8px;overflow:auto;padding-right:2px}.option{border:1px solid var(--border);background:#fbfdfd;border-radius:13px;padding:11px;text-align:left}.option strong{display:block;font-size:13px}.option span{display:block;color:var(--muted);font-size:11px;margin-top:4px}.option.on{border-color:var(--accent);background:var(--accent-light)}
+  .toast{position:absolute;left:50%;bottom:34px;transform:translateX(-50%) translateY(14px);opacity:0;pointer-events:none;border-radius:999px;background:rgba(26,25,22,.88);color:#fff;padding:10px 14px;font-size:12px;transition:.18s;z-index:8}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
+  <div class="nav-bar"><a class="back" href="home.html">‹</a><div class="nav-title">上传资料</div><span></span></div>
+  <div class="scroll">
+    <section class="banner">
+      <div class="kicker">提交审核</div>
+      <h1>上传资源与案例</h1>
+      <p>选择提交到资源库或案例库，系统会按对应资料标准生成表单，提交后进入审核流程。</p>
+    </section>
+
+    <section class="chunk">
+      <div class="section-head"><div class="sec">上传目标</div><div class="hint">二选一</div></div>
+      <div class="target-grid" id="targets">
+        <button class="target on" type="button" data-type="resource"><span>资</span><strong>课程资源库</strong><small>本土材料、解读、获取与转化</small></button>
+        <button class="target" type="button" data-type="case"><span>案</span><strong>课程案例库</strong><small>活动案例、年级领域与关联资源</small></button>
+      </div>
+    </section>
+
+    <section class="chunk">
+      <div class="sec" style="margin-bottom:12px">上传人信息</div>
+      <div class="profile">
+        <div class="field">
+          <label for="teacherName">姓名</label>
+          <select class="select" id="teacherName" required="">
+            <option value="">请选择</option>
+            <option selected="">陈老师</option>
+            <option>李老师</option>
+            <option>黄老师</option>
+            <option>何老师</option>
+            <option>梁老师</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="teacherClass">班级</label>
+          <select class="select" id="teacherClass" required="">
+            <option value="">请选择</option>
+            <option>小一班</option>
+            <option>小二班</option>
+            <option>中一班</option>
+            <option>中二班</option>
+            <option selected="">大一班</option>
+            <option>大二班</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <section class="chunk">
+      <div class="section-head"><div class="sec" id="formTitle">资源库材料</div><div class="hint" id="formHint">资源标准表单</div></div>
+      <div class="form" id="dynamicForm"></div>
+    </section>
+
+    <div class="actions">
+      <button class="btn ghost" type="button" data-action="已保存草稿" data-requires-profile="true">保存草稿</button>
+      <button class="btn primary" type="button" data-action="已提交审核" data-requires-profile="true">提交审核</button>
+    </div>
+  </div>
+
+  <div class="sheet" id="pickerSheet" aria-hidden="true">
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-title" id="pickerTitle">选择内容</div>
+        <button class="close" type="button" id="closePicker">×</button>
+      </div>
+      <div class="filters" id="filterA"></div>
+      <div class="filters" id="filterB"></div>
+      <div class="option-list" id="optionList"></div>
+    </div>
+  </div>
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+(function(){
+  var cases = [
+    {name:"暂无", grade:"全部", field:"全部", meta:"不关联现有案例"},
+    {name:"祠堂里的故事", grade:"大班", field:"社会", meta:"留耕堂资源转化"},
+    {name:"龙舟竞渡", grade:"大班", field:"健康", meta:"合作运动游戏"},
+    {name:"番禺美食地图", grade:"中班", field:"科学", meta:"食材观察与分类"},
+    {name:"粤语童谣共唱", grade:"小班", field:"语言", meta:"方言童谣采集"},
+    {name:"砖雕纹样拓印", grade:"中班", field:"艺术", meta:"岭南纹样表达"}
+  ];
+  var resources = [
+    {name:"暂无", tag:"全部", meta:"不关联现有资源"},
+    {name:"香云纱纹样", tag:"衣", meta:"传统织物纹样"},
+    {name:"广绣小包", tag:"衣", meta:"手工与服饰资源"},
+    {name:"双皮奶", tag:"食", meta:"本土饮食材料"},
+    {name:"留耕堂", tag:"住", meta:"宗祠建筑观察"},
+    {name:"沙湾古镇", tag:"住", meta:"社区空间走访"},
+    {name:"龙舟竞渡", tag:"行", meta:"水乡出行与竞渡"},
+    {name:"醒狮纹样", tag:"艺", meta:"岭南艺术表达"}
+  ];
+  var state = {type:"resource", selectedCase:"暂无", selectedResource:"暂无", picker:null, grade:"全部", field:"全部", tag:"全部"};
+  var targets = document.querySelectorAll(".target");
+  var form = document.getElementById("dynamicForm");
+  var formTitle = document.getElementById("formTitle");
+  var formHint = document.getElementById("formHint");
+  var sheet = document.getElementById("pickerSheet");
+  var pickerTitle = document.getElementById("pickerTitle");
+  var filterA = document.getElementById("filterA");
+  var filterB = document.getElementById("filterB");
+  var optionList = document.getElementById("optionList");
+  var toast = document.getElementById("toast");
+  var teacherName = document.getElementById("teacherName");
+  var teacherClass = document.getElementById("teacherClass");
+  var timer = 0;
+
+  function show(msg){
+    toast.textContent = msg;
+    toast.classList.add("show");
+    clearTimeout(timer);
+    timer = setTimeout(function(){ toast.classList.remove("show"); }, 1300);
+  }
+  function field(label, html, limit){
+    return '<div class="field"><label>'+label+(limit ? '<span class="limit">'+limit+'</span>' : '')+'</label>'+html+'</div>';
+  }
+  function selectedMeta(list, name){
+    var item = list.find(function(row){ return row.name === name; });
+    return item ? item.meta : "";
+  }
+  function imageUpload(){
+    return '<div class="image-upload"><div class="image-title">封面图片</div><label class="image-box file-input"><span class="upload-note">未选择文件</span><strong>上传封面</strong><input type="file" accept="image/*" data-upload-label="封面图片"></label></div>';
+  }
+  function render(){
+    if(state.type === "resource"){
+      formTitle.textContent = "资源库材料";
+      formHint.textContent = "资源标准表单";
+      form.innerHTML =
+        field("资源名称", '<input class="input" maxlength="20" value="沙湾留耕堂 · 何氏宗祠" />', "≤20字")+
+        imageUpload()+
+        field("资源标签", '<select class="select"><option>衣</option><option>食</option><option selected>住</option><option>行</option><option>艺</option></select>')+
+        field("资源解读", '<textarea class="textarea" maxlength="200">从宗祠空间、木构梁架、砖雕纹样和族群记忆切入，帮助幼儿理解社区建筑承载的生活经验与公共文化。</textarea>', "≤200字")+
+        field("资源获取", '<textarea class="textarea" maxlength="300">教师可组织家长周末拍摄门楼、天井、厅堂和周边街巷照片，也可由园所统一整理安全可用的参观照片、讲解词和观察记录表。</textarea>', "≤300字")+
+        field("资源转化", '<textarea class="textarea" maxlength="200">可转化为建筑观察、纹样拓印、社区地图和口述故事活动，引导幼儿从看见建筑到表达生活经验。</textarea>', "≤200字")+
+        '<div class="field"><label>课程应用</label><div class="pick-row"><div><div class="pick-name" id="selectedCase">'+state.selectedCase+'</div><div class="pick-meta">'+selectedMeta(cases, state.selectedCase)+'</div></div><button class="mini-btn" type="button" data-picker="case">选择</button></div></div>'+
+        '<div class="upload-row"><div><div class="upload-name">Word附件</div><div class="upload-note">资源说明、授权材料或整理文档</div></div><button class="mini-btn" type="button" data-action="已选择Word附件">上传</button></div>';
+    } else {
+      formTitle.textContent = "案例库材料";
+      formHint.textContent = "案例标准表单";
+      form.innerHTML =
+        field("案例名称", '<input class="input" maxlength="20" value="祠堂里的故事" />', "≤20字")+
+        imageUpload()+
+        '<div class="two-col">'+
+          field("年级", '<select class="select"><option>小班</option><option>中班</option><option selected>大班</option></select>')+
+          field("五大领域", '<select class="select"><option>健康</option><option>语言</option><option selected>社会</option><option>科学</option><option>艺术</option></select>')+
+        '</div>'+
+        field("活动简介", '<textarea class="textarea" maxlength="200">幼儿围绕留耕堂建筑照片和参观见闻，讲述自己看到的门楼、天井与家族故事，形成对社区公共文化空间的初步认识。</textarea>', "≤200字")+
+        field("活动转化", '<textarea class="textarea" maxlength="300">活动从照片观察进入故事表达，再延伸到亲子走访和班级地图制作。教师可将资源照片、幼儿讲述、家长补充材料整理成持续更新的社区课程档案。</textarea>', "≤300字")+
+        '<div class="field"><label>关联资源</label><div class="pick-row"><div><div class="pick-name" id="selectedResource">'+state.selectedResource+'</div><div class="pick-meta">'+selectedMeta(resources, state.selectedResource)+'</div></div><button class="mini-btn" type="button" data-picker="resource">选择</button></div></div>'+
+        '<div class="upload-row"><div><div class="upload-name">Word附件</div><div class="upload-note">活动详案、反思或图文案例文档</div></div><button class="mini-btn" type="button" data-action="已选择Word附件">上传</button></div>';
+    }
+  }
+  function chips(items, active, key){
+    return items.map(function(item){
+      return '<button class="chip '+(item === active ? 'on' : '')+'" type="button" data-filter="'+key+'" data-value="'+item+'">'+item+'</button>';
+    }).join("");
+  }
+  function openPicker(type){
+    state.picker = type;
+    sheet.classList.add("show");
+    sheet.setAttribute("aria-hidden", "false");
+    if(type === "case"){
+      pickerTitle.textContent = "选择课程应用";
+      filterA.innerHTML = chips(["全部","小班","中班","大班"], state.grade, "grade");
+      filterB.innerHTML = chips(["全部","健康","语言","社会","科学","艺术"], state.field, "field");
+    } else {
+      pickerTitle.textContent = "选择关联资源";
+      filterA.innerHTML = chips(["全部","衣","食","住","行","艺"], state.tag, "tag");
+      filterB.innerHTML = "";
+    }
+    renderOptions();
+  }
+  function renderOptions(){
+    var list = state.picker === "case" ? cases : resources;
+    var selected = state.picker === "case" ? state.selectedCase : state.selectedResource;
+    var filtered = list.filter(function(item){
+      if(item.name === "暂无") return true;
+      if(state.picker === "case"){
+        return (state.grade === "全部" || item.grade === state.grade) && (state.field === "全部" || item.field === state.field);
+      }
+      return state.tag === "全部" || item.tag === state.tag;
+    });
+    optionList.innerHTML = filtered.map(function(item){
+      var meta = state.picker === "case" ? item.grade + " · " + item.field + " · " + item.meta : item.tag + " · " + item.meta;
+      if(item.name === "暂无") meta = item.meta;
+      return '<button class="option '+(item.name === selected ? 'on' : '')+'" type="button" data-option="'+item.name+'"><strong>'+item.name+'</strong><span>'+meta+'</span></button>';
+    }).join("");
+  }
+  targets.forEach(function(btn){
+    btn.addEventListener("click", function(){
+      targets.forEach(function(item){ item.classList.remove("on"); });
+      btn.classList.add("on");
+      state.type = btn.dataset.type;
+      render();
+    });
+  });
+  document.addEventListener("click", function(event){
+    var pickerBtn = event.target.closest("[data-picker]");
+    if(pickerBtn) openPicker(pickerBtn.dataset.picker);
+    var action = event.target.closest("[data-action]");
+    if(action){
+      if(action.dataset.requiresProfile === "true" && (!teacherName.value || !teacherClass.value)){
+        show("请先选择姓名和班级");
+        return;
+      }
+      show(action.dataset.action);
+    }
+    var filter = event.target.closest("[data-filter]");
+    if(filter){
+      state[filter.dataset.filter] = filter.dataset.value;
+      openPicker(state.picker);
+    }
+    var option = event.target.closest("[data-option]");
+    if(option){
+      if(state.picker === "case") state.selectedCase = option.dataset.option;
+      if(state.picker === "resource") state.selectedResource = option.dataset.option;
+      sheet.classList.remove("show");
+      sheet.setAttribute("aria-hidden", "true");
+      render();
+    }
+  });
+  document.addEventListener("change", function(event){
+    var upload = event.target.closest("[data-upload-label]");
+    if(!upload) return;
+    var row = upload.closest(".upload-row, .image-upload");
+    var note = row ? row.querySelector(".upload-note") : null;
+    var count = upload.files ? upload.files.length : 0;
+    if(note && count > 0) note.textContent = "已选择封面图片";
+    if(count > 0) show("已选择封面图片");
+  });
+  document.getElementById("closePicker").addEventListener("click", function(){
+    sheet.classList.remove("show");
+    sheet.setAttribute("aria-hidden", "true");
+  });
+  render();
+})();
+</script>
+
+
+</body></html>

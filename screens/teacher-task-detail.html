@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=390, initial-scale=1, user-scalable=no" />
+<title>任务详情 · 幼儿园教师端</title>
+<style>
+  :root{--bg:#f0f5f5;--surface:#fff;--fg:#1a1916;--muted:#868686;--border:#e0e8e8;--accent:#189b91;--accent-dark:#067e76;--accent-light:#e8f5f4;--green:#4b9a5a;--green-light:#eaf5ed;--amber:#feaf06;--amber-light:#fff7e3;--blue:#3388fc;--blue-light:#eaf2ff;--orange:#f6762f;--orange-light:#fff0e8;--font:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',system-ui,sans-serif}
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{display:flex;justify-content:center;min-height:100vh;background:transparent;font-family:var(--font);color:var(--fg);-webkit-font-smoothing:antialiased}button{font:inherit;color:inherit}
+  .phone{width:390px;height:844px;background:var(--bg);display:flex;flex-direction:column;overflow:hidden;border-radius:40px;position:relative}.status-bar{display:flex;justify-content:space-between;align-items:center;padding:14px 28px 8px;font-size:13px;font-weight:600}.nav-bar{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;padding:8px 12px 12px}.back{display:grid;place-items:center;width:36px;height:36px;text-decoration:none;color:var(--fg);font-size:24px}.nav-title{text-align:center;font-size:17px;font-weight:700}.scroll{flex:1;overflow-y:auto;padding:0 16px 28px}.scroll::-webkit-scrollbar{display:none}
+  .task-head{padding-bottom:14px;margin-bottom:14px;border-bottom:1px solid var(--border)}.kicker{display:inline-flex;border-radius:999px;background:var(--accent-light);color:var(--accent-dark);padding:4px 10px;font-size:11px;font-weight:800}.task-head h1{font-size:21px;line-height:1.25;margin-top:12px}.task-head p{font-size:12px;color:var(--muted);line-height:1.5;margin-top:7px}
+  .chunk{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:15px;margin-bottom:10px}.chunk-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}.chunk-title h2{font-size:16px;font-weight:750}.status-pill{font-size:11px;border-radius:999px;padding:5px 9px;background:var(--amber-light);color:#a15d00;font-weight:800}
+  .block{padding-top:12px;border-top:1px solid var(--border)}.block:first-child{padding-top:0;border-top:0}.label{font-size:12px;color:var(--muted);font-weight:750;margin-bottom:6px}.text{font-size:14px;line-height:1.65}.timeline{display:grid;grid-template-columns:72px 1fr;gap:8px 12px;font-size:13px;line-height:1.45}.date{color:var(--muted)}.event{font-weight:650}.roles{display:grid;gap:8px}.role{display:grid;grid-template-columns:72px 1fr;gap:8px;font-size:13px;line-height:1.45}.role-name{color:var(--muted)}.role-work{font-weight:650}
+  .status-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.state-btn{border:1px solid var(--border);border-radius:13px;background:#fff;padding:11px 8px;text-align:center;font-weight:800;font-size:13px}.state-btn.on{border-color:var(--accent);background:var(--accent-light);color:var(--accent-dark)}
+  .attach{display:grid;gap:1px}.attach-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px;min-height:46px;padding:9px 0}.attach-row+.attach-row{border-top:1px solid var(--border)}.file-name{font-size:13px;font-weight:700}.file-meta{font-size:11px;color:var(--muted);margin-top:3px}.file-actions{display:flex;gap:10px}.file-actions button{border:0;background:none;color:var(--accent-dark);font-size:12px;font-weight:800}
+  .submit-card{border:1px dashed var(--accent);border-radius:14px;background:var(--accent-light);padding:12px}.submit-card h3{font-size:14px;margin-bottom:6px}.submit-card p{font-size:12px;color:var(--muted);line-height:1.45}.primary{width:100%;border:0;border-radius:13px;background:var(--accent);color:#fff;padding:12px 14px;font-weight:800;margin-top:10px}
+  .toast{position:absolute;left:50%;bottom:34px;transform:translateX(-50%) translateY(14px);opacity:0;pointer-events:none;border-radius:999px;background:rgba(26,25,22,.88);color:#fff;padding:10px 14px;font-size:12px;transition:.18s}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
+  <div class="nav-bar"><a class="back" href="teacher-tasks.html">‹</a><div class="nav-title">任务详情</div><span></span></div>
+  <div class="scroll">
+    <section class="chunk">
+      <div class="task-head">
+        <div class="kicker" id="source">教研组发起</div>
+        <h1 id="title">衣食住行艺课程资源包共建</h1>
+        <p id="summary">收集班级实践材料，形成可共享的课程资源与案例素材。</p>
+      </div>
+      <div class="chunk-title"><h2>任务说明</h2></div>
+      <div class="block"><div class="label">背景信息</div><div class="text" id="background"></div></div>
+      <div class="block"><div class="label">分工要求</div><div class="roles" id="roles"></div></div>
+      <div class="block"><div class="label">时间节点</div><div class="timeline" id="timeline"></div></div>
+    </section>
+
+    <section class="chunk">
+      <div class="chunk-title"><h2>任务附件</h2></div>
+      <div class="attach" id="files"></div>
+    </section>
+
+    <section class="chunk" id="operationSection">
+      <div class="chunk-title"><h2>任务操作</h2><span class="status-pill" id="statusPill">待接收</span></div>
+      <div class="status-grid">
+        <button class="state-btn" type="button" data-state="已接受">接受</button>
+        <button class="state-btn" type="button" data-state="完成">完成</button>
+      </div>
+    </section>
+
+    <section class="chunk" id="submitSection">
+      <div class="submit-card">
+        <h3>提交材料 / 反馈</h3>
+        <p>教师只需按分工上传照片、记录、说明或反馈。提交后进入管理端审核与汇总。</p>
+        <button class="primary" type="button" data-action="已进入材料提交">提交材料</button>
+      </div>
+    </section>
+  </div>
+  <div class="toast" id="toast"></div>
+</div>
+<script>
+(function(){
+  var tasks = {
+    "resource-pack": {
+      source: "教研组发起",
+      title: "衣食住行艺课程资源包共建",
+      summary: "收集班级实践材料，形成可共享的课程资源与案例素材。",
+      status: "待接收",
+      background: "围绕衣、食、住、行、艺五类生活经验，整理幼儿园已有课程活动、资源照片和教师转化说明。材料将用于课程资源首页、资源库和案例库的后续建设。",
+      roles: [["大班组","提交“住、行”相关活动照片、幼儿表达记录和教师说明。"],["中班组","提交“食、艺”相关材料包、幼儿作品和活动反思。"],["教研组","统一审核标题、标签、授权与课程转化路径。"]],
+      timeline: [["6月22日","接收任务并确认本班负责范畴"],["6月26日","上传图文材料、附件和教师说明"],["6月30日","完成审核修改并进入资源库 / 案例库候选"]],
+      files: [["任务说明.docx","2.4 MB"],["材料命名规则.pdf","1.2 MB"],["提交清单.xlsx","860 KB"]]
+    },
+    "community-walk": {
+      source: "年级组发起",
+      title: "社区建筑观察活动材料提交",
+      summary: "补充社区建筑观察的图文记录和教师转化说明。",
+      status: "进行中",
+      background: "基于幼儿园周边社区建筑和生活见闻，整理一次可转化为社会领域或语言领域的活动材料，重点呈现幼儿观察、提问和表达。",
+      roles: [["主班教师","提交活动背景、照片和幼儿问题记录。"],["配班教师","补充活动过程中的安全组织和分组观察记录。"],["年级组长","审核材料是否能形成可复用案例。"]],
+      timeline: [["6月20日","完成社区踏查与素材拍摄"],["6月25日","提交班级图文材料"],["6月27日","根据审核意见补充说明"]],
+      files: [["社区观察记录表.docx","920 KB"],["照片整理示例.pdf","1.5 MB"],["活动反馈模板.docx","640 KB"]]
+    },
+    "training-feedback": {
+      source: "保教主任发起",
+      title: "课程游戏化研修反馈汇总",
+      summary: "提交研修学习记录和班级实践计划。",
+      status: "完成",
+      background: "本次研修聚焦课程游戏化中的材料投放、教师观察和支持策略。教师需将研修内容转化为一个可在班级执行的小行动。",
+      roles: [["全体教师","提交学习记录和一条班级实践计划。"],["教研组","汇总教师共性问题，形成后续研修议题。"],["保教主任","筛选典型反馈进入教师成长档案。"]],
+      timeline: [["6月12日","完成研修并领取反馈表"],["6月16日","提交学习记录"],["6月18日","反馈汇总完成"]],
+      files: [["研修反馈表.docx","780 KB"],["实践计划样例.pdf","1.3 MB"],["优秀反馈摘录.pdf","1.1 MB"]]
+    }
+  };
+  var params = new URLSearchParams(location.search);
+  var id = params.get("id") || "resource-pack";
+  var task = tasks[id] || tasks["resource-pack"];
+  var statusPill = document.getElementById("statusPill");
+  document.getElementById("source").textContent = task.source;
+  document.getElementById("title").textContent = task.title;
+  document.getElementById("summary").textContent = task.summary;
+  document.getElementById("background").textContent = task.background;
+  statusPill.textContent = task.status;
+  document.getElementById("roles").innerHTML = task.roles.map(function(row){ return '<div class="role"><div class="role-name">'+row[0]+'</div><div class="role-work">'+row[1]+'</div></div>'; }).join("");
+  document.getElementById("timeline").innerHTML = task.timeline.map(function(row){ return '<div class="date">'+row[0]+'</div><div class="event">'+row[1]+'</div>'; }).join("");
+  document.getElementById("files").innerHTML = task.files.map(function(file){ return '<div class="attach-row"><div><div class="file-name">'+file[0]+'</div><div class="file-meta">'+file[1]+'</div></div><div class="file-actions"><button type="button" data-action="预览：'+file[0]+'">预览</button><button type="button" data-action="下载：'+file[0]+'">下载</button></div></div>'; }).join("");
+  if(task.status === "完成"){
+    document.getElementById("operationSection").hidden = true;
+    document.getElementById("submitSection").hidden = true;
+  }
+  document.querySelectorAll(".state-btn").forEach(function(btn){
+    btn.classList.toggle("on", btn.dataset.state === task.status);
+    btn.addEventListener("click", function(){
+      document.querySelectorAll(".state-btn").forEach(function(item){ item.classList.remove("on"); });
+      btn.classList.add("on");
+      statusPill.textContent = btn.dataset.state;
+      show("状态已更新为：" + btn.dataset.state);
+    });
+  });
+  var toast = document.getElementById("toast");
+  var timer = 0;
+  function show(msg){
+    toast.textContent = msg;
+    toast.classList.add("show");
+    clearTimeout(timer);
+    timer = setTimeout(function(){ toast.classList.remove("show"); }, 1300);
+  }
+  document.addEventListener("click", function(event){
+    var btn = event.target.closest("[data-action]");
+    if(btn) show(btn.dataset.action);
+  });
+})();
+</script>
+</body>
+</html>

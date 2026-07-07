@@ -1,0 +1,124 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>幼儿园教师端 · 5 屏并排原型</title>
+<style>
+  :root {
+    --bg: #f0eeeb; --fg: #1a1916; --muted: #8c8a84; --border: #e0ded9;
+    --font: -apple-system, BlinkMacSystemFont, 'PingFang SC', system-ui, sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--fg);
+    font-family: var(--font); -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  .topbar {
+    text-align: center; padding: 32px 20px 24px;
+    background: #fff; border-bottom: 1px solid var(--border);
+  }
+  .topbar h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
+  .topbar p { font-size: 14px; color: var(--muted); margin-top: 6px; }
+
+  .gallery-wrap {
+    padding: 28px 16px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .gallery {
+    display: flex; gap: 20px;
+    justify-content: center;
+    min-width: min-content;
+  }
+  .screen-card { text-align: center; flex-shrink: 0; }
+  .screen-card iframe {
+    width: 390px; height: 844px;
+    border: none; border-radius: 40px;
+    box-shadow: 0 16px 48px rgba(0,0,0,.12), 0 4px 12px rgba(0,0,0,.06);
+    background: #f5f4f1;
+  }
+  .screen-label {
+    margin-top: 14px; font-size: 15px; font-weight: 600; color: var(--fg);
+  }
+  .screen-sub {
+    font-size: 12px; color: var(--muted); margin-top: 4px; max-width: 320px; margin-inline: auto;
+  }
+  .screen-card:hover .screen-label { color: #2f6feb; }
+
+  .link-bar {
+    max-width: 1000px; margin: 24px auto; padding: 0 20px; text-align: center;
+  }
+  .link-bar a {
+    display: inline-block; padding: 8px 18px; margin: 4px;
+    background: #fff; border-radius: 8px; border: 1px solid var(--border);
+    text-decoration: none; color: var(--fg); font-size: 13px; transition: .15s;
+  }
+  .link-bar a:hover { border-color: #2f6feb; color: #2f6feb; }
+
+  footer {
+    text-align: center; padding: 32px 20px; color: var(--muted);
+    font-size: 13px; border-top: 1px solid var(--border);
+  }
+
+  @media (max-width: 900px) {
+    .gallery { flex-wrap: wrap; justify-content: center; }
+    .screen-card iframe { width: 340px; height: 736px; border-radius: 34px; }
+  }
+  @media (max-width: 400px) {
+    .screen-card iframe { width: 300px; height: 650px; border-radius: 30px; }
+  }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <h1>幼儿园教师端小程序</h1>
+  <p>5 个主 Tab 页面并排展示 — 点击下方手机框内部可交互体验</p>
+</div>
+
+<div class="gallery-wrap">
+  <div class="gallery">
+    <div class="screen-card">
+      <iframe src="screens/home.html" loading="eager" title="首页" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation-by-user-activation"></iframe>
+      <div class="screen-label">首页</div>
+      <div class="screen-sub">轮播 Banner · 待办事项 · 常用入口 · 推荐课程资源</div>
+    </div>
+    <div class="screen-card">
+      <iframe src="screens/school-affairs.html" loading="lazy" title="党建管理" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation-by-user-activation"></iframe>
+      <div class="screen-label">党建管理</div>
+      <div class="screen-sub">党建学习 · 党建活动 · 品牌建设</div>
+    </div>
+    <div class="screen-card">
+      <iframe src="screens/comprehensive-coordination.html" loading="lazy" title="综合协调" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation-by-user-activation"></iframe>
+      <div class="screen-label">综合协调</div>
+      <div class="screen-sub">行政统筹 · 通勤保障 · 人事管理</div>
+    </div>
+    <div class="screen-card">
+      <iframe src="screens/training-center.html" loading="lazy" title="教研培训部" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation-by-user-activation"></iframe>
+      <div class="screen-label">教研培训部</div>
+      <div class="screen-sub">课程建设 · 课程资源 · 教研培训 · 推荐资源/案例</div>
+    </div>
+    <div class="screen-card">
+      <iframe src="screens/home-school.html" loading="lazy" title="家园共育" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation-by-user-activation"></iframe>
+      <div class="screen-label">家园共育</div>
+      <div class="screen-sub">在园时光 · 亲子任务 · 儿童成长档案 · 成长册 · 完成度汇总</div>
+    </div>
+  </div>
+</div>
+
+<div class="link-bar">
+  <a href="screens/home.html" target="_blank">首页 ↗</a>
+  <a href="screens/school-affairs.html" target="_blank">党建管理 ↗</a>
+  <a href="screens/comprehensive-coordination.html" target="_blank">综合协调 ↗</a>
+  <a href="screens/training-center.html" target="_blank">教研培训部 ↗</a>
+  <a href="screens/home-school.html" target="_blank">家园共育 ↗</a>
+  <a href="screens/home-school-moments.html" target="_blank">在园时光 ↗</a>
+  <a href="screens/growth-record.html" target="_blank">成长档案 ↗</a>
+  <a href="screens/growth-book.html" target="_blank">成长册 ↗</a>
+  <a href="landing.html" target="_blank">产品落地页 ↗</a>
+</div>
+
+<footer>幼儿园教师端小程序 · 产品原型 · 2026</footer>
+</body>
+</html>

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=390, initial-scale=1, user-scalable=no" />
+<title>品牌建设 · 图文介绍</title>
+<style>
+  :root{--bg:#f0f5f5;--surface:#fff;--fg:#1a1916;--muted:#868686;--border:#e0e8e8;--green:#4b9a5a;--green-light:#eaf5ed;--accent:#189b91;--font:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',system-ui,sans-serif}
+  *{box-sizing:border-box;margin:0;padding:0}body{min-height:100vh;display:flex;justify-content:center;background:transparent;font-family:var(--font);color:var(--fg)}.phone{width:390px;height:844px;overflow:hidden;border-radius:40px;background:var(--bg)}.status{display:flex;justify-content:space-between;padding:14px 28px 8px;font-size:13px;font-weight:600}.nav{display:grid;grid-template-columns:40px 1fr 40px;align-items:center;padding:8px 16px 12px}.nav a{color:var(--fg);text-decoration:none;font-size:22px}.nav h1{text-align:center;font-size:17px}.scroll{height:calc(100% - 70px);overflow:auto;padding:0 16px 32px}.scroll::-webkit-scrollbar{display:none}.hero{height:180px;border-radius:18px;background:linear-gradient(135deg,#2f855a,#4b9a5a,#88c35a);color:#fff;padding:18px;display:flex;flex-direction:column;justify-content:flex-end}.hero h2{font-size:22px;line-height:1.24}.hero p{margin-top:6px;font-size:12px;opacity:.9}.card{margin-top:12px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:15px}.card h3{font-size:15px;margin-bottom:8px}.card p{font-size:13px;line-height:1.72;color:#3d3b36}.chips{display:flex;gap:8px;flex-wrap:wrap}.chip{padding:6px 9px;border-radius:999px;background:var(--green-light);color:var(--green);font-size:12px;font-weight:700}.gallery{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}.ph{height:92px;border-radius:13px;background:#eef7f3;display:grid;place-items:center;color:var(--green);font-weight:800}
+</style>
+</head>
+<body><div class="phone">
+  <div class="status"><span>9:41</span><span>WiFi · ▮▮▮</span></div>
+  <header class="nav"><a href="party-brand-list.html">‹</a><h1>图文介绍</h1><span></span></header>
+  <main class="scroll">
+    <section class="hero"><h2 id="title">科技启蒙：小小工程师项目</h2><p id="sub">科学探究 · 园本特色</p></section>
+    <section class="card"><div class="chips" id="chips"><span class="chip">科学</span><span class="chip">项目化学习</span><span class="chip">党建引领</span></div></section>
+    <section class="card"><h3>主题介绍</h3><p id="body">围绕幼儿对搭建、测量和机械结构的兴趣，教师设计桥梁、滑道、风车等探究任务，让儿童在操作中形成初步工程思维。</p></section>
+    <section class="card"><h3>图文素材</h3><div class="gallery"><div class="ph">环境图</div><div class="ph">活动图</div><div class="ph">作品图</div><div class="ph">记录图</div></div></section>
+  </main>
+</div>
+<script>
+var data={
+  "steam":["科技启蒙：小小工程师项目","科学探究 · 园本特色",["科学","项目化学习","党建引领"],"围绕幼儿对搭建、测量和机械结构的兴趣，教师设计桥梁、滑道、风车等探究任务，让儿童在操作中形成初步工程思维。"],
+  "dragon":["醒狮文化：岭南艺术体验","艺术表达 · 本土课程",["艺术","岭南文化","节庆活动"],"以醒狮头饰、鼓点节奏和队形变化为线索，支持幼儿通过绘画、音乐和身体动作理解本土文化。"],
+  "garden":["自然花园：劳动教育实践","劳动教育 · 班级共建",["自然","劳动","班级共建"],"各班认领花园小地块，儿童参与播种、观察、浇灌和记录，形成持续性的自然劳动经验。"],
+  "reading":["书香班级：亲子阅读共建","语言发展 · 家园协同",["语言","阅读","家园共育"],"通过班级阅读角、亲子共读打卡和故事分享日，把家庭阅读资源转化为园内语言活动。"]
+};
+var id=new URLSearchParams(location.search).get('id')||'steam',d=data[id]||data.steam;
+title.textContent=d[0];sub.textContent=d[1];body.textContent=d[3];chips.innerHTML=d[2].map(function(x){return '<span class="chip">'+x+'</span>'}).join('');
+</script>
+</body></html>

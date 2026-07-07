@@ -1,0 +1,155 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=390, initial-scale=1, user-scalable=no" />
+<title>党建管理部 · 幼儿园教师端</title>
+<style>
+  :root {
+    --bg: #f0f5f5; --surface: #fff; --fg: #1a1916; --muted: #868686; --border: #e0e8e8;
+    --accent: #189b91; --accent-dark: #067e76; --accent-light: #e8f5f4;
+    --red: #dc2626; --red-light: #fdecec; --blue: #3388fc; --blue-light: #e8f2fe;
+    --green: #4b9a5a; --green-light: #eaf5ed; --amber: #feaf06; --amber-light: #fff7e3;
+    --font: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', system-ui, sans-serif;
+    --radius: 14px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { min-height: 100vh; display: flex; justify-content: center; background: transparent; font-family: var(--font); color: var(--fg); -webkit-font-smoothing: antialiased; }
+  .phone { width: 390px; height: 844px; overflow: hidden; position: relative; border-radius: 40px; background: var(--bg); }
+  .status-bar { display: flex; justify-content: space-between; align-items: center; padding: 14px 28px 8px; color: var(--fg); font-size: 13px; font-weight: 600; background: var(--bg); }
+  .nav { padding: 8px 20px 12px; text-align: center; background: var(--bg); }
+  .nav h1 { font-size: 17px; line-height: 1.2; font-weight: 600; }
+  .mini-menu { position: absolute; top: 43px; right: 18px; width: 74px; height: 30px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); display: flex; align-items: center; justify-content: space-around; color: var(--fg); font-size: 14px; z-index: 2; }
+  .scroll { height: calc(100% - 70px); overflow-y: auto; padding: 0 16px 96px; }
+  .scroll::-webkit-scrollbar { display: none; }
+  .banner-wrap { position: relative; border-radius: 16px; overflow: hidden; border: 1px solid var(--border); background: var(--surface); }
+  .banner-slide { display: none; }
+  .banner-slide.on { display: block; }
+  .banner-card { height: 142px; padding: 20px 18px; color: #fff; display: flex; flex-direction: column; justify-content: flex-end; position: relative; overflow: hidden; }
+  .banner-card::after { content: ""; position: absolute; right: -28px; top: -32px; width: 128px; height: 128px; border-radius: 50%; border: 18px solid rgba(255,255,255,.18); }
+  .banner-card.b1 { background: linear-gradient(135deg, #b91c1c, #dc2626, #f97316); }
+  .banner-card.b2 { background: linear-gradient(135deg, #8a3b12, #b45309, #feaf06); }
+  .banner-card.b3 { background: linear-gradient(135deg, #0f766e, #189b91, #49c3b7); }
+  .banner-title { position: relative; z-index: 1; font-size: 19px; font-weight: 760; line-height: 1.25; }
+  .banner-sub { position: relative; z-index: 1; margin-top: 6px; font-size: 12px; opacity: .9; line-height: 1.45; }
+  .banner-dots { display: flex; gap: 6px; justify-content: center; margin: 10px 0 2px; }
+  .banner-dot { width: 6px; height: 6px; border-radius: 999px; background: #c9e7e7; transition: .2s ease; }
+  .banner-dot.on { width: 20px; background: var(--accent); }
+  .sec { margin: 22px 0 10px; display: flex; align-items: center; justify-content: space-between; font-size: 16px; font-weight: 720; }
+  .sec a { color: var(--accent-dark); font-size: 12px; text-decoration: none; font-weight: 650; }
+  .list { display: grid; gap: 8px; }
+  .item { min-height: 66px; padding: 11px 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: inherit; text-decoration: none; display: grid; grid-template-columns: 36px minmax(0,1fr) auto; gap: 10px; align-items: center; -webkit-tap-highlight-color: transparent; }
+  .item:active, .tabs a:active { transform: scale(.985); }
+  .mark { width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; font-size: 12px; font-weight: 800; }
+  .study { color: var(--red); background: var(--red-light); }
+  .activity { color: var(--blue); background: var(--blue-light); }
+  .brand { color: var(--green); background: var(--green-light); }
+  .main { min-width: 0; }
+  .title { font-size: 14px; font-weight: 720; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .meta { margin-top: 4px; color: var(--muted); font-size: 11px; display: flex; gap: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ops { display: flex; gap: 5px; align-items: center; }
+  .pill { height: 24px; padding: 0 7px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); font-size: 11px; display: inline-flex; align-items: center; justify-content: center; background: #fff; }
+  .arrow { color: var(--muted); font-size: 18px; }
+  .tabs { position: absolute; bottom: 0; left: 0; right: 0; z-index: 10; display: grid; grid-template-columns: repeat(5, 1fr); align-items: center; padding: 8px 6px 28px; background: var(--surface); border-top: 1px solid var(--border); }
+  .tabs a { border: 0; background: none; font: inherit; display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; color: var(--muted); font-size: 9px; padding: 4px 0; min-width: 0; white-space: nowrap; text-decoration: none; }
+  .tabs a.on { color: var(--accent); font-weight: 700; }
+  .tabs svg { width: 20px; height: 20px; }
+  .toast { position: absolute; left: 50%; bottom: 92px; transform: translateX(-50%) translateY(12px); max-width: 300px; padding: 9px 13px; border-radius: 999px; background: rgba(26,25,22,.86); color: #fff; font-size: 12px; opacity: 0; pointer-events: none; transition: .22s ease; z-index: 20; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮</span></div>
+  <div class="mini-menu"><span>•••</span><span>○</span></div>
+  <header class="nav"><h1>党建管理部</h1></header>
+
+  <main class="scroll">
+    <section class="banner-wrap" id="banner" aria-label="文件学习轮播">
+      <div class="banner-slide on"><div class="banner-card b1"><div class="banner-title">最新文件学习</div><div class="banner-sub">学习《新时代幼儿园党建工作要点》，同步完成园内学习记录</div></div></div>
+      <div class="banner-slide"><div class="banner-card b2"><div class="banner-title">主题党日材料</div><div class="banner-sub">本周主题：党建引领课程建设，活动方案已更新</div></div></div>
+      <div class="banner-slide"><div class="banner-card b3"><div class="banner-title">品牌建设案例</div><div class="banner-sub">查看“科技启蒙”主题图文，沉淀本园特色实践</div></div></div>
+    </section>
+    <div class="banner-dots"><span class="banner-dot on"></span><span class="banner-dot"></span><span class="banner-dot"></span></div>
+
+    <div class="sec">党建学习 <a href="party-study-list.html">全部 ›</a></div>
+    <section class="list" aria-label="党建学习最新文件">
+      <a class="item" href="party-study-detail.html?id=work-points">
+        <span class="mark study">学</span>
+        <span class="main"><span class="title">新时代幼儿园党建工作要点</span><span class="meta"><span>政策文件</span><span>06-18</span><span>办公室</span></span></span>
+        <span class="ops"><span class="pill">预览</span><span class="pill">下载</span></span>
+      </a>
+      <a class="item" href="party-study-detail.html?id=discipline">
+        <span class="mark study">学</span>
+        <span class="main"><span class="title">师德师风专题学习材料</span><span class="meta"><span>学习材料</span><span>06-12</span><span>党支部</span></span></span>
+        <span class="ops"><span class="pill">预览</span><span class="pill">下载</span></span>
+      </a>
+      <a class="item" href="party-study-detail.html?id=safety">
+        <span class="mark study">学</span>
+        <span class="main"><span class="title">校园安全责任清单学习</span><span class="meta"><span>制度文件</span><span>06-05</span><span>综合组</span></span></span>
+        <span class="ops"><span class="pill">预览</span><span class="pill">下载</span></span>
+      </a>
+    </section>
+
+    <div class="sec">党建活动 <a href="party-activity-list.html">全部 ›</a></div>
+    <section class="list" aria-label="党建活动">
+      <a class="item" href="party-activity-detail.html?id=theme-day">
+        <span class="mark activity">活</span>
+        <span class="main"><span class="title">“红色故事进课堂”主题党日</span><span class="meta"><span>活动介绍</span><span>06-20</span><span>多功能室</span></span></span>
+        <span class="arrow">›</span>
+      </a>
+      <a class="item" href="party-activity-detail.html?id=volunteer">
+        <span class="mark activity">活</span>
+        <span class="main"><span class="title">党员教师社区志愿服务</span><span class="meta"><span>活动介绍</span><span>06-14</span><span>社区广场</span></span></span>
+        <span class="arrow">›</span>
+      </a>
+      <a class="item" href="party-activity-detail.html?id=reading">
+        <span class="mark activity">活</span>
+        <span class="main"><span class="title">青年教师理论读书会</span><span class="meta"><span>活动介绍</span><span>06-07</span><span>党建室</span></span></span>
+        <span class="arrow">›</span>
+      </a>
+    </section>
+
+    <div class="sec">品牌建设 <a href="party-brand-list.html">全部 ›</a></div>
+    <section class="list" aria-label="品牌建设主题特色">
+      <a class="item" href="party-brand-detail.html?id=steam">
+        <span class="mark brand">品</span>
+        <span class="main"><span class="title">科技启蒙：小小工程师项目</span><span class="meta"><span>主题图文</span><span>科学探究</span><span>园本特色</span></span></span>
+        <span class="arrow">›</span>
+      </a>
+      <a class="item" href="party-brand-detail.html?id=dragon">
+        <span class="mark brand">品</span>
+        <span class="main"><span class="title">醒狮文化：岭南艺术体验</span><span class="meta"><span>主题图文</span><span>艺术表达</span><span>本土课程</span></span></span>
+        <span class="arrow">›</span>
+      </a>
+      <a class="item" href="party-brand-detail.html?id=garden">
+        <span class="mark brand">品</span>
+        <span class="main"><span class="title">自然花园：劳动教育实践</span><span class="meta"><span>主题图文</span><span>劳动教育</span><span>班级共建</span></span></span>
+        <span class="arrow">›</span>
+      </a>
+    </section>
+  </main>
+
+  <div class="tabs" aria-label="底部导航">
+    <a href="home.html"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span>首页</span></a>
+    <a class="on" href="school-affairs.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 15.4 7.2 18l.9-5.4-3.9-3.8 5.4-.8L12 3z"/></svg><span>党建管理</span></a>
+    <a href="comprehensive-coordination.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M4 12h16M4 17h16"/><circle cx="8" cy="7" r="1.5" fill="currentColor"/><circle cx="16" cy="12" r="1.5" fill="currentColor"/><circle cx="11" cy="17" r="1.5" fill="currentColor"/></svg><span>综合协调</span></a>
+    <a href="training-center.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5.5A2.5 2.5 0 016.5 3H20v16H6.5A2.5 2.5 0 014 16.5v-11z"/><path d="M8 7h8M8 11h8M8 15h5"/></svg><span>教研培训</span></a>
+    <a href="home-school.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg><span>家园共育</span></a>
+  </div>
+  <div class="toast" id="toast">底部链接后续导入</div>
+</div>
+<script>
+(function(){
+  var slides=document.querySelectorAll('.banner-slide'),dots=document.querySelectorAll('.banner-dot'),idx=0;
+  function go(i){slides.forEach(function(s){s.classList.remove('on')});dots.forEach(function(d){d.classList.remove('on')});idx=(i+slides.length)%slides.length;slides[idx].classList.add('on');dots[idx].classList.add('on');}
+  setInterval(function(){go(idx+1)},3600);
+  var toast=document.getElementById('toast'),timer;
+  document.querySelectorAll('.tabs [data-target]').forEach(function(el){
+    el.addEventListener('click',function(){toast.textContent=el.getAttribute('data-target')+'：链接后续导入';toast.classList.add('show');clearTimeout(timer);timer=setTimeout(function(){toast.classList.remove('show')},1200);});
+  });
+})();
+</script>
+</body>
+</html>

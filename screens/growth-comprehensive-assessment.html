@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=390, initial-scale=1, user-scalable=no" />
+<title>综合评估 · 儿童成长档案</title>
+<link rel="stylesheet" href="home-school-common.css" />
+<style>
+  .assessment-start {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .assessment-start h2 {
+    font-size: 16px;
+    margin-bottom: 6px;
+  }
+  .assessment-start p {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .assessment-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .assessment-card {
+    min-height: 104px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 14px;
+    color: var(--fg);
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .assessment-card h3 {
+    font-size: 15px;
+    font-weight: 700;
+  }
+  .assessment-card p {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.45;
+    margin-top: 6px;
+  }
+  .ratio {
+    font-size: 24px;
+    line-height: 1;
+    font-weight: 800;
+    color: var(--accent);
+  }
+  .arrow {
+    align-self: flex-end;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: var(--accent-light);
+    color: var(--accent);
+    font-size: 16px;
+    font-weight: 800;
+  }
+  .section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 20px 0 10px;
+  }
+  .section-head .sec {
+    margin: 0;
+  }
+  .outline-btn {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: 999px;
+    padding: 7px 11px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--fg);
+  }
+  .student {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 11px 12px;
+    margin-bottom: 8px;
+  }
+  .student-name {
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .student-sub {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.35;
+    margin-top: 3px;
+  }
+  .pill {
+    font-size: 11px;
+    border-radius: 999px;
+    padding: 4px 8px;
+    font-weight: 700;
+  }
+  .done {
+    background: var(--green-light);
+    color: var(--green);
+  }
+  .draft {
+    background: var(--amber-light);
+    color: #a35e00;
+  }
+  .miss {
+    background: #fff0ed;
+    color: #e05243;
+  }
+  .small-btn {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: 999px;
+    padding: 5px 9px;
+    font-size: 11px;
+    color: var(--fg);
+    text-decoration: none;
+  }
+  .sheet-mask {
+    position: absolute;
+    inset: 0;
+    background: rgba(31, 41, 55, .32);
+    opacity: 0;
+    pointer-events: none;
+    transition: .2s ease;
+    z-index: 30;
+  }
+  .sheet-mask.show {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .sheet {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--surface);
+    border-radius: 24px 24px 0 0;
+    padding: 18px 16px 22px;
+    transform: translateY(105%);
+    transition: .24s ease;
+    z-index: 31;
+  }
+  .sheet.show {
+    transform: translateY(0);
+  }
+  .sheet-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .sheet-head h2 {
+    font-size: 17px;
+  }
+  .close {
+    border: 0;
+    background: #f3f7f7;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    font-size: 18px;
+    color: var(--muted);
+  }
+  .check-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border: 1px solid var(--border);
+    border-radius: 13px;
+    padding: 11px 12px;
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .check-row span {
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 500;
+    margin-top: 3px;
+    display: block;
+  }
+  .check-row input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent);
+  }
+  .sheet-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .ghost {
+    border: 1px solid var(--border);
+    background: #fff;
+    color: var(--fg);
+  }
+  .toast {
+    position: absolute;
+    left: 50%;
+    bottom: 34px;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(31, 41, 55, .9);
+    color: #fff;
+    border-radius: 999px;
+    padding: 9px 14px;
+    font-size: 12px;
+    opacity: 0;
+    pointer-events: none;
+    transition: .22s ease;
+    z-index: 40;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
+  <div class="nav-bar"><a class="back" href="growth-record.html">‹</a><div class="nav-title">综合评估</div><span></span></div>
+  <div class="scroll">
+    <div class="sec">综合评估</div>
+    <section class="chunk assessment-start">
+      <div>
+        <h2>开始评估</h2>
+        <p>选择幼儿后，按健康、语言、社会、科学、艺术五大领域完成李克特量表评分。</p>
+      </div>
+      <a class="btn primary" href="comprehensive-assessment-form.html">开始</a>
+    </section>
+
+    <section class="assessment-grid" aria-label="班级综合评估概况">
+      <div class="assessment-card">
+        <div>
+          <h3>进度</h3>
+          <p>中二班综合评估完成人数</p>
+        </div>
+        <div class="ratio">10/30</div>
+      </div>
+      <a class="assessment-card" href="comprehensive-assessment-class-report.html">
+        <div>
+          <h3>班级评估</h3>
+          <p>查看五大领域汇总分析与强弱项报告</p>
+        </div>
+        <div class="arrow">›</div>
+      </a>
+    </section>
+
+    <div class="section-head">
+      <div class="sec">个人进度</div>
+      <button class="outline-btn" id="openExport">导出报告</button>
+    </div>
+    <div class="student">
+      <div><div class="student-name">陈小明</div><div class="student-sub">五大领域数据与综合评估已完成</div></div>
+      <span class="pill done">已完成</span>
+      <a class="small-btn" href="comprehensive-assessment-report.html?child=chen">查看</a>
+    </div>
+    <div class="student">
+      <div><div class="student-name">李雨萱</div><div class="student-sub">艺术领域待补充观察证据</div></div>
+      <span class="pill draft">草稿</span>
+      <a class="small-btn" href="comprehensive-assessment-form.html?child=li">继续</a>
+    </div>
+    <div class="student">
+      <div><div class="student-name">张力轩</div><div class="student-sub">尚未开始填写</div></div>
+      <span class="pill miss">未开始</span>
+      <a class="small-btn" href="comprehensive-assessment-form.html?child=zhang">添加</a>
+    </div>
+    <div class="student">
+      <div><div class="student-name">王子涵</div><div class="student-sub">五大领域数据与综合评估已完成</div></div>
+      <span class="pill done">已完成</span>
+      <a class="small-btn" href="comprehensive-assessment-report.html?child=wang">查看</a>
+    </div>
+    <div class="student">
+      <div><div class="student-name">赵佳怡</div><div class="student-sub">语言、艺术领域待补充</div></div>
+      <span class="pill draft">草稿</span>
+      <a class="small-btn" href="comprehensive-assessment-form.html?child=zhao">继续</a>
+    </div>
+  </div>
+
+  <div class="sheet-mask" id="sheetMask"></div>
+  <div class="sheet" id="exportSheet" aria-hidden="true">
+    <div class="sheet-head">
+      <h2>导出综合评估报告</h2>
+      <button class="close" id="closeExport" aria-label="关闭">×</button>
+    </div>
+    <label class="check-row">
+      <div>全选<span>导出所有已完成和草稿儿童</span></div>
+      <input type="checkbox" id="selectAll">
+    </label>
+    <label class="check-row">
+      <div>陈小明<span>已完成 · 可导出</span></div>
+      <input type="checkbox" class="child-check" checked>
+    </label>
+    <label class="check-row">
+      <div>李雨萱<span>草稿 · 可导出当前版本</span></div>
+      <input type="checkbox" class="child-check">
+    </label>
+    <label class="check-row">
+      <div>王子涵<span>已完成 · 可导出</span></div>
+      <input type="checkbox" class="child-check" checked>
+    </label>
+    <label class="check-row">
+      <div>赵佳怡<span>草稿 · 可导出当前版本</span></div>
+      <input type="checkbox" class="child-check">
+    </label>
+    <div class="sheet-actions">
+      <button class="btn ghost" id="cancelExport">取消</button>
+      <button class="btn primary" id="confirmExport">导出</button>
+    </div>
+  </div>
+  <div class="toast" id="toast">已生成导出任务</div>
+</div>
+<script>
+const sheet = document.getElementById('exportSheet');
+const mask = document.getElementById('sheetMask');
+const checks = Array.from(document.querySelectorAll('.child-check'));
+const selectAll = document.getElementById('selectAll');
+const toast = document.getElementById('toast');
+
+function openSheet() {
+  mask.classList.add('show');
+  sheet.classList.add('show');
+  sheet.setAttribute('aria-hidden', 'false');
+}
+
+function closeSheet() {
+  mask.classList.remove('show');
+  sheet.classList.remove('show');
+  sheet.setAttribute('aria-hidden', 'true');
+}
+
+document.getElementById('openExport').addEventListener('click', openSheet);
+document.getElementById('closeExport').addEventListener('click', closeSheet);
+document.getElementById('cancelExport').addEventListener('click', closeSheet);
+mask.addEventListener('click', closeSheet);
+
+selectAll.addEventListener('change', () => {
+  checks.forEach(item => item.checked = selectAll.checked);
+});
+
+checks.forEach(item => {
+  item.addEventListener('change', () => {
+    selectAll.checked = checks.every(check => check.checked);
+  });
+});
+
+document.getElementById('confirmExport').addEventListener('click', () => {
+  const count = checks.filter(check => check.checked).length;
+  toast.textContent = count ? `已生成 ${count} 份导出报告` : '请至少选择 1 名幼儿';
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 1500);
+  if (count) closeSheet();
+});
+</script>
+</body>
+</html>

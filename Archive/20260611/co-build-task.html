@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="zh-CN"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1, user-scalable=no">
+<title>共建任务 · 幼儿园教师端</title>
+<style>
+  :root {
+    --bg: #f0f5f5; --surface: #ffffff; --fg: #1a1916;
+    --muted: #868686; --border: #e0e8e8; --accent: #189b91;
+    --accent-dark: #067e76; --accent-light: #e8f5f4;
+    --green: #4b9a5a; --green-light: #eaf5ed;
+    --amber: #feaf06; --orange: #f6762f;
+    --blue: #3388fc; --blue-light: #e8f2fe;
+    --danger: #dc2626; --warn: #eab308;
+    --font: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', system-ui, sans-serif;
+    --radius: 12px; --radius-sm: 8px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; background: transparent; font-family: var(--font); color: var(--fg); -webkit-font-smoothing: antialiased; }
+  .phone { width: 390px; height: 844px; background: var(--bg); display: flex; flex-direction: column; overflow: hidden; border-radius: 40px; position: relative; }
+  .status-bar { display: flex; justify-content: space-between; align-items: center; padding: 14px 28px 8px; font-size: 13px; font-weight: 600; background: var(--bg); }
+  .nav-bar { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; padding: 8px 12px 12px; font-size: 17px; font-weight: 600; background: var(--bg); }
+  .back { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; color: var(--fg); text-decoration: none; font-size: 24px; line-height: 1; }
+  .nav-title { text-align: center; }
+  .scroll { flex: 1; overflow-y: auto; padding: 0 16px 24px; scroll-behavior: smooth; }
+  .scroll::-webkit-scrollbar { display: none; }
+
+  .banner { position: relative; min-height: 126px; border-radius: 16px; padding: 18px; margin-bottom: 12px; overflow: hidden; background: var(--surface); border: 1px solid var(--border); }
+  .banner::after { content: ""; position: absolute; right: -28px; bottom: -42px; width: 150px; height: 150px; border-radius: 50%; background: var(--accent-light); }
+  .banner-kicker { position: relative; z-index: 1; display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 999px; background: var(--accent-light); color: var(--accent-dark); font-size: 11px; font-weight: 600; }
+  .banner h1 { position: relative; z-index: 1; margin-top: 12px; font-size: 21px; line-height: 1.25; font-weight: 700; letter-spacing: -.01em; }
+  .banner p { position: relative; z-index: 1; width: 238px; margin-top: 6px; font-size: 12px; line-height: 1.45; color: var(--muted); }
+  .banner-mark { position: absolute; right: 18px; bottom: 16px; z-index: 1; width: 52px; height: 52px; border-radius: 17px; display: grid; place-items: center; background: var(--accent); color: #fff; font-size: 20px; font-weight: 700; }
+
+  .chunk { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 16px; margin-bottom: 10px; }
+  .chunk-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+  .chunk-title h2 { font-size: 16px; font-weight: 700; line-height: 1.2; }
+  .status-pill { height: 24px; padding: 0 10px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; background: var(--accent-light); color: var(--accent-dark); font-size: 11px; font-weight: 600; flex-shrink: 0; }
+  .detail-list { display: grid; gap: 12px; }
+  .detail-block { padding-top: 12px; border-top: 1px solid var(--border); }
+  .detail-block:first-child { padding-top: 0; border-top: 0; }
+  .detail-label { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; font-weight: 600; margin-bottom: 6px; }
+  .detail-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+  .detail-text { font-size: 14px; line-height: 1.65; color: var(--fg); }
+  .timeline { display: grid; grid-template-columns: 72px 1fr; gap: 8px 12px; font-size: 13px; line-height: 1.45; }
+  .timeline .date { color: var(--muted); }
+  .timeline .event { color: var(--fg); font-weight: 500; }
+  .roles { display: grid; gap: 8px; }
+  .role-row { display: grid; grid-template-columns: 74px 1fr; gap: 8px; align-items: start; font-size: 13px; line-height: 1.45; }
+  .role-name { color: var(--muted); }
+  .role-work { color: var(--fg); font-weight: 500; }
+
+  .action-list { display: grid; gap: 8px; }
+  .action-card { display: grid; grid-template-columns: 38px 1fr 16px; align-items: center; gap: 12px; min-height: 66px; padding: 12px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); color: inherit; text-decoration: none; cursor: pointer; }
+  .action-card:active { background: #f8fbfb; }
+  .action-icon { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; background: var(--accent-light); color: var(--accent-dark); font-size: 13px; font-weight: 700; }
+  .action-icon.submit { background: #fef5e7; color: var(--orange); }
+  .action-icon.done { background: var(--green-light); color: var(--green); }
+  .action-title { font-size: 14px; font-weight: 600; line-height: 1.25; }
+  .action-meta { margin-top: 3px; font-size: 12px; color: var(--muted); line-height: 1.35; }
+  .action-arrow { color: var(--muted); font-size: 20px; line-height: 1; }
+
+  .toast { position: absolute; left: 50%; bottom: 34px; transform: translateX(-50%) translateY(16px); opacity: 0; pointer-events: none; min-width: 178px; padding: 10px 14px; border-radius: 999px; background: rgba(26,25,22,.88); color: #fff; text-align: center; font-size: 12px; transition: 180ms ease; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .attach-list { display: grid; gap: 1px; }
+  .attach-row { display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: 8px; min-height: 42px; padding: 8px 10px; border-radius: var(--radius-sm); background: #f9fcfb; }
+  .attach-row + .attach-row { border-top: 1px solid var(--border); }
+  .file-icon { width: 28px; height: 32px; border-radius: 5px; display: grid; place-items: center; color: #fff; font-size: 9px; font-weight: 800; position: relative; }
+  .file-icon::after { content: ""; position: absolute; right: 0; top: 0; border-top: 7px solid rgba(255,255,255,.45); border-left: 7px solid transparent; }
+  .file-icon.doc { background: var(--blue); }
+  .file-icon.pdf { background: var(--danger); }
+  .file-icon.xls { background: var(--green); }
+  .file-icon.ppt { background: var(--orange); }
+  .file-name { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .file-size { font-size: 11px; color: var(--muted); }
+  .file-acts { display: flex; gap: 10px; align-items: center; }
+  .file-act { background: none; border: none; font-size: 12px; font-weight: 600; cursor: pointer; padding: 4px 0; -webkit-tap-highlight-color: transparent; }
+  .file-act:active { opacity: .6; }
+  .file-act.dl { color: var(--accent); }
+  .file-act.view { color: var(--blue); }
+
+  .past-list { display: grid; gap: 1px; }
+  .past-row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 10px; min-height: 48px; padding: 10px 0; }
+  .past-row + .past-row { border-top: 1px solid var(--border); }
+  .past-name { font-size: 14px; font-weight: 600; }
+  .past-date { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .past-done { height: 22px; padding: 0 8px; border-radius: 6px; display: inline-flex; align-items: center; font-size: 11px; font-weight: 600; background: var(--green-light); color: var(--green); flex-shrink: 0; }
+</style>
+
+</head>
+<body>
+<div class="phone">
+  <div class="status-bar"><span class="time">9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
+  <div class="nav-bar"><a class="back" href="home.html">‹</a><div class="nav-title">共建任务</div><div></div></div>
+
+  <div class="scroll">
+    <section class="banner">
+      <div class="banner-kicker">上级项目发起</div>
+      <h1>番禺乡土资源课程共建</h1>
+      <p>接收区教研中心发起的资源共建任务，按分工提交班级实践材料。</p>
+      <div class="banner-mark">建</div>
+    </section>
+
+    <section class="chunk">
+      <div class="chunk-title">
+        <h2>项目详情</h2>
+        <span class="status-pill">待接受</span>
+      </div>
+      <div class="detail-list">
+        <div class="detail-block">
+          <div class="detail-label"><span class="detail-dot"></span>项目简介</div>
+          <div class="detail-text">围绕“双皮奶、荔枝蜜、留耕堂、龙舟竞渡”等八乡资源，收集教师在活动中的课程设计、幼儿表现记录和材料照片，形成可共享的园本课程资源包。</div>
+        </div>
+        <div class="detail-block">
+          <div class="detail-label"><span class="detail-dot"></span>时间进度</div>
+          <div class="timeline">
+            <div class="date">6月12日</div><div class="event">确认接受任务并查看分工</div>
+            <div class="date">6月18日</div><div class="event">提交活动照片、观察笔记和资源说明</div>
+            <div class="date">6月24日</div><div class="event">园级审核后汇总至资源中心</div>
+          </div>
+        </div>
+        <div class="detail-block">
+          <div class="detail-label"><span class="detail-dot"></span>分工</div>
+          <div class="roles">
+            <div class="role-row"><div class="role-name">大班组</div><div class="role-work">完成乡情主题案例与幼儿行为观察记录</div></div>
+            <div class="role-row"><div class="role-name">中班组</div><div class="role-work">整理资源照片、材料包和活动延伸建议</div></div>
+            <div class="role-row"><div class="role-name">教研组</div><div class="role-work">统一审核材料质量并补充课程转化说明</div></div>
+          </div>
+        </div>
+        <div class="detail-block">
+          <div class="detail-label"><span class="detail-dot"></span>附件</div>
+          <div class="attach-list">
+            <div class="attach-row">
+              <div class="file-icon doc">DOC</div>
+              <div><div class="file-name">乡土资源课程共建任务说明</div><div class="file-size">2.4 MB</div></div>
+              <div class="file-acts"><button class="file-act dl" type="button" data-act="下载">下载</button><button class="file-act view" type="button" data-act="预览">预览</button></div>
+            </div>
+            <div class="attach-row">
+              <div class="file-icon pdf">PDF</div>
+              <div><div class="file-name">八乡资源课程共建指南</div><div class="file-size">1.8 MB</div></div>
+              <div class="file-acts"><button class="file-act dl" type="button" data-act="下载">下载</button><button class="file-act view" type="button" data-act="预览">预览</button></div>
+            </div>
+            <div class="attach-row">
+              <div class="file-icon xls">XLS</div>
+              <div><div class="file-name">班级材料提交分工表</div><div class="file-size">856 KB</div></div>
+              <div class="file-acts"><button class="file-act dl" type="button" data-act="下载">下载</button><button class="file-act view" type="button" data-act="预览">预览</button></div>
+            </div>
+            <div class="attach-row">
+              <div class="file-icon ppt">PPT</div>
+              <div><div class="file-name">教研组审核标准与样例</div><div class="file-size">3.1 MB</div></div>
+              <div class="file-acts"><button class="file-act dl" type="button" data-act="下载">下载</button><button class="file-act view" type="button" data-act="预览">预览</button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="chunk">
+      <div class="chunk-title">
+        <h2>任务反馈</h2>
+        <span class="status-pill">3项</span>
+      </div>
+      <div class="action-list">
+        <button class="action-card" type="button" data-action="已接受共建任务">
+          <span class="action-icon">接</span>
+          <span><span class="action-title">接受任务</span></span>
+          <span class="action-arrow">›</span>
+        </button>
+        <button class="action-card" type="button" data-action="进入材料提交">
+          <span class="action-icon submit">交</span>
+          <span><span class="action-title">提交材料</span></span>
+          <span class="action-arrow">›</span>
+        </button>
+        <button class="action-card" type="button" data-action="已标记任务完成">
+          <span class="action-icon done">完</span>
+          <span><span class="action-title">完成任务</span></span>
+          <span class="action-arrow">›</span>
+        </button>
+      </div>
+    </section>
+
+    <section class="chunk">
+      <div class="chunk-title">
+        <h2>过往任务</h2>
+      </div>
+      <div class="past-list">
+        <div class="past-row">
+          <div class="past-info"><div class="past-name">岭南童谣资源库共建</div><div class="past-date">2025年12月</div></div>
+          <span class="past-done">已完成</span>
+        </div>
+        <div class="past-row">
+          <div class="past-info"><div class="past-name">沙湾古镇文化主题活动设计</div><div class="past-date">2025年10月</div></div>
+          <span class="past-done">已完成</span>
+        </div>
+        <div class="past-row">
+          <div class="past-info"><div class="past-name">秋季自然观察记录共建</div><div class="past-date">2025年6月</div></div>
+          <span class="past-done">已完成</span>
+        </div>
+      </div>
+    </section>
+    <div style="height:12px"></div>
+  </div>
+  <div class="toast" id="toast">已操作</div>
+</div>
+
+<script>
+(function(){
+  var toast = document.getElementById("toast");
+  var timer = 0;
+  function show(msg){
+    toast.textContent = msg;
+    toast.classList.add("show");
+    clearTimeout(timer);
+    timer = setTimeout(function(){ toast.classList.remove("show"); }, 1400);
+  }
+  document.querySelectorAll("[data-action]").forEach(function(btn){
+    btn.addEventListener("click", function(){ show(btn.getAttribute("data-action")); });
+  });
+  document.querySelectorAll("[data-act]").forEach(function(btn){
+    btn.addEventListener("click", function(e){
+      e.stopPropagation();
+      var fileName = btn.closest(".attach-row").querySelector(".file-name").textContent;
+      show(btn.getAttribute("data-act") + "：" + fileName);
+    });
+  });
+})();
+</script>
+</body></html>

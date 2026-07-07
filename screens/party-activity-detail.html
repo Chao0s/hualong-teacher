@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=390, initial-scale=1, user-scalable=no" />
+<title>党建活动 · 活动介绍</title>
+<style>
+  :root{--bg:#f0f5f5;--surface:#fff;--fg:#1a1916;--muted:#868686;--border:#e0e8e8;--accent:#189b91;--blue:#3388fc;--blue-light:#e8f2fe;--font:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',system-ui,sans-serif}
+  *{box-sizing:border-box;margin:0;padding:0}body{min-height:100vh;display:flex;justify-content:center;background:transparent;font-family:var(--font);color:var(--fg)}.phone{width:390px;height:844px;overflow:hidden;border-radius:40px;background:var(--bg)}.status{display:flex;justify-content:space-between;padding:14px 28px 8px;font-size:13px;font-weight:600}.nav{display:grid;grid-template-columns:40px 1fr 40px;align-items:center;padding:8px 16px 12px}.nav a{color:var(--fg);text-decoration:none;font-size:22px}.nav h1{text-align:center;font-size:17px}.scroll{height:calc(100% - 70px);overflow:auto;padding:0 16px 32px}.scroll::-webkit-scrollbar{display:none}.cover{height:150px;border-radius:16px;background:linear-gradient(135deg,#2563eb,#65b7ff);padding:18px;color:#fff;display:flex;flex-direction:column;justify-content:flex-end}.cover h2{font-size:21px;line-height:1.25}.cover p{margin-top:6px;font-size:12px;opacity:.9}.card{margin-top:12px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:15px}.row{display:grid;grid-template-columns:72px 1fr;gap:8px;font-size:13px;line-height:1.5;margin-bottom:8px}.label{color:var(--muted)}.card h3{font-size:15px;margin-bottom:8px}.card p{font-size:13px;color:#3d3b36;line-height:1.7}.article-photos{display:grid;gap:8px;margin-top:12px}.photo-main{height:118px;border-radius:14px;background:linear-gradient(135deg,var(--blue-light),#f7fbff);display:grid;place-items:center;color:var(--blue);font-weight:800;font-size:13px}.photo-row{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.ph{height:72px;border-radius:12px;background:var(--blue-light);display:grid;place-items:center;color:var(--blue);font-weight:800;font-size:12px}.downloads{display:grid;gap:8px}.download-link{display:grid;grid-template-columns:1fr 44px;align-items:center;gap:10px;padding:10px 11px;border:1px solid var(--border);border-radius:12px;color:var(--fg);text-decoration:none;background:#fbfdfd}.download-title{font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.download-action{font-size:12px;color:var(--blue);font-weight:700;text-align:right}
+</style>
+</head>
+<body><div class="phone">
+  <div class="status"><span>9:41</span><span>WiFi · ▮▮▮</span></div>
+  <header class="nav"><a href="party-activity-list.html">‹</a><h1>活动介绍</h1><span></span></header>
+  <main class="scroll">
+    <section class="cover"><h2 id="title">“红色故事进课堂”主题党日</h2><p id="sub">党建活动 · 多功能室</p></section>
+    <section class="card">
+      <div class="row"><span class="label">活动时间</span><span id="time">06-20 15:00</span></div>
+      <div class="row"><span class="label">组织部门</span><span id="owner">党支部</span></div>
+      <div class="row"><span class="label">参与对象</span><span id="people">党员教师、年级组长</span></div>
+    </section>
+    <section class="card">
+      <h3>图文介绍</h3>
+      <p id="body">党员教师围绕红色故事资源进行课程转化讨论，形成适合大班幼儿理解的故事讲述、角色扮演和美术表达活动。</p>
+      <div class="article-photos">
+        <div class="photo-main">活动现场图</div>
+        <div class="photo-row"><div class="ph">分组研讨</div><div class="ph">成果展示</div></div>
+      </div>
+    </section>
+    <section class="card"><h3>附件下载</h3><div class="downloads" id="downloads"></div></section>
+  </main>
+</div>
+<script>
+var data={
+  "theme-day":["“红色故事进课堂”主题党日","党建活动 · 多功能室","06-20 15:00","党支部","党员教师、年级组长","党员教师围绕红色故事资源进行课程转化讨论，形成适合大班幼儿理解的故事讲述、角色扮演和美术表达活动。"],
+  "volunteer":["党员教师社区志愿服务","党建活动 · 社区广场","06-14 09:30","党支部","党员教师、家委代表","教师参与社区环境整理和亲子阅读角维护，将社区教育资源与园内课程主题进行连接。"],
+  "reading":["青年教师理论读书会","党建活动 · 党建室","06-07 16:20","教研组","青年教师","围绕儿童立场、师德规范与课程观察展开共读，每位教师提交一条教学实践反思。"],
+  "visit":["红色教育基地参访","党建活动 · 区党群中心","05-29 14:00","党支部","全体党员","参访区党群服务中心，整理适合幼儿园课程使用的红色教育素材。"],
+  "class":["党员示范课观摩","党建活动 · 中三班","05-16 10:00","教研组","党员教师、骨干教师","以科学探究活动为例，展示党员教师在课程设计和现场支持中的示范作用。"]
+};
+var attachmentMap={
+  "theme-day":[["活动方案","红色故事进课堂主题党日活动方案.docx","DOCX"],["故事素材包","适合幼儿讲述的红色故事素材.pdf","PDF"],["教师分工表","主题党日现场组织分工表.xlsx","XLSX"]],
+  "volunteer":[["服务记录表","党员教师社区志愿服务记录表.docx","DOCX"],["安全告知书","社区志愿服务安全告知书.pdf","PDF"],["照片归档清单","活动照片与反馈归档清单.xlsx","XLSX"]],
+  "reading":[["共读材料","青年教师理论读书会共读材料.pdf","PDF"],["交流记录模板","读书会观点记录与反思模板.docx","DOCX"],["签到表","青年教师理论读书会签到表.xlsx","XLSX"]],
+  "visit":[["参访通知","红色教育基地参访通知.docx","DOCX"],["学习任务单","红色教育素材课程转化任务单.pdf","PDF"],["总结模板","参访学习总结模板.docx","DOCX"]],
+  "class":[["示范课教案","党员示范课活动教案.docx","DOCX"],["观摩记录表","教师听评课观摩记录表.pdf","PDF"],["评价汇总表","示范课观摩评价汇总.xlsx","XLSX"]]
+};
+var id=new URLSearchParams(location.search).get('id')||'theme-day',d=data[id]||data["theme-day"];
+title.textContent=d[0];sub.textContent=d[1];time.textContent=d[2];owner.textContent=d[3];people.textContent=d[4];body.textContent=d[5];
+var files=attachmentMap[id]||attachmentMap["theme-day"];
+downloads.innerHTML=files.map(function(file){
+  var content=d[0]+"\n\n附件："+file[1]+"\n用途："+file[0]+"\n\n这是原型中的示例下载文件，后续可替换为真实附件地址。";
+  var href="data:text/plain;charset=utf-8,"+encodeURIComponent(content);
+  return '<a class="download-link" href="'+href+'" download="'+file[1].replace(/\.(docx|pdf|xlsx)$/i,'.txt')+'"><span class="download-title">'+file[1]+'</span><span class="download-action">下载</span></a>';
+}).join("");
+</script>
+</body></html>

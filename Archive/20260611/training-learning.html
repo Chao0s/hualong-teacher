@@ -1,0 +1,209 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>培训学习 · 幼儿园教师端</title>
+<style>
+  :root {
+    --bg: #f0f5f5; --surface: #ffffff; --fg: #1a1916; --muted: #868686;
+    --border: #e0e8e8; --accent: #189b91; --success: #17a34a;
+    --font: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', system-ui, sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    display: flex; justify-content: center; align-items: flex-start;
+    min-height: 100vh; background: transparent;
+    font-family: var(--font); color: var(--fg); -webkit-font-smoothing: antialiased;
+  }
+  .phone {
+    width: 390px; min-height: 844px; background: var(--bg);
+    display: flex; flex-direction: column; overflow: hidden;
+    border-radius: 40px;
+  }
+  .status-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 28px 8px; font-size: 13px; font-weight: 600;
+  }
+  .nav-bar {
+    display: flex; align-items: center; gap: 12px;
+    padding: 8px 16px 12px; font-size: 17px; font-weight: 600;
+  }
+  .back-btn {
+    width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; border-radius: 8px; border: none; background: none;
+    font-size: 18px; color: var(--accent); font-family: var(--font);
+    text-decoration: none;
+  }
+  .main-scroll { flex: 1; overflow-y: auto; padding: 0 16px 20px; }
+  .main-scroll::-webkit-scrollbar { display: none; }
+  .sec-title { font-size: 16px; font-weight: 600; margin: 20px 0 10px; }
+
+  .tab-row {
+    display: flex; gap: 4px; margin-bottom: 16px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 3px;
+  }
+  .tab-btn {
+    flex: 1; text-align: center; padding: 8px 0;
+    font-size: 13px; border-radius: 8px;
+    border: none; background: none; font-family: var(--font);
+    color: var(--muted); cursor: pointer; transition: .15s;
+  }
+  .tab-btn.active { background: #e8f5f4; color: #067e76; font-weight: 600; box-shadow: none; }
+
+  .train-card {
+    padding: 13px 14px; background: var(--surface); border-radius: 12px; border: 1px solid var(--border);
+    margin-bottom: 8px; cursor: pointer;
+    box-shadow: none;
+  }
+  .train-card:active { background: #f8f8f6; }
+  .train-header { display: flex; justify-content: space-between; align-items: flex-start; }
+  .train-title { font-size: 14px; font-weight: 500; }
+  .train-meta { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .train-badge {
+    font-size: 10px; padding: 2px 8px; border-radius: 999px; font-weight: 500;
+  }
+  .train-badge.done { background: #d1fae5; color: #065f46; }
+  .train-badge.upcoming { background: #dbeafe; color: #1e40af; }
+  .train-badge.progress { background: #fef3c7; color: #92400e; }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .upload-card {
+    background: var(--surface); border-radius: 14px; padding: 18px;
+    margin-bottom: 12px; border: 1px solid var(--border); box-shadow: none;
+  }
+  .upload-card textarea {
+    width: 100%; min-height: 120px; padding: 12px; border: 1px solid var(--border);
+    border-radius: 10px; font-size: 14px; font-family: var(--font); resize: vertical;
+    background: var(--bg); color: var(--fg);
+  }
+  .btn-primary {
+    width: 100%; padding: 12px; margin-top: 12px;
+    background: var(--accent); color: #fff; border: none; border-radius: 12px;
+    font-size: 15px; font-weight: 500; font-family: var(--font); cursor: pointer;
+  }
+  .btn-primary:active { transform: translateY(1px); opacity: .9; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="status-bar"><span>9:41</span><span style="font-size:12px;opacity:.6;">WiFi · 电池</span></div>
+  <div class="nav-bar">
+    <a class="back-btn" href="training-center.html">←</a>
+    培训学习
+  </div>
+
+  <div class="main-scroll">
+    <div class="tab-row" id="trainingTabs">
+      <button class="tab-btn active" data-panel="internal">园内培训</button>
+      <button class="tab-btn" data-panel="external">外出培训</button>
+      <button class="tab-btn" data-panel="ethics">师德师风</button>
+      <button class="tab-btn" data-panel="upload">心得上传</button>
+    </div>
+
+    <!-- 园内培训 -->
+    <div class="panel active" id="panel-internal">
+      <div class="train-card">
+        <div class="train-header">
+          <div><div class="train-title">幼儿园课程游戏化的理论与实践</div><div class="train-meta">主讲：陈园长 · 6月12日 14:00-16:00 · 多功能厅</div></div>
+          <span class="train-badge upcoming">即将开始</span>
+        </div>
+      </div>
+      <div class="train-card">
+        <div class="train-header">
+          <div><div class="train-title">幼儿行为观察与记录方法</div><div class="train-meta">主讲：李老师 · 5月28日 已结束</div></div>
+          <span class="train-badge done">已完成</span>
+        </div>
+      </div>
+      <div class="train-card">
+        <div class="train-header">
+          <div><div class="train-title">家园沟通技巧与案例分享</div><div class="train-meta">主讲：王主任 · 5月15日 已结束</div></div>
+          <span class="train-badge done">已完成</span>
+        </div>
+      </div>
+      <div class="train-card">
+        <div class="train-header">
+          <div><div class="train-title">新时代幼儿园教师职业行为准则学习</div><div class="train-meta">主讲：张书记 · 4月20日 已结束</div></div>
+          <span class="train-badge done">已完成</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 外出培训 -->
+    <div class="panel" id="panel-external">
+      <div class="train-card">
+        <div class="train-header">
+          <div><div class="train-title">广东省学前教育高质量发展研讨会</div><div class="train-meta">广州 · 7月8-10日 · 报名中</div></div>
+          <span class="train-badge progress">报名中</span>
+        </div>
+      </div>
+      <div class="train-card">
+        <div class="train-header">
+          <div><div class="train-title">番禺区幼儿教师专业技能提升班</div><div class="train-meta">番禺区教师进修学校 · 3月15-17日</div></div>
+          <span class="train-badge done">已完成</span>
+        </div>
+      </div>
+      <div class="train-card">
+        <div class="train-header">
+          <div><div class="train-title">岭南文化融入幼儿园课程专题研修</div><div class="train-meta">深圳 · 2025年11月</div></div>
+          <span class="train-badge done">已完成</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 师德师风 -->
+    <div class="panel" id="panel-ethics">
+      <div class="train-card">
+        <div class="train-header">
+          <div><div class="train-title">新时代幼儿园教师职业行为准则学习</div><div class="train-meta">师德师风 · 剩余 2 课时 · 可下载材料</div></div>
+          <span class="train-badge progress">学习中</span>
+        </div>
+      </div>
+      <div class="train-card">
+        <div class="train-header">
+          <div><div class="train-title">保教工作中的儿童权益保护</div><div class="train-meta">师德师风 · 案例研讨 · 已完成</div></div>
+          <span class="train-badge done">已完成</span>
+        </div>
+      </div>
+      <div class="train-card">
+        <div class="train-header">
+          <div><div class="train-title">家园沟通中的教师边界与规范</div><div class="train-meta">师德师风 · 微课 30 分钟 · 已完成</div></div>
+          <span class="train-badge done">已完成</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 心得上传 -->
+    <div class="panel" id="panel-upload">
+      <div class="upload-card">
+        <div style="font-size:14px;font-weight:500;margin-bottom:8px;">培训心得上传</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">请选择关联的培训活动，填写培训心得或总结</div>
+        <select style="width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;font-size:14px;font-family:var(--font);margin-bottom:12px;background:var(--bg);">
+          <option>幼儿园课程游戏化的理论与实践（6月12日）</option>
+          <option>幼儿行为观察与记录方法（5月28日）</option>
+          <option>家园沟通技巧与案例分享（5月15日）</option>
+          <option>新时代幼儿园教师职业行为准则学习</option>
+        </select>
+        <textarea placeholder="撰写培训心得或学习总结...">通过本次"幼儿行为观察与记录方法"培训，我系统学习了轶事记录法、时间取样法和事件取样法三种常用观察方法。在实操环节中，我结合本班建构区活动进行了观察练习，发现使用标准化的观察记录表能够显著提升记录的客观性和完整性。下一步我计划在班级中建立幼儿行为观察档案，每周至少进行一次系统性观察记录。</textarea>
+        <button class="btn-primary">提交心得</button>
+      </div>
+    </div>
+
+    <div style="height:12px;"></div>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('#trainingTabs .tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#trainingTabs .tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.getElementById('panel-' + btn.dataset.panel).classList.add('active');
+    });
+  });
+</script>
+</body>
+</html>

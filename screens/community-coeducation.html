@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=390, initial-scale=1, user-scalable=no" />
+<title>社区共育 · 家园社共育</title>
+<link rel="stylesheet" href="home-school-common.css" />
+<style>
+  .filter-panel {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 14px;
+    margin-bottom: 12px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .field label {
+    display: block;
+    color: var(--muted);
+    font-size: 11px;
+    margin-bottom: 6px;
+  }
+
+  .field select {
+    width: 100%;
+    height: 38px;
+    border: 1px solid var(--border);
+    border-radius: 11px;
+    background: var(--bg);
+    color: var(--fg);
+    padding: 0 10px;
+    font-size: 13px;
+    outline: none;
+  }
+
+  .feed-list {
+    background: var(--surface);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .moment-card {
+    padding: 14px;
+    display: grid;
+    grid-template-columns: 38px 1fr;
+    gap: 10px;
+  }
+
+  .avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    color: var(--accent-dark);
+    background: var(--accent-light);
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .avatar.green { color: var(--green); background: var(--green-light); }
+  .avatar.amber { color: var(--orange); background: var(--amber-light); }
+  .avatar.blue { color: var(--blue); background: var(--blue-light); }
+
+  .moment-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: flex-start;
+    margin-bottom: 7px;
+  }
+
+  .moment-head strong {
+    font-size: 14px;
+    line-height: 1.25;
+  }
+
+  .moment-head span {
+    flex: 0 0 auto;
+    color: var(--muted);
+    font-size: 11px;
+  }
+
+  .moment-body p {
+    color: #34322e;
+    font-size: 13px;
+    line-height: 1.55;
+    margin-bottom: 10px;
+  }
+
+  .photo-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
+    margin-bottom: 10px;
+  }
+
+  .photo-grid.two { grid-template-columns: repeat(2, 1fr); }
+
+  .feed-photo {
+    aspect-ratio: 1;
+    border-radius: 9px;
+    display: grid;
+    place-items: center;
+    color: rgba(26,25,22,.68);
+    background:
+      linear-gradient(135deg, rgba(24,155,145,.16), rgba(51,136,252,.14)),
+      var(--accent-light);
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .task-note {
+    color: var(--accent-dark);
+    background: var(--accent-light);
+    border-radius: 10px;
+    padding: 8px 10px;
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  .empty {
+    display: none;
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    color: var(--muted);
+    text-align: center;
+    font-size: 13px;
+  }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
+  <div class="nav-bar"><a class="back" href="home-school.html">‹</a><div class="nav-title">社区共育</div><span></span></div>
+  <div class="scroll">
+    <div class="filter-panel" aria-label="社区共育筛选">
+      <div class="field">
+        <label for="timeFilter">时间</label>
+        <select id="timeFilter">
+          <option value="all">全部时间</option>
+          <option value="week">本周</option>
+          <option value="month">本月</option>
+          <option value="older">更早</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="taskFilter">任务名称</label>
+        <select id="taskFilter">
+          <option value="all">全部任务</option>
+          <option value="社区建筑里的纹样">社区建筑里的纹样</option>
+          <option value="社区里的食物来源">社区里的食物来源</option>
+          <option value="我会安全过街">我会安全过街</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="feed-list" id="feedList">
+      <article class="moment-card" data-time="week" data-task="社区建筑里的纹样">
+        <div class="avatar">陈</div>
+        <div class="moment-body">
+          <div class="moment-head"><strong>陈小明家长</strong><span>今天 09:18</span></div>
+          <p>小明在祠堂门口找到木雕花纹，说“像衣服上的花边”。我们一起数了屋檐上的图案，并拍下他最喜欢的一处。</p>
+          <div class="photo-grid">
+            <div class="feed-photo">门楼</div><div class="feed-photo">木雕</div><div class="feed-photo">记录</div>
+          </div>
+          <div class="task-note">任务：社区建筑里的纹样</div>
+        </div>
+      </article>
+
+      <article class="moment-card" data-time="week" data-task="我会安全过街">
+        <div class="avatar green">李</div>
+        <div class="moment-body">
+          <div class="moment-head"><strong>李雨萱家长</strong><span>昨天 18:42</span></div>
+          <p>从幼儿园到公交站，我们让孩子标记红绿灯、斑马线和需要牵手的位置。她能主动提醒大人“这里要等绿灯”。</p>
+          <div class="photo-grid two">
+            <div class="feed-photo">路线图</div><div class="feed-photo">过街点</div>
+          </div>
+          <div class="task-note">任务：我会安全过街</div>
+        </div>
+      </article>
+
+      <article class="moment-card" data-time="month" data-task="社区里的食物来源">
+        <div class="avatar amber">张</div>
+        <div class="moment-body">
+          <div class="moment-head"><strong>张力轩家长</strong><span>6月18日</span></div>
+          <p>孩子观察了鱼档和蔬菜档，能说出“先问价格再付款”。回家后用图画记录了买菜流程。</p>
+          <div class="photo-grid">
+            <div class="feed-photo">鱼档</div><div class="feed-photo">蔬菜</div><div class="feed-photo">流程画</div>
+          </div>
+          <div class="task-note">任务：社区里的食物来源</div>
+        </div>
+      </article>
+
+      <article class="moment-card" data-time="older" data-task="社区建筑里的纹样">
+        <div class="avatar blue">王</div>
+        <div class="moment-body">
+          <div class="moment-head"><strong>王子涵家长</strong><span>6月6日</span></div>
+          <p>子涵注意到祠堂前的石阶很高，会比较“以前的人和现在的小朋友走路有什么不一样”。我们补充了关于礼仪空间的讨论。</p>
+          <div class="photo-grid two">
+            <div class="feed-photo">石阶</div><div class="feed-photo">合照</div>
+          </div>
+          <div class="task-note">任务：社区建筑里的纹样</div>
+        </div>
+      </article>
+    </div>
+
+    <div class="empty" id="emptyState">当前筛选下暂无家长提交内容</div>
+  </div>
+</div>
+
+<script>
+  const timeFilter = document.getElementById('timeFilter');
+  const taskFilter = document.getElementById('taskFilter');
+  const cards = Array.from(document.querySelectorAll('.moment-card'));
+  const emptyState = document.getElementById('emptyState');
+
+  function applyFilters() {
+    const time = timeFilter.value;
+    const task = taskFilter.value;
+    let visible = 0;
+
+    cards.forEach(card => {
+      const matchTime = time === 'all' || card.dataset.time === time;
+      const matchTask = task === 'all' || card.dataset.task === task;
+      const shouldShow = matchTime && matchTask;
+      card.style.display = shouldShow ? 'grid' : 'none';
+      if (shouldShow) visible += 1;
+    });
+
+    emptyState.style.display = visible ? 'none' : 'block';
+  }
+
+  timeFilter.addEventListener('change', applyFilters);
+  taskFilter.addEventListener('change', applyFilters);
+</script>
+</body>
+</html>

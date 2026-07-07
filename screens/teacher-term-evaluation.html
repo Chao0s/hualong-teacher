@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=390, initial-scale=1, user-scalable=no" />
+<title>教师学期评价 · 家园共育</title>
+<link rel="stylesheet" href="home-school-common.css" />
+<style>
+  .section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 20px 0 12px;
+  }
+  .section-head .sec { margin: 0; }
+  .outline-btn {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: 999px;
+    padding: 7px 11px;
+    color: var(--fg);
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .sheet-mask {
+    position: absolute;
+    inset: 0;
+    background: rgba(26,25,22,.32);
+    opacity: 0;
+    pointer-events: none;
+    transition: .2s ease;
+    z-index: 30;
+  }
+  .sheet-mask.show { opacity: 1; pointer-events: auto; }
+  .sheet {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 31;
+    background: var(--surface);
+    border-radius: 24px 24px 0 0;
+    padding: 18px 16px 22px;
+    transform: translateY(105%);
+    transition: .24s ease;
+  }
+  .sheet.show { transform: translateY(0); }
+  .sheet-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .sheet-head h2 { font-size: 17px; }
+  .close {
+    border: 0;
+    background: #f3f7f7;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    color: var(--muted);
+    font-size: 18px;
+  }
+  .check-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border: 1px solid var(--border);
+    border-radius: 13px;
+    padding: 11px 12px;
+    margin-bottom: 8px;
+    background: var(--surface);
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .check-row span {
+    display: block;
+    margin-top: 3px;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 400;
+  }
+  .check-row input { width: 18px; height: 18px; accent-color: var(--accent); }
+  .sheet-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .toast {
+    position: absolute;
+    left: 50%;
+    bottom: 34px;
+    z-index: 40;
+    transform: translateX(-50%) translateY(20px);
+    border-radius: 999px;
+    background: rgba(26,25,22,.88);
+    color: #fff;
+    padding: 9px 14px;
+    font-size: 12px;
+    opacity: 0;
+    pointer-events: none;
+    transition: .22s ease;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
+  <div class="nav-bar"><a class="back" href="growth-record.html">‹</a><div class="nav-title">教师学期评价</div><span></span></div>
+  <div class="scroll">
+    <div class="chunk"><a class="btn primary" href="teacher-term-form.html">添加评价</a></div>
+
+    <div class="section-head">
+      <div class="sec">完成情况</div>
+      <button class="outline-btn" id="openExport">选择操作</button>
+    </div>
+    <div class="table-wrap">
+      <table class="prog-table">
+        <thead><tr><th style="text-align:left">幼儿</th><th>学期评价</th></tr></thead>
+        <tbody>
+          <tr><td class="name">陈小明</td><td><span class="status done">已完成</span></td></tr>
+          <tr><td class="name">李雨萱</td><td><span class="status wait">草稿</span></td></tr>
+          <tr><td class="name">张力轩</td><td><span class="status miss">未完成</span></td></tr>
+          <tr><td class="name">王子涵</td><td><span class="status done">已完成</span></td></tr>
+          <tr><td class="name">赵佳怡</td><td><span class="status miss">未完成</span></td></tr>
+          <tr><td class="name">刘浩然</td><td><span class="status done">已完成</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="sheet-mask" id="sheetMask"></div>
+  <div class="sheet" id="exportSheet" aria-hidden="true">
+    <div class="sheet-head">
+      <h2>选择评价报告</h2>
+      <button class="close" id="closeExport" aria-label="关闭">×</button>
+    </div>
+    <label class="check-row">
+      <div>全选<span>选择当前进度表中的全部幼儿</span></div>
+      <input type="checkbox" id="selectAll">
+    </label>
+    <label class="check-row">
+      <div>陈小明<span>已完成 · 可导出 / 可发送</span></div>
+      <input type="checkbox" class="child-check" checked>
+    </label>
+    <label class="check-row">
+      <div>李雨萱<span>草稿 · 可导出草稿</span></div>
+      <input type="checkbox" class="child-check">
+    </label>
+    <label class="check-row">
+      <div>张力轩<span>未完成 · 仅记录进度</span></div>
+      <input type="checkbox" class="child-check">
+    </label>
+    <label class="check-row">
+      <div>王子涵<span>已完成 · 可导出 / 可发送</span></div>
+      <input type="checkbox" class="child-check" checked>
+    </label>
+    <label class="check-row">
+      <div>赵佳怡<span>未完成 · 仅记录进度</span></div>
+      <input type="checkbox" class="child-check">
+    </label>
+    <label class="check-row">
+      <div>刘浩然<span>已完成 · 可导出 / 可发送</span></div>
+      <input type="checkbox" class="child-check" checked>
+    </label>
+    <div class="sheet-actions">
+      <button class="btn green" id="exportReport">导出报告</button>
+      <button class="btn blue" id="sendParent">发给家长</button>
+    </div>
+  </div>
+  <div class="toast" id="toast">已生成导出任务</div>
+</div>
+<script>
+const sheet = document.getElementById('exportSheet');
+const mask = document.getElementById('sheetMask');
+const toast = document.getElementById('toast');
+const checks = Array.from(document.querySelectorAll('.child-check'));
+const selectAll = document.getElementById('selectAll');
+
+function openSheet() {
+  mask.classList.add('show');
+  sheet.classList.add('show');
+  sheet.setAttribute('aria-hidden', 'false');
+}
+
+function closeSheet() {
+  mask.classList.remove('show');
+  sheet.classList.remove('show');
+  sheet.setAttribute('aria-hidden', 'true');
+}
+
+function showToast(text) {
+  toast.textContent = text;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 1500);
+}
+
+function selectedCount() {
+  return checks.filter(check => check.checked).length;
+}
+
+document.getElementById('openExport').addEventListener('click', openSheet);
+document.getElementById('closeExport').addEventListener('click', closeSheet);
+mask.addEventListener('click', closeSheet);
+
+selectAll.addEventListener('change', () => {
+  checks.forEach(item => item.checked = selectAll.checked);
+});
+
+checks.forEach(item => {
+  item.addEventListener('change', () => {
+    selectAll.checked = checks.every(check => check.checked);
+  });
+});
+
+document.getElementById('exportReport').addEventListener('click', () => {
+  const count = selectedCount();
+  showToast(count ? `已生成 ${count} 份评价报告` : '请至少选择 1 名幼儿');
+  if (count) closeSheet();
+});
+
+document.getElementById('sendParent').addEventListener('click', () => {
+  const count = selectedCount();
+  showToast(count ? `已发送 ${count} 份评价给家长` : '请至少选择 1 名幼儿');
+  if (count) closeSheet();
+});
+</script>
+</body>
+</html>

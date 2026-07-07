@@ -1,0 +1,263 @@
+{
+  "version": "1.0.0",
+  "project": {
+    "name": "化龙电子资源平台三端交互图",
+    "languages": ["html", "css", "javascript", "docx"],
+    "frameworks": ["vanilla-js"],
+    "description": "以教师端、家长端、管理端作为顶层入口，并将教师端按层级自上而下展开的交互页面与知识图谱。",
+    "analyzedAt": "2026-06-21T16:10:00+08:00",
+    "gitCommitHash": "not-a-git-repository"
+  },
+  "nodes": [
+    {
+      "id": "document:化龙电子资源平台_交互跳转逻辑_Mermaid流程图.docx",
+      "type": "document",
+      "name": "原始 Mermaid 跳转逻辑文档",
+      "filePath": "化龙电子资源平台_交互跳转逻辑_Mermaid流程图.docx",
+      "summary": "源文档提供模块和页面跳转材料，但其中首页待办和端口起点需要修正。",
+      "tags": ["source", "docx", "corrected"]
+    },
+    {
+      "id": "file:hualong_interactive_map.html",
+      "type": "file",
+      "name": "三端交互图页面",
+      "filePath": "hualong_interactive_map.html",
+      "summary": "离线 HTML 原型，按教师端、家长端、管理端三个客户端入口展示首页、待办事项和端内页面流转；默认黑色主题，并支持 SVG 画布放大、缩小和重置缩放。",
+      "tags": ["prototype", "frontend", "interaction-map", "dark-theme", "zoom"]
+    },
+    {
+      "id": "concept:teacher-client",
+      "type": "concept",
+      "name": "教师端客户端",
+      "summary": "教师端是主要业务入口，进入教师端首页后再访问资源中心、党建管理、综合协调、教研培训和家园社共育。",
+      "tags": ["client", "teacher"]
+    },
+    {
+      "id": "concept:parent-client",
+      "type": "concept",
+      "name": "家长端客户端",
+      "summary": "家长端进入家长端首页，仅保留通知、亲子任务、在园时光、成长档案和成长册等家园社共育相关页面。",
+      "tags": ["client", "parent"]
+    },
+    {
+      "id": "concept:admin-client",
+      "type": "concept",
+      "name": "管理端客户端",
+      "summary": "管理端进入管理端首页，负责资源审核、共建任务、用户管理、内容管理和数据记录。",
+      "tags": ["client", "admin"]
+    },
+    {
+      "id": "concept:teacher-home-todo",
+      "type": "concept",
+      "name": "教师端首页待办事项",
+      "summary": "教师端首页的待办事项 section 只包含上传资源和待办任务两个入口。",
+      "tags": ["home", "todo", "teacher"]
+    },
+    {
+      "id": "concept:parent-home-todo",
+      "type": "concept",
+      "name": "家长端首页待办事项",
+      "summary": "家长端首页的待办事项 section 只包含通知和亲子任务两个入口。",
+      "tags": ["home", "todo", "parent"]
+    },
+    {
+      "id": "concept:admin-home-todo",
+      "type": "concept",
+      "name": "管理端首页待办事项",
+      "summary": "管理端首页的待办事项 section 只包含资源审核和共建任务两个入口。",
+      "tags": ["home", "todo", "admin"]
+    },
+    {
+      "id": "concept:teacher-pages",
+      "type": "concept",
+      "name": "教师端页面集",
+      "summary": "教师端进入后，第一级页面为首页、党建管理、综合协调、教研培训、资源中心和家园共育；第二级为各页面中的入口，后续层级继续向下展开。",
+      "tags": ["teacher", "pages"]
+    },
+    {
+      "id": "concept:teacher-hierarchical-layout",
+      "type": "concept",
+      "name": "教师端层级式布局",
+      "summary": "教师端 interactive map 使用自上而下的层级布局：客户端在最上方，第一级页面横向并列，第二级入口及后续操作按层级向下排列。",
+      "tags": ["teacher", "layout", "hierarchy"]
+    },
+    {
+      "id": "concept:canvas-controls",
+      "type": "concept",
+      "name": "画布控制",
+      "summary": "页面工具栏提供 SVG interactive map 的放大、缩小和 1:1 重置；缩放通过调整 SVG 渲染尺寸实现，画布容器保留滚动浏览。",
+      "tags": ["canvas", "zoom", "controls"]
+    },
+    {
+      "id": "concept:parent-pages",
+      "type": "concept",
+      "name": "家长端页面集",
+      "summary": "家长端首页之外包含在园时光、成长档案和成长册等端内页面。",
+      "tags": ["parent", "pages"]
+    },
+    {
+      "id": "concept:admin-pages",
+      "type": "concept",
+      "name": "管理端页面集",
+      "summary": "管理端首页之外包含用户管理、内容管理、审核管理、共建任务管理和数据记录。",
+      "tags": ["admin", "pages"]
+    },
+    {
+      "id": "concept:cross-client-flow",
+      "type": "concept",
+      "name": "跨客户端流转",
+      "summary": "教师提交审核、管理端通过或驳回、教师发布家园内容、家长查看和反馈等动作连接不同客户端。",
+      "tags": ["cross-client", "routing", "permissions"]
+    }
+  ],
+  "edges": [
+    {
+      "source": "document:化龙电子资源平台_交互跳转逻辑_Mermaid流程图.docx",
+      "target": "file:hualong_interactive_map.html",
+      "type": "documents",
+      "weight": 0.7
+    },
+    {
+      "source": "file:hualong_interactive_map.html",
+      "target": "concept:teacher-client",
+      "type": "defines_schema",
+      "weight": 0.8
+    },
+    {
+      "source": "file:hualong_interactive_map.html",
+      "target": "concept:canvas-controls",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "file:hualong_interactive_map.html",
+      "target": "concept:parent-client",
+      "type": "defines_schema",
+      "weight": 0.8
+    },
+    {
+      "source": "file:hualong_interactive_map.html",
+      "target": "concept:admin-client",
+      "type": "defines_schema",
+      "weight": 0.8
+    },
+    {
+      "source": "concept:teacher-client",
+      "target": "concept:teacher-home-todo",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "concept:parent-client",
+      "target": "concept:parent-home-todo",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "concept:admin-client",
+      "target": "concept:admin-home-todo",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "concept:teacher-client",
+      "target": "concept:teacher-pages",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "concept:teacher-pages",
+      "target": "concept:teacher-hierarchical-layout",
+      "type": "defines_schema",
+      "weight": 0.8
+    },
+    {
+      "source": "concept:parent-client",
+      "target": "concept:parent-pages",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "concept:admin-client",
+      "target": "concept:admin-pages",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "concept:teacher-pages",
+      "target": "concept:cross-client-flow",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "concept:parent-pages",
+      "target": "concept:cross-client-flow",
+      "type": "depends_on",
+      "weight": 0.6
+    },
+    {
+      "source": "concept:admin-pages",
+      "target": "concept:cross-client-flow",
+      "type": "configures",
+      "weight": 0.6
+    }
+  ],
+  "layers": [
+    {
+      "id": "layer:source",
+      "name": "源材料",
+      "description": "原始 docx 与修正依据。",
+      "nodeIds": ["document:化龙电子资源平台_交互跳转逻辑_Mermaid流程图.docx"]
+    },
+    {
+      "id": "layer:prototype",
+      "name": "页面原型",
+      "description": "三端交互图 HTML 原型。",
+      "nodeIds": ["file:hualong_interactive_map.html", "concept:canvas-controls"]
+    },
+    {
+      "id": "layer:client-entries",
+      "name": "客户端入口",
+      "description": "教师端、家长端、管理端三个顶层客户端入口。",
+      "nodeIds": ["concept:teacher-client", "concept:parent-client", "concept:admin-client"]
+    },
+    {
+      "id": "layer:home-todos",
+      "name": "首页待办规则",
+      "description": "三个客户端首页的待办事项入口定义。",
+      "nodeIds": ["concept:teacher-home-todo", "concept:parent-home-todo", "concept:admin-home-todo"]
+    },
+    {
+      "id": "layer:client-pages",
+      "name": "端内页面",
+      "description": "各客户端首页之后的页面集合和跨客户端流转。",
+      "nodeIds": ["concept:teacher-pages", "concept:teacher-hierarchical-layout", "concept:parent-pages", "concept:admin-pages", "concept:cross-client-flow"]
+    }
+  ],
+  "tour": [
+    {
+      "order": 1,
+      "title": "从客户端开始",
+      "description": "交互图的起点是教师端、家长端和管理端三个客户端，而不是混合首页。",
+      "nodeIds": ["concept:teacher-client", "concept:parent-client", "concept:admin-client"]
+    },
+    {
+      "order": 2,
+      "title": "核对首页待办",
+      "description": "教师端待办为上传资源和待办任务；家长端待办为通知和亲子任务；管理端待办为资源审核和共建任务。",
+      "nodeIds": ["concept:teacher-home-todo", "concept:parent-home-todo", "concept:admin-home-todo"]
+    },
+    {
+      "order": 3,
+      "title": "进入端内页面",
+      "description": "教师端按层级展开：客户端之后是六个一级页面，第二级是各页面入口，后续操作继续向下排列。",
+      "nodeIds": ["concept:teacher-pages", "concept:teacher-hierarchical-layout", "concept:parent-pages", "concept:admin-pages"]
+    },
+    {
+      "order": 4,
+      "title": "处理跨端流转",
+      "description": "跨客户端节点用于表达审核、发布、反馈和查看等不同端之间的跳转关系。",
+      "nodeIds": ["concept:cross-client-flow", "file:hualong_interactive_map.html"]
+    }
+  ]
+}

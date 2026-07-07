@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=390, initial-scale=1, user-scalable=no" />
+<title>发布亲子任务 · 家园共育</title>
+<link rel="stylesheet" href="home-school-common.css" />
+<style>
+  .task-type-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .task-type {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--surface);
+    padding: 12px;
+    text-align: left;
+    color: var(--fg);
+  }
+  .task-type.active {
+    border-color: var(--accent);
+    background: var(--accent-light);
+  }
+  .task-type strong {
+    display: block;
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+  .task-type span {
+    display: block;
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.35;
+  }
+  .form-card { margin-top: 12px; }
+  .submit-note {
+    display: none;
+    margin-top: 10px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: var(--green-light);
+    color: var(--green);
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .submit-note.show { display: block; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
+  <div class="nav-bar"><a class="back" href="parent-tasks.html">‹</a><div class="nav-title">发布新任务</div><span></span></div>
+  <div class="scroll">
+    <div class="sec">任务类型</div>
+    <div class="chunk">
+      <div class="task-type-grid" aria-label="任务类型">
+        <button class="task-type active" type="button" data-type="daily">
+          <strong>日常任务</strong>
+          <span>家庭生活、亲子阅读、观察记录等日常经验。</span>
+        </button>
+        <button class="task-type" type="button" data-type="community">
+          <strong>社区任务</strong>
+          <span>基于社区建筑、见闻或公共空间建立任务。</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="sec">任务信息</div>
+    <div class="chunk form-card">
+      <label for="taskTitle">任务名称</label>
+      <input class="input" id="taskTitle" value="亲子观察：我的家" />
+
+      <label for="taskBackground">任务背景</label>
+      <textarea class="textarea" id="taskBackground">孩子们正在讨论家中的物品、作息和家庭成员分工，适合请家长陪伴幼儿完成一次生活观察。</textarea>
+
+      <label for="taskDetail">任务详情</label>
+      <textarea class="textarea" id="taskDetail">请家长陪同幼儿选择一个家中生活场景，拍摄 1-2 张照片，并用一句话记录孩子的发现。</textarea>
+
+      <button class="btn green sticky-action" type="button" id="submitTask">发布给家长</button>
+      <div class="submit-note" id="submitNote">已生成任务草稿，可在发布前继续调整。</div>
+    </div>
+  </div>
+</div>
+<script>
+  const taskCopy = {
+    daily: {
+      title: '亲子观察：我的家',
+      background: '孩子们正在讨论家中的物品、作息和家庭成员分工，适合请家长陪伴幼儿完成一次生活观察。',
+      detail: '请家长陪同幼儿选择一个家中生活场景，拍摄 1-2 张照片，并用一句话记录孩子的发现。'
+    },
+    community: {
+      title: '社区探访：留耕堂门前的石阶',
+      background: '幼儿园附近的留耕堂保留了传统建筑门楼、石阶和灰塑装饰。孩子可以从真实社区环境中观察建筑、道路和公共空间，理解生活环境与地方文化的关系。',
+      detail: '请家长带幼儿在安全距离内观察留耕堂外观，拍摄一张照片，并请孩子说一说“这个地方和我们幼儿园有什么不同”。'
+    }
+  };
+
+  const typeButtons = document.querySelectorAll('.task-type');
+  const titleInput = document.getElementById('taskTitle');
+  const backgroundInput = document.getElementById('taskBackground');
+  const detailInput = document.getElementById('taskDetail');
+  const submitTask = document.getElementById('submitTask');
+  const submitNote = document.getElementById('submitNote');
+
+  typeButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      const type = button.dataset.type;
+      typeButtons.forEach((item) => item.classList.toggle('active', item === button));
+      titleInput.value = taskCopy[type].title;
+      backgroundInput.value = taskCopy[type].background;
+      detailInput.value = taskCopy[type].detail;
+      submitNote.classList.remove('show');
+    });
+  });
+
+  submitTask.addEventListener('click', () => {
+    submitNote.classList.add('show');
+    submitTask.textContent = '已生成草稿';
+    window.setTimeout(() => {
+      submitTask.textContent = '发布给家长';
+    }, 1400);
+  });
+</script>
+</body>
+</html>

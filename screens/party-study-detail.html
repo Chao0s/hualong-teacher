@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=390, initial-scale=1, user-scalable=no" />
+<title>党建学习 · 文件预览</title>
+<style>
+  :root{--bg:#f0f5f5;--surface:#fff;--fg:#1a1916;--muted:#868686;--border:#e0e8e8;--accent:#189b91;--red:#dc2626;--red-light:#fdecec;--font:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',system-ui,sans-serif}
+  *{box-sizing:border-box;margin:0;padding:0}body{min-height:100vh;display:flex;justify-content:center;background:transparent;font-family:var(--font);color:var(--fg)}button{font:inherit}.phone{width:390px;height:844px;overflow:hidden;position:relative;border-radius:40px;background:var(--bg)}.status{display:flex;justify-content:space-between;padding:14px 28px 8px;font-size:13px;font-weight:600}.nav{display:grid;grid-template-columns:40px 1fr 40px;align-items:center;padding:8px 16px 12px}.nav a{color:var(--fg);text-decoration:none;font-size:22px}.nav h1{text-align:center;font-size:17px}.scroll{height:calc(100% - 70px);overflow:auto;padding:0 16px 32px}.scroll::-webkit-scrollbar{display:none}.doc{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px}.badge{display:inline-flex;padding:5px 9px;border-radius:999px;background:var(--red-light);color:var(--red);font-size:11px;font-weight:700}.doc h2{font-size:20px;line-height:1.28;margin-top:12px}.meta{margin-top:8px;color:var(--muted);font-size:12px;display:flex;gap:8px;flex-wrap:wrap}.preview{margin-top:14px;border:1px solid var(--border);border-radius:12px;background:#fafcfc;padding:14px}.preview h3{font-size:14px;margin-bottom:8px}.preview p{font-size:13px;line-height:1.65;color:#3d3b36;margin-top:8px}.video-box{margin-top:14px;padding-top:12px;border-top:1px solid var(--border)}.video-box h4{font-size:13px;margin-bottom:9px}.video-list{display:grid;gap:8px}.video-link{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:40px;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:#fff;color:var(--fg);text-decoration:none;font-size:13px;font-weight:700}.video-link span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.video-link em{font-style:normal;color:var(--accent);font-size:12px;flex:0 0 auto}.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}.actions button{height:42px;border:0;border-radius:12px;font-weight:700}.primary{background:var(--accent);color:#fff}.secondary{background:#fff;border:1px solid var(--border)!important;color:var(--fg)}.toast{position:absolute;left:50%;bottom:42px;transform:translateX(-50%) translateY(12px);padding:9px 13px;border-radius:999px;background:rgba(26,25,22,.86);color:#fff;font-size:12px;opacity:0;transition:.2s}.toast.show{opacity:1;transform:translateX(-50%)}
+</style>
+</head>
+<body><div class="phone">
+  <div class="status"><span>9:41</span><span>WiFi · ▮▮▮</span></div>
+  <header class="nav"><a href="party-study-list.html">‹</a><h1>文件预览</h1><span></span></header>
+  <main class="scroll"><article class="doc">
+    <span class="badge" id="type">政策文件</span>
+    <h2 id="title">新时代幼儿园党建工作要点</h2>
+    <div class="meta"><span id="date">06-18</span><span id="owner">办公室</span><span>PDF · 2.4MB</span></div>
+    <section class="preview">
+      <h3>文件预览</h3>
+      <p id="p1">围绕党建引领幼儿园高质量发展，明确支部学习、党员示范岗、课程建设协同和家园共育服务四项重点。</p>
+      <p id="p2">本文件用于教师端学习与园内归档，支持在线预览和下载后线下研读。</p>
+      <div class="video-box">
+        <h4>相关视频学习</h4>
+        <div class="video-list" id="videoList"></div>
+      </div>
+    </section>
+    <div class="actions"><button class="primary" type="button" data-action="预览">在线预览</button><button class="secondary" type="button" data-action="下载">下载文件</button></div>
+  </article></main>
+  <div class="toast" id="toast">已打开示例</div>
+</div>
+<script>
+var data={
+  "work-points":["政策文件","新时代幼儿园党建工作要点","06-18","办公室","围绕党建引领幼儿园高质量发展，明确支部学习、党员示范岗、课程建设协同和家园共育服务四项重点。","本文件用于教师端学习与园内归档，支持在线预览和下载后线下研读。"],
+  "discipline":["学习材料","师德师风专题学习材料","06-12","党支部","聚焦教师职业行为规范、儿童保护责任和家园沟通边界，整理近期学习要点。","教师完成学习后，可在后续版本接入学习确认与记录归档。"],
+  "safety":["制度文件","校园安全责任清单学习","06-05","综合组","梳理班级晨检、户外活动、食品安全和离园交接中的责任节点。","适合在年级组会议前快速预览，并下载给班级教师对照执行。"],
+  "meeting":["工作规范","支部会议记录规范","05-28","党支部","说明会议纪要、照片材料、签到表和学习反馈的归档要求。","后续可对接上传附件和审核流程。"],
+  "archive":["归档要求","党员学习档案整理要求","05-21","办公室","规定学习文件命名、分类、责任人和提交时间。","用于统一园内党建学习材料的电子化沉淀。"]
+};
+var id=new URLSearchParams(location.search).get('id')||'work-points',d=data[id]||data["work-points"];
+type.textContent=d[0];title.textContent=d[1];date.textContent=d[2];owner.textContent=d[3];p1.textContent=d[4];p2.textContent=d[5];
+var videos={
+  "work-points":[["党建引领教育高质量发展","https://www.12371.cn/special/xxzd/"],["新闻联播：教育强国相关报道","https://tv.cctv.com/lm/xwlb/"]],
+  "discipline":[["师德师风专题学习","https://www.xuexi.cn/"],["榜样人物学习视频","https://www.12371.cn/special/by/"]],
+  "safety":[["校园安全公开课","https://tv.cctv.com/"],["安全教育专题视频","https://www.xuexi.cn/"]],
+  "meeting":[["基层党建工作案例","https://www.12371.cn/"],["会议记录规范学习","https://www.xuexi.cn/"]],
+  "archive":[["党员教育管理学习","https://www.12371.cn/special/xxzd/"],["资料归档与组织生活学习","https://www.xuexi.cn/"]]
+};
+var list=document.getElementById('videoList'),items=videos[id]||videos["work-points"];
+list.innerHTML=items.map(function(item){return '<a class="video-link" href="'+item[1]+'" target="_blank" rel="noopener noreferrer"><span>'+item[0]+'</span><em>外部观看 ›</em></a>'}).join('');
+var toast=document.getElementById('toast'),timer;document.querySelectorAll('[data-action]').forEach(function(b){b.onclick=function(){toast.textContent=b.dataset.action+'：示例反馈，后续接入真实附件';toast.classList.add('show');clearTimeout(timer);timer=setTimeout(function(){toast.classList.remove('show')},1200)}});
+</script>
+</body></html>

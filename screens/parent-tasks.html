@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=390, initial-scale=1, user-scalable=no" />
+<title>亲子任务 · 家园共育</title>
+<link rel="stylesheet" href="home-school-common.css" />
+<style>
+  .publish-card {
+    min-height: 88px;
+    border-radius: 16px;
+    background: var(--surface);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+  }
+  .publish-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 15px;
+    background: var(--accent-light);
+    color: var(--accent-dark);
+    display: grid;
+    place-items: center;
+    font-size: 22px;
+    font-weight: 600;
+    flex: 0 0 auto;
+  }
+  .publish-main { flex: 1; min-width: 0; }
+  .publish-title { font-size: 15px; font-weight: 700; }
+  .publish-meta { color: var(--muted); font-size: 12px; margin-top: 5px; line-height: 1.4; }
+  .type-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    height: 22px;
+    padding: 0 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent-dark);
+    background: var(--accent-light);
+  }
+  .type-pill.community {
+    color: var(--green);
+    background: var(--green-light);
+  }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
+  <div class="nav-bar"><a class="back" href="home-school.html">‹</a><div class="nav-title">亲子任务</div><span></span></div>
+  <div class="scroll">
+    <div class="sec">发布新任务</div>
+    <a class="publish-card" href="parent-task-publish.html">
+      <div class="publish-icon">＋</div>
+      <div class="publish-main">
+        <div class="publish-title">发布新任务</div>
+        <div class="publish-meta">进入后选择日常任务或社区任务，并填写任务背景与任务详情。</div>
+      </div>
+      <div class="chev">›</div>
+    </a>
+
+    <div class="sec">历史任务</div>
+    <a class="list-card" href="parent-task-detail.html">
+      <div class="mark green">社</div>
+      <div class="list-main"><div class="list-title">寻找社区里的老建筑</div><div class="list-meta"><span class="type-pill community">社区</span> 6月8日发布 · 28 人中 23 人完成</div></div>
+      <div class="chev">›</div>
+    </a>
+    <a class="list-card" href="parent-task-detail.html">
+      <div class="mark">日</div>
+      <div class="list-main"><div class="list-title">和家人一起做端午香囊</div><div class="list-meta"><span class="type-pill">日常</span> 6月1日发布 · 28 人中 26 人完成</div></div>
+      <div class="chev">›</div>
+    </a>
+    <a class="list-card" href="parent-task-detail.html">
+      <div class="mark amber">社</div>
+      <div class="list-main"><div class="list-title">周末观察社区榕树</div><div class="list-meta"><span class="type-pill community">社区</span> 5月25日发布 · 28 人中 21 人完成</div></div>
+      <div class="chev">›</div>
+    </a>
+    <a class="list-card" href="parent-task-detail.html">
+      <div class="mark blue">日</div>
+      <div class="list-main"><div class="list-title">亲子阅读：我的一天</div><div class="list-meta"><span class="type-pill">日常</span> 5月18日发布 · 28 人中 28 人完成</div></div>
+      <div class="chev">›</div>
+    </a>
+  </div>
+</div>
+</body>
+</html>

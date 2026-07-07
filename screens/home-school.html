@@ -1,0 +1,106 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=390, initial-scale=1, user-scalable=no" />
+<title>家园社共育 · 幼儿园教师端</title>
+<link rel="stylesheet" href="home-school-common.css" />
+<style>
+  .home-progress-wrap {
+    overflow-x: hidden;
+  }
+
+  .home-progress-table.prog-table.wide {
+    width: 100%;
+    min-width: 0;
+    table-layout: fixed;
+  }
+
+  .home-progress-table th,
+  .home-progress-table td {
+    padding: 9px 2px;
+    font-size: 11px;
+  }
+
+  .home-progress-table th {
+    font-size: 10px;
+  }
+
+  .home-progress-table th:first-child,
+  .home-progress-table td:first-child {
+    width: 56px;
+    padding-left: 8px;
+  }
+
+  .home-progress-table .name {
+    font-size: 11px;
+  }
+
+  .home-progress-table .status {
+    display: inline-block;
+    max-width: 58px;
+    font-size: 10px;
+    line-height: 1.25;
+    white-space: normal;
+  }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
+  <div class="nav-bar"><span></span><div class="nav-title">家园社共育</div><span></span></div>
+  <div class="scroll">
+    <div class="banner">
+      <div class="eyebrow">大一班 · 本周家园协同</div>
+      <h1>家园社共育进度一页掌握</h1>
+      <p>集中处理在园时光、亲子任务、成长档案与社区共育提交状态。</p>
+    </div>
+
+    <div class="sec">快捷入口</div>
+    <div class="entry-grid">
+      <a class="entry-card" href="home-school-moments.html"><div class="entry-icon">时光</div><div class="entry-label">在园时光</div></a>
+      <a class="entry-card" href="parent-tasks.html"><div class="entry-icon">任务</div><div class="entry-label">亲子任务</div></a>
+      <a class="entry-card" href="growth-record.html"><div class="entry-icon">档案</div><div class="entry-label">成长档案</div></a>
+      <a class="entry-card" href="community-coeducation.html"><div class="entry-icon">社区</div><div class="entry-label">社区共育</div></a>
+    </div>
+
+    <div class="sec">完成度汇总</div>
+    <div class="metric-row" style="margin-bottom:8px">
+      <div class="metric"><strong>28</strong><span>班级幼儿</span></div>
+      <div class="metric"><strong>84%</strong><span>平均完成</span></div>
+      <div class="metric"><strong style="color:var(--amber)">6</strong><span>待提醒</span></div>
+    </div>
+    <div class="table-wrap home-progress-wrap">
+      <table class="prog-table wide home-progress-table">
+        <thead>
+          <tr>
+            <th style="text-align:left">幼儿</th>
+            <th>在园时光</th>
+            <th>亲子任务</th>
+            <th>成长档案</th>
+            <th>成长册</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="name">陈小明</td><td><span class="status done">已完成</span></td><td><span class="status done">已完成</span></td><td><span class="status done">已完成</span></td><td><span class="status done">可生成</span></td></tr>
+          <tr><td class="name">李雨萱</td><td><span class="status done">已完成</span></td><td><span class="status done">已完成</span></td><td><span class="status wait">进行中</span></td><td><span class="status wait">缺评语</span></td></tr>
+          <tr><td class="name">张力轩</td><td><span class="status done">已完成</span></td><td><span class="status miss">未提交</span></td><td><span class="status wait">进行中</span></td><td><span class="status miss">不可生成</span></td></tr>
+          <tr><td class="name">王子涵</td><td><span class="status done">已完成</span></td><td><span class="status done">已完成</span></td><td><span class="status done">已完成</span></td><td><span class="status done">可生成</span></td></tr>
+          <tr><td class="name">赵佳怡</td><td><span class="status miss">缺第2次</span></td><td><span class="status miss">未提交</span></td><td><span class="status done">已完成</span></td><td><span class="status wait">待补图</span></td></tr>
+          <tr><td class="name">刘浩然</td><td><span class="status done">已完成</span></td><td><span class="status done">已完成</span></td><td><span class="status wait">进行中</span></td><td><span class="status miss">不可生成</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="height:12px"></div>
+  </div>
+
+  <div class="tabs">
+    <a href="home.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span>首页</span></a>
+    <a href="school-affairs.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 15.4 7.2 18l.9-5.4-3.9-3.8 5.4-.8L12 3z"/></svg><span>党建管理</span></a>
+    <a href="comprehensive-coordination.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M4 12h16M4 17h16"/><circle cx="8" cy="7" r="1.5" fill="currentColor"/><circle cx="16" cy="12" r="1.5" fill="currentColor"/><circle cx="11" cy="17" r="1.5" fill="currentColor"/></svg><span>综合协调</span></a>
+    <a href="training-center.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5.5A2.5 2.5 0 016.5 3H20v16H6.5A2.5 2.5 0 014 16.5v-11z"/><path d="M8 7h8M8 11h8M8 15h5"/></svg><span>教研培训</span></a>
+    <a class="on" href="home-school.html"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg><span>家园共育</span></a>
+  </div>
+</div>
+</body>
+</html>

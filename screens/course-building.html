@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=390, initial-scale=1, user-scalable=no" />
+<title>课程建设 · 教研培训部</title>
+<style>
+  :root {
+    --bg:#f0f5f5; --surface:#fff; --fg:#1a1916; --muted:#868686; --border:#e0e8e8;
+    --accent:#189b91; --accent-dark:#067e76; --accent-light:#e8f5f4;
+    --green:#4b9a5a; --green-light:#eaf5ed; --amber:#feaf06; --amber-light:#fff7e3;
+    --font:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',system-ui,sans-serif;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{display:flex;justify-content:center;min-height:100vh;background:transparent;font-family:var(--font);color:var(--fg);-webkit-font-smoothing:antialiased}
+  .phone{width:390px;height:844px;background:var(--bg);display:flex;flex-direction:column;overflow:hidden;border-radius:40px;position:relative}
+  .status-bar{display:flex;justify-content:space-between;align-items:center;padding:14px 28px 8px;font-size:13px;font-weight:600}
+  .nav-bar{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;padding:8px 12px 12px}
+  .nav-bar a{display:grid;place-items:center;width:36px;height:36px;color:var(--fg);text-decoration:none}
+  .nav-title{text-align:center;font-size:17px;font-weight:600}
+  .mini-menu{position:absolute;top:43px;right:18px;width:74px;height:30px;border-radius:999px;border:1px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:space-around;font-size:14px;z-index:20}
+  .scroll{flex:1;overflow-y:auto;padding:0 16px 28px}.scroll::-webkit-scrollbar{display:none}
+  .hero{min-height:128px;border:1px solid var(--border);border-radius:18px;padding:18px;background:linear-gradient(135deg,#0f766e,#189b91,#49c3b7);color:#fff;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden;position:relative;text-decoration:none}
+  .hero:after{content:"";position:absolute;right:-28px;top:-36px;width:132px;height:132px;border-radius:50%;border:18px solid rgba(255,255,255,.18)}
+  .hero h1{font-size:22px;line-height:1.2;font-weight:750;position:relative;z-index:1}.hero p{font-size:12px;line-height:1.5;margin-top:7px;color:rgba(255,255,255,.9);position:relative;z-index:1}.hero .more{position:relative;z-index:1;margin-top:12px;font-size:12px;font-weight:700;color:#fff}
+  .sec{font-size:16px;font-weight:700;margin:20px 0 10px}
+  .chunk{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:12px}
+  .start{display:flex;align-items:center;justify-content:space-between;gap:12px}.start h2{font-size:16px;margin-bottom:6px}.start p{font-size:12px;color:var(--muted);line-height:1.5}
+  .btn{border:0;border-radius:999px;background:var(--accent);color:#fff;padding:9px 14px;font-size:13px;font-weight:700;text-decoration:none;white-space:nowrap}
+  .progress-row{display:flex;align-items:center;justify-content:space-between;font-size:13px;margin-bottom:10px}.percent{font-weight:800;color:var(--accent-dark)}
+  .bar{height:9px;border-radius:999px;background:var(--accent-light);overflow:hidden}.bar span{display:block;height:100%;width:68%;background:var(--accent)}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}.stat{border:1px solid var(--border);border-radius:12px;padding:10px;text-align:center}.num{font-size:18px;font-weight:800}.label{font-size:11px;color:var(--muted);margin-top:3px}
+  .assessment-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .assessment-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px;text-decoration:none;color:var(--fg);min-height:106px;display:flex;flex-direction:column;justify-content:space-between}
+  .assessment-card h3{font-size:15px;font-weight:800}.assessment-card p{font-size:11px;color:var(--muted);line-height:1.45;margin-top:6px}
+  .ratio{font-size:24px;font-weight:850;color:var(--accent-dark);letter-spacing:.2px}
+  .arrow{align-self:flex-end;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--accent-light);color:var(--accent-dark);font-size:16px;font-weight:800}
+  .section-head{display:flex;align-items:center;justify-content:space-between;margin:20px 0 10px}.section-head .sec{margin:0}
+  .outline-btn{border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:7px 11px;font-size:12px;font-weight:700;color:var(--fg)}
+  .student{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:11px 12px;margin-bottom:8px}
+  .name{font-size:14px;font-weight:700}.sub{font-size:11px;color:var(--muted);margin-top:3px}.pill{font-size:11px;border-radius:999px;padding:4px 8px;font-weight:700}
+  .done{background:var(--green-light);color:var(--green)}.draft{background:var(--amber-light);color:#a35e00}.miss{background:#fff0ed;color:#e05243}
+  .small-btn{border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:5px 9px;font-size:11px;color:var(--fg);text-decoration:none}
+  .sheet-mask{position:absolute;inset:0;background:rgba(26,25,22,.32);opacity:0;pointer-events:none;transition:.2s ease;z-index:30}.sheet-mask.show{opacity:1;pointer-events:auto}
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--surface);border-radius:24px 24px 0 0;padding:18px 16px 22px;transform:translateY(105%);transition:.24s ease;z-index:31}.sheet.show{transform:translateY(0)}
+  .sheet-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}.sheet-head h2{font-size:17px}.close{border:0;background:#f3f7f7;border-radius:50%;width:30px;height:30px;font-size:18px;color:var(--muted)}
+  .check-row{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--border);border-radius:13px;padding:11px 12px;margin-bottom:8px;font-size:14px;font-weight:700}.check-row span{font-size:11px;color:var(--muted);font-weight:500;margin-top:3px;display:block}.check-row input{width:18px;height:18px;accent-color:var(--accent)}
+  .sheet-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}.ghost{border:1px solid var(--border);background:#fff;color:var(--fg)}
+  .toast{position:absolute;left:50%;bottom:34px;transform:translateX(-50%) translateY(20px);background:rgba(26,25,22,.88);color:#fff;border-radius:999px;padding:9px 14px;font-size:12px;opacity:0;pointer-events:none;transition:.22s ease;z-index:40}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .article{background:var(--surface);border:1px solid var(--border);border-radius:20px;overflow:hidden;margin-bottom:14px}
+  .article-cover{min-height:164px;padding:22px 18px;background:
+    linear-gradient(135deg,rgba(15,118,110,.92),rgba(24,155,145,.82)),
+    radial-gradient(circle at 82% 12%,rgba(255,255,255,.28),transparent 34%);
+    color:#fff;display:flex;flex-direction:column;justify-content:flex-end;position:relative}
+  .article-cover:before{content:"";position:absolute;right:18px;top:18px;width:78px;height:78px;border-radius:50%;border:14px solid rgba(255,255,255,.16)}
+  .article-kicker{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.8);position:relative;z-index:1}
+  .article-cover h1{font-size:24px;line-height:1.18;margin-top:8px;font-weight:850;position:relative;z-index:1}
+  .article-cover p{font-size:12px;line-height:1.55;margin-top:8px;color:rgba(255,255,255,.9);position:relative;z-index:1}
+  .article-body{padding:18px 16px 16px}
+  .article-lead{font-size:14px;line-height:1.85;color:#263333;font-weight:500}
+  .article h2{font-size:17px;margin:20px 0 9px;line-height:1.35}
+  .article h2:before{content:"";display:inline-block;width:4px;height:16px;border-radius:999px;background:var(--accent);margin-right:8px;vertical-align:-2px}
+  .caption{font-size:11px;line-height:1.5;color:var(--muted);margin-top:8px}
+  .flow-chart{margin-top:12px;border:1px solid var(--border);border-radius:18px;background:#f8fbfb;padding:14px}
+  .flow-main{border-radius:16px;background:var(--accent-light);color:var(--accent-dark);font-size:16px;font-weight:850;text-align:center;padding:14px 10px}
+  .flow-row{display:grid;grid-template-columns:1fr;gap:8px;margin-top:10px}
+  .flow-item{border:1px solid var(--border);border-radius:14px;background:#fff;padding:11px 12px}
+  .flow-item strong{display:block;font-size:14px;margin-bottom:4px}.flow-item span{display:block;font-size:11px;line-height:1.45;color:var(--muted)}
+  .domain-list{display:grid;gap:10px;margin-top:10px}
+  .domain-item{display:grid;grid-template-columns:36px 1fr;gap:10px;align-items:start;padding:12px;border:1px solid var(--border);border-radius:15px;background:#fbfdfd}
+  .domain-mark{width:36px;height:36px;border-radius:12px;background:var(--accent-light);color:var(--accent-dark);display:grid;place-items:center;font-size:18px;font-weight:850}
+  .domain-item h3{font-size:14px;margin-bottom:3px}.domain-item p{font-size:12px;line-height:1.6;color:#596363}
+  .image-panel{margin-top:12px;border-radius:16px;border:1px solid #cfe0de;background:linear-gradient(135deg,#edf8f6,#fff);padding:14px}
+  .image-panel-title{font-size:13px;font-weight:800;color:var(--accent-dark);margin-bottom:10px}
+  .mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .mini-grid span{border:1px solid var(--border);border-radius:12px;background:#fff;padding:10px 8px;font-size:12px;font-weight:750;text-align:center;color:#425050}
+  .intro{font-size:13px;line-height:1.7;color:#3b4545}
+  .figure{margin-top:12px;border:1px solid var(--border);border-radius:16px;background:#f8fbfb;padding:14px}
+  .system-map{display:grid;grid-template-columns:1fr;gap:10px;margin-top:12px}
+  .node{border:1px solid var(--border);border-radius:14px;background:#fff;padding:11px;text-align:center}
+  .node.main{background:var(--accent-light);border-color:#b7deda;color:var(--accent-dark);font-weight:800}
+  .node strong{display:block;font-size:14px;margin-bottom:4px}.node span{font-size:11px;color:var(--muted);line-height:1.45}
+  .category-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .category-card{border:1px solid var(--border);border-radius:14px;background:var(--surface);padding:12px;min-height:102px}
+  .category-card h3{font-size:15px;margin-bottom:6px}.category-card p{font-size:12px;line-height:1.55;color:var(--muted)}
+  .image-block{height:126px;border-radius:14px;border:1px dashed #b9cecc;background:linear-gradient(135deg,#e8f5f4,#fff);display:grid;place-items:center;color:var(--accent-dark);font-size:13px;font-weight:750;margin-top:12px}
+  .file-list{display:grid;gap:9px}.file-row{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--border);border-radius:13px;background:#fff;padding:11px 12px}
+  .file-name{font-size:13px;font-weight:700;line-height:1.35}.download{border:1px solid var(--accent);color:var(--accent-dark);background:var(--accent-light);border-radius:999px;padding:6px 10px;font-size:12px;font-weight:750;text-decoration:none;white-space:nowrap}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
+  <div class="mini-menu"><span>•••</span><span>○</span></div>
+  <div class="nav-bar">
+    <a href="training-center.html" aria-label="返回教研培训部"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></a>
+    <div class="nav-title">课程建设</div>
+    <span></span>
+  </div>
+  <div class="scroll">
+    <section class="article" aria-label="课程体系建设图文介绍">
+      <div class="article-cover">
+        <div class="article-kicker">Course System</div>
+        <h1>课程体系建设</h1>
+        <p>以幼儿真实生活经验为起点，围绕衣、食、住、行、艺五个范畴组织园本课程。</p>
+      </div>
+      <div class="article-body">
+        <p class="article-lead">课程建设从“儿童在本地如何生活”出发，把社区资源、家庭经验和幼儿园活动整合为连续的学习线索。教师围绕五类主题组织观察、探究、表达和创作，让儿童在真实情境中发展健康、语言、社会、科学与艺术经验。</p>
+
+        <div class="image-panel">
+          <div class="image-panel-title">办园理念图文版面</div>
+          <div class="mini-grid">
+            <span>真实生活</span>
+            <span>本土资源</span>
+            <span>儿童经验</span>
+            <span>课程转化</span>
+          </div>
+          <p class="caption">图文内容用于呈现幼儿园课程从生活情境进入活动设计的路径。</p>
+        </div>
+
+        <h2>课程体系架构</h2>
+        <p class="intro">课程体系采用“生活范畴 → 主题资源 → 活动案例 → 儿童经验”的组织方式，避免将资源停留在展示层面。</p>
+        <div class="flow-chart">
+          <div class="flow-main">衣食住行艺课程体系</div>
+          <div class="flow-row">
+            <div class="flow-item"><strong>生活范畴</strong><span>衣 / 食 / 住 / 行 / 艺</span></div>
+            <div class="flow-item"><strong>主题资源</strong><span>社区建筑、地方饮食、非遗技艺、出行经验</span></div>
+            <div class="flow-item"><strong>活动案例</strong><span>小中大班分层活动与五大领域转化</span></div>
+            <div class="flow-item"><strong>儿童经验</strong><span>观察、表达、探究、合作、审美与创造</span></div>
+          </div>
+        </div>
+
+        <h2>五个课程范畴</h2>
+        <div class="domain-list">
+          <div class="domain-item"><div class="domain-mark">衣</div><div><h3>衣：材料、纹样与审美表达</h3><p>从香云纱、广绣纹样、服饰材料出发，连接审美表达与材料探究。</p></div></div>
+          <div class="domain-item"><div class="domain-mark">食</div><div><h3>食：地方饮食与家庭经验</h3><p>围绕双皮奶、节气饮食、厨房工具，生成测量、记录和家庭访谈活动。</p></div></div>
+          <div class="domain-item"><div class="domain-mark">住</div><div><h3>住：建筑空间与社区关系</h3><p>以留耕堂、宗祠、街巷空间为线索，引导幼儿观察建筑和社区关系。</p></div></div>
+          <div class="domain-item"><div class="domain-mark">行</div><div><h3>行：出行规则与空间经验</h3><p>从龙舟、步行路线、安全过街切入，发展规则意识和空间经验。</p></div></div>
+          <div class="domain-item"><div class="domain-mark">艺</div><div><h3>艺：表演、节奏与创作</h3><p>结合醒狮、粤语童谣、民间工艺，支持儿童表演、节奏和创作表达。</p></div></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="sec">附件下载</div>
+    <section class="chunk">
+      <div class="file-list">
+        <div class="file-row"><span class="file-name">衣食住行艺课程体系总图.docx</span><a class="download" href="data:text/plain;charset=utf-8,%E8%AF%BE%E7%A8%8B%E4%BD%93%E7%B3%BB%E6%80%BB%E5%9B%BE" download="衣食住行艺课程体系总图.docx">下载</a></div>
+        <div class="file-row"><span class="file-name">五类主题资源梳理表.xlsx</span><a class="download" href="data:text/plain;charset=utf-8,%E4%BA%94%E7%B1%BB%E4%B8%BB%E9%A2%98%E8%B5%84%E6%BA%90%E6%A2%B3%E7%90%86%E8%A1%A8" download="五类主题资源梳理表.xlsx">下载</a></div>
+        <div class="file-row"><span class="file-name">课程活动案例模板.docx</span><a class="download" href="data:text/plain;charset=utf-8,%E8%AF%BE%E7%A8%8B%E6%B4%BB%E5%8A%A8%E6%A1%88%E4%BE%8B%E6%A8%A1%E6%9D%BF" download="课程活动案例模板.docx">下载</a></div>
+      </div>
+    </section>
+  </div>
+</div>
+</body>
+</html>

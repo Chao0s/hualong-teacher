@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=390, initial-scale=1, user-scalable=no" />
+<title>成长册 · 家园共育</title>
+<link rel="stylesheet" href="home-school-common.css" />
+</head>
+<body>
+<div class="phone">
+  <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
+  <div class="nav-bar"><a class="back" href="growth-record.html">‹</a><div class="nav-title">成长册</div><span></span></div>
+  <div class="scroll">
+    <div class="sec">成长册内容</div>
+    <div class="chunk">
+      <div class="check-grid" id="bookChecks">
+        <label class="check-card"><input type="checkbox" checked data-col="time">在园时光</label>
+        <label class="check-card"><input type="checkbox" checked data-col="task">亲子活动</label>
+        <label class="check-card"><input type="checkbox" checked data-col="parent">家长动态</label>
+        <label class="check-card"><input type="checkbox" checked data-col="intro">园所介绍</label>
+        <label class="check-card"><input type="checkbox" checked data-col="eval">发展评估</label>
+        <label class="check-card"><input type="checkbox" checked data-col="comment">幼儿评语</label>
+        <label class="check-card"><input type="checkbox" checked data-col="health">体检数据</label>
+      </div>
+    </div>
+
+    <div class="chunk">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:15px;font-weight:600">班级生成进度</div>
+          <div class="hint" style="margin-top:4px">依据已勾选内容判断是否可生成</div>
+        </div>
+        <strong id="overall" style="color:var(--accent);font-size:20px">76%</strong>
+      </div>
+      <div class="progress-line"><div class="bar"><span id="overallBar" style="width:76%"></span></div></div>
+    </div>
+
+    <div class="sec">生成检查表</div>
+    <div class="table-wrap">
+      <table class="prog-table wide" id="bookTable">
+        <thead>
+          <tr>
+            <th style="text-align:left">幼儿</th>
+            <th data-key="time">在园时光</th>
+            <th data-key="task">亲子活动</th>
+            <th data-key="parent">家长动态</th>
+            <th data-key="intro">园所介绍</th>
+            <th data-key="eval">发展评估</th>
+            <th data-key="comment">幼儿评语</th>
+            <th data-key="health">体检数据</th>
+            <th>结果</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="name">陈小明</td><td data-key="time"><span class="status done">完成</span></td><td data-key="task"><span class="status done">完成</span></td><td data-key="parent"><span class="status done">完成</span></td><td data-key="intro"><span class="status done">完成</span></td><td data-key="eval"><span class="status done">完成</span></td><td data-key="comment"><span class="status done">完成</span></td><td data-key="health"><span class="status done">完成</span></td><td><span class="status done">可生成</span></td></tr>
+          <tr><td class="name">李雨萱</td><td data-key="time"><span class="status done">完成</span></td><td data-key="task"><span class="status done">完成</span></td><td data-key="parent"><span class="status done">完成</span></td><td data-key="intro"><span class="status done">完成</span></td><td data-key="eval"><span class="status wait">缺月评</span></td><td data-key="comment"><span class="status wait">草稿</span></td><td data-key="health"><span class="status done">完成</span></td><td><span class="status wait">待补</span></td></tr>
+          <tr><td class="name">张力轩</td><td data-key="time"><span class="status done">完成</span></td><td data-key="task"><span class="status miss">缺少</span></td><td data-key="parent"><span class="status wait">待补</span></td><td data-key="intro"><span class="status done">完成</span></td><td data-key="eval"><span class="status wait">缺月评</span></td><td data-key="comment"><span class="status wait">草稿</span></td><td data-key="health"><span class="status done">完成</span></td><td><span class="status miss">不可生成</span></td></tr>
+          <tr><td class="name">王子涵</td><td data-key="time"><span class="status done">完成</span></td><td data-key="task"><span class="status done">完成</span></td><td data-key="parent"><span class="status done">完成</span></td><td data-key="intro"><span class="status done">完成</span></td><td data-key="eval"><span class="status done">完成</span></td><td data-key="comment"><span class="status done">完成</span></td><td data-key="health"><span class="status done">完成</span></td><td><span class="status done">可生成</span></td></tr>
+          <tr><td class="name">赵佳怡</td><td data-key="time"><span class="status miss">缺图</span></td><td data-key="task"><span class="status miss">缺少</span></td><td data-key="parent"><span class="status wait">待补</span></td><td data-key="intro"><span class="status done">完成</span></td><td data-key="eval"><span class="status done">完成</span></td><td data-key="comment"><span class="status wait">草稿</span></td><td data-key="health"><span class="status done">完成</span></td><td><span class="status miss">不可生成</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<script>
+  const checks = document.querySelectorAll('[data-col]');
+  const overall = document.getElementById('overall');
+  const bar = document.getElementById('overallBar');
+  function syncColumns() {
+    const active = Array.from(checks).filter(item => item.checked).map(item => item.dataset.col);
+    document.querySelectorAll('#bookTable [data-key]').forEach(cell => {
+      cell.style.display = active.includes(cell.dataset.key) ? '' : 'none';
+    });
+    const value = Math.max(62, Math.round(58 + active.length * 2.6));
+    overall.textContent = value + '%';
+    bar.style.width = value + '%';
+  }
+  checks.forEach(item => item.addEventListener('change', syncColumns));
+  syncColumns();
+</script>
+</body>
+</html>

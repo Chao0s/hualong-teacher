@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1, user-scalable=no">
+<title>综合协调文件列表 · 幼儿园教师端</title>
+<style>
+  :root {
+    --bg: #f0f5f5; --surface: #ffffff; --fg: #1a1916;
+    --muted: #868686; --border: #e0e8e8; --accent: #189b91;
+    --accent-dark: #067e76; --accent-light: #e8f5f4;
+    --green: #4b9a5a; --green-light: #eaf5ed;
+    --amber: #feaf06; --amber-light: #fff7e3;
+    --orange: #f6762f; --orange-light: #fff0e7;
+    --blue: #3388fc; --blue-light: #e8f2fe;
+    --red: #dc2626; --red-light: #fdecec;
+    --font: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', system-ui, sans-serif;
+    --radius: 12px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; background: transparent; font-family: var(--font); color: var(--fg); -webkit-font-smoothing: antialiased; }
+  .phone { width: 390px; height: 844px; background: var(--bg); display: flex; flex-direction: column; overflow: hidden; border-radius: 40px; position: relative; }
+  .status-bar { display: flex; justify-content: space-between; align-items: center; padding: 14px 28px 8px; font-size: 13px; font-weight: 600; background: var(--bg); }
+  .nav-bar { position: relative; display: flex; align-items: center; justify-content: center; padding: 8px 20px 12px; font-size: 17px; font-weight: 600; background: var(--bg); }
+  .back { position: absolute; left: 14px; top: 4px; width: 36px; height: 36px; display: grid; place-items: center; border: 0; border-radius: 999px; background: transparent; color: var(--fg); font-size: 24px; text-decoration: none; }
+  .scroll { flex: 1; overflow-y: auto; padding: 0 16px 92px; scroll-behavior: smooth; }
+  .scroll::-webkit-scrollbar { display: none; }
+
+  .recommend { position: relative; overflow: hidden; min-height: 154px; border-radius: 18px; margin-bottom: 14px; background: linear-gradient(135deg, var(--accent-dark), #43beb5); color: #fff; }
+  .recommend-track { display: flex; height: 100%; transition: transform .36s ease; }
+  .recommend-slide { flex: 0 0 100%; min-height: 154px; padding: 18px 18px 16px; display: flex; flex-direction: column; justify-content: flex-end; }
+  .recommend-kicker { width: max-content; max-width: 100%; height: 24px; display: inline-flex; align-items: center; padding: 0 10px; border-radius: 999px; background: rgba(255,255,255,.18); font-size: 11px; font-weight: 800; }
+  .recommend-title { margin-top: 30px; font-size: 21px; line-height: 1.22; font-weight: 800; letter-spacing: -.01em; }
+  .recommend-meta { margin-top: 7px; font-size: 12px; opacity: .86; }
+  .recommend-dots { position: absolute; right: 14px; bottom: 14px; display: flex; gap: 5px; }
+  .recommend-dots button { width: 6px; height: 6px; border-radius: 999px; border: 0; background: rgba(255,255,255,.42); padding: 0; cursor: pointer; }
+  .recommend-dots button.on { width: 16px; background: #fff; }
+
+  .sec { font-size: 16px; font-weight: 700; margin: 18px 0 10px; display: flex; align-items: center; justify-content: space-between; }
+  .doc-list { display: grid; gap: 8px; }
+  .doc-card { display: grid; grid-template-columns: 1fr 104px; align-items: center; gap: 10px; min-height: 58px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 11px 12px; }
+  .doc-title { min-width: 0; font-size: 14px; font-weight: 700; line-height: 1.35; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .doc-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .doc-actions button, .doc-actions a { height: 32px; border-radius: 9px; border: 1px solid var(--border); background: var(--surface); color: var(--fg); font: inherit; font-size: 12px; font-weight: 700; display: grid; place-items: center; text-decoration: none; cursor: pointer; }
+  .doc-actions .primary { border-color: var(--accent); background: var(--accent); color: #fff; }
+
+  .tabs { position: absolute; bottom: 0; left: 0; right: 0; z-index: 10; display: grid; grid-template-columns: repeat(5, 1fr); align-items: center; padding: 8px 6px 28px; background: var(--surface); border-top: 1px solid var(--border); }
+  .tabs button { border: 0; background: none; font: inherit; display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; color: var(--muted); font-size: 9px; padding: 4px 0; min-width: 0; white-space: nowrap; }
+  .tabs button.on { color: var(--accent); font-weight: 700; }
+  .tabs svg { width: 20px; height: 20px; }
+
+  .sheet { position: absolute; inset: 0; z-index: 30; display: none; background: rgba(26,25,22,.34); padding: 84px 14px 24px; }
+  .sheet.show { display: block; }
+  .preview { max-height: 100%; overflow-y: auto; background: var(--surface); border-radius: 18px; padding: 16px; box-shadow: 0 18px 48px rgba(0,0,0,.18); }
+  .preview-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+  .preview-title { font-size: 17px; font-weight: 800; line-height: 1.35; }
+  .close { width: 32px; height: 32px; border-radius: 999px; border: 0; background: var(--bg); color: var(--fg); font-size: 20px; cursor: pointer; }
+  .preview-meta { margin-top: 8px; color: var(--muted); font-size: 12px; }
+  .preview-body { margin-top: 14px; border-top: 1px solid var(--border); padding-top: 14px; color: #343330; font-size: 13px; line-height: 1.75; }
+  .preview-body p + p { margin-top: 9px; }
+  .toast { position: absolute; left: 50%; bottom: 92px; transform: translateX(-50%) translateY(12px); max-width: 300px; padding: 9px 13px; border-radius: 999px; background: rgba(26,25,22,.86); color: #fff; font-size: 12px; opacity: 0; pointer-events: none; transition: .22s ease; z-index: 40; white-space: nowrap; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="status-bar"><span class="time">9:41</span><span class="status-icons" style="font-size:12px">WiFi · ▮▮▮▮</span></div>
+  <div class="nav-bar"><a class="back" href="comprehensive-coordination.html" aria-label="返回综合协调">‹</a><span id="navTitle">文件列表</span></div>
+  <main class="scroll">
+    <section class="recommend" aria-label="推荐文件">
+      <div class="recommend-track" id="recommendTrack"></div>
+      <div class="recommend-dots" id="recommendDots" aria-label="轮播分页"></div>
+    </section>
+
+    <div class="sec"><span>最新文件</span></div>
+    <section class="doc-list" id="docList" aria-label="最新文件"></section>
+  </main>
+
+  <div class="tabs" aria-label="底部导航">
+    <button type="button" data-target="首页"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span>首页</span></button>
+    <button type="button" data-target="党建管理"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 15.4 7.2 18l.9-5.4-3.9-3.8 5.4-.8L12 3z"/></svg><span>党建管理</span></button>
+    <button class="on" type="button" data-target="综合协调"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M4 12h16M4 17h16"/><circle cx="8" cy="7" r="1.5" fill="currentColor"/><circle cx="16" cy="12" r="1.5" fill="currentColor"/><circle cx="11" cy="17" r="1.5" fill="currentColor"/></svg><span>综合协调</span></button>
+    <button type="button" data-target="教研培训"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5.5A2.5 2.5 0 016.5 3H20v16H6.5A2.5 2.5 0 014 16.5v-11z"/><path d="M8 7h8M8 11h8M8 15h5"/></svg><span>教研培训</span></button>
+    <button type="button" data-target="家园共育"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg><span>家园共育</span></button>
+  </div>
+
+  <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="previewTitle">
+    <article class="preview">
+      <div class="preview-head">
+        <div>
+          <div class="preview-title" id="previewTitle">文件预览</div>
+          <div class="preview-meta" id="previewMeta"></div>
+        </div>
+        <button class="close" type="button" id="closePreview" aria-label="关闭">×</button>
+      </div>
+      <div class="preview-body" id="previewBody"></div>
+    </article>
+  </div>
+  <div class="toast" id="toast">入口链接后续导入</div>
+</div>
+
+<script>
+(function(){
+  var catalog = {
+    policy: {
+      title: '政策法规',
+      kicker: '行政统筹',
+      desc: '园内常用政策文件、法规依据与制度解读，供教师快速查阅。',
+      icon: '政',
+      docs: [
+        ['幼儿园保教质量评估指南摘编', '政策解读', '2026-06-18', '摘录保教质量评估中与一日生活、师幼互动、课程实施直接相关的条目，便于班级教师对照自查。'],
+        ['学前教育法学习要点', '法规学习', '2026-06-11', '围绕依法办园、儿童权益保护、家园协同和教师职责四个部分整理核心要点。'],
+        ['园内安全责任制度修订稿', '制度文件', '2026-05-30', '明确班级、年级组、后勤与行政岗位在安全管理中的责任边界和上报流程。'],
+        ['师幼活动审批流程说明', '流程规范', '2026-05-22', '用于户外活动、外出参访、家长开放日等活动前的审批材料准备与节点确认。'],
+        ['教育收费公示与资料留存规范', '行政规范', '2026-05-09', '说明收费公示、家长确认、票据保存和资料归档的基本要求。']
+      ]
+    },
+    notice: {
+      title: '通知文件',
+      kicker: '行政统筹',
+      desc: '园内近期通知、会议安排和跨部门协作文件。',
+      icon: '通',
+      docs: [
+        ['六月园务例会通知', '会议通知', '2026-06-20', '通知各部门负责人参加六月园务例会，并提前提交本月工作进展和下月重点事项。'],
+        ['期末资料归档工作提醒', '工作通知', '2026-06-17', '提醒各班完成成长档案、活动方案、家长沟通记录等资料的整理与归档。'],
+        ['端午节后勤值班安排', '值班安排', '2026-06-08', '列明节前检查、假期值班、应急联系人和返园前环境整理要求。'],
+        ['家长开放日协同事项', '活动通知', '2026-05-26', '明确开放日当天接待、签到、拍摄、秩序维护和活动反馈的部门分工。'],
+        ['班级物资申领时间调整通知', '行政通知', '2026-05-15', '说明物资申领表提交时间、审批路径和领取窗口调整。']
+      ]
+    },
+    org: {
+      title: '组织架构',
+      kicker: '行政统筹',
+      desc: '部门职责、岗位分工和园内协作关系文件。',
+      icon: '组',
+      docs: [
+        ['综合协调部岗位职责表', '岗位说明', '2026-06-16', '列出行政统筹、后勤保障、人事支持等岗位的主要职责和协作对象。'],
+        ['园级管理小组分工图', '组织架构', '2026-06-10', '展示园长室、教研培训、党建管理、综合协调与家园共育之间的工作关系。'],
+        ['年级组长工作职责说明', '岗位说明', '2026-05-28', '明确年级组长在课程推进、教师支持、家园沟通和资料提交中的职责。'],
+        ['跨部门事项流转清单', '流程清单', '2026-05-19', '用于确认通知发布、活动保障、物资调配和人员协调的流转路径。'],
+        ['临时工作小组成立模板', '模板文件', '2026-05-06', '提供活动筹备、项目推进或专项检查时成立临时小组的文件模板。']
+      ]
+    },
+    safety: {
+      title: '安全管理',
+      kicker: '通勤保障',
+      desc: '安全巡检、应急预案、校车与户外活动保障材料。',
+      icon: '安',
+      docs: [
+        ['每日安全巡检记录表', '检查表', '2026-06-21', '用于门岗、楼道、活动室、户外场地和消防通道的日常检查记录。'],
+        ['户外活动安全提示单', '安全提示', '2026-06-14', '整理高温、雨后、器械使用和幼儿分组看护的注意事项。'],
+        ['防汛防台应急预案', '应急预案', '2026-06-03', '明确预警接收、场地排查、人员联络、物资准备和停课研判流程。'],
+        ['校车交接流程记录', '交接记录', '2026-05-24', '规范幼儿乘车名单核对、到离园交接、异常情况反馈和家长确认。'],
+        ['安全演练反馈汇总表', '反馈表', '2026-05-12', '用于记录演练时间、参与班级、发现问题和后续整改措施。']
+      ]
+    },
+    health: {
+      title: '卫生保健',
+      kicker: '通勤保障',
+      desc: '晨检、消毒、传染病防控与健康提醒文件。',
+      icon: '卫',
+      docs: [
+        ['班级晨午检记录表', '健康记录', '2026-06-19', '记录幼儿体温、精神状态、皮肤口腔观察和异常跟进情况。'],
+        ['夏季传染病防控提醒', '健康提醒', '2026-06-12', '围绕手足口、疱疹性咽峡炎、肠胃不适等情况说明观察与上报要点。'],
+        ['活动室消毒流程卡', '操作流程', '2026-06-04', '列出桌面、玩具、寝具、盥洗区和空气消毒的频次与责任人。'],
+        ['幼儿饮水与户外补水建议', '保健建议', '2026-05-27', '说明高温季节饮水提醒、补水记录和户外活动时间调整建议。'],
+        ['体检数据异常跟进表', '跟进表', '2026-05-10', '用于保健老师与班级教师共同记录体检异常提示和家长沟通情况。']
+      ]
+    },
+    ethics: {
+      title: '师德师风',
+      kicker: '人事管理',
+      desc: '师德学习、承诺书、考核材料与教师行为规范。',
+      icon: '德',
+      docs: [
+        ['教师职业行为准则学习材料', '学习材料', '2026-06-18', '整理教师日常言行、家长沟通、幼儿保护和信息发布中的底线要求。'],
+        ['师德承诺书模板', '模板文件', '2026-06-05', '用于教师个人签署师德承诺，包含教育行为、沟通方式和隐私保护条目。'],
+        ['师德师风月度自查表', '自查表', '2026-05-31', '围绕班级管理、活动组织、同伴协作和家长反馈进行月度自查。'],
+        ['典型案例学习记录', '案例学习', '2026-05-20', '提供师德警示案例的学习记录模板，便于年级组讨论与留档。'],
+        ['教师荣誉与表彰申报表', '申报表', '2026-05-08', '用于汇总教师在课程、家园共育、教研和志愿服务中的表现材料。']
+      ]
+    },
+    exchange: {
+      title: '跟岗交流',
+      kicker: '人事管理',
+      desc: '跟岗安排、外出学习、交流反馈与教师成长记录。',
+      icon: '岗',
+      docs: [
+        ['跟岗教师一周安排表', '安排表', '2026-06-17', '列出跟岗教师每日观摩班级、参与活动、复盘会议和材料提交要求。'],
+        ['外出学习反馈模板', '反馈模板', '2026-06-09', '用于教师外出学习后整理亮点、可迁移经验和园内实践建议。'],
+        ['结对教师交流记录', '交流记录', '2026-05-29', '记录结对教师围绕课程实施、区域观察和家长沟通的交流内容。'],
+        ['教师轮岗申请表', '申请表', '2026-05-18', '用于教师提出轮岗、跟班或跨年级观摩申请，并说明学习目标。'],
+        ['跟岗成果分享清单', '成果清单', '2026-05-07', '梳理跟岗结束后需要提交的照片、案例、反思和分享汇报材料。']
+      ]
+    }
+  };
+
+  var params = new URLSearchParams(window.location.search);
+  var type = params.get('type') || 'policy';
+  var current = catalog[type] || catalog.policy;
+  var docList = document.getElementById('docList');
+  var recommendTrack = document.getElementById('recommendTrack');
+  var recommendDots = document.getElementById('recommendDots');
+  var toast = document.getElementById('toast');
+  var timer;
+  var activeSlide = 0;
+  var slideTimer;
+
+  document.title = current.title + ' · 综合协调部';
+  document.getElementById('navTitle').textContent = current.title;
+
+  function makeDownload(doc) {
+    var content = doc[0] + '\n\n' + doc[1] + ' · ' + doc[2] + '\n\n' + doc[3] + '\n\n此处为原型示例文件，后续可替换为真实附件。';
+    return 'data:text/plain;charset=utf-8,' + encodeURIComponent(content);
+  }
+
+  function renderRecommendations() {
+    var featured = current.docs.slice(0, 3);
+    recommendTrack.innerHTML = featured.map(function(doc){
+      return '<article class="recommend-slide">' +
+        '<div class="recommend-kicker">' + current.kicker + ' · 推荐文件</div>' +
+        '<div class="recommend-title">' + doc[0] + '</div>' +
+        '<div class="recommend-meta">' + doc[1] + ' · ' + doc[2] + '</div>' +
+      '</article>';
+    }).join('');
+    recommendDots.innerHTML = featured.map(function(_, index){
+      return '<button type="button" data-slide="' + index + '" aria-label="查看第' + (index + 1) + '个推荐文件"></button>';
+    }).join('');
+    setSlide(0);
+    clearInterval(slideTimer);
+    slideTimer = setInterval(function(){
+      setSlide((activeSlide + 1) % featured.length);
+    }, 3200);
+  }
+
+  function setSlide(index) {
+    activeSlide = index;
+    recommendTrack.style.transform = 'translateX(-' + (index * 100) + '%)';
+    recommendDots.querySelectorAll('button').forEach(function(dot, dotIndex){
+      dot.classList.toggle('on', dotIndex === index);
+    });
+  }
+
+  recommendDots.addEventListener('click', function(event){
+    var dot = event.target.closest('[data-slide]');
+    if (!dot) return;
+    setSlide(Number(dot.getAttribute('data-slide')));
+  });
+
+  current.docs.forEach(function(doc, index){
+    var card = document.createElement('article');
+    card.className = 'doc-card';
+    card.innerHTML =
+      '<div class="doc-title">' + doc[0] + '</div>' +
+      '<div class="doc-actions">' +
+        '<button class="primary" type="button" data-preview="' + index + '">预览</button>' +
+        '<a href="' + makeDownload(doc) + '" download="' + doc[0] + '.txt">下载</a>' +
+      '</div>';
+    docList.appendChild(card);
+  });
+
+  renderRecommendations();
+
+  function openPreview(doc) {
+    document.getElementById('previewTitle').textContent = doc[0];
+    document.getElementById('previewMeta').textContent = doc[1] + ' · ' + doc[2];
+    document.getElementById('previewBody').innerHTML =
+      '<p>' + doc[3] + '</p>';
+    document.getElementById('sheet').classList.add('show');
+  }
+
+  docList.addEventListener('click', function(event){
+    var preview = event.target.closest('[data-preview]');
+    if (preview) {
+      openPreview(current.docs[Number(preview.getAttribute('data-preview'))]);
+    }
+  });
+
+  document.getElementById('closePreview').addEventListener('click', function(){
+    document.getElementById('sheet').classList.remove('show');
+  });
+  document.getElementById('sheet').addEventListener('click', function(event){
+    if (event.target.id === 'sheet') document.getElementById('sheet').classList.remove('show');
+  });
+
+  document.querySelectorAll('.tabs [data-target]').forEach(function(el){
+    el.addEventListener('click', function(){
+      toast.textContent = el.getAttribute('data-target') + '：链接后续导入';
+      toast.classList.add('show');
+      clearTimeout(timer);
+      timer = setTimeout(function(){ toast.classList.remove('show'); }, 1200);
+    });
+  });
+})();
+</script>
+</body>
+</html>

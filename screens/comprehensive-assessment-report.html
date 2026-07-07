@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=390, initial-scale=1, user-scalable=no" />
+<title>综合评估结果 · 课程建设</title>
+<style>
+  :root {
+    --bg:#f0f5f5; --surface:#fff; --fg:#1a1916; --muted:#868686; --border:#e0e8e8;
+    --accent:#189b91; --accent-dark:#067e76; --accent-light:#e8f5f4;
+    --green:#4b9a5a; --green-light:#eaf5ed; --amber:#feaf06; --amber-light:#fff7e3; --red:#e05243; --red-light:#fff0ed;
+    --font:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',system-ui,sans-serif;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{display:flex;justify-content:center;min-height:100vh;background:transparent;font-family:var(--font);color:var(--fg);-webkit-font-smoothing:antialiased}
+  .phone{width:390px;height:844px;background:var(--bg);display:flex;flex-direction:column;overflow:hidden;border-radius:40px;position:relative}
+  .status-bar{display:flex;justify-content:space-between;align-items:center;padding:14px 28px 8px;font-size:13px;font-weight:600}
+  .nav-bar{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;padding:8px 12px 12px}
+  .nav-bar a{display:grid;place-items:center;width:36px;height:36px;color:var(--fg);text-decoration:none}
+  .nav-title{text-align:center;font-size:17px;font-weight:600}
+  .mini-menu{position:absolute;top:43px;right:18px;width:74px;height:30px;border-radius:999px;border:1px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:space-around;font-size:14px;z-index:20}
+  .scroll{flex:1;overflow-y:auto;padding:0 16px 28px}.scroll::-webkit-scrollbar{display:none}
+  .chunk{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:12px}
+  .child-card{display:flex;align-items:center;justify-content:space-between;gap:12px;background:linear-gradient(135deg,#0f766e,#189b91);color:#fff;border:0}
+  .child-card h1{font-size:22px;line-height:1.15}.child-card p{font-size:12px;color:rgba(255,255,255,.88);margin-top:6px;line-height:1.45}
+  .badge{border-radius:999px;background:rgba(255,255,255,.18);padding:6px 10px;font-size:12px;font-weight:800;white-space:nowrap}
+  .sec{font-size:16px;font-weight:750;margin:18px 0 10px}
+  .radar-wrap{display:grid;grid-template-columns:180px 1fr;gap:12px;align-items:center}
+  .radar{width:180px;height:180px}.axis{stroke:#d7e4e4;stroke-width:1}.grid{fill:none;stroke:#d7e4e4;stroke-width:1}.shape{fill:rgba(24,155,145,.22);stroke:var(--accent);stroke-width:2.4}.dot{fill:var(--accent-dark)}
+  .legend{display:flex;flex-direction:column;gap:8px}.metric{display:flex;justify-content:space-between;gap:8px;font-size:12px;border-bottom:1px solid var(--border);padding-bottom:7px}.metric:last-child{border-bottom:0}.metric strong{font-size:13px}.metric span:last-child{font-weight:800;color:var(--accent-dark)}
+  .summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stat{border:1px solid var(--border);border-radius:12px;padding:10px;text-align:center}.num{font-size:19px;font-weight:850}.label{font-size:11px;color:var(--muted);margin-top:3px}
+  .good{color:var(--green)}.weak{color:var(--red)}.mid{color:var(--amber)}
+  .analysis p,.assessment p{font-size:13px;line-height:1.7;color:var(--fg)}
+  .analysis-list{display:flex;flex-direction:column;gap:8px;margin-top:2px}.analysis-item{font-size:13px;line-height:1.55;border-left:3px solid var(--accent);padding-left:10px}
+  .btn-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.btn{border:1px solid var(--border);background:#fff;border-radius:999px;padding:10px 12px;text-align:center;font-size:13px;font-weight:750;color:var(--fg);text-decoration:none}.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
+  <div class="mini-menu"><span>•••</span><span>○</span></div>
+  <div class="nav-bar">
+    <a href="course-building.html" aria-label="返回课程建设"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></a>
+    <div class="nav-title">综合评估结果</div>
+    <span></span>
+  </div>
+  <div class="scroll">
+    <section class="chunk child-card">
+      <div>
+        <h1 id="childName">陈小明</h1>
+        <p id="childMeta">中二班 · 2026 春季综合评估</p>
+      </div>
+      <div class="badge">已完成</div>
+    </section>
+
+    <div class="sec">五大领域雷达图</div>
+    <section class="chunk radar-wrap">
+      <svg class="radar" viewBox="0 0 200 200" aria-label="五大领域雷达图">
+        <g id="grid"></g>
+        <polygon id="radarShape" class="shape" points=""></polygon>
+        <g id="dots"></g>
+      </svg>
+      <div class="legend" id="legend"></div>
+    </section>
+
+    <div class="sec">数据分析</div>
+    <section class="chunk">
+      <div class="summary-grid">
+        <div class="stat"><div class="num good" id="goodCount">2</div><div class="label">较好领域</div></div>
+        <div class="stat"><div class="num mid" id="midCount">2</div><div class="label">稳定领域</div></div>
+        <div class="stat"><div class="num weak" id="weakCount">1</div><div class="label">较弱领域</div></div>
+      </div>
+    </section>
+    <section class="chunk analysis">
+      <div class="analysis-list" id="analysisList"></div>
+    </section>
+
+    <div class="sec">综合评估</div>
+    <section class="chunk assessment">
+      <p id="assessmentText"></p>
+      <div class="btn-row">
+        <a class="btn" href="comprehensive-assessment-form.html">继续评估</a>
+        <a class="btn primary" href="course-building.html">返回进度</a>
+      </div>
+    </section>
+  </div>
+</div>
+<script>
+const labels = ['健康','语言','社会','科学','艺术'];
+const reports = {
+  chen: {
+    name:'陈小明',
+    scores:[4.6,4.1,4.4,3.2,3.8],
+    notes:[
+      '健康、社会领域表现较好，活动规则意识稳定，能主动参与户外与合作任务。',
+      '科学领域分数相对较弱，主要表现在观察记录不够连续、解释理由较少。',
+      '艺术领域处于稳定区间，可继续通过材料探索和作品表达增强表现力。'
+    ],
+    assessment:'陈小明整体发展较均衡，健康与社会领域优势明显，能在集体活动中保持积极参与和合作意识。后续建议重点支持科学探究记录，鼓励他用图画、符号和口头说明表达发现；艺术活动中可增加自主选择材料的机会，促进经验迁移。'
+  },
+  wang: {
+    name:'王子涵',
+    scores:[4.2,4.7,3.7,4.5,4.6],
+    notes:[
+      '语言、科学、艺术领域表现较好，能清楚表达观察结果并进行作品创作。',
+      '社会领域相对较弱，轮流等待和协商分工还需要教师适度支持。',
+      '健康领域稳定，基本动作协调，能遵守常规安全提醒。'
+    ],
+    assessment:'王子涵在语言表达、科学探索和艺术表现上较为突出，能够把观察到的现象转化为清楚的讲述或作品。后续可在小组任务中设置明确角色，帮助其练习倾听、等待和协商；同时保持探究记录任务，巩固优势领域。'
+  }
+};
+const params = new URLSearchParams(location.search);
+const data = reports[params.get('child')] || reports.chen;
+document.getElementById('childName').textContent = data.name;
+const center = { x:100, y:100 };
+const maxR = 72;
+function point(index, value = 5) {
+  const angle = -Math.PI / 2 + index * Math.PI * 2 / labels.length;
+  const radius = maxR * value / 5;
+  return [center.x + Math.cos(angle) * radius, center.y + Math.sin(angle) * radius];
+}
+function drawGrid() {
+  const grid = document.getElementById('grid');
+  let html = '';
+  [1,2,3,4,5].forEach(level => {
+    const pts = labels.map((_, index) => point(index, level).join(',')).join(' ');
+    html += `<polygon class="grid" points="${pts}"></polygon>`;
+  });
+  labels.forEach((label, index) => {
+    const edge = point(index, 5);
+    const text = point(index, 5.78);
+    html += `<line class="axis" x1="${center.x}" y1="${center.y}" x2="${edge[0]}" y2="${edge[1]}"></line>`;
+    html += `<text x="${text[0]}" y="${text[1]}" text-anchor="middle" dominant-baseline="middle" font-size="12" fill="#555">${label}</text>`;
+  });
+  grid.innerHTML = html;
+}
+function render() {
+  drawGrid();
+  const points = data.scores.map((score, index) => point(index, score));
+  document.getElementById('radarShape').setAttribute('points', points.map(p => p.join(',')).join(' '));
+  document.getElementById('dots').innerHTML = points.map(p => `<circle class="dot" cx="${p[0]}" cy="${p[1]}" r="3.6"></circle>`).join('');
+  document.getElementById('legend').innerHTML = labels.map((label, index) => `
+    <div class="metric"><strong>${label}</strong><span>${data.scores[index].toFixed(1)}</span></div>
+  `).join('');
+  const good = data.scores.filter(score => score >= 4.3).length;
+  const weak = data.scores.filter(score => score < 3.6).length;
+  document.getElementById('goodCount').textContent = good;
+  document.getElementById('weakCount').textContent = weak;
+  document.getElementById('midCount').textContent = labels.length - good - weak;
+  document.getElementById('analysisList').innerHTML = data.notes.map(note => `<div class="analysis-item">${note}</div>`).join('');
+  document.getElementById('assessmentText').textContent = data.assessment;
+}
+render();
+</script>
+</body>
+</html>

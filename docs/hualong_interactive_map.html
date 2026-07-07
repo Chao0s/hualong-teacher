@@ -1,0 +1,1197 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>化龙电子资源平台交互地图</title>
+  <style>
+    :root {
+      --bg: #080b10;
+      --ink: #f4f7fb;
+      --muted: #9aa4b2;
+      --line: #263241;
+      --panel: #111722;
+      --teacher: #22c7a8;
+      --parent: #ff9f43;
+      --admin: #a78bfa;
+      --accent: #f4c430;
+      --soft: #172231;
+      --shadow: 0 18px 45px rgba(0, 0, 0, 0.42);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        linear-gradient(180deg, rgba(8,11,16,0.98), rgba(9,13,20,0.94)),
+        repeating-linear-gradient(90deg, rgba(244,247,251,0.035) 0 1px, transparent 1px 40px);
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", Arial, sans-serif;
+    }
+
+    button, input { font: inherit; }
+
+    .app {
+      display: grid;
+      grid-template-columns: 320px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    aside {
+      border-right: 1px solid var(--line);
+      background: rgba(13, 18, 27, 0.94);
+      backdrop-filter: blur(12px);
+      padding: 22px;
+      overflow: auto;
+    }
+
+    main {
+      min-width: 0;
+      padding: 22px;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 16px;
+    }
+
+    h1 {
+      margin: 0 0 18px;
+      font-size: 24px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .entry-tabs,
+    .mode-tabs {
+      display: grid;
+      gap: 8px;
+    }
+
+    .entry-tabs {
+      grid-template-columns: 1fr;
+      margin-bottom: 18px;
+    }
+
+    .mode-tabs {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .tab,
+    .module-button,
+    .chip {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--ink);
+      cursor: pointer;
+      transition: background .18s ease, border-color .18s ease, transform .18s ease;
+    }
+
+    .tab {
+      min-height: 42px;
+      border-radius: 8px;
+      padding: 8px 10px;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .tab:hover,
+    .module-button:hover,
+    .chip:hover { transform: translateY(-1px); }
+
+    .tab.active {
+      background: var(--accent);
+      color: #16130a;
+      border-color: var(--accent);
+    }
+
+    .tab .port {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      flex: 0 0 auto;
+    }
+
+    .port.teacher { background: var(--teacher); }
+    .port.parent { background: var(--parent); }
+    .port.admin { background: var(--admin); }
+
+    .side-section {
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+    }
+
+    .side-section h2 {
+      margin: 0 0 10px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .module-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .module-button {
+      width: 100%;
+      min-height: 44px;
+      border-radius: 8px;
+      padding: 9px 10px;
+      text-align: left;
+      display: grid;
+      gap: 3px;
+    }
+
+    .module-button.active {
+      border-color: currentColor;
+      background: var(--soft);
+    }
+
+    .module-button strong {
+      font-size: 15px;
+      line-height: 1.25;
+    }
+
+    .module-button span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: minmax(190px, 1fr) auto auto;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .search {
+      min-height: 42px;
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px 12px;
+      background: rgba(17, 23, 34, 0.96);
+      color: var(--ink);
+    }
+
+    .search::placeholder { color: #788596; }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .chip {
+      min-height: 36px;
+      border-radius: 999px;
+      padding: 6px 12px;
+      color: var(--muted);
+    }
+
+    .chip.active {
+      color: #16130a;
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .zoom-controls {
+      display: inline-grid;
+      grid-auto-flow: column;
+      grid-auto-columns: 38px;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .zoom-button {
+      width: 38px;
+      height: 36px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--ink);
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+      transition: background .18s ease, border-color .18s ease, transform .18s ease;
+    }
+
+    .zoom-button:hover {
+      transform: translateY(-1px);
+      border-color: var(--accent);
+    }
+
+    .zoom-readout {
+      min-width: 54px;
+      color: var(--muted);
+      font-size: 12px;
+      text-align: center;
+    }
+
+    .workspace {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 16px;
+    }
+
+    .canvas-wrap,
+    .detail {
+      min-height: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(12, 17, 25, 0.94);
+      box-shadow: var(--shadow);
+    }
+
+    .canvas-wrap {
+      position: relative;
+      overflow: auto;
+    }
+
+    svg {
+      min-width: 980px;
+      width: 100%;
+      height: 720px;
+      display: block;
+      background:
+        radial-gradient(circle at 20px 20px, rgba(244,247,251,0.08) 1px, transparent 1px) 0 0 / 28px 28px,
+        var(--bg);
+    }
+
+    .edge {
+      stroke: #687386;
+      stroke-width: 1.4;
+      fill: none;
+      marker-end: url(#arrow);
+      opacity: 0.7;
+    }
+
+    .edge.dim { opacity: 0.12; }
+    .edge.active { stroke: var(--accent); stroke-width: 2.5; opacity: 1; }
+
+    .node rect {
+      fill: var(--panel);
+      stroke: var(--line);
+      stroke-width: 1.2;
+      rx: 8;
+    }
+
+    .node text {
+      fill: var(--ink);
+      font-size: 13px;
+      dominant-baseline: middle;
+      text-anchor: middle;
+      pointer-events: none;
+    }
+
+    .node .tag {
+      font-size: 10px;
+      fill: var(--muted);
+    }
+
+    .node.teacher rect { stroke: var(--teacher); }
+    .node.parent rect { stroke: var(--parent); }
+    .node.admin rect { stroke: var(--admin); }
+    .node.cross rect { stroke: var(--accent); stroke-dasharray: 4 3; }
+    .node:hover rect,
+    .node.active rect {
+      stroke-width: 2.4;
+      filter: drop-shadow(0 8px 14px rgba(36,35,31,0.16));
+    }
+
+    .node.dim { opacity: 0.22; }
+
+    .legend {
+      position: sticky;
+      left: 0;
+      bottom: 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 10px;
+      background: rgba(13, 18, 27, 0.9);
+      border-top: 1px solid var(--line);
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      display: inline-block;
+    }
+
+    .detail {
+      overflow: auto;
+      padding: 18px;
+    }
+
+    .detail h2 {
+      margin: 0 0 8px;
+      font-size: 22px;
+      line-height: 1.25;
+    }
+
+    .detail .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 3px 8px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: 12px;
+      background: var(--panel);
+    }
+
+    .detail p {
+      margin: 0 0 16px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .route-list {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .route-list li {
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      line-height: 1.45;
+    }
+
+    .route-list strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 13px;
+    }
+
+    .empty {
+      display: grid;
+      place-items: center;
+      min-height: 280px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    @media (max-width: 1020px) {
+      .app { grid-template-columns: 1fr; }
+      aside {
+        position: static;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .entry-tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .workspace { grid-template-columns: 1fr; }
+      .detail { min-height: 260px; }
+    }
+
+    @media (max-width: 680px) {
+      aside, main { padding: 14px; }
+      .entry-tabs,
+      .mode-tabs,
+      .toolbar { grid-template-columns: 1fr; }
+      .chips { justify-content: flex-start; }
+      svg { min-width: 820px; height: 680px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside>
+      <h1>化龙电子资源平台交互地图</h1>
+      <div class="entry-tabs" id="entryTabs"></div>
+      <div class="side-section">
+        <h2>模块</h2>
+        <div class="module-list" id="moduleList"></div>
+      </div>
+    </aside>
+
+    <main>
+      <div class="toolbar">
+        <input class="search" id="search" type="search" placeholder="搜索节点、页面、操作">
+        <div class="chips" id="filterChips"></div>
+        <div class="zoom-controls" aria-label="画布缩放">
+          <button class="zoom-button" id="zoomOut" type="button" title="缩小" aria-label="缩小">−</button>
+          <span class="zoom-readout" id="zoomValue">100%</span>
+          <button class="zoom-button" id="zoomIn" type="button" title="放大" aria-label="放大">+</button>
+          <button class="zoom-button" id="zoomReset" type="button" title="重置缩放" aria-label="重置缩放">1:1</button>
+        </div>
+      </div>
+      <div class="workspace">
+        <section class="canvas-wrap">
+          <svg id="map" role="img" aria-label="平台交互跳转关系图"></svg>
+          <div class="legend">
+            <span><i class="dot" style="background: var(--teacher)"></i>教师端</span>
+            <span><i class="dot" style="background: var(--parent)"></i>家长端</span>
+            <span><i class="dot" style="background: var(--admin)"></i>管理端/PC后台</span>
+            <span><i class="dot" style="background: var(--accent)"></i>跨端流转</span>
+          </div>
+        </section>
+        <aside class="detail" id="detail"></aside>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const PORTS = {
+      teacher: { label: '教师端', tone: 'teacher' },
+      parent: { label: '家长端', tone: 'parent' },
+      admin: { label: '管理端 / PC后台', tone: 'admin' }
+    };
+
+    const MODULES = [
+      {
+        id: 'teacher-overview',
+        port: 'teacher',
+        title: '教师端总览',
+        summary: '教师端按层级自上而下展开：客户端入口之后，第一级为首页、党建管理、综合协调、教研培训、资源中心和家园共育。',
+        nodes: [
+          ['TeacherClient', '教师端客户端', 'teacher', '客户端', 0],
+          ['TeacherHome', '首页', 'teacher', '一级页面', 1],
+          ['Party', '党建管理', 'teacher', '一级页面', 1],
+          ['Coordination', '综合协调', 'teacher', '一级页面', 1],
+          ['Training', '教研培训', 'teacher', '一级页面', 1],
+          ['ResourceCenter', '资源中心', 'teacher', '一级页面', 1],
+          ['Family', '家园共育', 'teacher', '一级页面', 1],
+          ['TeacherTodo', '待办事项', 'teacher', '首页入口', 2],
+          ['TeacherNotice', '资源中心通知', 'teacher', '首页入口', 2],
+          ['QuickEntry', '常用入口', 'teacher', '首页入口', 2],
+          ['RecommendCase', '推荐课程案例', 'teacher', '首页入口', 2],
+          ['PartyLearn', '党建学习', 'teacher', '党建入口', 2],
+          ['PartyActivity', '党建活动', 'teacher', '党建入口', 2],
+          ['PartyBrand', '品牌建设', 'teacher', '党建入口', 2],
+          ['XZ', '行政统筹', 'teacher', '协调入口', 2],
+          ['HQ', '后勤保障', 'teacher', '协调入口', 2],
+          ['HR', '人事管理', 'teacher', '协调入口', 2],
+          ['CourseBuild', '课程建设', 'teacher', '教研入口', 2],
+          ['TrainMaterialEntry', '研修资料', 'teacher', '教研入口', 2],
+          ['FiveChart', '评价五维图', 'teacher', '教研入口', 2],
+          ['ResourceLib', '资源库', 'teacher', '资源入口', 2],
+          ['CaseLib', '课程库 / 案例库', 'teacher', '资源入口', 2],
+          ['UploadEntry', '上传资源', 'teacher', '资源入口', 2],
+          ['Garden', '在园时光', 'teacher', '家园入口', 2],
+          ['FamilyTask', '亲子任务', 'teacher', '家园入口', 2],
+          ['GrowthFile', '成长档案', 'teacher', '家园入口', 2],
+          ['GrowthBook', '成长册', 'teacher', '家园入口', 2],
+          ['UploadChoice', '选择资源 / 课程案例', 'teacher', '三级操作', 3],
+          ['TaskEntry', '待办任务', 'teacher', '三级操作', 3],
+          ['NoticeList', '通知列表页', 'teacher', '三级页面', 3],
+          ['CaseDetail', '案例详情页', 'teacher', '三级页面', 3],
+          ['LearnList', '学习资料列表', 'teacher', '三级页面', 3],
+          ['ActivityList', '活动列表页', 'teacher', '三级页面', 3],
+          ['BrandList', '品牌建设资料列表', 'teacher', '三级页面', 3],
+          ['XZList', '行政资料列表', 'teacher', '三级页面', 3],
+          ['HQList', '后勤资料列表', 'teacher', '三级页面', 3],
+          ['HRList', '人事资料列表', 'teacher', '三级页面', 3],
+          ['CourseIntro', '课程体系介绍', 'teacher', '三级页面', 3],
+          ['TrainList', '研修列表页', 'teacher', '三级页面', 3],
+          ['Scale', '五大领域量表', 'teacher', '三级表单', 3],
+          ['ResourceCategory', '资源分类', 'teacher', '三级页面', 3],
+          ['CaseFilter', '案例筛选', 'teacher', '三级页面', 3],
+          ['UploadForm', '填写上传表单', 'teacher', '三级表单', 3],
+          ['GardenPublish', '教师发布动态', 'teacher', '三级操作', 3],
+          ['TaskPublish', '教师发布任务', 'teacher', '三级操作', 3],
+          ['MonthEval', '月度评价', 'teacher', '三级表单', 3],
+          ['BookCreate', '生成成长册', 'teacher', '三级操作', 3],
+          ['SubmitAudit', '提交审核', 'cross', '跨端流转', 4],
+          ['AdminResourceAudit', '管理端资源审核', 'admin', '跨端结果', 5],
+          ['PublishToParent', '发布给家长', 'cross', '跨端流转', 4],
+          ['ParentView', '家长端查看 / 反馈', 'parent', '跨端结果', 5]
+        ],
+        edges: [
+          ['TeacherClient','TeacherHome'], ['TeacherClient','Party'], ['TeacherClient','Coordination'], ['TeacherClient','Training'], ['TeacherClient','ResourceCenter'], ['TeacherClient','Family'],
+          ['TeacherHome','TeacherTodo'], ['TeacherHome','TeacherNotice'], ['TeacherHome','QuickEntry'], ['TeacherHome','RecommendCase'],
+          ['TeacherTodo','UploadEntry'], ['TeacherTodo','TaskEntry'], ['TeacherNotice','NoticeList'], ['RecommendCase','CaseDetail'],
+          ['QuickEntry','ResourceCenter'], ['QuickEntry','Training'], ['QuickEntry','Family'],
+          ['Party','PartyLearn'], ['Party','PartyActivity'], ['Party','PartyBrand'], ['PartyLearn','LearnList'], ['PartyActivity','ActivityList'], ['PartyBrand','BrandList'],
+          ['Coordination','XZ'], ['Coordination','HQ'], ['Coordination','HR'], ['XZ','XZList'], ['HQ','HQList'], ['HR','HRList'],
+          ['Training','CourseBuild'], ['Training','TrainMaterialEntry'], ['Training','FiveChart'], ['CourseBuild','CourseIntro'], ['TrainMaterialEntry','TrainList'], ['FiveChart','Scale'],
+          ['ResourceCenter','ResourceLib'], ['ResourceCenter','CaseLib'], ['ResourceCenter','UploadEntry'], ['ResourceLib','ResourceCategory'], ['CaseLib','CaseFilter'], ['UploadEntry','UploadChoice'], ['UploadChoice','UploadForm'], ['UploadForm','SubmitAudit'], ['SubmitAudit','AdminResourceAudit'],
+          ['Family','Garden'], ['Family','FamilyTask'], ['Family','GrowthFile'], ['Family','GrowthBook'], ['Garden','GardenPublish'], ['FamilyTask','TaskPublish'], ['GrowthFile','MonthEval'], ['GrowthBook','BookCreate'],
+          ['GardenPublish','PublishToParent'], ['TaskPublish','PublishToParent'], ['MonthEval','PublishToParent'], ['BookCreate','PublishToParent'], ['PublishToParent','ParentView']
+        ]
+      },
+      {
+        id: 'teacher-home',
+        port: 'teacher',
+        title: '教师端首页',
+        summary: '教师端从客户端入口进入首页；首页待办事项只保留上传资源和待办任务两个入口。',
+        nodes: [
+          ['TeacherClient', '教师端客户端', 'teacher', '客户端'],
+          ['TeacherHome', '教师端首页', 'teacher', '首页'],
+          ['TeacherTodo', '待办事项', 'teacher', 'section'],
+          ['UploadEntry', '上传资源', 'teacher', '待办入口'],
+          ['UploadChoice', '选择资源 / 课程案例', 'teacher', '类型'],
+          ['UploadForm', '填写表单与附件', 'teacher', '表单'],
+          ['SubmitAudit', '提交审核', 'cross', '流转'],
+          ['AdminResourceAudit', '管理端资源审核', 'admin', '审核'],
+          ['TaskEntry', '待办任务', 'teacher', '待办入口'],
+          ['TaskList', '任务列表', 'teacher', '列表'],
+          ['TaskDetail', '任务详情页', 'teacher', '详情'],
+          ['SubmitMaterial', '提交材料 / 反馈', 'teacher', '提交'],
+          ['AdminTaskBoard', '管理端共建任务进度', 'admin', '进度'],
+          ['TeacherNotice', '资源中心通知', 'teacher', 'section'],
+          ['NoticeList', '通知列表页', 'teacher', '列表'],
+          ['QuickEntry', '常用入口', 'teacher', 'section'],
+          ['ResourceCenter', '资源中心', 'teacher', '页面'],
+          ['TrainingPage', '教研培训', 'teacher', '页面'],
+          ['FamilyPage', '家园社共育', 'teacher', '页面'],
+          ['RecommendCase', '推荐课程案例', 'teacher', 'section'],
+          ['CaseDetail', '案例详情页', 'teacher', '详情']
+        ],
+        edges: [
+          ['TeacherClient','TeacherHome'], ['TeacherHome','TeacherTodo'],
+          ['TeacherTodo','UploadEntry'], ['UploadEntry','UploadChoice'], ['UploadChoice','UploadForm'], ['UploadForm','SubmitAudit'], ['SubmitAudit','AdminResourceAudit'],
+          ['TeacherTodo','TaskEntry'], ['TaskEntry','TaskList'], ['TaskList','TaskDetail'], ['TaskDetail','SubmitMaterial'], ['SubmitMaterial','AdminTaskBoard'],
+          ['TeacherHome','TeacherNotice'], ['TeacherNotice','NoticeList'],
+          ['TeacherHome','QuickEntry'], ['QuickEntry','ResourceCenter'], ['QuickEntry','TrainingPage'], ['QuickEntry','FamilyPage'],
+          ['TeacherHome','RecommendCase'], ['RecommendCase','CaseDetail']
+        ]
+      },
+      {
+        id: 'teacher-resource-center',
+        port: 'teacher',
+        title: '教师端资源中心',
+        summary: '教师端从资源中心进入资源库和案例库；资源详情与案例详情双向关联，上传内容流转到管理端审核。',
+        nodes: [
+          ['TeacherClient','教师端客户端','teacher','客户端'],
+          ['TeacherHome','教师端首页','teacher','首页'],
+          ['ResourceCenter','资源中心','teacher','页面'],
+          ['ResourceLib','资源库','teacher','资源'],
+          ['ResourceCategory','衣 / 食 / 住 / 行 / 艺','teacher','分类'],
+          ['ResourceList','资源列表页','teacher','列表'],
+          ['ResourceDetail','资源详情页','teacher','详情'],
+          ['ResourceIntro','资源简介','teacher','内容'],
+          ['ResourceExplain','资源解读','teacher','内容'],
+          ['ResourceGet','资源获取','teacher','内容'],
+          ['ResourceTransform','资源转化建议','teacher','内容'],
+          ['RelatedCases','关联课程案例','cross','关联'],
+          ['CaseLib','课程库 / 案例库','teacher','案例'],
+          ['CaseFilter','年级 / 领域 / 形式 / 标签','teacher','筛选'],
+          ['CaseList','案例列表页','teacher','列表'],
+          ['CaseDetail','案例详情页','teacher','详情'],
+          ['CasePlan','详案查看 / 下载','teacher','下载'],
+          ['CaseReview','自评 / 他评 / 反思','teacher','评价'],
+          ['RelatedResources','关联资源','cross','关联'],
+          ['DownloadRecord','管理端下载记录','admin','数据'],
+          ['UploadEntry','上传资源','teacher','上传'],
+          ['Draft','草稿','teacher','草稿'],
+          ['SubmitAudit','提交审核','cross','流转'],
+          ['Audit','管理端审核','admin','审核'],
+          ['Approved','通过后展示','admin','结果'],
+          ['Rejected','驳回修改','admin','结果']
+        ],
+        edges: [
+          ['TeacherClient','TeacherHome'], ['TeacherHome','ResourceCenter'],
+          ['ResourceCenter','ResourceLib'], ['ResourceLib','ResourceCategory'], ['ResourceCategory','ResourceList'], ['ResourceList','ResourceDetail'],
+          ['ResourceDetail','ResourceIntro'], ['ResourceDetail','ResourceExplain'], ['ResourceDetail','ResourceGet'], ['ResourceDetail','ResourceTransform'], ['ResourceDetail','RelatedCases'], ['RelatedCases','CaseDetail'],
+          ['ResourceCenter','CaseLib'], ['CaseLib','CaseFilter'], ['CaseFilter','CaseList'], ['CaseList','CaseDetail'],
+          ['CaseDetail','CasePlan'], ['CaseDetail','CaseReview'], ['CaseDetail','RelatedResources'], ['RelatedResources','ResourceDetail'], ['CasePlan','DownloadRecord'],
+          ['ResourceCenter','UploadEntry'], ['UploadEntry','Draft'], ['Draft','SubmitAudit'], ['SubmitAudit','Audit'], ['Audit','Approved'], ['Audit','Rejected'], ['Approved','ResourceList'], ['Approved','CaseList'], ['Rejected','UploadEntry']
+        ]
+      },
+      {
+        id: 'teacher-party',
+        port: 'teacher',
+        title: '教师端党建管理',
+        summary: '教师端从首页进入党建管理，主要查看党建学习、党建活动和品牌建设资料；资料维护归管理端。',
+        nodes: [
+          ['TeacherClient','教师端客户端','teacher','客户端'],
+          ['TeacherHome','教师端首页','teacher','首页'],
+          ['Party','党建管理','teacher','页面'],
+          ['Learn','党建学习','teacher','栏目'],
+          ['LearnList','学习资料列表','teacher','列表'],
+          ['LearnDetail','资料详情页','teacher','详情'],
+          ['LearnView','政策文件 / 课堂视频链接','teacher','查看'],
+          ['Activity','党建活动','teacher','栏目'],
+          ['ActivityList','活动列表页','teacher','列表'],
+          ['ActivityDetail','活动详情页','teacher','详情'],
+          ['ActivityFile','图文 / 照片 / 附件查看','teacher','查看'],
+          ['Brand','品牌建设','teacher','栏目'],
+          ['BrandList','品牌建设资料列表','teacher','列表'],
+          ['BrandDetail','品牌建设详情页','teacher','详情'],
+          ['BrandFile','文件 / 照片查看','teacher','查看'],
+          ['PCUpload','管理端资料上传','admin','维护']
+        ],
+        edges: [
+          ['TeacherClient','TeacherHome'], ['TeacherHome','Party'],
+          ['Party','Learn'], ['Learn','LearnList'], ['LearnList','LearnDetail'], ['LearnDetail','LearnView'],
+          ['Party','Activity'], ['Activity','ActivityList'], ['ActivityList','ActivityDetail'], ['ActivityDetail','ActivityFile'],
+          ['Party','Brand'], ['Brand','BrandList'], ['BrandList','BrandDetail'], ['BrandDetail','BrandFile'],
+          ['PCUpload','LearnList'], ['PCUpload','ActivityList'], ['PCUpload','BrandList']
+        ]
+      },
+      {
+        id: 'teacher-coordination',
+        port: 'teacher',
+        title: '教师端综合协调',
+        summary: '教师端从首页进入综合协调，查看行政、后勤、人事资料；上传和维护放在管理端。',
+        nodes: [
+          ['TeacherClient','教师端客户端','teacher','客户端'],
+          ['TeacherHome','教师端首页','teacher','首页'],
+          ['Coordination','综合协调','teacher','页面'],
+          ['XZ','行政统筹','teacher','栏目'],
+          ['XZList','行政资料列表','teacher','列表'],
+          ['XZDetail','行政资料详情','teacher','详情'],
+          ['XZFiles','政策法规 / 通知文件 / 组织架构','teacher','文件'],
+          ['HQ','后勤保障','teacher','栏目'],
+          ['HQList','后勤资料列表','teacher','列表'],
+          ['HQDetail','后勤资料详情','teacher','详情'],
+          ['HQFiles','安全管理 / 卫生保健文件','teacher','文件'],
+          ['HR','人事管理','teacher','栏目'],
+          ['HRList','人事资料列表','teacher','列表'],
+          ['HRDetail','人事资料详情','teacher','详情'],
+          ['HRFiles','师德师风 / 跟岗交流图文','teacher','文件'],
+          ['PCUpload','管理端资料上传','admin','维护']
+        ],
+        edges: [
+          ['TeacherClient','TeacherHome'], ['TeacherHome','Coordination'],
+          ['Coordination','XZ'], ['XZ','XZList'], ['XZList','XZDetail'], ['XZDetail','XZFiles'],
+          ['Coordination','HQ'], ['HQ','HQList'], ['HQList','HQDetail'], ['HQDetail','HQFiles'],
+          ['Coordination','HR'], ['HR','HRList'], ['HRList','HRDetail'], ['HRDetail','HRFiles'],
+          ['PCUpload','XZList'], ['PCUpload','HQList'], ['PCUpload','HRList']
+        ]
+      },
+      {
+        id: 'teacher-training',
+        port: 'teacher',
+        title: '教师端教研培训',
+        summary: '教师端从首页进入教研培训，聚焦课程建设、课程资源、研修材料和五维评价。',
+        nodes: [
+          ['TeacherClient','教师端客户端','teacher','客户端'],
+          ['TeacherHome','教师端首页','teacher','首页'],
+          ['Training','教研培训','teacher','页面'],
+          ['CourseBuild','课程建设','teacher','栏目'],
+          ['CourseIntro','课程体系图文介绍','teacher','介绍'],
+          ['CourseIntroDetail','办园理念 / 课程体系详情页','teacher','详情'],
+          ['FiveChart','评价五维图','teacher','评价'],
+          ['TermEval','学期末综合评价','teacher','评价'],
+          ['Scale','填写五大领域量表','teacher','表单'],
+          ['Radar','生成五维雷达图','teacher','结果'],
+          ['ObserveNote','观察记录','teacher','外部'],
+          ['WeCom','企业微信单独收集','cross','外部'],
+          ['ResourceCenter','资源中心','teacher','页面'],
+          ['TrainList','研修列表页','teacher','列表'],
+          ['TrainDetail','研修详情页','teacher','详情'],
+          ['TrainNotice','研修通知','teacher','通知'],
+          ['TrainMaterial','PPT / PDF / 视频链接','teacher','材料'],
+          ['TrainFeedback','研修反馈 / 评论','teacher','反馈'],
+          ['FeedbackExport','管理端评论提取','admin','导出']
+        ],
+        edges: [
+          ['TeacherClient','TeacherHome'], ['TeacherHome','Training'],
+          ['Training','CourseBuild'], ['CourseBuild','CourseIntro'], ['CourseIntro','CourseIntroDetail'],
+          ['CourseBuild','FiveChart'], ['FiveChart','TermEval'], ['TermEval','Scale'], ['Scale','Radar'],
+          ['CourseBuild','ObserveNote'], ['ObserveNote','WeCom'],
+          ['Training','ResourceCenter'], ['Training','TrainList'], ['TrainList','TrainDetail'], ['TrainDetail','TrainNotice'], ['TrainDetail','TrainMaterial'],
+          ['TrainDetail','TrainFeedback'], ['TrainFeedback','FeedbackExport']
+        ]
+      },
+      {
+        id: 'teacher-family',
+        port: 'teacher',
+        title: '教师端家园社共育',
+        summary: '教师端发布在园时光、亲子任务、评价和成长册，结果流转给家长端查看或反馈。',
+        nodes: [
+          ['TeacherClient','教师端客户端','teacher','客户端'],
+          ['TeacherHome','教师端首页','teacher','首页'],
+          ['Family','家园社共育','teacher','页面'],
+          ['Garden','在园时光','teacher','栏目'],
+          ['GardenPublish','教师发布','teacher','发布'],
+          ['SelectChild','选择班级 / 幼儿','teacher','选择'],
+          ['UploadMoment','上传照片 / 视频 / 文字','teacher','上传'],
+          ['PublishMoment','发布动态','cross','流转'],
+          ['ParentMoment','家长端在园时光查看','parent','查看'],
+          ['GardenProgress','发布进度汇总','teacher','统计'],
+          ['FamilyTask','亲子任务 / 社区教育','teacher','任务'],
+          ['TaskPublish','教师发布任务','teacher','发布'],
+          ['TaskType','普通亲子 / 社区教育','teacher','类型'],
+          ['TaskRequire','任务要求 / 截止时间 / 上传要求','teacher','表单'],
+          ['PublishTask','发布给家长','cross','流转'],
+          ['ParentUpload','家长端上传反馈','parent','反馈'],
+          ['TaskProgress','教师查看完成进度','teacher','统计'],
+          ['GrowthFile','成长档案','teacher','档案'],
+          ['MonthEval','月度评价','teacher','评价'],
+          ['FillMonth','填写月度评价','teacher','表单'],
+          ['PublishMonth','发布给家长','cross','流转'],
+          ['TermEval','学期评价','teacher','评价'],
+          ['Scale','填写五大领域量表','teacher','量表'],
+          ['Radar','五维雷达图','teacher','图表'],
+          ['TermReport','综合评估报告','teacher','报告'],
+          ['ExportReport','导出 / 发布给家长','cross','流转'],
+          ['GrowthBook','成长册','teacher','成长册'],
+          ['BookCreate','生成成长册','teacher','生成'],
+          ['ChooseTemplate','选择模板','teacher','模板'],
+          ['CheckContent','勾选纳入内容','teacher','内容'],
+          ['BookPreview','成长册预览','teacher','预览'],
+          ['BookExport','确认发布 / 导出','cross','流转'],
+          ['ParentBookView','家长端查看成长册','parent','查看']
+        ],
+        edges: [
+          ['TeacherClient','TeacherHome'], ['TeacherHome','Family'],
+          ['Family','Garden'], ['Garden','GardenPublish'], ['GardenPublish','SelectChild'], ['SelectChild','UploadMoment'], ['UploadMoment','PublishMoment'], ['PublishMoment','ParentMoment'], ['Garden','GardenProgress'],
+          ['Family','FamilyTask'], ['FamilyTask','TaskPublish'], ['TaskPublish','TaskType'], ['TaskType','TaskRequire'], ['TaskRequire','PublishTask'], ['PublishTask','ParentUpload'], ['ParentUpload','TaskProgress'],
+          ['Family','GrowthFile'], ['GrowthFile','MonthEval'], ['MonthEval','FillMonth'], ['FillMonth','PublishMonth'],
+          ['GrowthFile','TermEval'], ['TermEval','Scale'], ['Scale','Radar'], ['Radar','TermReport'], ['TermReport','ExportReport'],
+          ['Family','GrowthBook'], ['GrowthBook','BookCreate'], ['BookCreate','ChooseTemplate'], ['ChooseTemplate','CheckContent'], ['CheckContent','BookPreview'], ['BookPreview','BookExport'], ['BookExport','ParentBookView']
+        ]
+      },
+      {
+        id: 'parent-home',
+        port: 'parent',
+        title: '家长端首页',
+        summary: '家长端从客户端进入首页；首页待办事项只保留通知和亲子任务两个入口。',
+        nodes: [
+          ['ParentClient','家长端客户端','parent','客户端'],
+          ['ParentHome','家长端首页','parent','首页'],
+          ['ParentTodo','待办事项','parent','section'],
+          ['NoticeTodo','通知','parent','待办入口'],
+          ['PNoticeList','通知列表','parent','列表'],
+          ['PNoticeDetail','通知详情','parent','详情'],
+          ['TaskTodo','亲子任务','parent','待办入口'],
+          ['PTaskList','任务列表','parent','列表'],
+          ['PTaskDetail','任务详情','parent','详情'],
+          ['PSubmit','提交反馈','parent','反馈'],
+          ['TeacherReview','教师端查看完成情况','teacher','流转'],
+          ['PMoment','在园时光','parent','页面'],
+          ['PGrowthFile','成长档案','parent','页面'],
+          ['PGrowthBook','成长册','parent','页面']
+        ],
+        edges: [
+          ['ParentClient','ParentHome'], ['ParentHome','ParentTodo'],
+          ['ParentTodo','NoticeTodo'], ['NoticeTodo','PNoticeList'], ['PNoticeList','PNoticeDetail'],
+          ['ParentTodo','TaskTodo'], ['TaskTodo','PTaskList'], ['PTaskList','PTaskDetail'], ['PTaskDetail','PSubmit'], ['PSubmit','TeacherReview'],
+          ['ParentHome','PMoment'], ['ParentHome','PGrowthFile'], ['ParentHome','PGrowthBook']
+        ]
+      },
+      {
+        id: 'parent-family-pages',
+        port: 'parent',
+        title: '家长端家园页面',
+        summary: '家长端仅呈现家园社共育相关页面，不展示教师端的党建、综合协调和教研培训模块。',
+        nodes: [
+          ['ParentClient','家长端客户端','parent','客户端'],
+          ['ParentHome','家长端首页','parent','首页'],
+          ['PMoment','在园时光','parent','页面'],
+          ['PMomentList','孩子相关动态列表','parent','列表'],
+          ['PMomentDetail','动态详情','parent','详情'],
+          ['PGrowthFile','成长档案','parent','页面'],
+          ['PMonth','月度评价查看','parent','评价'],
+          ['PTerm','学期评价 / 五维图查看','parent','评价'],
+          ['PGrowthBook','成长册','parent','页面'],
+          ['PBookPreview','成长册预览','parent','预览'],
+          ['PBookDownload','下载 / 保存','parent','下载']
+        ],
+        edges: [
+          ['ParentClient','ParentHome'], ['ParentHome','PMoment'], ['PMoment','PMomentList'], ['PMomentList','PMomentDetail'],
+          ['ParentHome','PGrowthFile'], ['PGrowthFile','PMonth'], ['PGrowthFile','PTerm'],
+          ['ParentHome','PGrowthBook'], ['PGrowthBook','PBookPreview'], ['PBookPreview','PBookDownload']
+        ]
+      },
+      {
+        id: 'admin-home',
+        port: 'admin',
+        title: '管理端首页',
+        summary: '管理端从客户端进入首页；首页待办事项只保留资源审核和共建任务两个入口。',
+        nodes: [
+          ['AdminClient','管理端客户端','admin','客户端'],
+          ['AdminHome','管理端首页','admin','首页'],
+          ['AdminTodo','待办事项','admin','section'],
+          ['ResourceAuditTodo','资源审核','admin','待办入口'],
+          ['AuditList','审核列表页','admin','列表'],
+          ['AuditDetail','审核详情页','admin','详情'],
+          ['AuditAction','通过 / 驳回 / 填写原因','admin','操作'],
+          ['PublishLibrary','进入资源库 / 案例库展示','cross','结果'],
+          ['BackTeacher','退回教师修改','teacher','结果'],
+          ['BuildTaskTodo','共建任务','admin','待办入口'],
+          ['TaskCreate','发布共建任务','admin','发布'],
+          ['SelectPeople','选择参与教师','admin','人员'],
+          ['TaskBoard','任务进度看板','admin','进度'],
+          ['UserManage','用户管理','admin','页面'],
+          ['ContentManage','内容管理','admin','页面'],
+          ['DataManage','数据记录','admin','页面']
+        ],
+        edges: [
+          ['AdminClient','AdminHome'], ['AdminHome','AdminTodo'],
+          ['AdminTodo','ResourceAuditTodo'], ['ResourceAuditTodo','AuditList'], ['AuditList','AuditDetail'], ['AuditDetail','AuditAction'], ['AuditAction','PublishLibrary'], ['AuditAction','BackTeacher'],
+          ['AdminTodo','BuildTaskTodo'], ['BuildTaskTodo','TaskCreate'], ['TaskCreate','SelectPeople'], ['SelectPeople','TaskBoard'],
+          ['AdminHome','UserManage'], ['AdminHome','ContentManage'], ['AdminHome','DataManage']
+        ]
+      },
+      {
+        id: 'admin-management',
+        port: 'admin',
+        title: '管理端后台管理',
+        summary: '管理端负责用户、内容、审核、共建任务和数据记录；文件类资料优先在 PC 后台维护。',
+        nodes: [
+          ['AdminClient','管理端客户端','admin','客户端'],
+          ['AdminHome','管理端首页','admin','首页'],
+          ['User','用户管理','admin','管理'],
+          ['Import','名单导入','admin','导入'],
+          ['Manual','手动录入','admin','录入'],
+          ['Search','搜索幼儿园 / 教师 / 班级 / 家长','admin','搜索'],
+          ['Role','权限分配','admin','权限'],
+          ['Content','内容管理','admin','管理'],
+          ['NoticeManage','资源中心通知管理','admin','通知'],
+          ['PartyManage','党建资料管理','admin','党建'],
+          ['CoordinationManage','综合协调资料管理','admin','协调'],
+          ['TrainManage','教研培训资料管理','admin','教研'],
+          ['RecommendManage','首页推荐课程案例管理','admin','推荐'],
+          ['Audit','审核管理','admin','审核'],
+          ['ResourceAudit','资源审核','admin','资源'],
+          ['CaseAudit','案例审核','admin','案例'],
+          ['Task','共建任务管理','admin','任务'],
+          ['PublishTask','发布任务','admin','发布'],
+          ['TaskProgress','查看完成进度','admin','进度'],
+          ['Data','数据记录','admin','数据'],
+          ['DownloadLog','下载记录','admin','下载'],
+          ['BrowseLog','浏览记录','admin','浏览'],
+          ['FeedbackExport','研修反馈 / 评论提取','admin','导出']
+        ],
+        edges: [
+          ['AdminClient','AdminHome'],
+          ['AdminHome','User'], ['User','Import'], ['User','Manual'], ['User','Search'], ['User','Role'],
+          ['AdminHome','Content'], ['Content','NoticeManage'], ['Content','PartyManage'], ['Content','CoordinationManage'], ['Content','TrainManage'], ['Content','RecommendManage'],
+          ['AdminHome','Audit'], ['Audit','ResourceAudit'], ['Audit','CaseAudit'],
+          ['AdminHome','Task'], ['Task','PublishTask'], ['PublishTask','TaskProgress'],
+          ['AdminHome','Data'], ['Data','DownloadLog'], ['Data','BrowseLog'], ['Data','FeedbackExport']
+        ]
+      }
+    ];
+
+    const state = {
+      port: 'teacher',
+      moduleId: 'teacher-overview',
+      filter: 'all',
+      query: '',
+      activeNode: null,
+      zoom: 1
+    };
+
+    const entryTabs = document.getElementById('entryTabs');
+    const moduleList = document.getElementById('moduleList');
+    const chips = document.getElementById('filterChips');
+    const search = document.getElementById('search');
+    const svg = document.getElementById('map');
+    const detail = document.getElementById('detail');
+    const zoomIn = document.getElementById('zoomIn');
+    const zoomOut = document.getElementById('zoomOut');
+    const zoomReset = document.getElementById('zoomReset');
+    const zoomValue = document.getElementById('zoomValue');
+
+    function currentModule() {
+      const modules = MODULES.filter(m => m.port === state.port);
+      return modules.find(m => m.id === state.moduleId) || modules[0] || MODULES[0];
+    }
+
+    function renderEntries() {
+      entryTabs.innerHTML = '';
+      Object.entries(PORTS).forEach(([key, port]) => {
+        const button = document.createElement('button');
+        button.className = 'tab' + (state.port === key ? ' active' : '');
+        button.innerHTML = `<span>${port.label}</span><i class="port ${port.tone}"></i>`;
+        button.addEventListener('click', () => {
+          state.port = key;
+          state.moduleId = MODULES.find(m => m.port === key).id;
+          state.activeNode = null;
+          render();
+        });
+        entryTabs.appendChild(button);
+      });
+    }
+
+    function renderModules() {
+      moduleList.innerHTML = '';
+      MODULES.filter(m => m.port === state.port).forEach(module => {
+        const button = document.createElement('button');
+        button.className = 'module-button' + (state.moduleId === module.id ? ' active' : '');
+        button.innerHTML = `<strong>${module.title}</strong><span>${module.summary}</span>`;
+        button.addEventListener('click', () => {
+          state.moduleId = module.id;
+          state.activeNode = null;
+          render();
+        });
+        moduleList.appendChild(button);
+      });
+    }
+
+    function renderFilters() {
+      const options = [
+        ['all', '全部'],
+        ['teacher', '教师端'],
+        ['parent', '家长端'],
+        ['admin', '管理端'],
+        ['cross', '跨端']
+      ];
+      chips.innerHTML = '';
+      options.forEach(([value, label]) => {
+        const button = document.createElement('button');
+        button.className = 'chip' + (state.filter === value ? ' active' : '');
+        button.textContent = label;
+        button.addEventListener('click', () => {
+          state.filter = value;
+          renderGraph();
+        });
+        chips.appendChild(button);
+      });
+    }
+
+    function layout(nodes, edges = []) {
+      const nodeWidth = 168;
+      const nodeHeight = 54;
+      const columnGap = 32;
+      const rowGap = 40;
+      const levelGap = 56;
+      const maxPerRow = 6;
+      const explicitLevels = new Map(nodes.filter(node => Number.isFinite(node[4])).map(node => [node[0], node[4]]));
+      const ids = new Set(nodes.map(node => node[0]));
+      const incoming = new Map(nodes.map(node => [node[0], 0]));
+      const outgoing = new Map(nodes.map(node => [node[0], []]));
+
+      edges.forEach(([source, target]) => {
+        if (!ids.has(source) || !ids.has(target)) return;
+        incoming.set(target, (incoming.get(target) || 0) + 1);
+        outgoing.get(source).push(target);
+      });
+
+      const inferred = new Map();
+      const roots = nodes.filter(node => (incoming.get(node[0]) || 0) === 0).map(node => node[0]);
+      const queue = (roots.length ? roots : [nodes[0]?.[0]]).filter(Boolean).map(id => [id, explicitLevels.get(id) ?? 0]);
+
+      while (queue.length) {
+        const [id, level] = queue.shift();
+        if (inferred.has(id) && inferred.get(id) <= level) continue;
+        inferred.set(id, level);
+        (outgoing.get(id) || []).forEach(target => {
+          const nextLevel = explicitLevels.get(target) ?? level + 1;
+          queue.push([target, nextLevel]);
+        });
+      }
+
+      nodes.forEach((node, index) => {
+        if (!inferred.has(node[0])) inferred.set(node[0], explicitLevels.get(node[0]) ?? index);
+      });
+
+      const groups = new Map();
+      nodes.forEach(node => {
+        const level = explicitLevels.get(node[0]) ?? inferred.get(node[0]) ?? 0;
+        if (!groups.has(level)) groups.set(level, []);
+        groups.get(level).push(node);
+      });
+
+      const levelRows = Array.from(groups.values()).map(group => Math.ceil(group.length / maxPerRow));
+      const widestCount = Math.max(...Array.from(groups.values()).map(group => Math.min(group.length, maxPerRow)), 1);
+      const canvasWidth = Math.max(980, 120 + widestCount * nodeWidth + (widestCount - 1) * columnGap);
+      const placed = {};
+      let y = 50;
+
+      Array.from(groups.keys()).sort((a, b) => a - b).forEach((level, levelIndex) => {
+        const group = groups.get(level);
+        const rows = Math.ceil(group.length / maxPerRow);
+        for (let row = 0; row < rows; row++) {
+          const rowNodes = group.slice(row * maxPerRow, row * maxPerRow + maxPerRow);
+          const rowWidth = rowNodes.length * nodeWidth + (rowNodes.length - 1) * columnGap;
+          const startX = (canvasWidth - rowWidth) / 2;
+          rowNodes.forEach((node, col) => {
+            placed[node[0]] = {
+              id: node[0],
+              label: node[1],
+              type: node[2],
+              tag: node[3],
+              level,
+              x: startX + col * (nodeWidth + columnGap),
+              y: y + row * (nodeHeight + rowGap),
+              w: nodeWidth,
+              h: nodeHeight
+            };
+          });
+        }
+        y += rows * (nodeHeight + rowGap) + (levelIndex === levelRows.length - 1 ? 0 : levelGap);
+      });
+
+      placed.__bounds = { width: canvasWidth, height: Math.max(720, y + 80) };
+      return placed;
+    }
+
+    function isVisible(node) {
+      const queryHit = !state.query || `${node.label} ${node.tag} ${node.id}`.toLowerCase().includes(state.query.toLowerCase());
+      const filterHit = state.filter === 'all' || node.type === state.filter;
+      return queryHit && filterHit;
+    }
+
+    function renderGraph() {
+      const module = currentModule();
+      const nodes = layout(module.nodes, module.edges);
+      const bounds = nodes.__bounds || { width: 980, height: 720 };
+      delete nodes.__bounds;
+      const nodeValues = Object.values(nodes);
+      const visibleIds = new Set(nodeValues.filter(isVisible).map(n => n.id));
+      const activeId = state.activeNode || nodeValues[0]?.id;
+      state.activeNode = activeId;
+      svg.setAttribute('viewBox', `0 0 ${bounds.width} ${bounds.height}`);
+      svg.style.width = `${Math.round(bounds.width * state.zoom)}px`;
+      svg.style.height = `${Math.round(bounds.height * state.zoom)}px`;
+      svg.style.minWidth = `${Math.round(Math.min(bounds.width * state.zoom, bounds.width))}px`;
+      zoomValue.textContent = `${Math.round(state.zoom * 100)}%`;
+      svg.innerHTML = `
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#687386"></path>
+          </marker>
+        </defs>
+      `;
+
+      const activeLinks = new Set();
+      module.edges.forEach(([source, target]) => {
+        if (source === activeId || target === activeId) {
+          activeLinks.add(source);
+          activeLinks.add(target);
+        }
+      });
+
+      module.edges.forEach(([source, target]) => {
+        const a = nodes[source];
+        const b = nodes[target];
+        if (!a || !b) return;
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        const sameLevel = Math.abs((a.y + a.h / 2) - (b.y + b.h / 2)) < 20;
+        let d;
+        if (sameLevel) {
+          const sx = a.x + a.w;
+          const sy = a.y + a.h / 2;
+          const tx = b.x;
+          const ty = b.y + b.h / 2;
+          const mid = Math.max(36, Math.abs(tx - sx) / 2);
+          d = `M ${sx} ${sy} C ${sx + mid} ${sy}, ${tx - mid} ${ty}, ${tx} ${ty}`;
+        } else {
+          const sx = a.x + a.w / 2;
+          const sy = a.y + a.h;
+          const tx = b.x + b.w / 2;
+          const ty = b.y;
+          const mid = Math.max(36, Math.abs(ty - sy) / 2);
+          d = `M ${sx} ${sy} C ${sx} ${sy + mid}, ${tx} ${ty - mid}, ${tx} ${ty}`;
+        }
+        path.setAttribute('d', d);
+        const filtered = !visibleIds.has(source) || !visibleIds.has(target);
+        path.setAttribute('class', 'edge' + (filtered ? ' dim' : '') + (source === activeId || target === activeId ? ' active' : ''));
+        svg.appendChild(path);
+      });
+
+      nodeValues.forEach(node => {
+        const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        const related = activeLinks.has(node.id) || node.id === activeId;
+        const dim = !visibleIds.has(node.id) || (activeLinks.size && !related);
+        group.setAttribute('class', `node ${node.type}${node.id === activeId ? ' active' : ''}${dim ? ' dim' : ''}`);
+        group.setAttribute('tabindex', '0');
+        group.setAttribute('role', 'button');
+        group.setAttribute('aria-label', node.label);
+        group.addEventListener('click', () => {
+          state.activeNode = node.id;
+          renderGraph();
+        });
+        group.addEventListener('keydown', event => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            state.activeNode = node.id;
+            renderGraph();
+          }
+        });
+        group.innerHTML = `
+          <rect x="${node.x}" y="${node.y}" width="${node.w}" height="${node.h}"></rect>
+          <text x="${node.x + node.w / 2}" y="${node.y + 22}">${escapeXml(shorten(node.label, 13))}</text>
+          <text class="tag" x="${node.x + node.w / 2}" y="${node.y + 40}">${escapeXml(node.tag)}</text>
+        `;
+        svg.appendChild(group);
+      });
+
+      renderDetail(module, nodes[activeId]);
+    }
+
+    function renderDetail(module, node) {
+      if (!node) {
+        detail.innerHTML = '<div class="empty">无可展示节点</div>';
+        return;
+      }
+      const incoming = module.edges.filter(edge => edge[1] === node.id).map(edge => edge[0]);
+      const outgoing = module.edges.filter(edge => edge[0] === node.id).map(edge => edge[1]);
+      const labels = new Map(module.nodes.map(n => [n[0], n[1]]));
+      detail.innerHTML = `
+        <h2>${escapeHtml(node.label)}</h2>
+        <div class="meta">
+          <span class="badge">${escapeHtml(PORTS[node.type]?.label || (node.type === 'cross' ? '跨端流转' : node.type))}</span>
+          <span class="badge">${escapeHtml(module.title)}</span>
+          <span class="badge">${escapeHtml(node.tag)}</span>
+        </div>
+        <p>${escapeHtml(module.summary)}</p>
+        <ul class="route-list">
+          <li><strong>进入来源</strong>${incoming.length ? incoming.map(id => escapeHtml(labels.get(id) || id)).join(' / ') : '模块入口'}</li>
+          <li><strong>下一步</strong>${outgoing.length ? outgoing.map(id => escapeHtml(labels.get(id) || id)).join(' / ') : '流程终点'}</li>
+        </ul>
+      `;
+    }
+
+    function shorten(text, max) {
+      return text.length > max ? text.slice(0, max - 1) + '…' : text;
+    }
+
+    function escapeXml(text) {
+      return String(text).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
+    }
+
+    function escapeHtml(text) {
+      return String(text).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    function render() {
+      renderEntries();
+      renderModules();
+      renderFilters();
+      renderGraph();
+    }
+
+    search.addEventListener('input', event => {
+      state.query = event.target.value.trim();
+      renderGraph();
+    });
+
+    function setZoom(value) {
+      state.zoom = Math.min(2.25, Math.max(0.55, Number(value.toFixed(2))));
+      renderGraph();
+    }
+
+    zoomIn.addEventListener('click', () => setZoom(state.zoom + 0.15));
+    zoomOut.addEventListener('click', () => setZoom(state.zoom - 0.15));
+    zoomReset.addEventListener('click', () => setZoom(1));
+
+    render();
+  </script>
+</body>
+</html>
