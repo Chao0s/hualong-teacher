@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=390, initial-scale=1, user-scalable=no" />
+<title>质量评估 · 幼儿园教师端</title>
+<style>
+  :root{
+    --bg:#f0f5f5;--surface:#fff;--fg:#1a1916;--muted:#868686;--border:#e0e8e8;
+    --accent:#189b91;--accent-dark:#067e76;--accent-light:#e8f5f4;
+    --green:#4b9a5a;--green-light:#eaf5ed;--amber:#c47900;--amber-light:#fff7e3;
+    --blue:#3388fc;--blue-light:#eaf2ff;--danger:#dc2626;--danger-light:#feecec;
+    --font:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',system-ui,sans-serif;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{display:flex;justify-content:center;min-height:100vh;background:transparent;font-family:var(--font);color:var(--fg);-webkit-font-smoothing:antialiased}
+  button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;text-align:left}
+  .phone{width:390px;height:844px;background:var(--bg);display:flex;flex-direction:column;overflow:hidden;border-radius:40px;position:relative}
+  .status-bar{display:flex;justify-content:space-between;align-items:center;padding:14px 28px 8px;font-size:13px;font-weight:600}
+  .nav-bar{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;padding:8px 12px 10px}
+  .back{display:grid;place-items:center;width:36px;height:36px;text-decoration:none;color:var(--fg);font-size:24px}
+  .nav-title{text-align:center;font-size:17px;font-weight:700}
+
+  /* ---- fixed summary + filters ---- */
+  .topfix{flex-shrink:0;padding:4px 16px 12px}
+  .summary{background:var(--surface);border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:14px}
+  .dial{--p:0;width:58px;height:58px;flex-shrink:0;border-radius:50%;
+    background:conic-gradient(var(--accent) calc(var(--p)*1%),var(--border) 0);
+    display:grid;place-items:center;transition:background .3s}
+  .dial::after{content:'';position:absolute;width:44px;height:44px;border-radius:50%;background:var(--surface)}
+  .dial-txt{position:relative;z-index:1;font-size:15px;font-weight:800;line-height:1;letter-spacing:-.5px}
+  .dial-txt small{font-size:9px;font-weight:700}
+  .sum-right{flex:1;min-width:0}
+  .sum-lvl{font-size:15px;font-weight:800}
+  .sum-lvl b{color:var(--accent-dark)}
+  .sum-count{font-size:11.5px;color:var(--muted);margin:3px 0 7px;font-weight:600}
+  .bar{height:6px;border-radius:999px;background:var(--border);overflow:hidden}
+  .bar > i{display:block;height:100%;background:var(--accent);border-radius:999px;transition:width .3s}
+
+  .filters{display:flex;gap:7px;margin-top:10px}
+  .chip{font-size:12px;font-weight:700;color:var(--muted);background:var(--surface);border:1px solid var(--border);
+    padding:6px 13px;border-radius:999px;white-space:nowrap}
+  .chip.on{color:#fff;background:var(--accent);border-color:var(--accent)}
+  .chip b{font-weight:800}
+
+  /* ---- scroll body ---- */
+  .scroll{flex:1;overflow-y:auto;padding:2px 16px 92px}
+  .scroll::-webkit-scrollbar{display:none}
+  .empty{text-align:center;color:var(--muted);font-size:13px;padding:48px 20px;line-height:1.7}
+
+  .section{background:var(--surface);border-radius:16px;margin-bottom:10px;overflow:hidden}
+  .sec-head{width:100%;display:flex;align-items:center;gap:10px;padding:14px 14px}
+  .sec-head:active{background:#f8fbfb}
+  .sec-idx{width:26px;height:26px;flex-shrink:0;border-radius:8px;display:grid;place-items:center;
+    font-size:12px;font-weight:800;color:var(--accent-dark);background:var(--accent-light)}
+  .sec-name{flex:1;min-width:0;font-size:14.5px;font-weight:750;line-height:1.3}
+  .sec-meta{font-size:11px;font-weight:700;color:var(--muted);white-space:nowrap;text-align:right}
+  .sec-meta b{color:var(--accent-dark)}
+  .chev{width:16px;flex-shrink:0;color:var(--muted);transition:transform .2s;font-size:12px;text-align:center}
+  .section.open .chev{transform:rotate(90deg)}
+  .sec-body{display:none;padding:0 12px 8px}
+  .section.open .sec-body{display:block}
+
+  .subhead{font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.4px;margin:12px 4px 6px;text-transform:none}
+
+  .ind{border:1px solid var(--border);border-radius:12px;margin-bottom:8px;overflow:hidden}
+  .ind-head{width:100%;display:flex;align-items:center;gap:9px;padding:11px 12px}
+  .ind-head:active{background:#f8fbfb}
+  .ind-code{font-size:10px;font-weight:800;color:var(--muted);font-variant-numeric:tabular-nums;flex-shrink:0}
+  .ind-title{flex:1;min-width:0;font-size:13px;font-weight:650;line-height:1.35}
+  .chip-score{font-size:11px;font-weight:800;padding:3px 9px;border-radius:999px;white-space:nowrap;flex-shrink:0;
+    color:var(--muted);background:var(--bg)}
+  .chip-score.s-low{color:var(--danger);background:var(--danger-light)}
+  .chip-score.s-mid{color:var(--amber);background:var(--amber-light)}
+  .chip-score.s-high{color:var(--green);background:var(--green-light)}
+
+  .ind-body{display:none;padding:2px 12px 13px;border-top:1px solid var(--border)}
+  .ind.open .ind-body{display:block}
+  .legend{font-size:10px;color:var(--muted);margin:11px 0 7px;font-weight:600}
+  .scores{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+  .sbtn{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 2px;border:1px solid var(--border);
+    border-radius:10px;background:var(--surface);transition:.12s}
+  .sbtn:active{transform:scale(.96)}
+  .sbtn .n{font-size:16px;font-weight:800;line-height:1}
+  .sbtn .l{font-size:9px;font-weight:600;color:var(--muted)}
+  .sbtn.sel{background:var(--accent);border-color:var(--accent)}
+  .sbtn.sel .n,.sbtn.sel .l{color:#fff}
+
+  .evi-hint{display:none;margin-top:10px;font-size:11px;font-weight:700;color:var(--danger);
+    background:var(--danger-light);border-radius:9px;padding:8px 10px;line-height:1.5}
+  .ind[data-evi="1"] .evi-hint{display:block}
+
+  .rub-toggle{margin-top:11px;display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--accent-dark)}
+  .rub-toggle .a{font-size:11px;transition:transform .2s}
+  .ind.rub .rub-toggle .a{transform:rotate(90deg)}
+  .rubric{display:none;margin-top:8px;border-radius:10px;overflow:hidden;border:1px solid var(--border)}
+  .ind.rub .rubric{display:block}
+  .rrow{display:grid;grid-template-columns:30px 1fr;gap:9px;padding:9px 11px;font-size:11.5px;line-height:1.55}
+  .rrow + .rrow{border-top:1px solid var(--border)}
+  .rrow .rk{font-weight:800;font-variant-numeric:tabular-nums}
+  .rrow.r1{background:#fdf4f4}.rrow.r1 .rk{color:var(--danger)}
+  .rrow.r3{background:#fffaf0}.rrow.r3 .rk{color:var(--amber)}
+  .rrow.r5{background:#f2faf3}.rrow.r5 .rk{color:var(--green)}
+
+  .field-lbl{font-size:11px;font-weight:800;color:var(--muted);margin:13px 0 6px}
+  .evi-add{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--muted);
+    border:1px dashed var(--border);border-radius:9px;padding:8px 12px}
+  .evi-add b{font-size:15px;line-height:1;color:var(--accent)}
+  .evi-count{font-size:11px;color:var(--accent-dark);font-weight:700;margin-left:8px}
+  .note{width:100%;min-height:56px;border:1px solid var(--border);border-radius:10px;padding:9px 11px;
+    font:inherit;font-size:12.5px;resize:vertical;background:var(--surface);color:var(--fg)}
+  .note::placeholder{color:#b7b7b7}
+
+  /* ---- fixed foot ---- */
+  .footbar{position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;gap:12px;
+    padding:12px 16px 22px;background:var(--surface);border-top:1px solid var(--border)}
+  .foot-score{flex:1;min-width:0}
+  .foot-score .n{font-size:19px;font-weight:800;letter-spacing:-.5px}
+  .foot-score .n small{font-size:11px;font-weight:700;color:var(--muted)}
+  .foot-score .l{font-size:11px;color:var(--muted);font-weight:600;margin-top:1px}
+  .save-btn{flex-shrink:0;background:var(--accent);color:#fff;font-size:14px;font-weight:800;
+    padding:12px 22px;border-radius:12px}
+  .save-btn:active{background:var(--accent-dark)}
+  .toast{position:absolute;left:50%;bottom:96px;transform:translateX(-50%) translateY(8px);
+    background:rgba(26,25,22,.92);color:#fff;font-size:12px;font-weight:700;padding:9px 16px;border-radius:999px;
+    opacity:0;pointer-events:none;transition:.25s}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
+  <div class="nav-bar"><a class="back" href="home.html">‹</a><div class="nav-title">质量评估</div><span></span></div>
+
+  <div class="topfix">
+    <div class="summary">
+      <div class="dial" id="dial"><span class="dial-txt" id="dialTxt">—</span></div>
+      <div class="sum-right">
+        <div class="sum-lvl">总体等级 <b id="sumLvl">未开始</b></div>
+        <div class="sum-count" id="sumCount">已评 0 / 120 项 · 保育教育质量指导手册</div>
+        <div class="bar"><i id="sumBar" style="width:0%"></i></div>
+      </div>
+    </div>
+    <div class="filters" id="filters">
+      <button class="chip on" data-f="all">全部 <b id="cAll">120</b></button>
+      <button class="chip" data-f="todo">未评 <b id="cTodo">120</b></button>
+      <button class="chip" data-f="low">低分 <b id="cLow">0</b></button>
+    </div>
+  </div>
+
+  <main class="scroll" id="scroll" data-od-id="assessment-scroll">
+    <div class="empty" id="empty" hidden></div>
+  </main>
+
+  <div class="footbar">
+    <div class="foot-score">
+      <div class="n" id="footScore">—<small> 分</small></div>
+      <div class="l" id="footLvl">尚未开始评价</div>
+    </div>
+    <button class="save-btn" id="saveBtn" data-od-id="assessment-save">保存</button>
+  </div>
+  <div class="toast" id="toast">已保存</div>
+</div>
+
+<script src="assessment-data.js"></script>
+<script>
+(function(){
+  var DATA = window.ASSESSMENT;
+  if(!DATA){ document.getElementById('empty').hidden=false; document.getElementById('empty').textContent='评价数据未能加载'; return; }
+  var OPTS = DATA.scoring.options;          // [{score,label}]
+  var LEVELS = DATA.scoring.levels;         // [{min,max,label}]
+  var LABELS = {}; OPTS.forEach(function(o){ LABELS[o.score]=o.label; });
+
+  var KEY='hualong_assessment_v1', NKEY='hualong_assessment_notes_v1';
+  var SCORES={}, NOTES={};
+  try{ SCORES=JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ SCORES={}; }
+  try{ NOTES=JSON.parse(localStorage.getItem(NKEY)||'{}')||{}; }catch(e){ NOTES={}; }
+
+  // group indicators by section -> subsection
+  var scroll=document.getElementById('scroll');
+  var byId={};
+  DATA.indicators.forEach(function(i){ byId[i.id]=i; });
+
+  DATA.sections.forEach(function(sec, si){
+    var list = DATA.indicators.filter(function(i){ return i.section===sec.name; });
+    var secEl=document.createElement('section');
+    secEl.className='section'; secEl.dataset.section=sec.name;
+    var head=document.createElement('button'); head.className='sec-head'; head.type='button';
+    head.innerHTML='<span class="sec-idx">'+(si+1)+'</span>'
+      +'<span class="sec-name">'+sec.name+'</span>'
+      +'<span class="sec-meta" data-secmeta>'+'</span><span class="chev">›</span>';
+    head.addEventListener('click',function(){ secEl.classList.toggle('open'); });
+    secEl.appendChild(head);
+
+    var body=document.createElement('div'); body.className='sec-body';
+    // subsection grouping
+    (sec.subs && sec.subs.length ? sec.subs : [{name:'',range:null}]).forEach(function(sub){
+      var subInds = list.filter(function(i){ return sub.name ? i.sub===sub.name : true; });
+      if(!subInds.length) return;
+      if(sub.name){ var sh=document.createElement('div'); sh.className='subhead'; sh.textContent=sub.name; body.appendChild(sh); }
+      subInds.forEach(function(ind){ body.appendChild(buildInd(ind)); });
+    });
+    secEl.appendChild(body);
+    scroll.appendChild(secEl);
+  });
+
+  function buildInd(ind){
+    var el=document.createElement('div');
+    el.className='ind'; el.dataset.id=ind.id;
+    var cur=SCORES[ind.id];
+    // head
+    var head=document.createElement('button'); head.className='ind-head'; head.type='button';
+    head.innerHTML='<span class="ind-code">'+ind.code+'</span>'
+      +'<span class="ind-title">'+ind.title+'</span>'
+      +'<span class="chip-score" data-chip>'+chipText(cur)+'</span>';
+    head.addEventListener('click',function(){ el.classList.toggle('open'); });
+    el.appendChild(head);
+    // body
+    var b=document.createElement('div'); b.className='ind-body';
+    var legend='<div class="legend">评分：1 '+LABELS[1]+' · 3 '+LABELS[3]+' · 5 '+LABELS[5]+'（2、4 为过渡分）</div>';
+    var btns='<div class="scores">';
+    OPTS.forEach(function(o){ btns+='<button type="button" class="sbtn" data-s="'+o.score+'"><span class="n">'+o.score+'</span><span class="l">'+o.label+'</span></button>'; });
+    btns+='</div>';
+    var eviHint='<div class="evi-hint">该评分（1 分 / 5 分）需保存图像资料或特例作为评价依据。</div>';
+    var rub='<button type="button" class="rub-toggle"><span class="a">›</span>评分标准（1 / 3 / 5 分锚点）</button>'
+      +'<div class="rubric">'
+      + rrow('1',ind.r1) + rrow('3',ind.r3) + rrow('5',ind.r5)
+      +'</div>';
+    var evi='<div class="field-lbl">佐证图片</div>'
+      +'<label class="evi-add"><b>＋</b> 添加佐证'
+      +'<input type="file" accept="image/*" multiple hidden data-evi></label>'
+      +'<span class="evi-count" data-evicount></span>';
+    var note='<div class="field-lbl">评价记录</div>'
+      +'<textarea class="note" data-note placeholder="记录观察到的现象、特例或改进建议…">'+(NOTES[ind.id]||'')+'</textarea>';
+    b.innerHTML=legend+btns+eviHint+rub+evi+note;
+    el.appendChild(b);
+
+    // reflect current score
+    setEviFlag(el,cur);
+    markSel(el,cur);
+
+    // interactions
+    b.querySelectorAll('.sbtn').forEach(function(btn){
+      btn.addEventListener('click',function(){
+        var v=+btn.dataset.s;
+        if(SCORES[ind.id]===v){ delete SCORES[ind.id]; v=undefined; } // tap again to clear
+        else SCORES[ind.id]=v;
+        markSel(el,v); setEviFlag(el,v);
+        head.querySelector('[data-chip]').outerHTML='<span class="chip-score '+chipCls(v)+'" data-chip>'+chipText(v)+'</span>';
+        persist(); refreshSummary(); refreshCounts(); refreshSecMeta();
+      });
+    });
+    b.querySelector('.rub-toggle').addEventListener('click',function(){ el.classList.toggle('rub'); });
+    b.querySelector('[data-note]').addEventListener('input',function(){ NOTES[ind.id]=this.value; persistNotes(); });
+    b.querySelector('[data-evi]').addEventListener('change',function(){
+      var n=this.files?this.files.length:0;
+      b.querySelector('[data-evicount]').textContent=n?('已选 '+n+' 张'):'';
+    });
+    return el;
+  }
+
+  function rrow(k,txt){ return '<div class="rrow r'+k+'"><span class="rk">'+k+'分</span><span>'+(txt||'—')+'</span></div>'; }
+  function chipText(v){ return v?(v+'分 '+LABELS[v]):'未评'; }
+  function chipCls(v){ if(!v) return ''; if(v<=2) return 's-low'; if(v===3) return 's-mid'; return 's-high'; }
+  function markSel(el,v){ el.querySelectorAll('.sbtn').forEach(function(x){ x.classList.toggle('sel', +x.dataset.s===v); }); }
+  function setEviFlag(el,v){ el.dataset.evi=(v===1||v===5)?'1':'0'; }
+
+  function persist(){ try{ localStorage.setItem(KEY,JSON.stringify(SCORES)); }catch(e){} }
+  function persistNotes(){ try{ localStorage.setItem(NKEY,JSON.stringify(NOTES)); }catch(e){} }
+
+  // ---- summary ----
+  function stats(){
+    var ids=Object.keys(SCORES).filter(function(k){return SCORES[k]>=1;});
+    var sum=0; ids.forEach(function(k){ sum+=SCORES[k]; });
+    var n=ids.length, ratio=n?sum/(n*5):0;
+    return {n:n,sum:sum,ratio:ratio};
+  }
+  function levelOf(ratio){ var lab='不适宜'; LEVELS.forEach(function(r){ if(ratio>=r.min) lab=r.label; }); return lab; }
+  function refreshSummary(){
+    var s=stats(), pct=Math.round(s.ratio*100);
+    var dial=document.getElementById('dial');
+    dial.style.setProperty('--p', s.n?pct:0);
+    document.getElementById('dialTxt').innerHTML = s.n? (pct+'<small>%</small>') : '—';
+    document.getElementById('sumLvl').textContent = s.n? levelOf(s.ratio) : '未开始';
+    document.getElementById('sumCount').textContent = '已评 '+s.n+' / 120 项 · 保育教育质量指导手册';
+    document.getElementById('sumBar').style.width = Math.round(s.n/120*100)+'%';
+    document.getElementById('footScore').innerHTML = s.n? (pct+'<small> 分（得分率）</small>') : '—<small> 分</small>';
+    document.getElementById('footLvl').textContent = s.n? ('总体等级：'+levelOf(s.ratio)+' · 有效评价 '+s.n+' 项') : '尚未开始评价';
+  }
+
+  // ---- filter counts ----
+  function refreshCounts(){
+    var all=DATA.indicators.length;
+    var scored=Object.keys(SCORES).filter(function(k){return SCORES[k]>=1;}).length;
+    var low=Object.keys(SCORES).filter(function(k){return SCORES[k]>=1&&SCORES[k]<=2;}).length;
+    document.getElementById('cAll').textContent=all;
+    document.getElementById('cTodo').textContent=all-scored;
+    document.getElementById('cLow').textContent=low;
+  }
+
+  // ---- section meta (visible count / avg) ----
+  function refreshSecMeta(){
+    document.querySelectorAll('.section').forEach(function(sec){
+      var name=sec.dataset.section;
+      var inds=DATA.indicators.filter(function(i){return i.section===name;});
+      var scored=inds.filter(function(i){return SCORES[i.id]>=1;});
+      var avg=scored.length? (scored.reduce(function(a,i){return a+SCORES[i.id];},0)/scored.length).toFixed(1):'—';
+      sec.querySelector('[data-secmeta]').innerHTML='<b>'+scored.length+'</b>/'+inds.length+' · 均分 '+avg;
+    });
+  }
+
+  // ---- filtering ----
+  var mode='all';
+  function applyFilter(m){
+    mode=m;
+    document.querySelectorAll('.chip').forEach(function(c){ c.classList.toggle('on', c.dataset.f===m); });
+    var anyVisible=false;
+    document.querySelectorAll('.section').forEach(function(sec){
+      var visInSec=0;
+      sec.querySelectorAll('.ind').forEach(function(el){
+        var v=SCORES[el.dataset.id];
+        var show = m==='all' ? true : (m==='todo' ? !(v>=1) : (v>=1&&v<=2));
+        el.style.display=show?'':'none';
+        if(show) visInSec++;
+      });
+      // hide empty subheads when filtering
+      sec.querySelectorAll('.subhead').forEach(function(sh){
+        var vis=false, nx=sh.nextElementSibling;
+        while(nx && nx.classList.contains('ind')){ if(nx.style.display!=='none'){vis=true;break;} nx=nx.nextElementSibling; }
+        sh.style.display = (m==='all'||vis)?'':'none';
+      });
+      if(m==='all'){ sec.style.display=''; }
+      else { sec.style.display=visInSec?'':'none'; sec.classList.toggle('open', visInSec>0); }
+      if(visInSec) anyVisible=true;
+    });
+    var empty=document.getElementById('empty');
+    if(m!=='all' && !anyVisible){ empty.hidden=false; empty.textContent = m==='todo'?'全部 120 项均已评价 🎉':'暂无低分（1–2 分）指标'; }
+    else empty.hidden=true;
+  }
+  document.getElementById('filters').addEventListener('click',function(e){
+    var b=e.target.closest('.chip'); if(b) applyFilter(b.dataset.f);
+  });
+
+  // ---- save button ----
+  var toast=document.getElementById('toast');
+  document.getElementById('saveBtn').addEventListener('click',function(){
+    persist(); persistNotes();
+    toast.classList.add('show'); setTimeout(function(){ toast.classList.remove('show'); },1400);
+  });
+
+  // init
+  document.querySelectorAll('.ind [data-chip]').forEach(function(c){
+    var v=SCORES[c.closest('.ind').dataset.id]; c.className='chip-score '+chipCls(v);
+  });
+  refreshSummary(); refreshCounts(); refreshSecMeta();
+  applyFilter('all');
+})();
+</script>
+</body>
+</html>

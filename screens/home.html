@@ -57,19 +57,20 @@
   .sec { font-size: 16px; font-weight: 650; margin: 22px 0 12px; display: flex; align-items: center; justify-content: space-between; }
   .sec .hint { font-size: 12px; color: var(--muted); font-weight: 500; }
 
-  .todo-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .todo-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
   .todo-card {
-    min-height: 104px; background: var(--surface); border-radius: 16px; padding: 14px;
-    display: flex; flex-direction: column; justify-content: space-between; cursor: pointer;
+    min-height: 112px; background: var(--surface); border-radius: 16px; padding: 15px 8px 13px;
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 9px;
+    text-align: center; cursor: pointer;
     transition: transform .15s ease, background .15s ease; color: inherit; text-decoration: none;
   }
   .todo-card:active { transform: scale(.985); background: #f8fbfb; }
-  .todo-title { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; }
-  .todo-note { font-size: 11px; color: var(--muted); line-height: 1.35; }
-  .todo-badge { align-self: flex-start; font-size: 11px; font-weight: 700; color: var(--accent-dark); background: var(--accent-light); padding: 3px 8px; border-radius: 999px; }
-  .dot-icon { width: 28px; height: 28px; border-radius: 10px; display: grid; place-items: center; font-size: 12px; font-weight: 800; }
+  .todo-title { font-size: 13.5px; font-weight: 700; letter-spacing: .2px; }
+  .todo-badge { margin-top: auto; font-size: 10.5px; font-weight: 700; color: var(--accent-dark); background: var(--accent-light); padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+  .dot-icon { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; font-size: 14px; font-weight: 800; }
   .dot-icon.upload { color: var(--accent-dark); background: var(--accent-light); }
   .dot-icon.task { color: #a15d00; background: var(--amber-light); }
+  .dot-icon.assess { color: var(--blue); background: var(--blue-light); }
   .flow-list { display: flex; flex-direction: column; gap: 8px; }
   .flow-item {
     width: 100%; display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center;
@@ -143,17 +144,22 @@
     </div>
     <div class="banner-dots"><span class="banner-dot on"></span><span class="banner-dot"></span><span class="banner-dot"></span></div>
 
-    <div class="sec">待办事项 <span class="hint">2项</span></div>
+    <div class="sec">待办事项 <span class="hint">3项</span></div>
     <div class="todo-cards">
-      <a class="todo-card" href="upload-resource.html">
-        <span class="todo-title"><span class="dot-icon upload">传</span>上传资源</span>
-        <span class="todo-note">填写表单、上传图文 / 附件</span>
+      <a class="todo-card" href="upload-resource.html" data-od-id="todo-card-upload">
+        <span class="dot-icon upload">传</span>
+        <span class="todo-title">上传资源</span>
         <span class="todo-badge">提交审核</span>
       </a>
-      <a class="todo-card" href="teacher-tasks.html">
-        <span class="todo-title"><span class="dot-icon task">办</span>待办任务</span>
-        <span class="todo-note">查看任务详情，提交材料 / 反馈</span>
+      <a class="todo-card" href="teacher-tasks.html" data-od-id="todo-card-tasks">
+        <span class="dot-icon task">办</span>
+        <span class="todo-title">待办任务</span>
         <span class="todo-badge state-warn">待处理</span>
+      </a>
+      <a class="todo-card" href="assessment-tool.html" data-od-id="todo-card-assessment">
+        <span class="dot-icon assess">评</span>
+        <span class="todo-title">质量评估</span>
+        <span class="todo-badge state-info" id="assessBadge">0/120</span>
       </a>
     </div>
 
@@ -216,6 +222,15 @@
   var banner=document.getElementById('banner'),sx=0;
   banner.addEventListener('touchstart',function(e){sx=e.touches[0].clientX});
   banner.addEventListener('touchend',function(e){var dx=e.changedTouches[0].clientX-sx;if(Math.abs(dx)>40)go(idx+(dx<0?1:-1))});
+
+  // 质量评估进度徽标：与测评页共享 localStorage
+  try {
+    var raw = localStorage.getItem('hualong_assessment_v1');
+    var scores = raw ? JSON.parse(raw) : {};
+    var done = Object.keys(scores).filter(function(k){ return scores[k] >= 1; }).length;
+    var badge = document.getElementById('assessBadge');
+    if (badge) badge.textContent = done + '/120';
+  } catch (e) {}
 
 })();
 </script>
