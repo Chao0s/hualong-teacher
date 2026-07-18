@@ -295,19 +295,21 @@ rel_map (关系字段) = db_moment{school_id}<->db_school{school_id}; db_moment{
 moment_upload_id (在园时光上传ID), 1:k, integer, ui=moment.progress.hidden
 moment_id (在园时光ID), 1:1, integer, ui=moment.progress.hidden
 child_id (幼儿ID), 1:1, integer, ui=moment.progress.child_name
-upload_seq (上传次序), 1:2, integer, ui=moment.progress.first|moment.progress.second
-upload_status (上传状态), 1:1, u1=complete(已上传)|u2=pending(待确认/待补图)|u3=incomplete(未上传), ui=moment.progress.status
+week_key (评估周), 1:1, ISO-YYYY-Www, ui=moment.progress.week
+upload_seq (每周评估次序), 1:1, q1=first(第1次)|q2=second(第2次), ui=moment.progress.first|moment.progress.second
+evaluation_status (单次评估状态), 1:1, c1=complete(已完成)|c2=incomplete(未完成), ui=moment.progress.status
 file_id (上传图片ID), 0:k, integer, ui=moment.progress.image
 uploaded_at (上传时间), 0:1, datetime, ui=moment.hidden
 
 rel_count (关系数量) = 3
 rel_db (关联表) = db_moment, db_child, db_file
 rel_map (关系字段) = db_moment_upload{moment_id}<->db_moment{moment_id}; db_moment_upload{child_id}<->db_child{child_id}; db_moment_upload{file_id}<->db_file{file_id}
+unique (唯一键) = child_id + week_key + upload_seq
 
 method (方法):
-done_count = COUNT(upload_status=u1)
-pending_count = COUNT(upload_status=u2)
-incomplete_count = COUNT(upload_status=u3)
+weekly_complete_count = COUNT(evaluation_status=c1 WHERE child_id AND week_key)
+weekly_incomplete_count = 2 - weekly_complete_count
+单次详情只返回 evaluation_status=c1|c2；周汇总和主页状态由 db_home_school_progress 计算
 
 
 月度评价 (Monthly Evaluation / db_month_eval)
