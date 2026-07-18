@@ -1,0 +1,74 @@
+Demo DB Structure
+
+課程資源庫 (db_resource)
+resource_id
+resource_type (1, 2, 3, 4, 5, 6) - 1 = docx, 2 = xlsx, 3, jpg, 4 = html, 5 = pdf, 6 = wiki
+(relational)
+case_id
+
+
+
+
+課程案例庫 (db_case)
+case_id
+case_type
+case_label
+case_createdby
+case_createddate
+case_createtime
+(relational)
+resource_id
+
+
+
+Example: db_resource/case_id
+
+
+
+
+
+
+
+
+在園時光
+resource_id = R00001
+resource_type = 6
+createdby = t001
+createddate = 20260715T2104
+upload_1 = 1 
+upload_2 = 0
+
+
+匯總
+1. resource_type = 6
+2. school_id = S001
+3. class_id = C-001-01
+4. grade = 3 
+5. complete = 1, 2, 3 (complete, pending, incomplete)
+
+Method:
+1. IF({1,2,3,4} = TRUE), return
+2. AGGREGATE
+
+Result:
+1. R00001 > resource_type =6,
+2. 2 = S001, 3 = C-001-01, 4 = 3
+3. IF({1,2,3,4} = TRUE), return (IF(AND(upload_1 = 1, upload_2 = 1) = 1, IF(upload_1 + upload_2 <2, 2), 3)) 
+
+loop (i=1, n)
+
+end if
+
+
+
+1. Create attribute table
+2. based on front end, understand the jump-to relationships between buttons, function calls
+3. create attribute table proposal, using markdown table
+4. MUST include columns such as:
+- Count of how many nodes/relationships (1 other db = 1) e.g. 3 = relationship with 3 other relationship db tables
+- list out the table names using comma-separated list
+- relationship between which and which attribute/parameter e.g. resource_table{resource_id} <-> case_table{case_id}
+
+
+
+
