@@ -371,7 +371,7 @@ case_id (案例ID), 1:1, integer, ui=home.case_card.hidden|case_list.card.hidden
 case_name (案例名称), 1:1, max_len=20, ui=home.case_card.title|case_list.card.title|case_detail.title|upload.case_name
 case_type (案例类型), 1:1, composite(case_grade,case_field,case_area), ui=case_list.filter|case_detail.type
 case_grade (案例年级), 1:1, k1=small(小班)|k2=middle(中班)|k3=large(大班), ui=case_card.grade|case_list.grade_filter|upload.case_grade
-case_field (案例领域), 1:1, f1=health(健康)|f2=language(语言)|f3=social(社会)|f4=art(艺术)|f5=science(科学), ui=home.case_card.field|case_list.field_filter|upload.case_field
+case_field (案例领域), 1:1, f1=health(健康)|f2=language(语言)|f3=social(社会)|f4=science(科学)|f5=art(艺术), ui=home.case_card.field|case_list.field_filter|upload.case_field
 case_area (案例区域), 1:k, a1=group_teaching(集体教学)|a2=learning_area(区域)|a3=theme_inquiry(主题探究)|a4=home_school(家园共育)|a5=digital(数字化), ui=case_list.area_filter|case_detail.area
 case_intro (活动简介), 1:1, max_len=100, ui=case_detail.intro|upload.case_intro
 case_trans (活动转化), 1:1, max_len=100, ui=case_detail.trans|upload.case_trans
