@@ -62,9 +62,9 @@ environment_isolation (环境隔离) = demo|test 数据不得复制到 productio
 
 | node_name_cn | node_name_en | node_key | object | input | cardinality | jump |
 |---|---|---|---|---|---|---|
-| 党建学习卡片 | Party Study Card | party_study_card | db_party_study | study_id (runtime) | 0:3 | school-affairs.html > party-study-detail.html?id={study_id} |
-| 党建活动卡片 | Party Activity Card | party_activity_card | db_party_activity | activity_id (runtime) | 0:3 | school-affairs.html > party-activity-detail.html?id={activity_id} |
-| 品牌建设卡片 | Party Brand Card | party_brand_card | db_party_brand | brand_id (runtime) | 0:3 | school-affairs.html > party-brand-detail.html?id={brand_id} |
+| 党建学习卡片 | Party Study Card | party_study_card | db_party_study | study_id (runtime) | 0:3 | school-affairs.html > party-study-detail.html?study_id={study_id} |
+| 党建活动卡片 | Party Activity Card | party_activity_card | db_party_activity | activity_id (runtime) | 0:3 | school-affairs.html > party-activity-detail.html?activity_id={activity_id} |
+| 品牌建设卡片 | Party Brand Card | party_brand_card | db_party_brand | brand_id (runtime) | 0:3 | school-affairs.html > party-brand-detail.html?brand_id={brand_id} |
 
 dynamic_rule (动态规则) = 标题、日期、部门、地点、标签和 object_id 必须来自接口返回，不得写死在前端或后端逻辑中
 
@@ -119,7 +119,7 @@ activity_id (党建活动ID), 1:1, integer, ui=party.activity.hidden|party_activ
 school_id (园所ID), 1:1, integer, ui=party.hidden
 activity_title (活动标题), 1:1, max_len=100, ui=party.activity.title|party_activity_detail.title
 activity_intro (活动介绍), 0:1, max_len=500, ui=party_activity_detail.intro
-activity_date (活动日期), 1:1, datetime, ui=party.activity.date|party_activity_detail.date
+activity_at (活动时间), 1:1, datetime, ui=party.activity.date|party_activity_detail.date
 activity_location (活动地点), 0:1, max_len=100, ui=party.activity.location|party_activity_detail.location
 file_id (活动图文或附件ID), 0:k, integer, ui=party_activity_detail.content|party_activity_detail.download
 activity_status (活动状态), 1:1, s1=draft(草稿)|s2=pending(待审核)|s3=approved(已通过)|s4=rejected(已驳回), ui=party_activity.hidden
@@ -129,7 +129,7 @@ rel_db (关联表) = db_school, db_file
 rel_map (关系字段) = db_party_activity{school_id}<->db_school{school_id}; db_party_activity{file_id}<->db_file{file_id}
 
 method (方法):
-list = FILTER(school_id=current_school_id, activity_status=s3) ORDER BY activity_date DESC
+list = FILTER(school_id=current_school_id, activity_status=s3) ORDER BY activity_at DESC
 home_list = list LIMIT 3
 click = return activity_id
 
@@ -165,8 +165,8 @@ activity_id (党建活动ID), 0:1, integer, ui=party.banner.hidden
 brand_id (品牌建设ID), 0:1, integer, ui=party.banner.hidden
 feature_title (轮播标题), 1:1, max_len=50, ui=party.banner.title
 feature_subtitle (轮播副标题), 0:1, max_len=150, ui=party.banner.subtitle
-feature_order (轮播顺序), 1:1, integer, ui=party.banner.order
-visible (是否显示), 1:1, boolean, ui=party.banner.visible
+display_order (轮播顺序), 1:1, integer, ui=party.banner.order
+is_visible (是否显示), 1:1, boolean, ui=party.banner.visible
 start_at (显示开始时间), 0:1, datetime, ui=party.banner.hidden
 end_at (显示结束时间), 0:1, datetime, ui=party.banner.hidden
 
@@ -176,7 +176,7 @@ rel_map (关系字段) = db_party_feature{school_id}<->db_school{school_id}; IF 
 check (校验) = feature_type 对应的一个目标ID必须有值，其他目标ID必须为 NULL
 
 method (方法):
-list = FILTER(school_id=current_school_id, visible=1, (start_at IS NULL OR start_at<=NOW), (end_at IS NULL OR end_at>=NOW)) ORDER BY feature_order ASC LIMIT 3
+list = FILTER(school_id=current_school_id, is_visible=1, (start_at IS NULL OR start_at<=NOW), (end_at IS NULL OR end_at>=NOW)) ORDER BY display_order ASC LIMIT 3
 IF list_count=0, return []
 
 

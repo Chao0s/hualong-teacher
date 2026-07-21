@@ -5,7 +5,7 @@ static_node_count (固定按键数) = 13
 dynamic_home_case_card_count (动态首页案例卡片数) = 0:3
 runtime_node_count (运行时节点数) = 13:16
 field_format (字段格式) = field_key (中文字段名), cardinality, type|enum, ui
-id_rule (ID规则) = integer, 1:k
+id_rule (ID规则) = integer, database_auto_generated
 null_rule (空值规则) = 0:1
 list_rule (列表规则) = 0:k | 1:k
 
@@ -129,7 +129,7 @@ teacher_class_id (教师班级关系ID), 1:1, integer, ui=context.hidden
 teacher_id (教师ID), 1:1, integer, ui=context.hidden
 class_id (班级ID), 1:1, integer, ui=context.hidden
 assignment_role (班级角色), 1:1, r1=lead(主班)|r2=assistant(配班)|r3=support(支援), ui=teacher_class.role
-active (是否有效), 1:1, boolean, ui=teacher_class.hidden
+is_active (是否有效), 1:1, boolean, ui=teacher_class.hidden
 
 rel_count (关系数量) = 2
 rel_db (关联表) = db_teacher, db_class
@@ -139,7 +139,7 @@ unique (唯一键) = teacher_id + class_id
 context_method (上下文方法):
 teacher_id = auth_session.teacher_id
 school_id = db_teacher.school_id
-allowed_class_id = db_teacher_class.class_id WHERE teacher_id=current_teacher_id AND active=1
+allowed_class_id = db_teacher_class.class_id WHERE teacher_id=current_teacher_id AND is_active=1
 current_class_id MUST IN allowed_class_id
 
 
@@ -147,7 +147,7 @@ current_class_id MUST IN allowed_class_id
 
 上传资源 (Upload Resource / db_upload)
 
-upload_id (上传记录ID), 1:k, integer, ui=upload.hidden
+upload_id (上传记录ID), 1:1, integer, ui=upload.hidden
 upload_target (上传目标), 1:1, u1=resource(课程资源库)|u2=case(课程案例库), ui=upload.target_button
 teacher_id (上传教师ID), 1:1, integer, ui=upload.teacher_select
 class_id (上传班级ID), 1:1, integer, ui=upload.class_select
@@ -169,13 +169,13 @@ IF submit=1, upload_status=s2
 
 待办任务 (Pending Tasks / db_task)
 
-task_id (任务ID), 1:k, integer, ui=task.card.hidden|task_detail.hidden
+task_id (任务ID), 1:1, integer, ui=task.card.hidden|task_detail.hidden
 task_title (任务标题), 1:1, max_len=50, ui=home.todo.task|task.card.title|task_detail.title
 task_intro (任务说明), 1:1, max_len=300, ui=task.card.summary|task_detail.intro
 task_division (任务分工), 1:1, max_len=300, ui=task_detail.division
-task_deadline (截止时间), 1:1, datetime, ui=task.card.deadline|task_detail.deadline
+due_at (截止时间), 1:1, datetime, ui=task.card.deadline|task_detail.deadline
 task_status (任务状态), 1:1, t1=wait_accept(待接收)|t2=in_progress(进行中)|t3=complete(已完成)|t4=cancelled(已取消), ui=home.todo.task.badge|task.card.status|task_detail.status
-createdby (任务发起人ID), 1:1, teacher_id, ui=task.card.creator|task_detail.creator
+created_by (任务发起人ID), 1:1, integer, ui=task.card.creator|task_detail.creator
 file_id (任务附件ID), 0:k, integer, ui=task_detail.attachment
 
 rel_count (关系数量) = 2
@@ -190,7 +190,7 @@ click = return task_id
 
 待办任务分配 (Task Assignment / db_task_assign)
 
-assign_id (任务分配ID), 1:k, integer, ui=task.hidden
+assign_id (任务分配ID), 1:1, integer, ui=task.hidden
 task_id (任务ID), 1:1, integer, ui=task.hidden
 teacher_id (执行教师ID), 1:1, integer, ui=task_detail.assignee
 assign_status (执行状态), 1:1, a1=wait_accept(待接收)|a2=in_progress(进行中)|a3=complete(已完成), ui=task.card.status|task_detail.status
@@ -205,13 +205,13 @@ rel_map (关系字段) = db_task_assign{task_id}<->db_task{task_id}; db_task_ass
 
 质量评估 (Quality Assessment / db_assessment)
 
-assessment_id (评估ID), 1:k, integer, ui=assessment.hidden
+assessment_id (评估ID), 1:1, integer, ui=assessment.hidden
 teacher_id (评估教师ID), 1:1, integer, ui=assessment.hidden
 class_id (评估班级ID), 1:1, integer, ui=assessment.hidden
 assessment_scope (评估范围), 1:1, a1=teacher(教师)|a2=class(班级)|a3=school(园所), ui=assessment.scope
 assessment_period (评估周期), 1:1, YYYY-MM, ui=assessment.period
-item_total (指标总数), 1:1, integer, ui=home.todo.assessment.badge.denominator|assessment.summary.total
-item_done (已评数量), 1:1, integer, ui=home.todo.assessment.badge.numerator|assessment.summary.done
+required_count (指标总数), 1:1, integer, ui=home.todo.assessment.badge.denominator|assessment.summary.total
+completed_count (已评数量), 1:1, integer, ui=home.todo.assessment.badge.numerator|assessment.summary.done
 assessment_status (评估状态), 1:1, s1=not_started(未开始)|s2=in_progress(进行中)|s3=complete(已完成), ui=assessment.summary.status
 created_at (创建时间), 1:1, datetime, ui=assessment.hidden
 submitted_at (提交时间), 0:1, datetime, ui=assessment.hidden
@@ -221,17 +221,17 @@ rel_db (关联表) = db_teacher, db_class, db_assessment_item
 rel_map (关系字段) = db_assessment{teacher_id}<->db_teacher{teacher_id}; db_assessment{class_id}<->db_class{class_id}; db_assessment{assessment_id}<->db_assessment_item{assessment_id}
 
 method (方法):
-item_done = COUNT(db_assessment_item.score WHERE score=1:5)
-item_total = COUNT(db_assessment_item.item_id WHERE active=1)
-badge = item_done + '/' + item_total
-IF item_done=0, assessment_status=s1
-IF item_done>0 AND item_done<item_total, assessment_status=s2
-IF item_done=item_total, assessment_status=s3
+completed_count = COUNT(db_assessment_item.score WHERE score=1:5)
+required_count = COUNT(db_assessment_item.item_id WHERE is_active=1)
+badge = completed_count + '/' + required_count
+IF completed_count=0, assessment_status=s1
+IF completed_count>0 AND completed_count<required_count, assessment_status=s2
+IF completed_count=required_count, assessment_status=s3
 
 
 质量评估项 (Assessment Item / db_assessment_item)
 
-item_id (评估指标ID), 1:k, integer, ui=assessment.item.hidden
+item_id (评估指标ID), 1:1, integer, ui=assessment.item.hidden
 assessment_id (评估ID), 1:1, integer, ui=assessment.hidden
 section_id (一级指标ID), 1:1, integer, ui=assessment.section
 subsection_id (二级指标ID), 1:1, integer, ui=assessment.subsection
@@ -239,7 +239,7 @@ item_text (指标内容), 1:1, text, ui=assessment.item.title
 score (指标得分), 0:1, 1:5, ui=assessment.item.score_button
 note (评价记录), 0:1, max_len=300, ui=assessment.item.note
 file_id (佐证材料ID), 0:k, integer, ui=assessment.item.evidence
-active (是否启用), 1:1, boolean, ui=assessment.hidden
+is_active (是否启用), 1:1, boolean, ui=assessment.hidden
 
 rel_count (关系数量) = 2
 rel_db (关联表) = db_assessment, db_file
@@ -248,7 +248,7 @@ rel_map (关系字段) = db_assessment_item{assessment_id}<->db_assessment{asses
 
 教研培训 (Teaching Research and Training / db_training)
 
-training_id (培训ID), 1:k, integer, ui=training.card.hidden|training_detail.hidden
+training_id (培训ID), 1:1, integer, ui=training.card.hidden|training_detail.hidden
 school_id (园所ID), 1:1, integer, ui=training.hidden
 training_type (培训类型), 1:1, t1=current(最新研修)|t2=history(历史研修), ui=training.section
 training_title (培训标题), 1:1, max_len=100, ui=training.card.title|training_detail.title
@@ -259,12 +259,12 @@ location (培训地点), 0:1, max_len=100, ui=training.card.location|training_de
 meeting_url (会议链接), 0:1, url, ui=training_detail.meeting_button
 speaker (主讲人), 0:1, max_len=50, ui=training.card.speaker|training_detail.speaker
 training_status (培训状态), 1:1, s1=open(开放报名)|s2=registered(已报名)|s3=in_progress(进行中)|s4=complete(已完成), ui=training.card.badge|training_detail.status
-createdby (创建教师ID), 1:1, teacher_id, ui=training.hidden
+created_by (创建教师ID), 1:1, integer, ui=training.hidden
 file_id (研修材料ID), 0:k, integer, ui=training.card.material_count|training_detail.material
 
 rel_count (关系数量) = 3
 rel_db (关联表) = db_school, db_teacher, db_file
-rel_map (关系字段) = db_training{school_id}<->db_school{school_id}; db_training{createdby}<->db_teacher{teacher_id}; db_training{file_id}<->db_file{file_id}
+rel_map (关系字段) = db_training{school_id}<->db_school{school_id}; db_training{created_by}<->db_teacher{teacher_id}; db_training{file_id}<->db_file{file_id}
 
 method (方法):
 list = FILTER(school_id, training_type)
@@ -273,30 +273,32 @@ click = return training_id
 
 在园时光 (Kindergarten Moments / db_moment)
 
-moment_id (在园时光ID), 1:k, integer, ui=moment.card.hidden|moment_detail.hidden
+moment_id (在园时光ID), 1:1, integer, ui=moment.card.hidden|moment_detail.hidden
 school_id (园所ID), 1:1, integer, ui=moment.hidden
 class_id (班级ID), 1:1, integer, ui=moment.class
 teacher_id (发布教师ID), 1:1, integer, ui=moment.publisher
 moment_title (活动名称), 1:1, max_len=50, ui=moment.card.title|moment_publish.title
 moment_date (活动日期), 1:1, date, ui=moment.card.date|moment_publish.date
+week_key (评估周), 1:1, ISO-YYYY-Www, derived(moment_date), ui=moment.hidden
+moment_seq (每周评价次序), 1:1, q1=first(第1次)|q2=second(第2次), ui=moment.progress.first|moment.progress.second
 moment_location (活动地点), 0:1, max_len=100, ui=moment_publish.location
 moment_observe (观察实录), 0:1, max_len=300, ui=moment_publish.observe|moment_detail.observe
 moment_analysis (活动分析), 0:1, max_len=300, ui=moment_publish.analysis|moment_detail.analysis
 file_id (活动图片ID), 0:k, integer, ui=moment.card.image|moment_publish.image
-publish_status (发布状态), 1:1, p1=draft(草稿)|p2=published(已发布), ui=moment.status
+publish_status (发布状态), 1:1, s1=draft(草稿)|s2=published(已发布), ui=moment.status
 
 rel_count (关系数量) = 5
 rel_db (关联表) = db_school, db_class, db_teacher, db_moment_upload, db_file
 rel_map (关系字段) = db_moment{school_id}<->db_school{school_id}; db_moment{class_id}<->db_class{class_id}; db_moment{teacher_id}<->db_teacher{teacher_id}; db_moment{moment_id}<->db_moment_upload{moment_id}; db_moment{file_id}<->db_file{file_id}
+unique (唯一键) = class_id + week_key + moment_seq WHERE publish_status=s2
+weekly_rule (每周场次规则) = 每班每周最多发布 2 次 moment（moment_seq=q1|q2）；每次 moment 通过 db_moment_upload 嵌套本次参与评价的部分幼儿，未参与的幼儿不产生 db_moment_upload 行
 
 
 在园时光上传 (Moment Upload / db_moment_upload)
 
-moment_upload_id (在园时光上传ID), 1:k, integer, ui=moment.progress.hidden
+moment_upload_id (在园时光上传ID), 1:1, integer, ui=moment.progress.hidden
 moment_id (在园时光ID), 1:1, integer, ui=moment.progress.hidden
 child_id (幼儿ID), 1:1, integer, ui=moment.progress.child_name
-week_key (评估周), 1:1, ISO-YYYY-Www, ui=moment.progress.week
-upload_seq (每周评估次序), 1:1, q1=first(第1次)|q2=second(第2次), ui=moment.progress.first|moment.progress.second
 evaluation_status (单次评估状态), 1:1, c1=complete(已完成)|c2=incomplete(未完成), ui=moment.progress.status
 file_id (上传图片ID), 0:k, integer, ui=moment.progress.image
 uploaded_at (上传时间), 0:1, datetime, ui=moment.hidden
@@ -304,24 +306,25 @@ uploaded_at (上传时间), 0:1, datetime, ui=moment.hidden
 rel_count (关系数量) = 3
 rel_db (关联表) = db_moment, db_child, db_file
 rel_map (关系字段) = db_moment_upload{moment_id}<->db_moment{moment_id}; db_moment_upload{child_id}<->db_child{child_id}; db_moment_upload{file_id}<->db_file{file_id}
-unique (唯一键) = child_id + week_key + upload_seq
+unique (唯一键) = moment_id + child_id
+nesting_rule (嵌套规则) = db_moment_upload 表示"该次 moment 嵌套了该幼儿"；周次(week_key)和场次(moment_seq)不落在本表，一律经 moment_id JOIN db_moment 取得
 
 method (方法):
-weekly_complete_count = COUNT(evaluation_status=c1 WHERE child_id AND week_key)
+weekly_complete_count = COUNT(DISTINCT db_moment.moment_seq FROM db_moment_upload JOIN db_moment ON moment_id WHERE child_id=current_child_id AND db_moment.week_key=current_week_key AND db_moment.publish_status=s2 AND evaluation_status=c1)
 weekly_incomplete_count = 2 - weekly_complete_count
 单次详情只返回 evaluation_status=c1|c2；周汇总和主页状态由 db_home_school_progress 计算
 
 
 月度评价 (Monthly Evaluation / db_month_eval)
 
-month_eval_id (月度评价ID), 1:k, integer, ui=month_eval.hidden
+month_eval_id (月度评价ID), 1:1, integer, ui=month_eval.hidden
 teacher_id (评价教师ID), 1:1, integer, ui=month_eval.hidden
 class_id (班级ID), 1:1, integer, ui=month_eval.hidden
 child_id (评价幼儿ID), 1:1, integer, ui=month_eval.child_select
 eval_month (评价月份), 1:1, YYYY-MM, ui=month_eval.month_select
 eval_text (评价内容), 1:1, max_len=500, ui=month_eval.textarea
 moment_id (关联在园时光ID), 0:k, integer, ui=month_eval.photo_list
-eval_status (评价状态), 1:1, e1=draft(草稿)|e2=saved(已保存)|e3=published(已发布), ui=month_eval.status
+month_eval_status (评价状态), 1:1, e1=draft(草稿)|e2=saved(已保存)|e3=published(已发布), ui=month_eval.status
 saved_at (保存时间), 0:1, datetime, ui=month_eval.hidden
 
 rel_count (关系数量) = 4
@@ -332,7 +335,7 @@ unique (唯一键) = teacher_id + child_id + eval_month
 
 课程资源 (Course Resources / db_resource)
 
-resource_id (资源ID), 1:k, integer, ui=resource.card.hidden|resource_detail.hidden
+resource_id (资源ID), 1:1, integer, ui=resource.card.hidden|resource_detail.hidden
 resource_type (资源文件类型), 1:1, r1=docx|r2=xlsx|r3=jpg|r4=html|r5=pdf|r6=wiki, ui=resource.card.type|resource_detail.type
 resource_name (资源名称), 1:1, max_len=20, ui=resource.card.title|resource_detail.title|upload.resource_name
 resource_tag (资源标签), 1:1, g1=clothing(衣)|g2=food(食)|g3=housing(住)|g4=mobility(行)|g5=art(艺), ui=resource.card.tag|resource_detail.tag|upload.resource_tag
@@ -344,27 +347,27 @@ resource_access (资源获取), 1:1, max_len=300, ui=resource_detail.access|uplo
 resource_trans (资源转化), 1:1, max_len=200, ui=resource_detail.trans|upload.resource_trans
 cover_file_id (封面图片ID), 1:1, integer, ui=resource.card.cover|upload.cover
 word_file_id (Word附件ID), 0:1, integer, ui=resource_detail.word|upload.word
-createdby (创建教师ID), 1:1, teacher_id, ui=resource_detail.creator
+created_by (创建教师ID), 1:1, integer, ui=resource_detail.creator
 created_at (创建时间), 1:1, datetime, ui=resource_detail.created_at
 resource_status (资源状态), 1:1, s1=draft(草稿)|s2=pending(待审核)|s3=approved(已通过)|s4=rejected(已驳回), ui=resource.status
 required_count (必填项数量), 1:1, integer, ui=resource.hidden
-done_count (已完成项数量), 1:1, integer, ui=resource.progress
-complete (完成状态), 1:1, c1=complete(完成)|c2=pending(待完善)|c3=incomplete(未完成), ui=resource.progress.status
+completed_count (已完成项数量), 1:1, integer, ui=resource.progress
+complete (完成状态), 1:1, c1=complete(完成)|c2=partial(待完善)|c3=incomplete(未完成), ui=resource.progress.status
 
 rel_count (关系数量) = 5
 rel_db (关联表) = db_school, db_class, db_teacher, db_resource_case, db_file
-rel_map (关系字段) = db_resource{school_id}<->db_school{school_id}; db_resource{class_id}<->db_class{class_id}; db_resource{createdby}<->db_teacher{teacher_id}; db_resource{resource_id}<->db_resource_case{resource_id}; db_resource{*_file_id}<->db_file{file_id}
+rel_map (关系字段) = db_resource{school_id}<->db_school{school_id}; db_resource{class_id}<->db_class{class_id}; db_resource{created_by}<->db_teacher{teacher_id}; db_resource{resource_id}<->db_resource_case{resource_id}; db_resource{*_file_id}<->db_file{file_id}
 
 method (方法):
-IF done_count=required_count, complete=c1
-IF done_count>0 AND done_count<required_count, complete=c2
-IF done_count=0, complete=c3
+IF completed_count=required_count, complete=c1
+IF completed_count>0 AND completed_count<required_count, complete=c2
+IF completed_count=0, complete=c3
 click = return resource_id
 
 
 课程案例库 (Course Case Library / db_case)
 
-case_id (案例ID), 1:k, integer, ui=home.case_card.hidden|case_list.card.hidden|case_detail.hidden
+case_id (案例ID), 1:1, integer, ui=home.case_card.hidden|case_list.card.hidden|case_detail.hidden
 case_name (案例名称), 1:1, max_len=20, ui=home.case_card.title|case_list.card.title|case_detail.title|upload.case_name
 case_type (案例类型), 1:1, composite(case_grade,case_field,case_area), ui=case_list.filter|case_detail.type
 case_grade (案例年级), 1:1, k1=small(小班)|k2=middle(中班)|k3=large(大班), ui=case_card.grade|case_list.grade_filter|upload.case_grade
@@ -378,13 +381,13 @@ class_id (班级ID), 0:1, integer, ui=upload.class_select
 cover_file_id (案例封面ID), 1:1, integer, ui=case_card.cover|upload.cover
 word_file_id (Word详案ID), 0:1, integer, ui=case_detail.word|upload.word
 resource_id (关联资源ID), 0:k, integer, ui=case_detail.related_resource|upload.related_resource
-createdby (创建教师ID), 1:1, teacher_id, ui=case_detail.creator
+created_by (创建教师ID), 1:1, integer, ui=case_detail.creator
 created_at (创建时间), 1:1, datetime, ui=case_detail.created_at
 case_status (案例状态), 1:1, s1=draft(草稿)|s2=pending(待审核)|s3=approved(已通过)|s4=rejected(已驳回), ui=case.status
 
 rel_count (关系数量) = 6
 rel_db (关联表) = db_school, db_class, db_teacher, db_resource_case, db_home_case, db_file
-rel_map (关系字段) = db_case{school_id}<->db_school{school_id}; db_case{class_id}<->db_class{class_id}; db_case{createdby}<->db_teacher{teacher_id}; db_case{case_id}<->db_resource_case{case_id}; db_case{case_id}<->db_home_case{case_id}; db_case{*_file_id}<->db_file{file_id}
+rel_map (关系字段) = db_case{school_id}<->db_school{school_id}; db_case{class_id}<->db_class{class_id}; db_case{created_by}<->db_teacher{teacher_id}; db_case{case_id}<->db_resource_case{case_id}; db_case{case_id}<->db_home_case{case_id}; db_case{*_file_id}<->db_file{file_id}
 
 filter (筛选):
 list = FILTER(case_status=s3, school_id=current_school_id)
@@ -408,10 +411,10 @@ upload_or_approval_only -> NOT automatically visible_on_home
 
 首页推荐案例 (Home Case Recommendation / db_home_case)
 
-home_case_id (首页推荐案例ID), 1:k, integer, ui=home.case_card.hidden
+home_case_id (首页推荐案例ID), 1:1, integer, ui=home.case_card.hidden
 case_id (案例ID), 1:1, integer, ui=home.case_card.hidden
-home_order (首页排序), 1:k, integer, ui=home.case_card.order
-visible (是否显示), 1:1, boolean, ui=home.case_card.visible
+display_order (首页排序), 1:1, integer, ui=home.case_card.order
+is_visible (是否显示), 1:1, boolean, ui=home.case_card.visible
 start_at (显示开始时间), 0:1, datetime, ui=home_case.hidden
 end_at (显示结束时间), 0:1, datetime, ui=home_case.hidden
 
@@ -421,7 +424,7 @@ rel_map (关系字段) = db_home_case{case_id}<->db_case{case_id}
 
 method (方法):
 list = db_home_case JOIN db_case ON db_home_case.case_id=db_case.case_id
-list = FILTER(visible=1, case_status=s3, school_id=current_school_id, (start_at IS NULL OR start_at<=NOW), (end_at IS NULL OR end_at>=NOW)) ORDER BY home_order ASC LIMIT 3
+list = FILTER(is_visible=1, case_status=s3, school_id=current_school_id, (start_at IS NULL OR start_at<=NOW), (end_at IS NULL OR end_at>=NOW)) ORDER BY display_order ASC LIMIT 3
 IF list_count=0, return []
 click = return case_id
 
@@ -437,7 +440,7 @@ empty_action_node = btn_case_all
 
 资源案例关系 (Resource-Case Relation / db_resource_case)
 
-resource_case_id (资源案例关系ID), 1:k, integer, ui=hidden
+resource_case_id (资源案例关系ID), 1:1, integer, ui=hidden
 resource_id (资源ID), 1:1, integer, ui=resource.related_case
 case_id (案例ID), 1:1, integer, ui=case.related_resource
 
@@ -449,18 +452,18 @@ unique (唯一键) = resource_id + case_id
 
 文件 (File / db_file)
 
-file_id (文件ID), 1:k, integer, ui=file.hidden
+file_id (文件ID), 1:1, integer, ui=file.hidden
 file_type (文件类型), 1:1, f1=image(图像)|f2=docx|f3=xlsx|f4=pdf|f5=video(视频)|f6=other(其他), ui=file.type
 file_name (文件名称), 1:1, text, ui=file.name
 file_url (文件地址), 1:1, url, ui=file.preview|file.download
 file_size (文件大小), 1:1, integer, ui=file.size
 file_hash (文件哈希), 1:1, text, ui=file.hidden
-uploadedby (上传教师ID), 1:1, teacher_id, ui=file.uploader
+uploaded_by (上传教师ID), 1:1, integer, ui=file.uploader
 uploaded_at (上传时间), 1:1, datetime, ui=file.uploaded_at
 
 rel_count (关系数量) = 1
 rel_db (关联表) = db_teacher
-rel_map (关系字段) = db_file{uploadedby}<->db_teacher{teacher_id}
+rel_map (关系字段) = db_file{uploaded_by}<->db_teacher{teacher_id}
 
 
 [NAV_OBJECTS]

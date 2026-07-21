@@ -19,8 +19,9 @@ shared_objects (共享对象) = db_teacher, db_school, db_class, db_teacher_clas
 shared_nav_objects (共享导航对象) = nav_home, nav_party, nav_coord, nav_training, nav_home_school
 rename_shared_object (重命名共享对象) = FORBIDDEN
 duplicate_shared_object_definition (重复定义共享对象) = FORBIDDEN
-new_canonical_objects (本次新增业务对象) = db_parent_eval, db_term_eval, db_child_assessment
+new_canonical_objects (本次新增业务对象) = db_term_eval, db_child_assessment
 external_identity_object (跨端身份对象) = db_parent; 由家长端统一定义并由教师端引用
+external_business_object (跨端业务对象) = db_parent_evaluation; 由家长端 home-spec.md 统一定义(canonical)，教师端仅引用，不得另建同义表
 
 
 [CONTEXT_RULE]
@@ -44,7 +45,7 @@ production_initial_db_moment_upload (在园时光单次评估初始状态) = EMP
 production_initial_db_parent_task (亲子任务初始状态) = EMPTY
 production_initial_db_parent_task_submission (亲子任务提交初始状态) = EMPTY
 production_initial_db_month_eval (教师月评初始状态) = EMPTY
-production_initial_db_parent_eval (家长月度/学期评估初始状态) = EMPTY
+production_initial_db_parent_evaluation (家长评价初始状态) = EMPTY
 production_initial_db_term_eval (教师学期评估初始状态) = EMPTY
 production_initial_db_child_assessment (幼儿综合评估初始状态) = EMPTY
 production_initial_db_growth_record (成长档案初始状态) = EMPTY
@@ -100,7 +101,7 @@ object_type (对象类型) = aggregate
 method (方法):
 child_count = COUNT(db_child WHERE class_id=current_class_id AND enrollment_status=e1)
 average_completion = AVG(db_home_school_progress.row_completion_rate)
-IF assigned_item_count=0, average_completion=0
+IF required_count=0, average_completion=0
 reminder_count = COUNT(DISTINCT child_id WHERE reminder_required=1)
 IF child_count=0, progress_rows=[]
 
@@ -114,7 +115,7 @@ school_id (园所ID), 1:1, integer, ui=child.hidden
 class_id (班级ID), 1:1, integer, ui=child.class
 child_name (幼儿姓名), 1:1, max_len=50, ui=home_school.progress.child_name|child.profile.name
 enrollment_status (在园状态), 1:1, e1=active(在园)|e2=leave(离园)|e3=suspended(暂停), ui=child.hidden
-enrolled_at (入园日期), 0:1, date, ui=child.profile.enrolled_at
+enrolled_date (入园日期), 0:1, date, ui=child.profile.enrolled_at
 
 rel_count (关系数量) = 2
 rel_db (关联表) = db_school, db_class
@@ -138,20 +139,20 @@ latest_parent_task_id (最新一期亲子任务ID), 0:1, integer, ui=home_school
 parent_task_status (主页亲子任务状态), 1:1, h1=complete(已完成)|h2=incomplete(未完成), ui=home_school.progress.parent_task
 growth_record_status (主页成长档案状态), 1:1, h1=complete(已完成)|h2=incomplete(未完成), ui=home_school.progress.growth_record
 growth_book_status (主页成长册状态), 1:1, h1=complete(已完成)|h2=incomplete(未完成), ui=home_school.progress.growth_book
-assigned_item_count (应完成项目数), 1:1, integer, ui=home_school.progress.hidden
-completed_item_count (已完成项目数), 1:1, integer, ui=home_school.progress.hidden
+required_count (应完成项目数), 1:1, integer, ui=home_school.progress.hidden
+completed_count (已完成项目数), 1:1, integer, ui=home_school.progress.hidden
 row_completion_rate (幼儿完成率), 1:1, percent, ui=home_school.progress.hidden
 reminder_required (是否需要提醒), 1:1, boolean, ui=home_school.progress.reminder
 
-rel_count (关系数量) = 6
-rel_db (关联表) = db_class, db_child, db_moment_upload, db_parent_task_submission, db_growth_record, db_growth_book
-rel_map (关系字段) = db_home_school_progress{class_id}<->db_class{class_id}; db_home_school_progress{child_id}<->db_child{child_id}; db_home_school_progress{child_id}<->db_moment_upload{child_id}; db_home_school_progress{child_id}<->db_parent_task_submission{child_id}; db_home_school_progress{child_id}<->db_growth_record{child_id}; db_home_school_progress{child_id}<->db_growth_book{child_id}
+rel_count (关系数量) = 7
+rel_db (关联表) = db_class, db_child, db_moment, db_moment_upload, db_parent_task_submission, db_growth_record, db_growth_book
+rel_map (关系字段) = db_home_school_progress{class_id}<->db_class{class_id}; db_home_school_progress{child_id}<->db_child{child_id}; db_home_school_progress{week_key}<->db_moment{week_key}; db_home_school_progress{child_id}<->db_moment_upload{child_id}; db_home_school_progress{child_id}<->db_parent_task_submission{child_id}; db_home_school_progress{child_id}<->db_growth_record{child_id}; db_home_school_progress{child_id}<->db_growth_book{child_id}
 persist (是否持久化) = 0
 object_type (对象类型) = aggregate_view
 unique (唯一键) = class_id + child_id + week_key + month_key + term_id
 
 method (方法):
-moment_weekly_complete_count = COUNT(db_moment_upload WHERE child_id=current_child_id AND week_key=current_week_key AND evaluation_status=c1)
+moment_weekly_complete_count = COUNT(DISTINCT db_moment.moment_seq FROM db_moment_upload JOIN db_moment ON moment_id WHERE db_moment_upload.child_id=current_child_id AND db_moment.week_key=current_week_key AND db_moment.publish_status=s2 AND evaluation_status=c1)
 IF moment_weekly_complete_count>=2, moment_detail_week_status=d1, moment_status=h1
 IF moment_weekly_complete_count=1, moment_detail_week_status=d2, moment_status=h2
 IF moment_weekly_complete_count=0, moment_detail_week_status=d3, moment_status=h2
@@ -160,9 +161,9 @@ IF latest_parent_task_id EXISTS AND db_parent_task_submission{latest_parent_task
 ELSE parent_task_status=h2
 growth_record_status = MAP(db_growth_record.record_status: c1->h1, c2|NULL->h2)
 growth_book_status = MAP(db_growth_book.book_eval_status: c1->h1, c2|NULL->h2)
-assigned_item_count = 4
-completed_item_count = COUNT(moment_status=h1, parent_task_status=h1, growth_record_status=h1, growth_book_status=h1)
-row_completion_rate = completed_item_count/4*100
+required_count = 4
+completed_count = COUNT(moment_status=h1, parent_task_status=h1, growth_record_status=h1, growth_book_status=h1)
+row_completion_rate = completed_count/4*100
 reminder_required = 1 IF ANY(moment_status,parent_task_status,growth_record_status,growth_book_status)=h2 ELSE 0
 
 summary_rule (主页简化规则):
@@ -215,23 +216,16 @@ IF latest_parent_task has child submission_status=c1, homepage parent_task_statu
 ELSE homepage parent_task_status=h2
 
 
-家长评估 (Parent Evaluation / db_parent_eval)
+家长评价 (Parent Evaluation / db_parent_evaluation) [REUSE]
 
-parent_eval_id (家长评估ID), 1:1, integer, ui=parent_eval.hidden
-school_id (园所ID), 1:1, integer, ui=parent_eval.hidden
-class_id (班级ID), 1:1, integer, ui=parent_eval.class
-child_id (幼儿ID), 1:1, integer, ui=parent_eval.child
-parent_id (提交家长ID), 1:1, integer, ui=context.hidden
-eval_type (评估类型), 1:1, e1=monthly(月度评估)|e2=term(学期评估), ui=parent_eval.type
-eval_period (评估周期), 1:1, YYYY-MM|school_term, ui=parent_eval.period
-eval_status (完成状态), 1:1, c1=complete(已完成)|c2=incomplete(未完成), ui=parent_eval.status
-submitted_at (提交时间), 0:1, datetime, ui=parent_eval.submitted_at
-
-rel_count (关系数量) = 4
-rel_db (关联表) = db_school, db_class, db_child, db_parent
-rel_map (关系字段) = db_parent_eval{school_id}<->db_school{school_id}; db_parent_eval{class_id}<->db_class{class_id}; db_parent_eval{child_id}<->db_child{child_id}; db_parent_eval{parent_id}<->db_parent{parent_id}
-unique (唯一键) = child_id + eval_type + eval_period
-cross_app_rule (跨端规则) = db_parent 为家长端 canonical identity object；教师端不得创建同义家长表
+reuse_source (复用来源) = Parent App home-spec.md (canonical definition)
+引用字段 = parent_evaluation_id, school_id, class_id, child_id, parent_id, requested_by_teacher_id, evaluation_type, evaluation_period, evaluation_status, submitted_at
+evaluation_type (评价类型) = t1=monthly(月度)|t2=term(学期)
+evaluation_period (评价周期) = YYYY-MM|school_term
+evaluation_status (评价状态) = p0=not_started(未开始)|p1=in_progress(进行中)|p2=complete(已完成)|p3=overdue(逾期未完成)
+unique (唯一键) = child_id + evaluation_type + evaluation_period
+cross_app_rule (跨端规则) = db_parent 与 db_parent_evaluation 均为家长端 canonical object；教师端不得创建同义家长表或家长评价表(如 db_parent_eval)
+completion_map (完成状态映射) = evaluation_status=p2 -> c1(已完成); p0|p1|p3|NULL -> c2(未完成)
 
 
 教师学期评估 (Teacher Term Evaluation / db_term_eval)
@@ -242,7 +236,7 @@ class_id (班级ID), 1:1, integer, ui=term_eval.class
 child_id (幼儿ID), 1:1, integer, ui=term_eval.child
 teacher_id (评价教师ID), 1:1, integer, ui=context.hidden
 term_id (学期ID), 1:1, school_term, ui=term_eval.period
-eval_status (完成状态), 1:1, c1=complete(已完成)|c2=incomplete(未完成), ui=term_eval.status
+term_eval_status (完成状态), 1:1, c1=complete(已完成)|c2=incomplete(未完成), ui=term_eval.status
 submitted_at (提交时间), 0:1, datetime, ui=term_eval.submitted_at
 
 rel_count (关系数量) = 4
@@ -259,9 +253,9 @@ class_id (班级ID), 1:1, integer, ui=child_assessment.class
 child_id (幼儿ID), 1:1, integer, ui=child_assessment.child
 teacher_id (评价教师ID), 1:1, integer, ui=context.hidden
 term_id (学期ID), 1:1, school_term, ui=child_assessment.period
-required_item_count (应评指标数), 1:1, integer, ui=child_assessment.hidden
-completed_item_count (已评指标数), 1:1, integer, ui=child_assessment.progress
-assessment_status (完成状态), 1:1, c1=complete(已完成)|c2=incomplete(未完成), ui=child_assessment.status
+required_count (应评指标数), 1:1, integer, ui=child_assessment.hidden
+completed_count (已评指标数), 1:1, integer, ui=child_assessment.progress
+child_assessment_status (完成状态), 1:1, c1=complete(已完成)|c2=incomplete(未完成), ui=child_assessment.status
 submitted_at (提交时间), 0:1, datetime, ui=child_assessment.submitted_at
 
 rel_count (关系数量) = 4
@@ -270,8 +264,8 @@ rel_map (关系字段) = db_child_assessment{school_id}<->db_school{school_id}; 
 unique (唯一键) = child_id + term_id
 
 method (方法):
-IF completed_item_count=required_item_count AND submitted_at IS NOT NULL, assessment_status=c1
-ELSE assessment_status=c2
+IF completed_count=required_count AND submitted_at IS NOT NULL, child_assessment_status=c1
+ELSE child_assessment_status=c2
 
 
 成长档案 (Growth Record / db_growth_record)
@@ -292,18 +286,18 @@ record_status (成长档案完成状态), 1:1, c1=complete(已完成)|c2=incompl
 updated_at (更新时间), 0:1, datetime, ui=growth_record.updated_at
 
 rel_count (关系数量) = 7
-rel_db (关联表) = db_school, db_class, db_child, db_month_eval, db_parent_eval, db_term_eval, db_child_assessment
-rel_map (关系字段) = db_growth_record{school_id}<->db_school{school_id}; db_growth_record{class_id}<->db_class{class_id}; db_growth_record{child_id}<->db_child{child_id}; db_growth_record{child_id}<->db_month_eval{child_id}; db_growth_record{child_id}<->db_parent_eval{child_id}; db_growth_record{child_id}<->db_term_eval{child_id}; db_growth_record{child_id}<->db_child_assessment{child_id}
+rel_db (关联表) = db_school, db_class, db_child, db_month_eval, db_parent_evaluation, db_term_eval, db_child_assessment
+rel_map (关系字段) = db_growth_record{school_id}<->db_school{school_id}; db_growth_record{class_id}<->db_class{class_id}; db_growth_record{child_id}<->db_child{child_id}; db_growth_record{child_id}<->db_month_eval{child_id}; db_growth_record{child_id}<->db_parent_evaluation{child_id}; db_growth_record{child_id}<->db_term_eval{child_id}; db_growth_record{child_id}<->db_child_assessment{child_id}
 unique (唯一键) = child_id + term_id
 
 method (方法):
 required_month_count = COUNT(months elapsed from term_start_month through MIN(current_month,term_end_month))
-teacher_month_complete_count = COUNT(DISTINCT eval_month FROM db_month_eval WHERE child_id=current_child_id AND eval_month IN current_term AND eval_status=e3)
-parent_month_complete_count = COUNT(DISTINCT eval_period FROM db_parent_eval WHERE child_id=current_child_id AND eval_type=e1 AND eval_period IN current_term AND eval_status=c1)
+teacher_month_complete_count = COUNT(DISTINCT eval_month FROM db_month_eval WHERE child_id=current_child_id AND eval_month IN current_term AND month_eval_status=e3)
+parent_month_complete_count = COUNT(DISTINCT evaluation_period FROM db_parent_evaluation WHERE child_id=current_child_id AND evaluation_type=t1 AND evaluation_period IN current_term AND evaluation_status=p2)
 monthly_complete = teacher_month_complete_count=required_month_count AND parent_month_complete_count=required_month_count
-teacher_term_status = db_term_eval.eval_status WHERE child_id=current_child_id AND term_id=current_term_id; NULL maps to c2
-parent_term_status = db_parent_eval.eval_status WHERE child_id=current_child_id AND eval_type=e2 AND eval_period=current_term_id; NULL maps to c2
-comprehensive_assessment_status = db_child_assessment.assessment_status WHERE child_id=current_child_id AND term_id=current_term_id; NULL maps to c2
+teacher_term_status = db_term_eval.term_eval_status WHERE child_id=current_child_id AND term_id=current_term_id; NULL maps to c2
+parent_term_status = MAP(db_parent_evaluation.evaluation_status WHERE child_id=current_child_id AND evaluation_type=t2 AND evaluation_period=current_term_id: p2->c1, p0|p1|p3|NULL->c2)
+comprehensive_assessment_status = db_child_assessment.child_assessment_status WHERE child_id=current_child_id AND term_id=current_term_id; NULL maps to c2
 IF is_term_end=0, record_status = c1 ONLY IF monthly_complete ELSE c2
 IF is_term_end=1, record_status = c1 ONLY IF monthly_complete AND teacher_term_status=c1 AND parent_term_status=c1 AND comprehensive_assessment_status=c1 ELSE c2
 
@@ -320,7 +314,7 @@ growth_book_id (成长册ID), 1:1, integer, ui=growth_book.hidden
 class_id (班级ID), 1:1, integer, ui=growth_book.class
 child_id (幼儿ID), 1:1, integer, ui=growth_book.child
 teacher_id (评价教师ID), 1:1, integer, ui=context.hidden
-book_period (成长册周期), 1:1, school_term, ui=growth_book.period
+term_id (学期ID), 1:1, school_term, ui=growth_book.period
 book_eval_status (成长册评估状态), 1:1, c1=complete(已完成)|c2=incomplete(未完成), ui=growth_book.status
 generation_status (成长册生成状态), 1:1, g1=not_generated(未生成)|g2=generated(已生成), ui=growth_book.generation_status
 generated_file_id (成长册文件ID), 0:1, integer, ui=growth_book.preview|growth_book.download
@@ -329,7 +323,7 @@ generated_at (生成时间), 0:1, datetime, ui=growth_book.generated_at
 rel_count (关系数量) = 4
 rel_db (关联表) = db_class, db_child, db_teacher, db_file
 rel_map (关系字段) = db_growth_book{class_id}<->db_class{class_id}; db_growth_book{child_id}<->db_child{child_id}; db_growth_book{teacher_id}<->db_teacher{teacher_id}; db_growth_book{generated_file_id}<->db_file{file_id}
-unique (唯一键) = child_id + book_period
+unique (唯一键) = child_id + term_id
 
 method (方法):
 成长册每名幼儿每学期只有一份，成长册评估在学期末由教师完成
@@ -347,7 +341,7 @@ child_id (幼儿ID), 1:1, integer, ui=community.child
 task_label (任务标签), 0:1, max_len=100, ui=community.card.task_label
 submission_text (提交内容), 0:1, max_len=1000, ui=community.card.text
 file_id (图片或视频ID), 0:k, integer, ui=community.card.media
-submission_status (提交状态), 1:1, s1=draft(草稿)|s2=published(已发布), ui=community.status
+publish_status (发布状态), 1:1, s1=draft(草稿)|s2=published(已发布), ui=community.status
 published_at (发布时间), 0:1, datetime, ui=community.card.time
 
 rel_count (关系数量) = 4

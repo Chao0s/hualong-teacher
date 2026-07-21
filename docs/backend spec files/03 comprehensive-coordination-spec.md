@@ -101,17 +101,17 @@ document_title (文档标题), 1:1, max_len=150, ui=coord_file.card.title|coord_
 document_summary (文档摘要), 0:1, max_len=300, ui=coord_file.card.summary|coord_file_detail.summary
 publisher_department (发布部门), 0:1, max_len=50, ui=coord_file.card.department|coord_file_detail.department
 published_at (发布日期), 1:1, datetime, ui=coord_file.card.date|coord_file_detail.date
-effective_at (生效日期), 0:1, date, ui=coord_file_detail.effective_date
+effective_date (生效日期), 0:1, date, ui=coord_file_detail.effective_date
 file_id (文件ID), 1:k, integer, ui=coord_file.preview|coord_file.download
 allow_preview (允许预览), 1:1, boolean, ui=coord_file.preview
 allow_download (允许下载), 1:1, boolean, ui=coord_file.download
 document_status (文档状态), 1:1, s1=draft(草稿)|s2=pending(待审核)|s3=approved(已通过)|s4=rejected(已驳回), ui=coord_file.hidden
-createdby (创建教师ID), 1:1, integer, ui=coord_file.hidden
+created_by (创建教师ID), 1:1, integer, ui=coord_file.hidden
 created_at (创建时间), 1:1, datetime, ui=coord_file.hidden
 
 rel_count (关系数量) = 3
 rel_db (关联表) = db_school, db_teacher, db_file
-rel_map (关系字段) = db_coord_document{school_id}<->db_school{school_id}; db_coord_document{createdby}<->db_teacher{teacher_id}; db_coord_document{file_id}<->db_file{file_id}
+rel_map (关系字段) = db_coord_document{school_id}<->db_school{school_id}; db_coord_document{created_by}<->db_teacher{teacher_id}; db_coord_document{file_id}<->db_file{file_id}
 
 method (方法):
 list = FILTER(school_id=current_school_id, coord_category, document_status=s3) ORDER BY published_at DESC

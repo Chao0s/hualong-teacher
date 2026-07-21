@@ -108,21 +108,21 @@ placement (展示位置), 1:1, p1=case_banner(案例轮播)|p2=resource_list(推
 resource_id (资源ID), 0:1, integer, ui=training_home.recommendation.hidden
 case_id (案例ID), 0:1, integer, ui=training_home.recommendation.hidden
 display_order (显示顺序), 1:1, integer, ui=training_home.recommendation.order
-visible (是否显示), 1:1, boolean, ui=training_home.recommendation.visible
+is_visible (是否显示), 1:1, boolean, ui=training_home.recommendation.visible
 start_at (显示开始时间), 0:1, datetime, ui=training_home.recommendation.hidden
 end_at (显示结束时间), 0:1, datetime, ui=training_home.recommendation.hidden
-createdby (创建教师ID), 1:1, integer, ui=training_home.recommendation.hidden
+created_by (创建教师ID), 1:1, integer, ui=training_home.recommendation.hidden
 created_at (创建时间), 1:1, datetime, ui=training_home.recommendation.hidden
 
 rel_count (关系数量) = 4
 rel_db (关联表) = db_school, db_teacher, db_resource, db_case
-rel_map (关系字段) = db_training_recommendation{school_id}<->db_school{school_id}; db_training_recommendation{createdby}<->db_teacher{teacher_id}; IF content_type=c1, db_training_recommendation{resource_id}<->db_resource{resource_id}; IF content_type=c2, db_training_recommendation{case_id}<->db_case{case_id}
+rel_map (关系字段) = db_training_recommendation{school_id}<->db_school{school_id}; db_training_recommendation{created_by}<->db_teacher{teacher_id}; IF content_type=c1, db_training_recommendation{resource_id}<->db_resource{resource_id}; IF content_type=c2, db_training_recommendation{case_id}<->db_case{case_id}
 check (校验) = content_type=c1 时 resource_id 必填且 case_id=NULL；content_type=c2 时 case_id 必填且 resource_id=NULL
 placement_check (位置校验) = placement=p1|p3 REQUIRE content_type=c2; placement=p2 REQUIRE content_type=c1
 unique (唯一键) = school_id + placement + resource_id|case_id
 
 method (方法):
-active = FILTER(school_id=current_school_id, visible=1, (start_at IS NULL OR start_at<=NOW), (end_at IS NULL OR end_at>=NOW))
+active = FILTER(school_id=current_school_id, is_visible=1, (start_at IS NULL OR start_at<=NOW), (end_at IS NULL OR end_at>=NOW))
 case_banner = active JOIN db_case FILTER(placement=p1, case_status=s3) ORDER BY display_order ASC LIMIT 3
 resource_list = active JOIN db_resource FILTER(placement=p2, resource_status=s3) ORDER BY display_order ASC LIMIT 3
 case_list = active JOIN db_case FILTER(placement=p3, case_status=s3) ORDER BY display_order ASC LIMIT 3
