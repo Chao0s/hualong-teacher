@@ -364,8 +364,9 @@ unique (唯一键) = child_id + term_id
 method (方法):
 required_count = 由量表版本决定，现为 124（scale_code=guide, scale_version=1.0）
 completed_count = COUNT(db_child_assessment_item WHERE child_assessment_id=current_child_assessment_id)
-IF completed_count=required_count AND submitted_at IS NOT NULL, child_assessment_status=c1
+IF completed_count=required_count, child_assessment_status=c1
 ELSE child_assessment_status=c2
+状态纯由已评题数派生，不手工维护，也不附加其他条件（DECISIONS.md E4）；submitted_at 只记时间点，不参与判定
 本页自身的三态见 [TEACHER_EVALUATION_AGGREGATE] 的 progress_semantics；向上聚合时草稿一律折算为 c2
 
 instrument_rule (量表规则 / DECISIONS.md E2):
@@ -592,6 +593,7 @@ can_generate (是否可生成), 1:1, derived(can_generate_rule), ui=growth_book.
 generation_status (成长册生成状态), 1:1, g1=not_generated(未生成)|g2=generated(已生成), ui=growth_book.generation_status
 generated_file_id (成长册文件ID), 0:1, integer, ui=growth_book.preview|growth_book.download
 generated_at (生成时间), 0:1, datetime, ui=growth_book.generated_at
+included_sections (本册收录栏目), 0:1, json, ui=growth_book.hidden
 
 rel_count (关系数量) = 5
 rel_db (关联表) = db_school, db_class, db_child, db_teacher, db_file
@@ -605,6 +607,13 @@ IF can_generate=1, homepage growth_book_status=h1
 IF can_generate=0 OR record NOT_FOUND, homepage growth_book_status=h2
 generation_status 不改变主页二元完成状态；主页不得显示“可生成”“待补图”“不可生成”等详细生成状态
 school_id 为本次补列，见 GAPS.md G14
+
+included_sections_note (included_sections 的去留，登记不改判):
+included_sections 由 DECISIONS.md B12 加在本表上，DECISIONS.md 至今未作废它，故本 specification 保留
+它与 db_growth_book_template.enabled_sections 不是同一个对象：enabled_sections 是 E3 / W13 把预设 6 项的开关移到班级模版层的结果（一班一份、教师可改、随模版 d1/d2 冻结），included_sections 是本册（一幼儿一学期一本）落地时实际收录了哪几节
+两者是否重复、要不要在 DDL 落地时合并为一处，DECISIONS.md 没有说，本 specification 不自行判定
+本次改版未为它出可写控件：预设 6 项的开关走 growth_book_template.section_toggle，故本列 ui=growth_book.hidden
+B12 同批加的 book_message 则已由 E1 明确作废（寄语改读 db_teacher_message），因此不在本表字段列内
 
 layout_seed_rule (版式种子规则 / W14):
 不定长内容（task 亲子活动、time 在园时光）用「重复页样板池 + 随机挑选」：我们为该栏目设计 3-4 个页版式（各自宣告容量），渲染时挑版式、重复铺，直到盖完实际件数
