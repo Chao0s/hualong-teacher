@@ -323,14 +323,22 @@ class_id (班级ID), 1:1, integer, ui=month_eval.hidden
 child_id (评价幼儿ID), 1:1, integer, ui=month_eval.child_select
 eval_month (评价月份), 1:1, YYYY-MM, ui=month_eval.month_select
 eval_text (评价内容), 1:1, max_len=500, ui=month_eval.textarea
-moment_id (关联在园时光ID), 0:k, integer, ui=month_eval.photo_list
+file_id (月度评价照片ID), 0:k, integer, ui=month_eval.photo_list
 month_eval_status (评价状态), 1:1, e1=draft(草稿)|e2=saved(已保存)|e3=published(已发布), ui=month_eval.status
 saved_at (保存时间), 0:1, datetime, ui=month_eval.hidden
 
 rel_count (关系数量) = 4
-rel_db (关联表) = db_teacher, db_class, db_child, db_moment
-rel_map (关系字段) = db_month_eval{teacher_id}<->db_teacher{teacher_id}; db_month_eval{class_id}<->db_class{class_id}; db_month_eval{child_id}<->db_child{child_id}; db_month_eval{moment_id}<->db_moment{moment_id}
+rel_db (关联表) = db_teacher, db_class, db_child, db_file
+rel_map (关系字段) = db_month_eval{teacher_id}<->db_teacher{teacher_id}; db_month_eval{class_id}<->db_class{class_id}; db_month_eval{child_id}<->db_child{child_id}; db_month_eval{file_id}<->db_file{file_id}
 unique (唯一键) = teacher_id + child_id + eval_month
+
+photo_rule (照片规则 / DECISIONS.md E7):
+照片引用粒度为 file 级，走 db_file_ref(owner_object='db_month_eval')，不是 moment 级
+不做照片级标注：照片层级的幼儿标注不存在，也不新建。逐张标人一学期是几千次点击且对教师无直接回报，而 db_moment_upload 已要求标过一次 moment 级名单
+来源相册 = 该幼儿被 db_moment_upload 嵌套过的那些 moment 的全部照片；靠 db_moment_upload 筛出 moment，再列出这些 moment 经 db_file_ref(owner_object='db_moment') 关联的照片供教师挑选；按 db_moment.week_key 分周次
+moment 级关联作废：DECISIONS.md B3 原定 db_month_eval_moment -> db_month_eval.moment_ids JSON，E7 之后连 moment_ids 都不需要；周次仍可经 file_id -> db_file_ref(owner_object='db_moment') -> db_moment.week_key 反查
+导入是引用复制（复制 file_id 关联），不复制文件本体
+相册的完整构成定义见 05 home-school-spec.md 的 [CHILD_PHOTO_ALBUM_RULE]（适用范围含 db_month_eval 与 db_term_eval）
 
 
 课程资源 (Course Resources / db_resource)

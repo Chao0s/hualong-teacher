@@ -3,6 +3,9 @@ HOME_SCHOOL_BACKEND_OBJECT_SPEC
 scope (范围) = screens/home-school.html
 source_page (参考页面) = home-school.html
 source_page_correction (原型纠正规则) = home-school.html 当前示例中的“缺第2次|进行中|可生成|缺评语|待补图|不可生成”等主页状态标注已失效；后台与后续前端实现以本 specification 的主页二元状态为准
+revision_source (本次改版依据) = DECISIONS.md E1-E7 及其下 W1-W21（来源为 hualong-teacher decision.md 10 条 + commit e524e75 的前端改版回冲，2026-08-01）
+authority_order (权威顺序) = DECISIONS.md > db/01_schema.sql > db/DATABASE_SPEC.md > 本 specification；本文与 DECISIONS.md 冲突处一律以 DECISIONS.md 为准
+ddl_lag_notice (DDL 滞后说明) = E 组八张新表与新增列均为“已定/待实作”，db/01_schema.sql 尚未落地；本 specification 先行记录，DDL 补齐前 db/tools/check-ui-binding.mjs 会把这些列报为 NOT-IN-SCHEMA
 static_node_count (固定可点击节点数) = 9
 dynamic_progress_row_count (动态进度行数) = 0:k
 runtime_clickable_node_count (运行时可点击节点数) = 9
@@ -19,9 +22,10 @@ shared_objects (共享对象) = db_teacher, db_school, db_class, db_teacher_clas
 shared_nav_objects (共享导航对象) = nav_home, nav_party, nav_coord, nav_training, nav_home_school
 rename_shared_object (重命名共享对象) = FORBIDDEN
 duplicate_shared_object_definition (重复定义共享对象) = FORBIDDEN
-new_canonical_objects (本次新增业务对象) = db_term_eval, db_child_assessment
+new_canonical_objects (本次新增业务对象) = db_term_eval, db_child_assessment, db_teacher_message, db_scale_item, db_child_assessment_item, db_growth_book_template, db_growth_book_section, db_book_widget, db_growth_material
+new_object_source (新增业务对象依据) = db_teacher_message 来自 E1; db_scale_item 与 db_child_assessment_item 来自 E2; db_growth_book_template|db_growth_book_section|db_book_widget|db_growth_material 来自 E3(W11-W19)
 external_identity_object (跨端身份对象) = db_parent; 由家长端统一定义并由教师端引用
-external_business_object (跨端业务对象) = db_parent_evaluation; 由家长端 home-spec.md 统一定义(canonical)，教师端仅引用，不得另建同义表
+external_business_object (跨端业务对象) = db_parent_evaluation, db_book_material_submission; 前者由家长端 home-spec.md 统一定义(canonical)，后者由家长端 growth-book-spec.md 统一定义(canonical)；教师端仅引用，不得另建同义表
 
 
 [CONTEXT_RULE]
@@ -50,7 +54,16 @@ production_initial_db_term_eval (教师学期评估初始状态) = EMPTY
 production_initial_db_child_assessment (幼儿综合评估初始状态) = EMPTY
 production_initial_db_growth_record (成长档案初始状态) = EMPTY
 production_initial_db_growth_book (成长册初始状态) = EMPTY
+production_initial_db_teacher_message (教师寄语初始状态) = EMPTY
+production_initial_db_child_assessment_item (综合评估题项分初始状态) = EMPTY
+production_initial_db_growth_book_template (成长册模版初始状态) = EMPTY
+production_initial_db_growth_book_section (成长册新增栏目初始状态) = EMPTY
+production_initial_db_book_widget (成长册组件初始状态) = EMPTY
+production_initial_db_book_material_submission (成长册素材提交初始状态) = EMPTY
+production_initial_db_growth_material (成长资料初始状态) = EMPTY
 production_initial_db_community_submission (社区共育提交初始状态) = EMPTY
+production_initial_db_scale_item (量表题库初始状态) = 非空；按量表版本导入(scale_code=guide, scale_version=1.0, 124 题项)，属参考数据不属业务种子数据，来源 hualong-teacher/data/guide-scale.json
+page_layout_library (页版式库) = 不入库；预设 6 个栏目的页面版式为仓库内的版本化 JSON，地位比照 db/rubric/，随代码部署（W13）
 base_identity_data (基础身份数据) = db_school|db_teacher|db_class|db_teacher_class|db_child 由部署或园所管理员导入，不属于 Mock 业务内容
 initial_progress_rule (初始进度规则) = 有真实幼儿名册但无业务记录时，主页四项状态统一为 incomplete(未完成)，不得显示已完成或虚构百分比
 no_child_rule (无幼儿名册规则) = return [] and child_count=0
@@ -160,7 +173,8 @@ latest_parent_task_id = SELECT parent_task_id FROM db_parent_task WHERE class_id
 IF latest_parent_task_id EXISTS AND db_parent_task_submission{latest_parent_task_id,current_child_id}.submission_status=c1, parent_task_status=h1
 ELSE parent_task_status=h2
 growth_record_status = MAP(db_growth_record.record_status: c1->h1, c2|NULL->h2)
-growth_book_status = MAP(db_growth_book.book_eval_status: c1->h1, c2|NULL->h2)
+growth_book_status = MAP(db_growth_book.can_generate: 1->h1, 0|NULL->h2)
+book_eval_status 已由 DECISIONS.md B12 拔掉不落列，改为实时派生的布尔 can_generate；其判定公式见 [GROWTH_BOOK] 的 can_generate_rule
 required_count = 4
 completed_count = COUNT(moment_status=h1, parent_task_status=h1, growth_record_status=h1, growth_book_status=h1)
 row_completion_rate = completed_count/4*100
@@ -170,6 +184,59 @@ summary_rule (主页简化规则):
 主页四项只允许 h1=已完成 或 h2=未完成，不显示“缺第2次”“进行中”“可生成”“待补图”等详细状态
 任何一项所需内容未全部完成时，该项主页状态必须为 h2
 在园时光只完成第1次时，详细页显示 d2=缺第2次，主页仍显示 h2=未完成
+
+
+[TEACHER_EVALUATION_AGGREGATE]
+
+依据 (source) = DECISIONS.md E1 + E4
+source_page (参考页面) = teacher-evaluation.html
+navigation (导航) = 成长档案 growth-record.html > 教师评价 teacher-evaluation.html > 月度评价|学期评价|综合评估|教师寄语
+entry_reduction (入口收敛) = 成长档案首页的儿童评价入口由 5 个并为 3 个：发布家长评价 | 教师评价 | 成长册
+write_control_count (本页写入控件数) = 0; teacher-evaluation.html 只做导航与只读进度展示，不产生任何 ui= 写入标注
+
+教师评价聚合 (Teacher Evaluation Aggregate / db_teacher_eval_home)
+
+teacher_eval_home_id (教师评价聚合ID), 1:1, derived(page_context), ui=teacher_eval.page
+teacher_id (当前教师ID), 1:1, derived(auth_session), ui=context.hidden
+school_id (当前园所ID), 1:1, derived(db_teacher), ui=context.hidden
+class_id (当前班级ID), 1:1, derived(current_class_context), ui=context.hidden
+child_id (幼儿ID), 0:k, derived(db_child), ui=teacher_eval.progress.child_name
+month_eval_status (本月评价状态), 1:1, derived(db_month_eval), ui=teacher_eval.progress.month
+term_eval_status (学期评估状态), 1:1, derived(db_term_eval), ui=teacher_eval.progress.term
+comprehensive_status (综合评估状态), 1:1, derived(db_child_assessment), ui=teacher_eval.progress.comprehensive
+message_status (教师寄语状态), 1:1, derived(db_teacher_message), ui=teacher_eval.progress.message
+
+rel_count (关系数量) = 5
+rel_db (关联表) = db_child, db_month_eval, db_term_eval, db_child_assessment, db_teacher_message
+rel_map (关系字段) = db_teacher_eval_home{child_id}<->db_child{child_id}; db_teacher_eval_home{child_id}<->db_month_eval{child_id}; db_teacher_eval_home{child_id}<->db_term_eval{child_id}; db_teacher_eval_home{child_id}<->db_child_assessment{child_id}; db_teacher_eval_home{child_id}<->db_teacher_message{child_id}
+persist (是否持久化) = 0
+object_type (对象类型) = aggregate
+
+method (方法):
+接口按幼儿返回 4 项（本月评价 / 学期评估 / 综合评估 / 教师寄语）的完成状态
+current_month = 由后端依当前日期推定；前端不得写死月份
+四项状态在本聚合页一律二元：h1=已完成 | h2=未完成，草稿折算为未完成
+
+month_matrix_rule (月度评价完成情况规则):
+月度评价的“完成情况”为 幼儿 × 月份 矩阵
+月份栏由“已存在评价记录的月份”动态生成，不写死月份清单
+圆点本身即入口：已完成 -> 只读详情；未完成 -> 填写页
+删除“最近更新”栏，因此 db_month_eval 不需要对外暴露 updated_at
+
+term_scope_rule (学期评价范围规则):
+学期评价只展示当前学期，不做历史学期回看
+
+progress_semantics (进度口径 / DECISIONS.md E4):
+
+| 位置 | 状态数 | 口径 |
+|---|---|---|
+| 综合评估自己的进度页 growth-comprehensive-assessment.html | 三态 | 已评=124 -> 已完成；1-123 -> 草稿；0 -> 未完成（等价无记录，可不落库，由花名册左连接得出） |
+| 月度评价 / 学期评价自己的页 | 二元对外 | 草稿态仍在 db_month_eval.month_eval_status 内部保留(e1/e2/e3)，只是不对外显示 |
+| 教师评价聚合页、成长档案首页、成长册生成检查表 | 二元 | 草稿一律折算为未完成 |
+
+“进行中 / 草稿 / 待补”不再对外展示
+status 由题数派生，不手工维护
+导出报告允许导出草稿态的部分数据，并在报告中标注未完成
 
 
 [BUSINESS_OBJECTS]
@@ -236,13 +303,42 @@ class_id (班级ID), 1:1, integer, ui=term_eval.class
 child_id (幼儿ID), 1:1, integer, ui=term_eval.child
 teacher_id (评价教师ID), 1:1, integer, ui=context.hidden
 term_id (学期ID), 1:1, school_term, ui=term_eval.period
+eval_text (学期综合评语), 1:1, max_len=未定, ui=term_eval.textarea
+file_id (学期评价照片ID), 0:k, integer, ui=term_eval.photo_list
 term_eval_status (完成状态), 1:1, c1=complete(已完成)|c2=incomplete(未完成), ui=term_eval.status
 submitted_at (提交时间), 0:1, datetime, ui=term_eval.submitted_at
 
-rel_count (关系数量) = 4
-rel_db (关联表) = db_school, db_class, db_child, db_teacher
-rel_map (关系字段) = db_term_eval{school_id}<->db_school{school_id}; db_term_eval{class_id}<->db_class{class_id}; db_term_eval{child_id}<->db_child{child_id}; db_term_eval{teacher_id}<->db_teacher{teacher_id}
+rel_count (关系数量) = 5
+rel_db (关联表) = db_school, db_class, db_child, db_teacher, db_file
+rel_map (关系字段) = db_term_eval{school_id}<->db_school{school_id}; db_term_eval{class_id}<->db_class{class_id}; db_term_eval{child_id}<->db_child{child_id}; db_term_eval{teacher_id}<->db_teacher{teacher_id}; db_term_eval{file_id}<->db_file{file_id}
 unique (唯一键) = teacher_id + child_id + term_id
+
+content_rule (内容字段规则 / DECISIONS.md E6 + GAPS.md G31):
+db_term_eval 原本一个内容列都没有，只记“做了没有”；本次只补一栏 eval_text，命名与语意对齐 db_month_eval.eval_text
+teacher-term-form.html 的「五大领域评价」textarea 删除。理由：E2 之后五大领域已由 124 题量表逐题打分、领域分即时聚合，再用文字写一遍是重复劳动，且两份说法可能互相矛盾（文字写“语言发展良好”而量表语言领域均分 2.3）
+量表给分数，寄语给温度，中间这一层没有位置
+eval_text 字数上限 = UNDECIDED（未定）。月评为 500，学期评未定，见 GAPS.md G31；不得在此擅自取值
+字数上限未定的连带后果：W18 要求 bound 型 widget 的框必须大于等于来源字数上限，因此成长册「期末评估」栏目的框要多大也随之未定，排页版式库之前必须先定死
+
+photo_rule (照片规则 / DECISIONS.md E7):
+照片引用粒度为 file 级，走 db_file_ref(owner_object='db_term_eval')，不是 moment 级
+来源相册为该幼儿过往各月月度评价中的照片；导入是引用复制（复制 file_id 关联），不复制文件本体
+相册的构成定义见 [CHILD_PHOTO_ALBUM_RULE]
+
+
+[CHILD_PHOTO_ALBUM_RULE]
+
+依据 (source) = DECISIONS.md E7 + GAPS.md G28
+适用范围 (scope) = db_month_eval 与 db_term_eval 的照片选择
+
+no_photo_level_tagging (不做照片级标注) = 照片层级的幼儿标注不存在，也不新建。逐张标人一学期是几千次点击且对教师无直接回报，而 db_moment_upload 已要求标过一次 moment 级名单
+album_definition (该幼儿专属相册的定义) = 该幼儿被 db_moment_upload 嵌套过的那些 moment 的全部照片；靠 db_moment_upload 筛出 moment，再列出这些 moment 经 db_file_ref(owner_object='db_moment') 关联的照片供教师挑选
+album_grouping (相册分组) = 按 db_moment.week_key 分周次
+reference_granularity (引用粒度) = file 级；db_file_ref(owner_object='db_month_eval') 与 db_file_ref(owner_object='db_term_eval')
+moment_ids_removed (moment 级关联作废) = DECISIONS.md B3 原定 db_month_eval_moment -> db_month_eval.moment_ids JSON，E7 之后连 moment_ids 都不需要；周次仍可经 file_id -> db_file_ref(owner_object='db_moment') -> db_moment.week_key 反查
+import_semantics (导入语意) = 引用复制。复制的是 file_id 关联，不产生新文件、不复制文件本体
+portrait_exposure (肖像曝光) = 无新增曝光。B6 已定在园时光可见性归班级，全班家长本来就看得到所有动态照片；合照进入某幼儿的月评不构成新的曝光。本条与 GAPS.md G4 无关
+upstream_sync (上游同步状态) = 已同步。01 home-spec.md 的 db_month_eval.moment_id (0:k) 已改为 file_id (0:k, ui=month_eval.photo_list)，rel_db 的 db_moment 换成 db_file，并就地补了同一条 photo_rule
 
 
 幼儿综合评估 (Child Comprehensive Assessment / db_child_assessment)
@@ -253,19 +349,149 @@ class_id (班级ID), 1:1, integer, ui=child_assessment.class
 child_id (幼儿ID), 1:1, integer, ui=child_assessment.child
 teacher_id (评价教师ID), 1:1, integer, ui=context.hidden
 term_id (学期ID), 1:1, school_term, ui=child_assessment.period
-required_count (应评指标数), 1:1, integer, ui=child_assessment.hidden
-completed_count (已评指标数), 1:1, integer, ui=child_assessment.progress
+scale_code (量表编码), 1:1, max_len=20, ui=child_assessment.hidden
+scale_version (量表版本), 1:1, max_len=20, ui=child_assessment.hidden
+required_count (应评题项数), 1:1, integer, ui=child_assessment.hidden
+completed_count (已评题项数), 1:1, integer, ui=child_assessment.progress
 child_assessment_status (完成状态), 1:1, c1=complete(已完成)|c2=incomplete(未完成), ui=child_assessment.status
 submitted_at (提交时间), 0:1, datetime, ui=child_assessment.submitted_at
 
-rel_count (关系数量) = 4
-rel_db (关联表) = db_school, db_class, db_child, db_teacher
-rel_map (关系字段) = db_child_assessment{school_id}<->db_school{school_id}; db_child_assessment{class_id}<->db_class{class_id}; db_child_assessment{child_id}<->db_child{child_id}; db_child_assessment{teacher_id}<->db_teacher{teacher_id}
+rel_count (关系数量) = 6
+rel_db (关联表) = db_school, db_class, db_child, db_teacher, db_scale_item, db_child_assessment_item
+rel_map (关系字段) = db_child_assessment{school_id}<->db_school{school_id}; db_child_assessment{class_id}<->db_class{class_id}; db_child_assessment{child_id}<->db_child{child_id}; db_child_assessment{teacher_id}<->db_teacher{teacher_id}; db_child_assessment{scale_code,scale_version}<->db_scale_item{scale_code,scale_version}; db_child_assessment{child_assessment_id}<->db_child_assessment_item{child_assessment_id}
 unique (唯一键) = child_id + term_id
 
 method (方法):
+required_count = 由量表版本决定，现为 124（scale_code=guide, scale_version=1.0）
+completed_count = COUNT(db_child_assessment_item WHERE child_assessment_id=current_child_assessment_id)
 IF completed_count=required_count AND submitted_at IS NOT NULL, child_assessment_status=c1
 ELSE child_assessment_status=c2
+本页自身的三态见 [TEACHER_EVALUATION_AGGREGATE] 的 progress_semantics；向上聚合时草稿一律折算为 c2
+
+instrument_rule (量表规则 / DECISIONS.md E2):
+量表实体 = 《3-6岁儿童学习与发展指南》（教育部，2012 年 9 月）教师评定量表 v1.0，来源 hualong-teacher/data/guide-scale.json
+四层层级：domain 领域 5（H 健康 / L 语言 / S 社会 / K 科学 / A 艺术）> aspect 维度 11 > goal 目标 32 > item 题项 124（likert 123 + measurement 1）
+id 规则逐级截断即得上级 id：H > H1 > H1-2 > H1-2-3。因此四层不需要四张表，一张题项表足够，上级靠字符串前缀聚合
+领域分不再是输入而是输出：教师评的是 124 个题项分，领域分由题项分求均值得出
+domain_scores 不落列（比照 DATABASE_SPEC §1.3 persist=0），改由题项分即时聚合
+聚合口径照 guide-scale.json 的 instrument.scoring_rules：goal / aspect / domain / total 一律取其下所有题项得分的均值（题项级均值，非下级均值的均值 —— 题项数不等会造成加权失真）
+班级报告同理：取全班已提交幼儿在该领域的所有题项分求均值，不可用各幼儿领域均分再平均
+题库入库而非前端内嵌：原型由 assessment-store.js 内嵌渲染，正式版由接口下发，前端只渲染与提交
+
+version_binding_rule (量表版本绑定规则):
+量表必须版本化，且历史评估绑定填写时所用的版本（scale_code + scale_version 落在评估行上）
+升版不得回头把旧记录判成草稿；required_count 随该行绑定的版本解释，不随最新版本变动
+注意本条与成长册模版相反：成长册模版不做版本化、不做快照（E3 第 3 点 + W16），量表必须版本化
+
+incremental_save_rule (逐题增量保存规则):
+教师每点一题即落库
+主记录在首次评分时建立，不是提交时才建立
+中途退出可续填：按 child_id + 当前评估周期读回全部已评题项
+未评 = 该题无列，不是 0 分。领域均分只按已评题项计算；整个领域都没评时接口回“该领域尚无评分”，不得回 0
+表单默认值由 4 改为“未评”。原型每题预设 4 分会让完成度失去意义
+
+report_rule (报告页规则):
+个人与班级报告都删掉文字分析（强弱项描述、综合评语），只保留五领域雷达图 + 逐题明细 tab
+接口不再需要 analysis_text / assessment_summary 之类字段
+班级报告只统计已完成的评估，草稿不计入；无已完成评估时回明确空结果，供前端区分“均分 0”与“尚无数据”
+
+naming_note (命名对照，DDL 落地时须择一):
+DECISIONS.md E4 写的 rated_count / total_count 与本表既有的 completed_count / required_count 是同一对数值
+两套名字不得并存；择一为准的决定尚未拍板，登记于此
+
+
+量表题项 (Scale Item / db_scale_item)
+
+scale_item_id (量表题项ID), 1:1, integer, ui=child_assessment.item.hidden
+scale_code (量表编码), 1:1, max_len=20, ui=child_assessment.item.hidden
+scale_version (量表版本), 1:1, max_len=20, ui=child_assessment.item.hidden
+item_id (题项编号), 1:1, max_len=16, ui=child_assessment.item.hidden
+item_name (题项名称), 1:1, max_len=100, ui=child_assessment.item.title
+question (题项问题), 1:1, text, ui=child_assessment.item.question
+anchors (行为锚点), 1:1, json, ui=child_assessment.item.anchor
+item_type (题项类型), 1:1, likert|measurement, ui=child_assessment.item.hidden
+anchored_levels (有锚点的分级), 0:1, json, ui=child_assessment.item.hidden
+inferred_levels (推断的分级), 0:1, json, ui=child_assessment.item.hidden
+
+rel_count (关系数量) = 1
+rel_db (关联表) = db_child_assessment_item
+rel_map (关系字段) = db_scale_item{item_id}<->db_child_assessment_item{item_id}
+unique (唯一键) = scale_code + scale_version + item_id
+object_type (对象类型) = reference_data
+data_source (数据来源) = hualong-teacher/data/guide-scale.json；注意 version 与 scoring_rules 都在 instrument 之下，不是顶层键
+
+domain_code_note (领域编码两套并存 / GAPS.md G15):
+量表用 H/L/S/K/A，schema 的 db_assessment_item.assessment_domain 用 f1..f5，顺序一致（健康/语言/社会/科学/艺术）
+须定一套为权威、另一套为映射 —— 尚未拍板，不得在此擅自选定
+
+h1_1_1_deviation (H1-1-1 身高体重题的明示偏离 / DECISIONS.md E2 + GAPS.md G27):
+量表原文 measurement_note 写明本题不由教师主观评定，须按实测身高 cm / 体重 kg / 性别对照参考表换算
+我们改由教师照参考表主观评定，参考表降级为判断辅助。理由：三个前端 71 个页面没有任何一处收身高体重；参考范围大幅重叠（男孩 3~4 岁身高 94.9-111.7、4~5 岁 100.7-119.2、5~6 岁 106.1-125.8，108cm 同时落在三段），评分规则本身欠缺定义，实作就得自己发明一套消歧规则；身高体重属 PIPL 第二十八条明列的医疗健康敏感个人信息
+必须记录在案的代价：本实作不是《指南》原典的忠实实作。H1-1-1 在我们这里实质上是一道 likert 题
+item_type 仍存 measurement（忠于原始 JSON），偏离须写在 db/rubric/ 的说明文件里，避免日后有人拿我们的数据与《指南》对照时误以为是实测换算
+required_count 维持 124；db_child.birth_date 与 gender 不参与此题计分
+正面副作用：完全不采集身高体重，没有医疗健康敏感数据进入系统
+
+
+幼儿综合评估题项分 (Child Assessment Item Score / db_child_assessment_item)
+
+child_assessment_item_id (题项得分ID), 1:1, integer, ui=child_assessment.item.hidden
+child_assessment_id (幼儿综合评估ID), 1:1, integer, ui=child_assessment.item.hidden
+item_id (题项编号), 1:1, max_len=16, ui=child_assessment.item.hidden
+score (题项得分), 1:1, 1:5, ui=child_assessment.item.score_button
+
+rel_count (关系数量) = 2
+rel_db (关联表) = db_child_assessment, db_scale_item
+rel_map (关系字段) = db_child_assessment_item{child_assessment_id}<->db_child_assessment{child_assessment_id}; db_child_assessment_item{item_id}<->db_scale_item{item_id}
+unique (唯一键) = child_assessment_id + item_id
+row_rule (行规则) = 每次评估最多 124 列，一题一列；未评的题不产生列（未评 != 0 分）
+pk_note (主键说明) = DECISIONS.md E2 的 DDL 草图只列了 child_assessment_id / item_id / score 与唯一键，未给代理主键；此处按本文件 id_rule 补 child_assessment_item_id，DDL 落地时须确认
+
+
+教师寄语 (Teacher Message / db_teacher_message)
+
+source_page (参考页面) = teacher-message.html, teacher-message-detail.html
+
+message_id (教师寄语ID), 1:1, integer, ui=teacher_message.hidden
+school_id (园所ID), 1:1, integer, ui=teacher_message.hidden
+class_id (班级ID), 1:1, integer, ui=teacher_message.hidden
+child_id (幼儿ID), 1:1, integer, ui=teacher_message.child_select
+teacher_id (撰写教师ID), 1:1, integer, ui=context.hidden
+term_id (学期ID), 1:1, school_term, ui=teacher_message.period
+content (寄语内容), 1:1, max_len=300, ui=teacher_message.textarea|teacher_message_detail.textarea
+publish_status (发布状态), 1:1, 待定(见 DECISIONS.md D5 内容安全落点), ui=teacher_message.status
+published_at (提交时间), 0:1, datetime, ui=teacher_message_detail.time
+created_at (创建时间), 1:1, datetime, ui=teacher_message.hidden
+updated_at (更新时间), 0:1, datetime, ui=teacher_message.hidden
+
+rel_count (关系数量) = 4
+rel_db (关联表) = db_school, db_class, db_child, db_teacher
+rel_map (关系字段) = db_teacher_message{school_id}<->db_school{school_id}; db_teacher_message{class_id}<->db_class{class_id}; db_teacher_message{child_id}<->db_child{child_id}; db_teacher_message{teacher_id}<->db_teacher{teacher_id}
+unique (唯一键) = child_id + term_id
+
+content_rule (内容规则):
+content 为纯文字，上限 300 字，不支持任何附件
+300 字 < 微信 msgSecCheck 的 2500 字上限，同步机审可直接用，不需要 mediaCheckAsync
+publish_status 的枚举值未定 —— 内容安全机制的落点是 DECISIONS.md D5 的开放项，不得在此擅自取值
+
+write_semantics (写入语意 = 扇出，不是批次实体):
+「添加到」是单选下拉，不是多选
+选「全体幼儿」-> 班内每名幼儿各生成一条 db_teacher_message，内容相同
+选某一名幼儿 -> 只生成一条
+扇出发生在服务端；班级成员取自 class_id（derived），请求体不得携带幼儿清单
+与 B12 的批次寄语同构，但 B12 存在 db_growth_book.book_message 上；E3 之后成长册的寄语栏目改读本表，book_message 不再需要
+
+edit_rule (可回改规则):
+已提交的寄语可在 teacher-message-detail.html 重新编辑后保存，仍限 300 字
+不分草稿态。B12「不分草稿态」的已知风险（写一半被当完成）在此仍存在，但因为可回改，严重性下降，维持不加草稿态
+
+scope_rule (作用域规则):
+school_id / class_id / teacher_id = derived，服务端设值，忽略请求体里的同名字段
+child_id = scoped，客户端可选，服务端必须把「该幼儿属于本教师的班级」内联成 predicate 重新验证，不可先查再做
+
+progress_rule (完成情况规则):
+teacher-message.html 下半部的完成情况表为 幼儿 × 教师寄语 二元表
+已完成 -> 跳 teacher-message-detail.html 只读并可重新编辑；未完成 -> 定位到上方填写区并预选该幼儿
 
 
 成长档案 (Growth Record / db_growth_record)
@@ -308,30 +534,6 @@ completion_rule (完成规则):
 任一必需评估缺失或未完成，主页成长档案状态均为 h2=未完成
 
 
-成长册 (Growth Book / db_growth_book)
-
-growth_book_id (成长册ID), 1:1, integer, ui=growth_book.hidden
-class_id (班级ID), 1:1, integer, ui=growth_book.class
-child_id (幼儿ID), 1:1, integer, ui=growth_book.child
-teacher_id (评价教师ID), 1:1, integer, ui=context.hidden
-term_id (学期ID), 1:1, school_term, ui=growth_book.period
-book_eval_status (成长册评估状态), 1:1, c1=complete(已完成)|c2=incomplete(未完成), ui=growth_book.status
-generation_status (成长册生成状态), 1:1, g1=not_generated(未生成)|g2=generated(已生成), ui=growth_book.generation_status
-generated_file_id (成长册文件ID), 0:1, integer, ui=growth_book.preview|growth_book.download
-generated_at (生成时间), 0:1, datetime, ui=growth_book.generated_at
-
-rel_count (关系数量) = 4
-rel_db (关联表) = db_class, db_child, db_teacher, db_file
-rel_map (关系字段) = db_growth_book{class_id}<->db_class{class_id}; db_growth_book{child_id}<->db_child{child_id}; db_growth_book{teacher_id}<->db_teacher{teacher_id}; db_growth_book{generated_file_id}<->db_file{file_id}
-unique (唯一键) = child_id + term_id
-
-method (方法):
-成长册每名幼儿每学期只有一份，成长册评估在学期末由教师完成
-IF book_eval_status=c1, homepage growth_book_status=h1
-IF book_eval_status=c2 OR record NOT_FOUND, homepage growth_book_status=h2
-generation_status 不改变主页二元完成状态；主页不得显示“可生成”“待补图”“不可生成”等详细生成状态
-
-
 社区共育提交 (Community Coeducation Submission / db_community_submission)
 
 community_submission_id (社区共育提交ID), 1:1, integer, ui=community.card.hidden
@@ -348,6 +550,300 @@ rel_count (关系数量) = 4
 rel_db (关联表) = db_school, db_class, db_child, db_file
 rel_map (关系字段) = db_community_submission{school_id}<->db_school{school_id}; db_community_submission{class_id}<->db_class{class_id}; db_community_submission{child_id}<->db_child{child_id}; db_community_submission{file_id}<->db_file{file_id}
 
+pending_removal (待处理，本次未改) = DECISIONS.md B11 已定拔掉 db_community_submission —— 社区共育不是实体，是 db_parent_task + db_parent_task_submission 的 feed 视图，按 parent_task_type 筛选；E5 确认前端已把筛选器改为任务类型（全部 / 日常 t1 / 社区 t2），data-type="daily|community" 即对应该栏，data-task 不再参与筛选。本区块的重写属 B 组落地范围，本次改版（E1-E7）未动，登记于此以免被当成仍然成立的定义
+
+
+[GROWTH_BOOK]
+
+依据 (source) = DECISIONS.md E3 及其下 W1-W21；本节整体推翻 B12 的「模板重新解读为汇出页、v1 不需要 template_code」
+source_page (参考页面) = growth-book.html, growth-book-edit.html, growth-book-sample.html, growth-book-view.html
+model (模型) = 模版是实打实的版式配置对象，比 template_code 更重 —— 是 widget 网格上的自由布局
+export_page_removed (作废页面) = export-growth-book.html。批量导出改为 growth-book.html 的底部弹层，不再是独立页面（E3 第 10 点；screens.tsv 的重复登记见 GAPS.md G30）
+
+section_order (内容组成 6 项，固定顺序):
+
+| n | section_key | 名称 | 粒度 | 数据来源 |
+|---:|---|---|---|---|
+| 1 | intro | 园所介绍 | 班级级（园所统一） | db_school.school_intro |
+| 2 | time | 在园时光 | 班级级 | db_growth_material（成长资料通道） |
+| 3 | task | 亲子活动 | 幼儿级 | db_parent_task + db_parent_task_submission |
+| 4 | term | 期末评估 | 幼儿级 | db_term_eval.eval_text |
+| 5 | comp | 综合评估 | 幼儿级 | db_child_assessment_item（雷达图即时算） |
+| 6 | message | 教师寄语 | 幼儿级 | db_teacher_message.content |
+
+section_order_note (相对 B12 的变动) = 删 parent 家长动态；eval 发展评估拆成 term + comp；comment 幼儿评语更名 message 教师寄语并改读 db_teacher_message；砍体检数据维持不变
+no_manual_sort (不做整体拖拽排序) = 预设 6 项顺序固定。曾试「勾选 + 拖动排序」，2026-08-01 评审回退（纵向排序清单在手机上太笨重），故模版不需要 sort_order
+cover_ownership (封面归属 / W19) = 封面归园所，存 db_school.book_cover JSON {layout_id, image_file_id, title_text}，一园一份，只有 admin 能改，school_id derived；教师端不提供封面写入控件，故本 specification 不为封面出 ui= 标注
+cover_conflict_note (待上游澄清) = W13 把「选封面」列为教师可配置的三件事之一，W19 则把封面收归 admin。两条并存于 DECISIONS.md，本 specification 依 W19 处理并登记此冲突，不自行改判
+border_ownership (美术边框归属 / W1b + W19) = 边框是设计不是内容，放页版式库 JSON，不提供上传；边框必须跟着进 PDF
+teacher_configurable (教师可配置的范围 / W13) = 开关栏目、新增栏目（含其版面）两件事；预设 6 个栏目的页面由我们（developer）预先设计，教师完全不能改，因此没有 override 表、没有班班版面分歧、预览与 PDF 必定一致
+
+
+成长册 (Growth Book / db_growth_book)
+
+growth_book_id (成长册ID), 1:1, integer, ui=growth_book.hidden
+school_id (园所ID), 1:1, integer, ui=growth_book.hidden
+class_id (班级ID), 1:1, integer, ui=growth_book.class
+child_id (幼儿ID), 1:1, integer, ui=growth_book.child
+teacher_id (评价教师ID), 1:1, integer, ui=context.hidden
+term_id (学期ID), 1:1, school_term, ui=growth_book.period
+layout_seed (版式随机种子), 1:1, integer, ui=growth_book.hidden
+can_generate (是否可生成), 1:1, derived(can_generate_rule), ui=growth_book.status
+generation_status (成长册生成状态), 1:1, g1=not_generated(未生成)|g2=generated(已生成), ui=growth_book.generation_status
+generated_file_id (成长册文件ID), 0:1, integer, ui=growth_book.preview|growth_book.download
+generated_at (生成时间), 0:1, datetime, ui=growth_book.generated_at
+
+rel_count (关系数量) = 5
+rel_db (关联表) = db_school, db_class, db_child, db_teacher, db_file
+rel_map (关系字段) = db_growth_book{school_id}<->db_school{school_id}; db_growth_book{class_id}<->db_class{class_id}; db_growth_book{child_id}<->db_child{child_id}; db_growth_book{teacher_id}<->db_teacher{teacher_id}; db_growth_book{generated_file_id}<->db_file{file_id}
+unique (唯一键) = child_id + term_id
+
+method (方法):
+成长册每名幼儿每学期只有一份
+book_eval_status 已拔掉不落列，改为实时派生的布尔 can_generate（DECISIONS.md B12）
+IF can_generate=1, homepage growth_book_status=h1
+IF can_generate=0 OR record NOT_FOUND, homepage growth_book_status=h2
+generation_status 不改变主页二元完成状态；主页不得显示“可生成”“待补图”“不可生成”等详细生成状态
+school_id 为本次补列，见 GAPS.md G14
+
+layout_seed_rule (版式种子规则 / W14):
+不定长内容（task 亲子活动、time 在园时光）用「重复页样板池 + 随机挑选」：我们为该栏目设计 3-4 个页版式（各自宣告容量），渲染时挑版式、重复铺，直到盖完实际件数
+随机必须可重现，否则违反 E3 第 11 点「预览与 PDF 同源」
+挑选序列 = PRNG(layout_seed, section_key, page_index)
+layout_seed 首次渲染时产生，之后永不变；同一本册子重复渲染多少次都是同一个版面，不同幼儿因种子不同而版面不同
+
+can_generate_rule (可生成判定 / E3 第 9 点 + W15):
+can_generate = 班级级栏目就绪 AND 该幼儿的因人而异栏目齐备 AND 每个征集型 widget 均已有该幼儿的提交
+班级级就绪：intro 取 db_school.school_intro 非空；time 取 db_growth_material 非空
+幼儿级齐备：task / term / comp / message 四项按各自完成状态；新增栏目按 collected 槽位全满
+接口只回布尔，不回缺失明细。前端不展示缺什么，不可生成者仅置灰禁选，以免后端为每名幼儿逐项计算
+班级生成进度 = 可生成人数 / 班级人数。原型的 58 + 勾选数 × 2.6 是假公式，已废
+
+checklist_rule (生成检查表规则 / E3 第 8 点):
+检查表只列因人而异的栏目。园所介绍、在园时光是班级级、全班同一状态，原本在幼儿列里是零信息量的栏，移出表格成为表上方的「班级级前置条件」
+表内只剩亲子活动、期末评估、综合评估、教师寄语 + N 个新增栏目
+接口须按 班级级 / 幼儿级 二分返回，不要为班级级栏目逐幼儿回同一个值
+
+
+成长册模版 (Growth Book Template / db_growth_book_template)
+
+template_id (成长册模版ID), 1:1, integer, ui=growth_book_template.hidden
+school_id (园所ID), 1:1, integer, ui=growth_book_template.hidden
+class_id (班级ID), 1:1, integer, ui=growth_book_template.hidden
+enabled_sections (启用栏目), 1:1, json, ui=growth_book_template.section_toggle
+template_status (模版状态), 1:1, d1=draft(草稿)|d2=published(已定稿), ui=growth_book_template.status
+updated_at (更新时间), 1:1, datetime, ui=growth_book_template.hidden
+
+rel_count (关系数量) = 3
+rel_db (关联表) = db_school, db_class, db_growth_book_section
+rel_map (关系字段) = db_growth_book_template{school_id}<->db_school{school_id}; db_growth_book_template{class_id}<->db_class{class_id}; db_growth_book_template{template_id}<->db_growth_book_section{template_id}
+unique (唯一键) = class_id
+object_scope (归属层级 / W19) = 纯班级级。封面已移到 db_school.book_cover，本表不含封面字段
+enabled_sections_value (取值) = 预设 6 项的开关，如 ["intro","time","task","term","comp","message"]
+
+version_rule (版本化规则 / E3 第 3 点 + W16):
+不做模版版本化、不做快照。故本表无 version，已生成的册子不绑模版快照
+W16 的草稿/定稿两态把 E3 第 3 点从使用假设变成系统约束：定稿后模版冻结，全班拿到同一个版面，因此仍然不需要版本化与快照
+注意本条与 E2 的量表处理相反：量表必须版本化，成长册模版不必
+
+draft_rule (草稿匣规则 / W16):
+教师把栏目设计完之后不是立刻生成。中间有草稿阶段：可回头重编、可预览整本册子的实际呈现，确认无误才点「发布成长册」定稿
+d1=draft 可编、可预览；d2=published 冻结，册子依此生成
+发布之前是草稿，发布之后只能撤回，不提供「发布了再偷偷改」的中间态
+
+
+成长册新增栏目 (Growth Book Custom Section / db_growth_book_section)
+
+section_id (新增栏目ID), 1:1, integer, ui=growth_book_section.hidden
+template_id (成长册模版ID), 1:1, integer, ui=growth_book_section.hidden
+name (栏目名称), 1:1, max_len=10, ui=growth_book_section.name_input
+anchor_after (插入位置), 1:1, cover|section_key, ui=growth_book_section.anchor_select
+created_by (创建教师ID), 1:1, integer, ui=growth_book_section.hidden
+created_at (创建时间), 1:1, datetime, ui=growth_book_section.hidden
+
+rel_count (关系数量) = 3
+rel_db (关联表) = db_growth_book_template, db_teacher, db_book_widget
+rel_map (关系字段) = db_growth_book_section{template_id}<->db_growth_book_template{template_id}; db_growth_book_section{created_by}<->db_teacher{teacher_id}; db_growth_book_section{section_id}<->db_book_widget{section_id}
+row_scope (落列范围 / W13) = 只存「新增栏目」。预设 6 项不落列，退回成 db_growth_book_template.enabled_sections 的开关
+anchor_after_rule (插入位置规则) = 取 'cover' 或某个预设 section_key，决定新增栏目插在哪。W13 确认 anchor_after 仍需要 —— 新增栏目要能插在预设项之间
+no_limit (数量上限) = 新增栏目不设上限，前后端都不做数量校验（E3 第 5 点）
+name_len_note (栏目名称长度) = max_len=10 取自原型 growth-book-edit.html 的 maxlength，未经决议确认
+note_text_removed (栏目说明作废 / W11) = db_growth_book_section.note_text 已砍掉。有了 widget 之后多余 —— 教师放一个 literal 文字 widget 打同一段话即可，还能自选位置与大小。原型 growth-book-edit.html 的「栏目说明」textarea 需随之删除，本 specification 不为它出 ui= 标注
+
+
+成长册组件 (Growth Book Widget / db_book_widget)
+
+widget_id (组件ID), 1:1, integer, ui=book_widget.hidden
+section_id (所属栏目ID), 1:1, integer, ui=book_widget.hidden
+page_index (页序), 1:1, integer, ui=book_widget.page_index
+grid_x (格子横坐标), 1:1, integer(0:14), ui=book_widget.grid_x
+grid_y (格子纵坐标), 1:1, integer(0:23), ui=book_widget.grid_y
+grid_w (占用横格数), 1:1, integer(2:15), ui=book_widget.grid_w
+grid_h (占用纵格数), 1:1, integer(2:24), ui=book_widget.grid_h
+widget_type (组件型别), 1:1, image|text, ui=book_widget.type_select
+binding_key (内容来源键), 1:1, literal|collected|school.intro|class.material|child.message|child.term_eval|child.task|child.assessment, ui=book_widget.binding_select
+content (字面内容), 0:1, text, ui=book_widget.text_input
+config (呈现配置), 0:1, json, ui=book_widget.style_panel
+
+rel_count (关系数量) = 2
+rel_db (关联表) = db_growth_book_section, db_book_material_submission
+rel_map (关系字段) = db_book_widget{section_id}<->db_growth_book_section{section_id}; db_book_widget{widget_id}<->db_book_material_submission{widget_id}
+row_scope (落列范围 / W13) = 只存「新增栏目」的 widget；预设页的 widget 在仓库的页版式库 JSON 里
+storage_form (储存形态 / W5) = 一个 widget 一列，不存 JSON 数组。此处刻意不套用 B3 的「瘦关联表改 JSON」偏好 —— widget 有真实生命周期（新增/移动/缩放/删除）、要被逐一查询，而且素材提交必须外键指向它；布局存 JSON 则 widget_id 是数组元素、无法被外键指向，删 widget 会留下孤儿提交
+config_value (config 取值) = 文字：字级 / 对齐（置中|靠左|靠右）；图片：fill|cover|crop。进阶控制放抽屉，不占介面（W8）
+editor_status (空白网格线上编辑器 / W4) = 编范本本身用的编辑器由我们使用，与教师端的栏目编辑器同一套渲染、不同权限；列为独立工项，尚未排期
+
+grid_rule (网格规则 / W1 · W1a · W1b · W2 · W6 · W7 · W9):
+版面单位是实体 A4 页（210 × 297mm 直式），不是连续画布；widget 不得跨页，每个 widget 完整归属于单一页面
+网格 15 × 24，格子 10mm 精确正方，不接受近似：左右边距 30mm -> 内容宽 150mm ÷ 15 = 10.0mm；上下边距 28.5mm -> 内容高 240mm ÷ 24 = 10.0mm；余数 0
+上下取 28.5 而非 30 的理由：150 : 237 约分为 50 : 79，79 是质数，四边都恰好 30mm 的唯一整除解是 50 × 79（格 3mm，过细）；上下松动 1.5mm 后 297 − 57 = 240，因数立刻好切
+边距是先扣掉的、有功能的区域（放美术边框），不是铺格剩下的余数；widget 不得放进边距，grid_x ∈ 0..14、grid_y ∈ 0..23
+widget 长宽比 = 占格数之比，必须逐像素成立。保证做法是先算格子边长、两轴共用同一个整数像素值：cell = floor(content_width_px / 15)，rows = floor(content_height_px / cell)，余数并入页边距
+widget 最小尺寸 2 × 2 格（20 × 20mm），否则四角缩放把手的触控热区互相重叠；后端存档校验 grid_w >= 2 AND grid_h >= 2
+一个栏目可含多页，页数由教师新增，非固定 1 页
+网格适用全册，不只新增栏目；预设 6 个栏目的页面同样是网格版面，差别只在由范本预先排好
+重叠一律拒绝放置，不做弹开推挤：放手时若与既有 widget 重叠，该 widget 标红 + 提示移走 + 关闭存档按钮；坐标重叠时拒绝存档整个栏目
+重叠校验服务端必须重做一次 —— 前端 UI 永远不是完整性边界
+widget 只有图片、文字两型，不做视频；不为同功能不同尺寸各开一个模板，一律是可自由缩放的通用 widget
+图片比例由格子坐标反推；家长上传时不强制符合该比例，显示方式由教师在网格端决定 fill / cover / crop
+
+zoom_rule (手机端缩放规则 / W1c):
+取消「手机端不允许横向滑动」，改为允许 zoom。手机宽 390pt best-fit 时每格仅 18.6pt，低于 iOS 建议的 44pt，需放大 2.37 倍才达标
+连带的互动规格（前端待定，但必须有答案）：平移手势与拖曳 widget 的手势必须能区分；拖曳到视窗外时需边缘自动卷动；任何触控舒适的缩放倍率下画面永远只看得到约 9 格
+
+text_limit_rule (文字上限规则 / W18):
+不定全域字数上限。前端依 grid_w × grid_h 与当前字级即时算出 maxlength，打满就打不下去，溢出从根本上不存在
+反方向同时成立：bound 型 widget（child.message、child.term_eval、child.task）的框必须大于等于来源的字数上限，编辑器挡掉太小的框
+教师打完字再把字级调大导致超出时，必须挡住存档并提示，不可默默截断
+bound 型的来源上限必须在动手排版式库之前先定死：child.message 已定 300；db_parent_task_submission.submission_text 现值 1000；db_term_eval.eval_text 未定（GAPS.md G31）
+
+binding_key_registry (内容来源登记表 / W11):
+
+| binding_key | 粒度 | 内容存在哪 | 型别 | 入齐备判定 |
+|---|---|---|---|---|
+| literal | widget | db_book_widget 这一列自己（content） | image, text | 否 |
+| collected | child | db_book_material_submission（家长上传，触发征集） | image, text | 是 |
+| school.intro | school | db_school.school_intro | text | 否 |
+| class.material | class | db_growth_material（成长资料） | image, text | 班级级前置 |
+| child.message | child | db_teacher_message.content | text | 是 |
+| child.term_eval | child | db_term_eval.eval_text | text | 是 |
+| child.task | child | db_parent_task_submission | image, text | 是 |
+| child.assessment | child | 不存，即时算 | image | 是 |
+
+registry_rule (登记表规则) = 只用一栏 binding_key，不开 content_source 第二栏。粒度（school / class / section / child / widget）、谁填、要不要入齐备判定、能配哪种型别，全部是绑定目标的固有属性，查登记表即可，不该在每一列上复写
+literal_rule = literal 是唯一内容真的存在 widget 列上的一种；其余都是指标
+collected_text_rule = collected 也吃文字，不只照片。家长打的字是 UGC，必须与照片走同一条内容把关（CLAUDE.md 红线 3、GAPS.md G2）
+dropped_bindings (砍掉的两个绑定目标) = section.note（db_growth_book_section.note_text，widget 化后多余）与 class.intro（B12 加的 db_class.class_intro，无使用场景，B12 该项作废；db_school.school_intro 保留）
+radar_rule (雷达图 / W12) = 不存任何文件、不存 base64、不落任何字段。五领域均分完全由 db_child_assessment_item 的题项分推导，小程序端 canvas 直接画，PDF 端服务器绘向量。同一条逻辑适用所有 bound widget：它们在 db_book_widget 上什么都不存，一律即时读
+
+
+成长册素材提交 (Growth Book Material Submission / db_book_material_submission) [REUSE]
+
+reuse_source (复用来源) = Parent App growth-book-spec.md (canonical definition)
+引用字段 = book_material_submission_id, widget_id, child_id, submission_text, file_id, crop, submitted_by, submitted_at
+unique (唯一键) = widget_id + child_id
+row_meaning (一列的含义) = 一个槽位一名幼儿
+submitted_by (提交来源) = parent(家长提交)|teacher(教师代传)
+cross_app_rule (跨端规则) = 家长端为 canonical，教师端仅引用，不得重复定义或另建同义表；教师代传写同一张表，只有 submitted_by 不同
+teacher_write_surface (教师端写入面) = growth-book-edit.html「提交情况」弹层的代传按钮，写 file_id / submission_text，沿用家长端的 ui=book_material.submission.upload 与 ui=book_material.submission.text，本 specification 不另立名字
+submitted_by_rule (代传规则 / E3 第 6 点) = 该值由服务端依登录身份设定，请求体不得指定
+no_request_table (不建征集请求表) = db_book_material_request 不建表。一个 binding_key=collected 的 widget 存在本身就是一次征集，状态由提交记录的有无派生
+crop_note (裁切框形态) = crop JSON 的形态待定，见 DECISIONS.md E3 的开放项
+pk_naming_conflict (主键命名待统一) = DECISIONS.md E3 的 DDL 草图写 submission_id，家长端 canonical 写 book_material_submission_id；两者指同一列，DDL 落地时须择一，此处依 canonical 引用
+
+collection_lifecycle (素材征集生命周期 / W15 + W16):
+以「栏目」为单位发起，不按 widget 发（家长会一次收到六个通知，而它们其实是同一件事）、也不按页发（「页」是排版概念，家长不知道册子怎么分页）
+一个新增栏目 = 家长端一则待办，点进去列出该栏目所有页上的全部 collected 槽位，一次交完
+齐备判定 = 该栏目全部槽位都有东西，不是「至少交一件」
+不接受「可以不交」：允许缺件等于把压力与责任转嫁给教师，且缺件必然产生留白，排出来的东西违反教师设计时的原意
+已知代价：教师多摆两个槽位就可能卡住全班出册。这与「新增栏目不设上限」「征集不设时限」叠加，是三条已定决策共同造成的风险，缓解手段只有教师代传
+征集不设时限：无 due_date、无逾期状态、无提醒任务，以学期结束为自然边界，催办走线下（E3 第 4 点）
+发起征集 = 该栏目版面冻结。教师在发布前有责任先预览；发布后只能撤回
+撤回的语意是删除不是保留：该栏目已收的提交一并删除，不留孤儿档，重新发布时家长要重交。理由是裁切比例已失效（W17 只存成品无原图），且符合 PIPL 第六条最小必要
+can_generate 对该幼儿逐栏目比对「该栏目的 collected widget 数」与「该幼儿在这些 widget 上的提交数」
+
+photo_storage_rule (照片储存规则 / W17):
+上传当下统一转 JPEG（MozJPEG 编码，q82-85）、长边 2000px，只存裁切后的成品，不留原图
+格式必须是 JPEG 的理由与压缩率无关：PDF 原生支援的影像编码只有 DCTDecode(JPEG) 与 JPXDecode(JPEG2000)，WebP / HEIC / AVIF / JPEG XL 一个都进不了；存 JPEG 嵌进 PDF 是 byte copy，零解码零重编
+长边 2000px 的依据：印刷 300 DPI 下满版一张图只需 150mm ÷ 25.4 × 300 = 1772px
+输入端照单全收：客户端传 HEIC / WebP / PNG 都接，服务器统一转，转码发生在上传当下一次，不在渲染时
+家长端附裁剪工具（W10）：上传时预览最终显示比例，可拖拽调位，避免「头被切掉」才发现
+unverified_item (待查证) = 微信 chooseMedia 在 iOS 上回 HEIC 还是已转 JPEG、WebP 在两端 image 组件的显示支援 —— 只影响上传端要不要自己转，不影响储存格式结论
+
+
+成长资料 (Growth Material / db_growth_material)
+
+material_id (成长资料ID), 1:1, integer, ui=growth_material.hidden
+class_id (班级ID), 1:1, integer, ui=growth_material.hidden
+moment_id (在园时光ID), 1:1, integer, ui=growth_material.hidden
+title (活动名称), 1:1, max_len=50, ui=growth_material.title
+description (活动文字), 0:1, text, ui=growth_material.description
+file_id (收录照片ID), 0:k, integer, ui=growth_material.photo_select
+sort_order (排序), 1:1, integer, ui=growth_material.sort_button
+created_at (创建时间), 1:1, datetime, ui=growth_material.hidden
+
+rel_count (关系数量) = 3
+rel_db (关联表) = db_class, db_moment, db_file
+rel_map (关系字段) = db_growth_material{class_id}<->db_class{class_id}; db_growth_material{moment_id}<->db_moment{moment_id}; db_growth_material{file_id}<->db_file{file_id}
+
+channel_rule (成长资料通道规则 / E3 第 7 点 + W11):
+成长资料是班级级素材。在园时光的每则动态可「加入成长资料」，教师勾选其中若干张照片（10 张挑 3 张），活动文字全量收录
+方向是「从在园时光挑出来放进成长册」，不是相反
+收录后全班每本册子的在园时光栏目内容相同，不按 child_id 存
+亲子活动不需要此机制 —— 一律进册
+管理入口在 growth-book-edit.html 的「成长资料」弹层：可上移、可移除；加入的入口在在园时光动态上的 +
+上千张的数量上限未定，见 GAPS.md G29
+
+
+[GROWTH_BOOK_RENDERING]
+
+依据 (source) = DECISIONS.md E3 第 10/11 点 + W20 + W21
+
+same_source_rule (预览与 PDF 同源) = 样本页、单幼儿查看页、最终 PDF 走同一套渲染，避免看到的与汇出的不一致
+purpose (PDF 用途) = 传阅，让没装小程序的亲友也能看；不是拿去印刷店印实体册。所以文字不需要向量、不需要 300 DPI
+precision (精度要求) = 像素级一致度 >= 95%。这条排除了「小程序用 WXML、服务器用 PDF 向量库」两套实作的做法
+architecture (渲染架构) = 一份针对 canvas 2D API 的绘图程式码跑两个环境：小程序端 canvas 画 -> wx.canvasToTempFilePath 逐页出 JPEG -> 自组极简 PDF -> wx.shareFileMessage；服务器端用 node-canvas 跑同一份码，只在批量汇出时启动
+resolution (解析度) = 150 DPI，A4 = 1240 × 1754
+cost_split (成本分工) = 单本在客户端（家长出自家孩子那本、教师预览），服务器零渲染成本；只有全班批量汇出走服务器
+font_requirement (字体要求) = 唯一的漂移来源是字体。两端必须载同一个字体档（小程序侧 wx.loadFontFace），CJK 需子集化；字体授权从选配变成硬需求，且必须涵盖服务器端嵌入与再散布
+export_task (批量汇出) = 非同步任务（逐本渲染 PDF 慢），需任务 id + 状态查询 + 结果下载
+page_limit (页数上限 / W21) = 软上限，超过只提示不阻挡。先撞墙的是档案大小不是渲染时间：150 DPI 漫图 PDF 一页约 400KB，40 页约 16MB，167 页约 67MB
+page_limit_ui (提示落点) = 成长册主页的生成检查表与批量汇出弹层，显示预估页数与档案大小
+page_limit_todo ([待查证]) = wx.shareFileMessage 的档案大小上限 —— 门槛值按它定，暂以 40 页 / 16MB 占位
+
+open_items (本节开放项 / GAPS.md G29):
+末页不满怎么配 —— 剩 2 件而最小版式容量是 3，是要求版式库备齐各种容量，还是允许留白，未定
+字体选型与授权 —— 两端必须同一字体档才守得住 95% 精度，未定
+在园时光数量上限 —— 靠成长资料挑选环节自然收敛还是硬上限，未定
+harness 待补 —— 版式库 JSON 需要一支校验（暂名 check-layout.mjs）：座标落在 0..14 / 0..23 内、同页 widget 不重叠、最小 2×2、binding_key 在登记表内、宣告容量与实际槽位数一致
+
+
+[NEW_SCREEN_WRITE_CONTROL_INDEX]
+
+依据 (source) = CLAUDE.md「UI 改版不得破坏数据映射」；本表列出六个新页面上真正的写入控件与其 ui= 标注
+derived_rule (派生列不得出现) = value_source=derived 的列（教师端为 school_id / class_id / created_by / uploaded_by / requested_by_teacher_id）一律标 hidden，不得出现在写入控件上；机器可读形式见 db/spec/scope-rules.json
+scoped_rule (scoped 列的责任) = child_id / teacher_id 为 scoped，客户端可选但服务端必须把范围内联成 predicate 重新验证
+
+| 页面 | 控件 | ui= 标注 | 落列 |
+|---|---|---|---|
+| teacher-evaluation.html | 无写入控件（仅导航 + 只读进度） | —— | —— |
+| teacher-message.html | 添加到（单选下拉） | teacher_message.child_select | db_teacher_message.child_id |
+| teacher-message.html | 寄语正文 | teacher_message.textarea | db_teacher_message.content |
+| teacher-message-detail.html | 重新编辑后的正文 | teacher_message_detail.textarea | db_teacher_message.content |
+| growth-book-edit.html | 成长册内容 6 项勾选 | growth_book_template.section_toggle | db_growth_book_template.enabled_sections |
+| growth-book-edit.html | 新增栏目 · 栏目名称 | growth_book_section.name_input | db_growth_book_section.name |
+| growth-book-edit.html | 新增栏目 · 插入位置 | growth_book_section.anchor_select | db_growth_book_section.anchor_after |
+| growth-book-edit.html | 成长资料 · 上移 | growth_material.sort_button | db_growth_material.sort_order |
+| growth-book-edit.html | 提交情况 · 教师代传 | book_material.submission.upload（家长端 canonical，教师端沿用不另立） | db_book_material_submission.file_id |
+| growth-book-sample.html | 无写入控件（只读样本预览） | —— | —— |
+| growth-book-view.html | 无写入控件（导出 PDF 的结果字段由服务端设值） | —— | —— |
+
+not_annotated (刻意不标注的原型控件):
+growth-book-edit.html 的「封面版式 / 封面图片 / 标题文字」 —— 封面归园所、只有 admin 能改（W19），教师端不应有此控件
+growth-book-edit.html 的「栏目说明」 —— note_text 已由 W11 砍掉，改用 literal 文字 widget
+growth-book.html 批量导出弹层的幼儿勾选 —— 选的是导出任务的范围，不写任何业务列
+widget 网格编辑器的 ui=book_widget.* 标注对应的界面尚未在原型中出现（W4 编辑器未排期），标注先行登记，check-ui-binding.mjs 会将其列为 PENDING（信息项，不是错误）
+
 
 [ACCEPTANCE_EXAMPLES]
 
@@ -360,8 +856,13 @@ rel_map (关系字段) = db_community_submission{school_id}<->db_school{school_i
 | 最新已发布亲子任务没有完成提交 | 未完成 | 亲子任务=未完成 |
 | 截至当前月份有任一教师月评或家长月评未完成 | 对应月评=未完成 | 成长档案=未完成 |
 | 学期末月评全部完成，但任一教师/家长学期评估或综合评估未完成 | 对应评估=未完成 | 成长档案=未完成 |
-| 学期末成长册评估未完成 | 未完成 | 成长册=未完成 |
-| 学期末成长册评估已完成 | 已完成 | 成长册=已完成 |
+| 学期末成长册 can_generate=0 | 不可生成，仅置灰禁选，不回缺失明细 | 成长册=未完成 |
+| 学期末成长册 can_generate=1 | 可生成 | 成长册=已完成 |
+| 综合评估已评 60 / 124 题 | 综合评估自己的页显示草稿 | 教师评价聚合页 / 成长档案 / 生成检查表一律显示未完成 |
+| 综合评估某领域一题未评 | 该领域回“尚无评分”，不得回 0 | 综合评估=未完成 |
+| 教师寄语选「全体幼儿」提交 | 班内每名幼儿各生成一条 db_teacher_message，内容相同 | 教师寄语=已完成（全班） |
+| 新增栏目有 3 个 collected 槽位，某幼儿只交 2 件 | 该栏目未齐备 | 该幼儿 can_generate=0 |
+| 教师撤回某新增栏目的素材征集 | 该栏目已收的提交一并删除，版面解冻回草稿 | 相关幼儿 can_generate=0 |
 
 
 [EMPTY_STATE]
@@ -380,3 +881,8 @@ IF node_key=btn_growth_record, REQUIRE school_id AND class_id FROM context
 IF node_key=btn_community_coeducation, REQUIRE school_id AND class_id FROM context
 IF class_id NOT_AUTHORIZED_FOR teacher_id, return 403
 IF child_id NOT_IN current_class_id, return 403
+IF page=teacher-message.html AND target=all, fan out over db_child WHERE class_id=current_class_id AND enrollment_status=e1
+IF page=teacher-message.html AND child_id NOT_IN current_class_id, return 403
+IF page=growth-book-view.html AND can_generate=0, 禁止进入（前端置灰），return 409
+IF page=growth-book-edit.html AND template_status=d2, 栏目版面冻结，写入请求 return 409（须先撤回）
+IF 写入 db_school.book_cover AND role!=admin, return 403

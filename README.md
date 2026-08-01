@@ -4,6 +4,12 @@
 
 本仓库为**纯静态 HTML/CSS/JS 原型**，用于产品设计评审与交互演示，暂不包含后端服务。
 
+但它已经不只是一套画面。经 2026-07-31 与 2026-08-01 两轮评审、2026-08-02 后端回覆之后，本仓库承载了三样**有约束力**的东西：
+
+- **成长册有了真实的版式契约** —— A4 页为版面单位、15 × 24 网格、格子 10mm 精确正方、左右边距 30mm 上下 28.5mm、widget 不跨页、预设页面由后端团队作者且教师不可修改。改动成长册相关页面前必须先读 `decision.md` 第 16 条。
+- **`decision.md` 是前后端闭环记录** —— 前 10 条是前端改完写给后端看的，2026-08-02 一节是后端的答复，含它推翻或更正前端假设的地方。**它是本仓库改动的第一顺位参考。**
+- **`data/guide-scale.json` 是综合评估的权威量表** —— 《3-6岁儿童学习与发展指南》教师评定量表 v1.0，5 领域 / 11 维度 / 32 目标 / **124 题**，题库不得在页面里另抄一份。
+
 ---
 
 ## 快速开始
@@ -36,11 +42,14 @@ python -m http.server 8000
 | 教研培训部 | `screens/training-center.html` | 课程建设、课程资源、教研培训、个人档案 |
 | 家园共育 | `screens/home-school.html` | 在园时光、亲子任务、儿童成长档案、成长册、社区共育 |
 
-### 特色工具：幼儿保育教育质量综合评估
+### 两套评估工具，不要混为一谈
 
-- `screens/assessment-tool.html` — 交互式评估工具页
-- `screens/assessment-data.js` — 评估量表数据（五大领域李克特量表：健康 / 语言 / 社会 / 科学 / 艺术）
-- 支持个人 / 班级评估、雷达图、强弱项分析与报告导出
+| 工具 | 对象 | 量表 | 数据源 |
+| --- | --- | --- | --- |
+| 办园质量评估 `screens/assessment-tool.html` | 幼儿园 / 班级 / 教师 | 9 个一级指标、120 题，**不含五大领域这个维度** | `screens/assessment-data.js` |
+| 幼儿综合评估 `screens/comprehensive-assessment-form.html` | 单一幼儿 | 《指南》教师评定量表 v1.0，5 领域 / 124 题 | `data/guide-scale.json` |
+
+幼儿综合评估的结果页只保留五大领域雷达图与逐题明细，**不输出任何文字性分析结论**；领域均分一律由题项级得分聚合而来（题项级均值，非下级均值的均值）。`H1-1-1` 身高体重题按 `decision.md` 第 13 条改由教师照参考表主观评定，这是对量表原典的一处**明示偏离**。
 
 ---
 
@@ -50,16 +59,24 @@ python -m http.server 8000
 .
 ├── index.html                 # 5 屏并排总览页（入口）
 ├── landing.html               # 产品落地页
+├── decision.md                # 前后端闭环决策记录（先读这个）
+├── data/
+│   └── guide-scale.json       # 《指南》教师评定量表 v1.0（124 题，权威）
 ├── screens/                   # 各业务页面原型（HTML/CSS/JS）
 │   ├── home.html              # 首页
 │   ├── school-affairs.html    # 党建管理
 │   ├── comprehensive-coordination.html  # 综合协调
 │   ├── training-center.html   # 教研培训部
 │   ├── home-school.html       # 家园共育
-│   ├── assessment-tool.html   # 综合评估工具
-│   ├── assessment-data.js     # 评估量表数据
+│   ├── assessment-tool.html   # 办园质量评估工具
+│   ├── assessment-data.js     # 办园质量评估量表数据
+│   ├── comprehensive-assessment-form.html  # 幼儿综合评估（124 题）
+│   ├── assessment-store.js    # 综合评估的题库 / 草稿 / 状态单一数据源
+│   ├── growth-book*.html      # 成长册：主页 / 编辑样板 / 样本 / 单本查看
+│   ├── growth-book-render.js  # 成长册翻页渲染（样本页与查看页共用）
 │   └── ...                    # 其余详情页 / 表单页
 ├── docs/                      # 设计文档与信息架构
+│   ├── backend spec files/    # 后端字段契约，ui= 标注的权威所在
 │   ├── 信息架构_20260626.md   # 最新信息架构（含 Mermaid 流程图）
 │   ├── hualong_interactive_map.html  # 交互跳转地图
 │   ├── assessment_tool.json   # 评估工具数据源
@@ -69,9 +86,12 @@ python -m http.server 8000
 
 ## 文档
 
+- **决策记录**：`decision.md` —— **改任何页面前先读**。前 10 条是前端评审决定，2026-08-02 一节是后端答复（含推翻项与仍然开放的项目）。
+- **字段契约**：`docs/backend spec files/` —— 命名权威是这些文件里的 `ui=` 标注，本仓库不另立名字。前端可自由更换文案、样式、图片、位置，但控件上的 `data-ui` 属性必须原样保留、且必须对得上某条 `ui=` 标注。新页面的写入控件须**先在 spec 补 `ui=` 标注**，再由后端重跑抽取。
 - **信息架构**：`docs/信息架构_20260626.md`（最新，含各模块 Mermaid 流程图）
 - **交互跳转地图**：`docs/hualong_interactive_map.html`
 - **评估指导手册**：`docs/幼儿园保育教育质量评价指导手册（6.13）.pdf`
+- **上游后端仓库**：`../hualong-backend/` —— `DECISIONS.md`（决策，权威）、`db/GAPS.md`（未拍板项）、`db/01_schema.sql`（字段级权威）。
 
 ---
 
@@ -79,8 +99,9 @@ python -m http.server 8000
 
 - 纯前端静态原型，无构建步骤、无依赖安装。
 - 页面以移动端（390×844）为基准设计，适配小程序尺寸。
+- 成长册页面是例外：版面单位是 A4 实体页，手机端 fit-width 显示并**允许缩放**（每格 fit-width 时仅 18.6pt，低于 iOS 建议的 44pt）。
 - `*.artifact.json` 与 `.od-skills/` 已在 `.gitignore` 中忽略。
 
 ## 状态
 
-🚧 交互原型阶段 · 用于设计评审与演示 · 2026
+交互原型阶段 · 用于设计评审与演示 · 成长册版式与综合评估量表已进入契约期，改动须对照 `decision.md` · 2026
