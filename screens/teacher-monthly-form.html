@@ -5,6 +5,123 @@
 <meta name="viewport" content="width=390, initial-scale=1, user-scalable=no" />
 <title>填写月度评价 · 家园共育</title>
 <link rel="stylesheet" href="home-school-common.css" />
+<style>
+  .imported { position: relative; }
+  .imported .remove {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 18px;
+    height: 18px;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(26,25,22,.55);
+    color: #fff;
+    font-size: 12px;
+    line-height: 1;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+  }
+  .empty-hint {
+    font-size: 12px;
+    color: var(--muted);
+    padding: 10px 0;
+  }
+  .sheet-mask {
+    position: absolute;
+    inset: 0;
+    background: rgba(26,25,22,.32);
+    opacity: 0;
+    pointer-events: none;
+    transition: .2s ease;
+    z-index: 30;
+  }
+  .sheet-mask.show { opacity: 1; pointer-events: auto; }
+  .sheet {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 31;
+    background: var(--surface);
+    border-radius: 24px 24px 0 0;
+    padding: 18px 16px 22px;
+    transform: translateY(105%);
+    transition: .24s ease;
+  }
+  .sheet.show { transform: translateY(0); }
+  .sheet-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .sheet-head h2 { font-size: 17px; }
+  .close {
+    border: 0;
+    background: #f3f7f7;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    color: var(--muted);
+    font-size: 18px;
+  }
+  .album-scroll { max-height: 400px; overflow-y: auto; }
+  .album-scroll::-webkit-scrollbar { display: none; }
+  .album-group { margin-bottom: 14px; }
+  .group-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .album-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+  .album-photo {
+    position: relative;
+    min-height: 74px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent-light), var(--blue-light));
+    display: flex;
+    align-items: end;
+    padding: 7px;
+    color: var(--accent-dark);
+    font-size: 10px;
+    font-weight: 600;
+    border: 2px solid transparent;
+    cursor: pointer;
+  }
+  .album-photo.sel { border-color: var(--accent); }
+  .album-photo.sel::after {
+    content: "✓";
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    display: grid;
+    place-items: center;
+    font-size: 11px;
+  }
+  .sheet-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .btn.ghost {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--fg);
+  }
+</style>
 </head>
 <body>
 <div class="phone">
@@ -13,16 +130,184 @@
   <div class="scroll">
     <div class="chunk form-card">
       <label>评价月份</label>
-      <select class="select"><option>2026年6月</option><option>2026年5月</option></select>
+      <select class="select" id="monthSelect">
+        <option value="3">3月</option>
+        <option value="4">4月</option>
+        <option value="5">5月</option>
+        <option value="6" selected>6月</option>
+        <option value="7">7月</option>
+      </select>
       <label>评价幼儿</label>
-      <select class="select"><option>陈小明</option><option>李雨萱</option><option>张力轩</option></select>
+      <select class="select" id="childSelect"><option>陈小明</option><option>李雨萱</option><option>张力轩</option></select>
       <label>评价内容</label>
       <textarea class="textarea">本月在集体活动中愿意主动表达，能与同伴协商材料使用，整理习惯有明显进步。</textarea>
       <label>关联在园时光照片</label>
-      <div class="photo-row"><div class="photo">端午手作</div><div class="photo">户外运动</div><div class="photo">区域游戏</div></div>
+      <div class="photo-row" id="importedRow"></div>
+      <div class="empty-hint" id="emptyHint">尚未导入照片，点击下方按钮从该幼儿的相册中选择。</div>
+      <button class="btn blue" style="width:100%" id="openAlbum">选择照片</button>
       <div style="margin-top:14px"><button class="btn primary" style="width:100%">保存评价</button></div>
     </div>
   </div>
+
+  <div class="sheet-mask" id="sheetMask"></div>
+  <div class="sheet" id="albumSheet" aria-hidden="true">
+    <div class="sheet-head">
+      <h2 id="albumTitle">陈小明的在园时光相册</h2>
+      <button class="close" id="closeAlbum" aria-label="关闭">×</button>
+    </div>
+    <div class="album-scroll">
+      <div class="album-group" data-month="3">
+        <div class="group-title">第2周</div>
+        <div class="album-grid">
+          <div class="album-photo" data-label="晨间锻炼">晨间锻炼</div>
+          <div class="album-photo" data-label="搭建游戏">搭建游戏</div>
+        </div>
+      </div>
+      <div class="album-group" data-month="3">
+        <div class="group-title">第4周</div>
+        <div class="album-grid">
+          <div class="album-photo" data-label="春芽观察">春芽观察</div>
+          <div class="album-photo" data-label="故事表演">故事表演</div>
+        </div>
+      </div>
+      <div class="album-group" data-month="4">
+        <div class="group-title">第1周</div>
+        <div class="album-grid">
+          <div class="album-photo" data-label="绘本阅读">绘本阅读</div>
+          <div class="album-photo" data-label="春游远足">春游远足</div>
+        </div>
+      </div>
+      <div class="album-group" data-month="4">
+        <div class="group-title">第3周</div>
+        <div class="album-grid">
+          <div class="album-photo" data-label="泥工坊">泥工坊</div>
+          <div class="album-photo" data-label="跳绳练习">跳绳练习</div>
+        </div>
+      </div>
+      <div class="album-group" data-month="5">
+        <div class="group-title">第2周</div>
+        <div class="album-grid">
+          <div class="album-photo" data-label="趣味运动会">趣味运动会</div>
+          <div class="album-photo" data-label="种植角观察">种植角观察</div>
+        </div>
+      </div>
+      <div class="album-group" data-month="5">
+        <div class="group-title">第4周</div>
+        <div class="album-grid">
+          <div class="album-photo" data-label="科学角">科学角</div>
+          <div class="album-photo" data-label="音乐游戏">音乐游戏</div>
+        </div>
+      </div>
+      <div class="album-group" data-month="6">
+        <div class="group-title">第1周</div>
+        <div class="album-grid">
+          <div class="album-photo" data-label="端午手作">端午手作</div>
+          <div class="album-photo" data-label="绘本共读">绘本共读</div>
+        </div>
+      </div>
+      <div class="album-group" data-month="6">
+        <div class="group-title">第2周</div>
+        <div class="album-grid">
+          <div class="album-photo" data-label="区域游戏">区域游戏</div>
+          <div class="album-photo" data-label="户外运动">户外运动</div>
+        </div>
+      </div>
+      <div class="album-group" data-month="7">
+        <div class="group-title">第1周</div>
+        <div class="album-grid">
+          <div class="album-photo" data-label="戏水活动">戏水活动</div>
+          <div class="album-photo" data-label="毕业排练">毕业排练</div>
+        </div>
+      </div>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn ghost" id="cancelAlbum">取消</button>
+      <button class="btn primary" id="confirmAlbum">导入</button>
+    </div>
+  </div>
 </div>
+<script>
+const mask = document.getElementById('sheetMask');
+const sheet = document.getElementById('albumSheet');
+const importedRow = document.getElementById('importedRow');
+const emptyHint = document.getElementById('emptyHint');
+const confirmBtn = document.getElementById('confirmAlbum');
+const albumTitle = document.getElementById('albumTitle');
+const childSelect = document.getElementById('childSelect');
+const monthSelect = document.getElementById('monthSelect');
+const groups = Array.from(document.querySelectorAll('.album-group'));
+const photos = Array.from(document.querySelectorAll('.album-photo'));
+
+function syncAlbum() {
+  const month = monthSelect.value;
+  albumTitle.textContent = `${childSelect.value}的在园时光相册（${month}月）`;
+  groups.forEach(group => {
+    const show = group.dataset.month === month;
+    group.style.display = show ? '' : 'none';
+    if (!show) group.querySelectorAll('.album-photo').forEach(p => p.classList.remove('sel'));
+  });
+  syncConfirm();
+}
+childSelect.addEventListener('change', syncAlbum);
+monthSelect.addEventListener('change', syncAlbum);
+
+function openSheet() {
+  mask.classList.add('show');
+  sheet.classList.add('show');
+  sheet.setAttribute('aria-hidden', 'false');
+}
+function closeSheet() {
+  mask.classList.remove('show');
+  sheet.classList.remove('show');
+  sheet.setAttribute('aria-hidden', 'true');
+  photos.forEach(p => p.classList.remove('sel'));
+  syncConfirm();
+}
+document.getElementById('openAlbum').addEventListener('click', openSheet);
+document.getElementById('closeAlbum').addEventListener('click', closeSheet);
+document.getElementById('cancelAlbum').addEventListener('click', closeSheet);
+mask.addEventListener('click', closeSheet);
+
+function syncConfirm() {
+  const count = photos.filter(p => p.classList.contains('sel')).length;
+  confirmBtn.textContent = count ? `导入（${count}）` : '导入';
+}
+
+photos.forEach(p => p.addEventListener('click', () => {
+  p.classList.toggle('sel');
+  syncConfirm();
+}));
+
+function importedLabels() {
+  return Array.from(importedRow.querySelectorAll('.imported')).map(item => item.dataset.label);
+}
+
+confirmBtn.addEventListener('click', () => {
+  const selected = photos.filter(p => p.classList.contains('sel'));
+  if (!selected.length) return;
+  selected.forEach(p => {
+    if (importedLabels().includes(p.dataset.label)) return;
+    const tile = document.createElement('div');
+    tile.className = 'photo imported';
+    tile.dataset.label = p.dataset.label;
+    tile.textContent = p.dataset.label;
+    const remove = document.createElement('button');
+    remove.className = 'remove';
+    remove.setAttribute('aria-label', '移除');
+    remove.textContent = '×';
+    remove.addEventListener('click', () => { tile.remove(); syncEmpty(); });
+    tile.appendChild(remove);
+    importedRow.appendChild(tile);
+  });
+  syncEmpty();
+  closeSheet();
+});
+
+function syncEmpty() {
+  emptyHint.style.display = importedRow.children.length ? 'none' : '';
+}
+syncEmpty();
+syncAlbum();
+</script>
 </body>
 </html>

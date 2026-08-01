@@ -237,7 +237,7 @@
 <body>
 <div class="phone">
   <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
-  <div class="nav-bar"><a class="back" href="growth-record.html">‹</a><div class="nav-title">综合评估</div><span></span></div>
+  <div class="nav-bar"><a class="back" href="teacher-evaluation.html">‹</a><div class="nav-title">综合评估</div><span></span></div>
   <div class="scroll">
     <div class="sec">综合评估</div>
     <section class="chunk assessment-start">
@@ -252,9 +252,9 @@
       <div class="assessment-card">
         <div>
           <h3>进度</h3>
-          <p>中二班综合评估完成人数</p>
+          <p>中二班综合评估已完成人数</p>
         </div>
-        <div class="ratio">10/30</div>
+        <div class="ratio" id="doneRatio">0/5</div>
       </div>
       <a class="assessment-card" href="comprehensive-assessment-class-report.html">
         <div>
@@ -269,31 +269,7 @@
       <div class="sec">个人进度</div>
       <button class="outline-btn" id="openExport">导出报告</button>
     </div>
-    <div class="student">
-      <div><div class="student-name">陈小明</div><div class="student-sub">五大领域数据与综合评估已完成</div></div>
-      <span class="pill done">已完成</span>
-      <a class="small-btn" href="comprehensive-assessment-report.html?child=chen">查看</a>
-    </div>
-    <div class="student">
-      <div><div class="student-name">李雨萱</div><div class="student-sub">艺术领域待补充观察证据</div></div>
-      <span class="pill draft">草稿</span>
-      <a class="small-btn" href="comprehensive-assessment-form.html?child=li">继续</a>
-    </div>
-    <div class="student">
-      <div><div class="student-name">张力轩</div><div class="student-sub">尚未开始填写</div></div>
-      <span class="pill miss">未开始</span>
-      <a class="small-btn" href="comprehensive-assessment-form.html?child=zhang">添加</a>
-    </div>
-    <div class="student">
-      <div><div class="student-name">王子涵</div><div class="student-sub">五大领域数据与综合评估已完成</div></div>
-      <span class="pill done">已完成</span>
-      <a class="small-btn" href="comprehensive-assessment-report.html?child=wang">查看</a>
-    </div>
-    <div class="student">
-      <div><div class="student-name">赵佳怡</div><div class="student-sub">语言、艺术领域待补充</div></div>
-      <span class="pill draft">草稿</span>
-      <a class="small-btn" href="comprehensive-assessment-form.html?child=zhao">继续</a>
-    </div>
+    <div id="progressList"></div>
   </div>
 
   <div class="sheet-mask" id="sheetMask"></div>
@@ -329,6 +305,37 @@
   </div>
   <div class="toast" id="toast">已生成导出任务</div>
 </div>
+<script src="assessment-store.js"></script>
+<script>
+const LABEL = { done: '已完成', draft: '草稿', miss: '未完成' };
+
+function renderProgress() {
+  const all = AssessStore.read() || {};
+  document.getElementById('progressList').innerHTML = ASSESS_CHILDREN.map(child => {
+    const record = all[child.id];
+    const state = AssessStore.statusOf(record);
+    const rated = record ? record.rated : 0;
+    const sub = state === 'done' ? `五大领域 ${AssessStore.TOTAL} 题已全部完成`
+      : state === 'draft' ? `已填写 ${rated}/${AssessStore.TOTAL} 题，可继续完成`
+      : '尚未开始填写';
+    const action = state === 'done'
+      ? `<a class="small-btn" href="comprehensive-assessment-report.html?child=${child.id}">查看</a>`
+      : `<a class="small-btn" href="comprehensive-assessment-form.html?child=${child.id}">${state === 'draft' ? '继续' : '填写'}</a>`;
+    return `<div class="student">
+      <div><div class="student-name">${child.name}</div><div class="student-sub">${sub}</div></div>
+      <span class="pill ${state}">${LABEL[state]}</span>
+      ${action}
+    </div>`;
+  }).join('');
+  const done = ASSESS_CHILDREN.filter(c => AssessStore.statusOf(all[c.id]) === 'done').length;
+  document.getElementById('doneRatio').textContent = `${done}/${ASSESS_CHILDREN.length}`;
+}
+
+AssessStore.seedIfEmpty();
+renderProgress();
+// 从表单页返回时刷新状态（含 bfcache 场景）
+window.addEventListener('pageshow', renderProgress);
+</script>
 <script>
 const sheet = document.getElementById('exportSheet');
 const mask = document.getElementById('sheetMask');

@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=390, initial-scale=1, user-scalable=no" />
+<title>寄语详情 · 儿童成长档案</title>
+<link rel="stylesheet" href="home-school-common.css" />
+<style>
+  .msg-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .msg-head .avatar { flex: 0 0 auto; }
+  .msg-head .who { font-size: 15px; font-weight: 700; }
+  .msg-head .meta { font-size: 11px; color: var(--muted); margin-top: 3px; }
+  .msg-text {
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--fg);
+  }
+  .counter {
+    text-align: right;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+  .counter.limit { color: var(--danger); }
+  .edit-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 12px;
+  }
+  .btn.ghost {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--fg);
+  }
+  .toast {
+    position: absolute;
+    left: 50%;
+    bottom: 34px;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(26,25,22,.88);
+    color: #fff;
+    border-radius: 999px;
+    padding: 9px 14px;
+    font-size: 12px;
+    opacity: 0;
+    pointer-events: none;
+    transition: .22s ease;
+    white-space: nowrap;
+    z-index: 40;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
+  <div class="nav-bar"><a class="back" href="teacher-message.html">‹</a><div class="nav-title">寄语详情</div><span></span></div>
+  <div class="scroll">
+    <div class="chunk">
+      <div class="msg-head">
+        <div class="avatar" id="childAvatar">明</div>
+        <div>
+          <div class="who" id="childName">陈小明</div>
+          <div class="meta" id="msgMeta">提交于 6月20日</div>
+        </div>
+      </div>
+      <div class="msg-text" id="msgText"></div>
+      <div id="editArea" style="display:none">
+        <textarea class="textarea" id="editText" maxlength="300"></textarea>
+        <div class="counter" id="counter">0/300</div>
+      </div>
+      <div class="edit-actions" id="viewActions">
+        <a class="btn ghost" href="teacher-message.html">返回</a>
+        <button class="btn primary" id="startEdit">重新编辑</button>
+      </div>
+      <div class="edit-actions" id="editActions" style="display:none">
+        <button class="btn ghost" id="cancelEdit">取消</button>
+        <button class="btn primary" id="saveEdit">保存修改</button>
+      </div>
+    </div>
+  </div>
+  <div class="toast" id="toast">已保存</div>
+</div>
+<script>
+const messages = {
+  chen: { name: '陈小明', avatar: '明', meta: '提交于 6月20日', text: '小明这学期进步很大，从入园时的害羞到现在能主动举手分享，老师为你骄傲。希望你继续保持好奇心，做勇敢表达的小朋友。' },
+  liu:  { name: '刘浩然', avatar: '浩', meta: '提交于 6月21日', text: '浩然是班里的运动小健将，也越来越懂得照顾同伴。新学期里希望你在安静活动中也能沉下心来，收获更多。' }
+};
+const child = new URLSearchParams(location.search).get('child') || 'chen';
+const data = messages[child] || messages.chen;
+
+document.getElementById('childName').textContent = data.name;
+document.getElementById('childAvatar').textContent = data.avatar;
+document.getElementById('msgMeta').textContent = data.meta;
+const msgText = document.getElementById('msgText');
+msgText.textContent = data.text;
+
+const editArea = document.getElementById('editArea');
+const editText = document.getElementById('editText');
+const counter = document.getElementById('counter');
+const viewActions = document.getElementById('viewActions');
+const editActions = document.getElementById('editActions');
+const toast = document.getElementById('toast');
+
+function setMode(editing) {
+  msgText.style.display = editing ? 'none' : '';
+  editArea.style.display = editing ? '' : 'none';
+  viewActions.style.display = editing ? 'none' : '';
+  editActions.style.display = editing ? '' : 'none';
+}
+
+function syncCounter() {
+  const len = editText.value.length;
+  counter.textContent = `${len}/300`;
+  counter.classList.toggle('limit', len >= 300);
+}
+
+document.getElementById('startEdit').addEventListener('click', () => {
+  editText.value = msgText.textContent;
+  syncCounter();
+  setMode(true);
+  editText.focus();
+});
+
+document.getElementById('cancelEdit').addEventListener('click', () => setMode(false));
+
+editText.addEventListener('input', syncCounter);
+
+document.getElementById('saveEdit').addEventListener('click', () => {
+  if (!editText.value.trim()) {
+    toast.textContent = '寄语内容不能为空';
+  } else {
+    msgText.textContent = editText.value;
+    toast.textContent = '已保存修改';
+    setMode(false);
+  }
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 1500);
+});
+</script>
+</body>
+</html>

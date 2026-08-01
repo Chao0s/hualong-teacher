@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=390, initial-scale=1, user-scalable=no" />
+<title>成长册样本 · 家园共育</title>
+<link rel="stylesheet" href="home-school-common.css" />
+<link rel="stylesheet" href="growth-book-viewer.css" />
+<style>
+  .sample-note {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--amber-light); border-radius: 12px;
+    padding: 10px 12px; margin-bottom: 12px;
+    font-size: 12px; line-height: 1.5; color: #8a6100;
+  }
+  .sample-tag {
+    flex: 0 0 auto; background: #fff; border-radius: 999px;
+    padding: 2px 8px; font-size: 10px; font-weight: 700;
+  }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
+  <div class="nav-bar"><a class="back" href="growth-book.html">‹</a><div class="nav-title">成长册样本</div><span></span></div>
+  <div class="scroll" style="padding-bottom:20px">
+    <div class="sample-note">
+      <span class="sample-tag">样本</span>
+      <span>版式示意，内容为示例数据；实际成长册按每名幼儿的真实内容生成。</span>
+    </div>
+
+    <div class="book" id="book"></div>
+
+    <div class="controls">
+      <button class="nav-btn" id="prev" aria-label="上一页">‹</button>
+      <div class="page-indicator" id="indicator">1 / 1</div>
+      <button class="nav-btn" id="next" aria-label="下一页">›</button>
+    </div>
+
+    <div class="action-row" style="margin-top:12px">
+      <button class="btn" id="reset">回到封面</button>
+      <a class="btn primary" href="growth-book-edit.html">编辑样板</a>
+    </div>
+    <div class="hint" style="margin-top:10px">点击书页或使用左右按钮翻页。页序与「成长册内容」中勾选的项目一致；正式成长册的背景与版式由园所上传的模版决定。</div>
+  </div>
+</div>
+<script src="growth-book-render.js"></script>
+<script>
+const config = readBookConfig();
+const viewer = initBookViewer({
+  book: document.getElementById('book'),
+  indicator: document.getElementById('indicator'),
+  prev: document.getElementById('prev'),
+  next: document.getElementById('next')
+});
+viewer.load('示例幼儿', config);
+
+document.getElementById('reset').addEventListener('click', () => viewer.reset());
+</script>
+</body>
+</html>

@@ -80,10 +80,10 @@ button, input, textarea, select { font: inherit; }
   right: 0;
   bottom: 0;
   z-index: 10;
-  display: flex;
-  justify-content: space-around;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
   align-items: center;
-  padding: 8px 8px 28px;
+  padding: 8px 6px 28px;
   background: var(--surface);
   border-top: 1px solid var(--border);
 }
@@ -92,9 +92,14 @@ button, input, textarea, select { font: inherit; }
   flex-direction: column;
   align-items: center;
   gap: 2px;
+  cursor: pointer;
   color: var(--muted);
   font-size: 10px;
-  padding: 4px;
+  font-weight: 400;
+  padding: 4px 0;
+  min-width: 0;
+  white-space: nowrap;
+  text-decoration: none;
 }
 .tabs a.on { color: var(--accent); }
 .tabs svg { width: 22px; height: 22px; }
@@ -240,6 +245,25 @@ button, input, textarea, select { font: inherit; }
 .status.wait { color: var(--amber); }
 .status.miss { color: var(--danger); }
 .status.read { color: var(--blue); }
+.dot-cell {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  vertical-align: middle;
+}
+.dot-cell.done { background: var(--green); }
+.dot-cell.miss { border: 1.5px solid var(--danger); background: #fff; }
+.dot-legend {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 10px 12px 12px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.dot-legend .item { display: inline-flex; align-items: center; gap: 4px; }
 .progress-line { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
 .bar { flex: 1; height: 8px; border-radius: 999px; background: var(--accent-light); overflow: hidden; }
 .bar span { display: block; height: 100%; border-radius: inherit; background: var(--accent); }

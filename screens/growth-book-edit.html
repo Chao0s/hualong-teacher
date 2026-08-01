@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=390, initial-scale=1, user-scalable=no" />
+<title>编辑样板 · 成长册</title>
+<link rel="stylesheet" href="home-school-common.css" />
+<link rel="stylesheet" href="growth-book-viewer.css" />
+<style>
+  .mini-book { transform: scale(.62); transform-origin: top center; }
+  .mini-wrap { height: 292px; overflow: hidden; margin-bottom: 8px; }
+  .layout-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .layout-opt {
+    border: 1px solid var(--border); border-radius: 12px; padding: 9px 10px;
+    font-size: 12px; font-weight: 600; background: var(--surface); cursor: pointer; text-align: left;
+  }
+  .layout-opt.on { border-color: var(--accent); background: var(--accent-light); color: var(--accent-dark); }
+  .field-label { font-size: 12px; color: var(--muted); margin: 12px 0 6px; }
+  .row-item {
+    display: flex; align-items: center; gap: 10px;
+    border: 1px solid var(--border); border-radius: 12px;
+    padding: 10px 12px; margin-bottom: 8px; font-size: 13px; background: var(--surface);
+  }
+  .row-item .grow { flex: 1; min-width: 0; }
+  .row-item .sub { font-size: 11px; color: var(--muted); margin-top: 3px; line-height: 1.4; }
+  .row-item input[type=checkbox] { accent-color: var(--accent); width: 17px; height: 17px; }
+  .tag-btn {
+    border: 1px solid var(--border); background: var(--surface); border-radius: 999px;
+    padding: 5px 10px; font-size: 11px; font-weight: 700; color: var(--fg); white-space: nowrap;
+  }
+  .tag-btn.danger { color: var(--danger); border-color: #f4cfcf; }
+  .empty { font-size: 12px; color: var(--muted); padding: 6px 2px 10px; line-height: 1.6; }
+  .mat-item { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--border); }
+  .mat-item:last-child { border-bottom: 0; }
+  .mat-thumb {
+    width: 44px; height: 36px; border-radius: 8px; flex: 0 0 auto;
+    background: linear-gradient(135deg, var(--accent-light), var(--blue-light));
+    display: grid; place-items: center; font-size: 9px; color: var(--accent-dark); font-weight: 700;
+  }
+  .sheet-mask { position: absolute; inset: 0; background: rgba(31,41,55,.32); opacity: 0; pointer-events: none; transition: .2s ease; z-index: 30; }
+  .sheet-mask.show { opacity: 1; pointer-events: auto; }
+  .sheet {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 31;
+    background: var(--surface); border-radius: 24px 24px 0 0;
+    padding: 18px 16px 22px; transform: translateY(105%); transition: .24s ease;
+  }
+  .sheet.show { transform: translateY(0); }
+  .sheet-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .sheet-head h2 { font-size: 17px; }
+  .close { border: 0; background: #f3f7f7; border-radius: 50%; width: 30px; height: 30px; font-size: 18px; color: var(--muted); }
+  .sheet-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+  .btn.ghost { border: 1px solid var(--border); background: #fff; color: var(--fg); }
+  .toast {
+    position: absolute; left: 50%; bottom: 34px; transform: translateX(-50%) translateY(20px);
+    background: rgba(31,41,55,.9); color: #fff; border-radius: 999px;
+    padding: 9px 14px; font-size: 12px; opacity: 0; pointer-events: none; transition: .22s ease; z-index: 40;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
+  <div class="nav-bar"><a class="back" href="growth-book-sample.html">‹</a><div class="nav-title">编辑样板</div><span></span></div>
+  <div class="scroll">
+    <!-- 改完立刻在上方预览看到效果 -->
+    <div class="mini-wrap">
+      <div class="book mini-book" id="book"></div>
+    </div>
+    <div class="controls" style="margin-bottom:14px">
+      <button class="nav-btn" id="prev" aria-label="上一页">‹</button>
+      <div class="page-indicator" id="indicator">1 / 1</div>
+      <button class="nav-btn" id="next" aria-label="下一页">›</button>
+    </div>
+
+    <div class="sec">封面</div>
+    <div class="chunk">
+      <div class="field-label">封面版式</div>
+      <div class="layout-grid" id="layoutGrid"></div>
+      <div class="field-label">封面图片</div>
+      <div class="action-row">
+        <button class="btn" id="pickCover">更换图片</button>
+        <button class="btn" id="clearCover">清除图片</button>
+      </div>
+      <div class="field-label">标题文字（显示在幼儿姓名之后）</div>
+      <input class="input" id="coverTitle" maxlength="12" placeholder="的成长册">
+    </div>
+
+    <div class="sec">成长册内容</div>
+    <div class="chunk" id="presetList"></div>
+
+    <div class="sec">新增栏目 <button class="more" id="addSection" style="border:0;background:none">+ 新增</button></div>
+    <div class="chunk" id="customList"></div>
+
+    <div style="margin:14px 0 4px"><a class="btn primary" style="width:100%" href="growth-book-sample.html">完成</a></div>
+    <div class="hint" style="padding-bottom:8px">修改即时生效，全班幼儿的成长册均按此样板生成。</div>
+  </div>
+
+  <div class="sheet-mask" id="sheetMask"></div>
+
+  <!-- 新增栏目 -->
+  <div class="sheet" id="sectionSheet" aria-hidden="true">
+    <div class="sheet-head"><h2>新增栏目</h2><button class="close" data-close aria-label="关闭">×</button></div>
+    <div class="field-label">栏目名称</div>
+    <input class="input" id="secName" maxlength="10" placeholder="如：入学第一天">
+    <div class="field-label">栏目说明（全班共用，可留空）</div>
+    <textarea class="textarea" id="secNote" maxlength="60" style="min-height:64px" placeholder="如：2025 年 9 月 1 日，你第一次走进中二班。"></textarea>
+    <div class="field-label">插入位置</div>
+    <select class="select" id="secAfter"></select>
+    <div class="hint" style="margin-top:10px">保存后会自动向家长发起「成长册素材征集」，由家长上传各自孩子的照片。</div>
+    <div class="sheet-actions">
+      <button class="btn ghost" data-close>取消</button>
+      <button class="btn primary" id="confirmSection">添加</button>
+    </div>
+  </div>
+
+  <!-- 成长资料管理 -->
+  <div class="sheet" id="matSheet" aria-hidden="true">
+    <div class="sheet-head"><h2>成长资料</h2><button class="close" data-close aria-label="关闭">×</button></div>
+    <div id="matList" style="max-height:320px;overflow-y:auto"></div>
+    <div class="hint" style="margin-top:10px">在「在园时光」中点 + 可将动态加入成长资料；此处收录的内容为全班共用。</div>
+    <div class="sheet-actions" style="grid-template-columns:1fr">
+      <button class="btn primary" data-close>完成</button>
+    </div>
+  </div>
+
+  <!-- 家长提交情况 / 教师代传 -->
+  <div class="sheet" id="subSheet" aria-hidden="true">
+    <div class="sheet-head"><h2 id="subTitle">提交情况</h2><button class="close" data-close aria-label="关闭">×</button></div>
+    <div id="subList" style="max-height:320px;overflow-y:auto"></div>
+    <div class="hint" style="margin-top:10px">未提交的幼儿可由教师代传，避免个别家长拖住整班出册。</div>
+    <div class="sheet-actions" style="grid-template-columns:1fr">
+      <button class="btn primary" data-close>完成</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">已保存</div>
+</div>
+<script src="growth-book-render.js"></script>
+<script>
+let config = readBookConfig();
+let seq = (config.custom || []).length;
+
+const viewer = initBookViewer({
+  book: document.getElementById('book'),
+  indicator: document.getElementById('indicator'),
+  prev: document.getElementById('prev'),
+  next: document.getElementById('next')
+});
+const preview = keep => viewer.load('示例幼儿', config, keep);
+
+/* ---------- 封面 ---------- */
+const layoutGrid = document.getElementById('layoutGrid');
+function renderLayouts() {
+  layoutGrid.innerHTML = COVER_LAYOUTS.map(item =>
+    `<button class="layout-opt${config.cover.layout === item.id ? ' on' : ''}" data-layout="${item.id}">${item.name}</button>`).join('');
+}
+layoutGrid.addEventListener('click', event => {
+  const btn = event.target.closest('[data-layout]');
+  if (!btn) return;
+  config.cover.layout = btn.dataset.layout;
+  renderLayouts();
+  preview();
+});
+
+/* 原型阶段用本地文件预览；正式版走园所素材库上传 */
+const filePicker = document.createElement('input');
+filePicker.type = 'file';
+filePicker.accept = 'image/*';
+filePicker.addEventListener('change', () => {
+  const file = filePicker.files && filePicker.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => { config.cover.image = reader.result; preview(true); };
+  reader.readAsDataURL(file);
+});
+document.getElementById('pickCover').addEventListener('click', () => filePicker.click());
+document.getElementById('clearCover').addEventListener('click', () => { config.cover.image = ''; preview(true); });
+
+const coverTitle = document.getElementById('coverTitle');
+coverTitle.value = config.cover.title || '';
+coverTitle.addEventListener('input', () => { config.cover.title = coverTitle.value; preview(true); });
+
+/* ---------- 预设栏目 ---------- */
+function renderPresets() {
+  document.getElementById('presetList').innerHTML = BOOK_ORDER.map(key => {
+    const on = config.selected.includes(key);
+    const isClass = BOOK_CLASS_LEVEL.includes(key);
+    const count = (config.material || []).length;
+    const sub = key === 'time'
+      ? `班级共用 · 已收录 ${count} 条成长资料`
+      : isClass ? '园所统一内容，全班相同' : '每名幼儿内容不同';
+    return `<label class="row-item">
+      <input type="checkbox" data-key="${key}" ${on ? 'checked' : ''}>
+      <span class="grow"><b>${BOOK_COMPONENTS[key]}</b><span class="sub">${sub}</span></span>
+      ${key === 'time' ? '<button class="tag-btn" data-material>管理</button>' : ''}
+    </label>`;
+  }).join('');
+}
+document.getElementById('presetList').addEventListener('change', event => {
+  const box = event.target.closest('[data-key]');
+  if (!box) return;
+  const key = box.dataset.key;
+  config.selected = box.checked ? config.selected.concat([key]) : config.selected.filter(k => k !== key);
+  renderAll();
+});
+document.getElementById('presetList').addEventListener('click', event => {
+  if (!event.target.closest('[data-material]')) return;
+  event.preventDefault();
+  renderMaterial();
+  openSheet('matSheet');
+});
+
+/* ---------- 新增栏目 ---------- */
+function renderCustom() {
+  const list = config.custom || [];
+  document.getElementById('customList').innerHTML = list.length ? list.map(item => {
+    const submitted = (item.submitted || []).length;
+    const anchor = item.after === 'cover' ? '封面之后' : (BOOK_COMPONENTS[item.after] || '') + ' 之后';
+    return `<div class="row-item">
+      <span class="grow"><b>${item.name}</b>
+        <span class="sub">${anchor} · 家长已交 ${submitted}/${BOOK_CHILDREN.length}</span></span>
+      <button class="tag-btn" data-sub="${item.id}">提交</button>
+      <button class="tag-btn danger" data-del="${item.id}">删除</button>
+    </div>`;
+  }).join('') : '<div class="empty">还没有新增栏目。例如「入学第一天」「最后一天」，添加后会向家长发起素材征集。</div>';
+}
+document.getElementById('customList').addEventListener('click', event => {
+  const del = event.target.closest('[data-del]');
+  const sub = event.target.closest('[data-sub]');
+  if (del) {
+    config.custom = config.custom.filter(item => item.id !== del.dataset.del);
+    renderAll();
+  } else if (sub) {
+    openSubmissions(sub.dataset.sub);
+  }
+});
+
+document.getElementById('addSection').addEventListener('click', () => {
+  document.getElementById('secName').value = '';
+  document.getElementById('secNote').value = '';
+  document.getElementById('secAfter').innerHTML = bookAnchors(config)
+    .map(item => `<option value="${item.id}">${item.name}</option>`).join('');
+  openSheet('sectionSheet');
+});
+document.getElementById('confirmSection').addEventListener('click', () => {
+  const name = document.getElementById('secName').value.trim();
+  if (!name) { showToast('请填写栏目名称'); return; }
+  seq += 1;
+  config.custom = (config.custom || []).concat([{
+    id: 'cs' + seq,
+    name: name,
+    note: document.getElementById('secNote').value.trim(),
+    after: document.getElementById('secAfter').value,
+    submitted: []
+  }]);
+  closeSheets();
+  renderAll();
+  showToast(`已添加「${name}」并向家长发起征集`);
+});
+
+/* ---------- 成长资料管理 ---------- */
+function renderMaterial() {
+  const list = config.material || [];
+  document.getElementById('matList').innerHTML = list.length ? list.map((item, i) => `
+    <div class="mat-item">
+      <div class="mat-thumb">${item.photos.length} 图</div>
+      <div class="grow" style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600">${item.title}</div>
+        <div class="sub" style="font-size:11px;color:var(--muted);margin-top:2px">${item.date}</div>
+      </div>
+      <button class="tag-btn" data-up="${i}" ${i === 0 ? 'disabled style="opacity:.35"' : ''}>上移</button>
+      <button class="tag-btn danger" data-rm="${i}">移除</button>
+    </div>`).join('')
+    : '<div class="empty">尚未收录。在「在园时光」的动态上点 + 即可加入。</div>';
+}
+document.getElementById('matList').addEventListener('click', event => {
+  const up = event.target.closest('[data-up]');
+  const rm = event.target.closest('[data-rm]');
+  if (up) {
+    const i = Number(up.dataset.up);
+    const list = config.material;
+    [list[i - 1], list[i]] = [list[i], list[i - 1]];
+  } else if (rm) {
+    config.material.splice(Number(rm.dataset.rm), 1);
+  } else return;
+  renderMaterial();
+  renderAll();
+});
+
+/* ---------- 家长提交 / 教师代传 ---------- */
+let subId = null;
+function openSubmissions(id) {
+  subId = id;
+  const item = config.custom.find(entry => entry.id === id);
+  document.getElementById('subTitle').textContent = item.name + ' · 提交情况';
+  renderSubmissions();
+  openSheet('subSheet');
+}
+function renderSubmissions() {
+  const item = config.custom.find(entry => entry.id === subId);
+  document.getElementById('subList').innerHTML = BOOK_CHILDREN.map(child => {
+    const ok = (item.submitted || []).includes(child.id);
+    return `<div class="mat-item">
+      <span class="dot-cell ${ok ? 'done' : 'miss'}"></span>
+      <div style="flex:1;font-size:13px;font-weight:600;margin-left:4px">${child.name}</div>
+      <button class="tag-btn" data-child="${child.id}">${ok ? '撤回' : '代传'}</button>
+    </div>`;
+  }).join('');
+}
+document.getElementById('subList').addEventListener('click', event => {
+  const btn = event.target.closest('[data-child]');
+  if (!btn) return;
+  const item = config.custom.find(entry => entry.id === subId);
+  const id = btn.dataset.child;
+  item.submitted = (item.submitted || []).includes(id)
+    ? item.submitted.filter(x => x !== id)
+    : (item.submitted || []).concat([id]);
+  renderSubmissions();
+  renderCustom();
+  writeBookConfig(config);
+});
+
+/* ---------- 弹层 ---------- */
+const mask = document.getElementById('sheetMask');
+function openSheet(id) {
+  mask.classList.add('show');
+  const sheet = document.getElementById(id);
+  sheet.classList.add('show');
+  sheet.setAttribute('aria-hidden', 'false');
+}
+function closeSheets() {
+  mask.classList.remove('show');
+  document.querySelectorAll('.sheet').forEach(sheet => {
+    sheet.classList.remove('show');
+    sheet.setAttribute('aria-hidden', 'true');
+  });
+}
+mask.addEventListener('click', closeSheets);
+document.querySelectorAll('[data-close]').forEach(btn => btn.addEventListener('click', closeSheets));
+
+function showToast(text) {
+  const toast = document.getElementById('toast');
+  toast.textContent = text;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 1600);
+}
+function renderAll() {
+  renderLayouts();
+  renderPresets();
+  renderCustom();
+  preview(true);
+  writeBookConfig(config);
+}
+renderAll();
+</script>
+</body>
+</html>

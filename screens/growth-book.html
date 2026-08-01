@@ -5,6 +5,66 @@
 <meta name="viewport" content="width=390, initial-scale=1, user-scalable=no" />
 <title>成长册 · 家园共育</title>
 <link rel="stylesheet" href="home-school-common.css" />
+<style>
+  .summary-card {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    background: var(--surface); border-radius: var(--radius-lg); padding: 14px 16px; margin-bottom: 12px;
+  }
+  .summary-card .grow { flex: 1; min-width: 0; }
+  .summary-card b { font-size: 15px; }
+  .summary-card .list { font-size: 11px; color: var(--muted); margin-top: 5px; line-height: 1.5; }
+  .summary-card .enter { color: var(--accent); font-size: 12px; font-weight: 600; white-space: nowrap; }
+
+  /* 班级级前置条件：全班内容相同，不进幼儿列 */
+  .pre-row {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; padding: 9px 0; border-bottom: 1px solid var(--border);
+  }
+  .pre-row:last-child { border-bottom: 0; }
+  .pre-row .grow { flex: 1; }
+  .pre-row .state { font-size: 11px; font-weight: 700; }
+  .pre-row .state.ok { color: var(--green); }
+  .pre-row .state.no { color: var(--danger); }
+
+  /* 生成检查表：列多时横向滚动，幼儿列固定 */
+  .table-wrap { overflow-x: auto; scrollbar-width: thin; scrollbar-color: #b8cbcb transparent; }
+  .table-wrap::-webkit-scrollbar { display: block; height: 6px; }
+  .table-wrap::-webkit-scrollbar-track { background: transparent; }
+  .table-wrap::-webkit-scrollbar-thumb { background: #b8cbcb; border-radius: 999px; }
+  .prog-table th:first-child { position: sticky; left: 0; z-index: 2; background: var(--accent-light); }
+  .prog-table .name { position: sticky; left: 0; z-index: 1; background: var(--surface); }
+  .view-link { font-size: 11px; font-weight: 700; color: var(--accent); white-space: nowrap; }
+  .view-link.off { color: var(--muted); opacity: .5; }
+
+  .sheet-mask { position: absolute; inset: 0; background: rgba(31,41,55,.32); opacity: 0; pointer-events: none; transition: .2s ease; z-index: 30; }
+  .sheet-mask.show { opacity: 1; pointer-events: auto; }
+  .sheet {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 31;
+    background: var(--surface); border-radius: 24px 24px 0 0;
+    padding: 18px 16px 22px; transform: translateY(105%); transition: .24s ease;
+  }
+  .sheet.show { transform: translateY(0); }
+  .sheet-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .sheet-head h2 { font-size: 17px; }
+  .close { border: 0; background: #f3f7f7; border-radius: 50%; width: 30px; height: 30px; font-size: 18px; color: var(--muted); }
+  .sheet-list { max-height: 320px; overflow-y: auto; }
+  .sheet-list::-webkit-scrollbar { display: none; }
+  .check-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    border: 1px solid var(--border); border-radius: 13px;
+    padding: 12px; margin-bottom: 8px; font-size: 14px; font-weight: 700;
+  }
+  .check-row input { width: 18px; height: 18px; accent-color: var(--accent); flex: 0 0 auto; }
+  .check-row.blocked { opacity: .45; }
+  .sheet-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+  .btn.ghost { border: 1px solid var(--border); background: #fff; color: var(--fg); }
+  .toast {
+    position: absolute; left: 50%; bottom: 34px; transform: translateX(-50%) translateY(20px);
+    background: rgba(31,41,55,.9); color: #fff; border-radius: 999px;
+    padding: 9px 14px; font-size: 12px; opacity: 0; pointer-events: none; transition: .22s ease; z-index: 40;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
 </head>
 <body>
 <div class="phone">
@@ -12,71 +72,182 @@
   <div class="nav-bar"><a class="back" href="growth-record.html">‹</a><div class="nav-title">成长册</div><span></span></div>
   <div class="scroll">
     <div class="sec">成长册内容</div>
-    <div class="chunk">
-      <div class="check-grid" id="bookChecks">
-        <label class="check-card"><input type="checkbox" checked data-col="time">在园时光</label>
-        <label class="check-card"><input type="checkbox" checked data-col="task">亲子活动</label>
-        <label class="check-card"><input type="checkbox" checked data-col="parent">家长动态</label>
-        <label class="check-card"><input type="checkbox" checked data-col="intro">园所介绍</label>
-        <label class="check-card"><input type="checkbox" checked data-col="eval">发展评估</label>
-        <label class="check-card"><input type="checkbox" checked data-col="comment">幼儿评语</label>
-        <label class="check-card"><input type="checkbox" checked data-col="health">体检数据</label>
-      </div>
+    <a class="summary-card" href="growth-book-edit.html">
+      <span class="grow">
+        <b id="sumTitle">已收录 0 项内容</b>
+        <span class="list" id="sumList"></span>
+      </span>
+      <span class="enter">编辑样板 ›</span>
+    </a>
+
+    <div class="action-row" style="margin-bottom:12px">
+      <a class="btn" href="growth-book-sample.html">成长册样本</a>
+      <button class="btn primary" id="openExport">导出报告</button>
     </div>
 
     <div class="chunk">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div>
           <div style="font-size:15px;font-weight:600">班级生成进度</div>
-          <div class="hint" style="margin-top:4px">依据已勾选内容判断是否可生成</div>
+          <div class="hint" style="margin-top:4px" id="progressNote">依据已收录内容判断是否可生成</div>
         </div>
-        <strong id="overall" style="color:var(--accent);font-size:20px">76%</strong>
+        <strong id="overall" style="color:var(--accent);font-size:20px">0%</strong>
       </div>
-      <div class="progress-line"><div class="bar"><span id="overallBar" style="width:76%"></span></div></div>
+      <div class="progress-line"><div class="bar"><span id="overallBar" style="width:0%"></span></div></div>
     </div>
 
     <div class="sec">生成检查表</div>
+    <div class="chunk" id="preList" style="padding:6px 14px"></div>
     <div class="table-wrap">
       <table class="prog-table wide" id="bookTable">
-        <thead>
-          <tr>
-            <th style="text-align:left">幼儿</th>
-            <th data-key="time">在园时光</th>
-            <th data-key="task">亲子活动</th>
-            <th data-key="parent">家长动态</th>
-            <th data-key="intro">园所介绍</th>
-            <th data-key="eval">发展评估</th>
-            <th data-key="comment">幼儿评语</th>
-            <th data-key="health">体检数据</th>
-            <th>结果</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td class="name">陈小明</td><td data-key="time"><span class="status done">完成</span></td><td data-key="task"><span class="status done">完成</span></td><td data-key="parent"><span class="status done">完成</span></td><td data-key="intro"><span class="status done">完成</span></td><td data-key="eval"><span class="status done">完成</span></td><td data-key="comment"><span class="status done">完成</span></td><td data-key="health"><span class="status done">完成</span></td><td><span class="status done">可生成</span></td></tr>
-          <tr><td class="name">李雨萱</td><td data-key="time"><span class="status done">完成</span></td><td data-key="task"><span class="status done">完成</span></td><td data-key="parent"><span class="status done">完成</span></td><td data-key="intro"><span class="status done">完成</span></td><td data-key="eval"><span class="status wait">缺月评</span></td><td data-key="comment"><span class="status wait">草稿</span></td><td data-key="health"><span class="status done">完成</span></td><td><span class="status wait">待补</span></td></tr>
-          <tr><td class="name">张力轩</td><td data-key="time"><span class="status done">完成</span></td><td data-key="task"><span class="status miss">缺少</span></td><td data-key="parent"><span class="status wait">待补</span></td><td data-key="intro"><span class="status done">完成</span></td><td data-key="eval"><span class="status wait">缺月评</span></td><td data-key="comment"><span class="status wait">草稿</span></td><td data-key="health"><span class="status done">完成</span></td><td><span class="status miss">不可生成</span></td></tr>
-          <tr><td class="name">王子涵</td><td data-key="time"><span class="status done">完成</span></td><td data-key="task"><span class="status done">完成</span></td><td data-key="parent"><span class="status done">完成</span></td><td data-key="intro"><span class="status done">完成</span></td><td data-key="eval"><span class="status done">完成</span></td><td data-key="comment"><span class="status done">完成</span></td><td data-key="health"><span class="status done">完成</span></td><td><span class="status done">可生成</span></td></tr>
-          <tr><td class="name">赵佳怡</td><td data-key="time"><span class="status miss">缺图</span></td><td data-key="task"><span class="status miss">缺少</span></td><td data-key="parent"><span class="status wait">待补</span></td><td data-key="intro"><span class="status done">完成</span></td><td data-key="eval"><span class="status done">完成</span></td><td data-key="comment"><span class="status wait">草稿</span></td><td data-key="health"><span class="status done">完成</span></td><td><span class="status miss">不可生成</span></td></tr>
-        </tbody>
+        <thead><tr id="tableHead"></tr></thead>
+        <tbody id="tableBody"></tbody>
       </table>
     </div>
+    <div class="dot-legend" aria-label="检查表状态说明">
+      <span class="item"><i class="dot-cell done"></i>完成</span>
+      <span class="item"><i class="dot-cell miss"></i>未完成</span>
+    </div>
+    <div class="hint" style="padding:0 12px 8px">上方为全班共用的班级级内容；表格只列因人而异的栏目，可左右滑动查看，幼儿列保持固定。</div>
   </div>
+
+  <div class="sheet-mask" id="sheetMask"></div>
+  <div class="sheet" id="exportSheet" aria-hidden="true">
+    <div class="sheet-head">
+      <h2>批量导出成长册</h2>
+      <button class="close" id="closeExport" aria-label="关闭">×</button>
+    </div>
+    <label class="check-row">
+      <div>全选</div>
+      <input type="checkbox" id="selectAll">
+    </label>
+    <div class="sheet-list" id="exportList"></div>
+    <div class="sheet-actions">
+      <button class="btn ghost" id="cancelExport">取消</button>
+      <button class="btn primary" id="confirmExport">导出</button>
+    </div>
+  </div>
+  <div class="toast" id="toast">已生成导出任务</div>
 </div>
+<script src="growth-book-render.js"></script>
 <script>
-  const checks = document.querySelectorAll('[data-col]');
-  const overall = document.getElementById('overall');
-  const bar = document.getElementById('overallBar');
-  function syncColumns() {
-    const active = Array.from(checks).filter(item => item.checked).map(item => item.dataset.col);
-    document.querySelectorAll('#bookTable [data-key]').forEach(cell => {
-      cell.style.display = active.includes(cell.dataset.key) ? '' : 'none';
-    });
-    const value = Math.max(62, Math.round(58 + active.length * 2.6));
-    overall.textContent = value + '%';
-    bar.style.width = value + '%';
-  }
-  checks.forEach(item => item.addEventListener('change', syncColumns));
-  syncColumns();
+let config = readBookConfig();
+const canGenerate = child => bookCanGenerate(child, config);
+/* 因人而异的栏目才进表格：预设里的非班级级项 + 全部新增栏目（家长征集） */
+const childColumns = () => bookSections(config)
+  .filter(section => section.custom || !BOOK_CLASS_LEVEL.includes(section.key));
+const classColumns = () => bookSections(config)
+  .filter(section => !section.custom && BOOK_CLASS_LEVEL.includes(section.key));
+
+function renderSummary() {
+  const sections = bookSections(config);
+  document.getElementById('sumTitle').textContent = `已收录 ${sections.length} 项内容`;
+  document.getElementById('sumList').textContent = sections.length
+    ? sections.map(s => s.name).join(' · ')
+    : '尚未收录任何内容，点击进入编辑样板';
+}
+
+function renderPre() {
+  const list = classColumns();
+  document.getElementById('preList').innerHTML = list.length ? list.map(section => {
+    const ok = classLevelReady(section.key, config);
+    const note = section.key === 'time'
+      ? `已收录 ${(config.material || []).length} 条成长资料`
+      : '园所统一内容';
+    return `<div class="pre-row">
+      <span class="dot-cell ${ok ? 'done' : 'miss'}"></span>
+      <span class="grow"><b>${section.name}</b> <span style="color:var(--muted)">· ${note}</span></span>
+      <span class="state ${ok ? 'ok' : 'no'}">${ok ? '已就绪' : '未就绪'}</span>
+    </div>`;
+  }).join('') : '<div class="pre-row"><span class="grow" style="color:var(--muted)">未收录班级级内容</span></div>';
+}
+
+function renderTable() {
+  const cols = childColumns();
+  document.getElementById('tableHead').innerHTML =
+    '<th style="text-align:left">幼儿</th>' +
+    cols.map(section => `<th>${section.name}</th>`).join('') +
+    '<th>查看</th>';
+  document.getElementById('tableBody').innerHTML = BOOK_CHILDREN.map(child => {
+    const cells = cols.map(section => {
+      const ok = section.custom
+        ? (config.custom.find(item => item.id === section.key).submitted || []).includes(child.id)
+        : child.done[section.key];
+      return `<td><span class="dot-cell ${ok ? 'done' : 'miss'}" title="${ok ? '完成' : '未完成'}" aria-label="${ok ? '完成' : '未完成'}"></span></td>`;
+    }).join('');
+    const ok = canGenerate(child);
+    const view = ok
+      ? `<a class="view-link" href="growth-book-view.html?child=${child.id}">查看</a>`
+      : `<span class="view-link off" title="内容未齐备，暂不可生成">查看</span>`;
+    return `<tr><td class="name">${child.name}</td>${cells}<td>${view}</td></tr>`;
+  }).join('');
+  document.getElementById('bookTable').style.minWidth = Math.max(340, 104 + (cols.length + 1) * 74) + 'px';
+}
+
+function renderProgress() {
+  const ready = BOOK_CHILDREN.filter(canGenerate).length;
+  const value = Math.round(ready / BOOK_CHILDREN.length * 100);
+  document.getElementById('overall').textContent = value + '%';
+  document.getElementById('overallBar').style.width = value + '%';
+  const total = bookSections(config).length;
+  document.getElementById('progressNote').textContent = total
+    ? `已收录 ${total} 项内容，${ready}/${BOOK_CHILDREN.length} 名幼儿可生成`
+    : '尚未收录任何内容，无法生成成长册';
+}
+
+/* ---------- 批量导出：不可生成的仅置灰禁用 ---------- */
+const mask = document.getElementById('sheetMask');
+const sheet = document.getElementById('exportSheet');
+const exportList = document.getElementById('exportList');
+const selectAll = document.getElementById('selectAll');
+const toast = document.getElementById('toast');
+
+function renderSheet() {
+  exportList.innerHTML = BOOK_CHILDREN.map(child => {
+    const ok = canGenerate(child);
+    return `<label class="check-row${ok ? '' : ' blocked'}">
+      <div>${child.name}</div>
+      <input type="checkbox" class="child-check" ${ok ? 'checked' : 'disabled'}>
+    </label>`;
+  }).join('');
+  exportList.querySelectorAll('.child-check').forEach(item => item.addEventListener('change', syncSelectAll));
+  syncSelectAll();
+}
+const availableChecks = () => Array.from(exportList.querySelectorAll('.child-check:not(:disabled)'));
+function syncSelectAll() {
+  const list = availableChecks();
+  selectAll.checked = list.length > 0 && list.every(item => item.checked);
+  selectAll.disabled = list.length === 0;
+}
+selectAll.addEventListener('change', () => {
+  availableChecks().forEach(item => { item.checked = selectAll.checked; });
+});
+
+function openSheet() { renderSheet(); mask.classList.add('show'); sheet.classList.add('show'); sheet.setAttribute('aria-hidden','false'); }
+function closeSheet() { mask.classList.remove('show'); sheet.classList.remove('show'); sheet.setAttribute('aria-hidden','true'); }
+document.getElementById('openExport').addEventListener('click', openSheet);
+document.getElementById('closeExport').addEventListener('click', closeSheet);
+document.getElementById('cancelExport').addEventListener('click', closeSheet);
+mask.addEventListener('click', closeSheet);
+
+document.getElementById('confirmExport').addEventListener('click', () => {
+  const count = availableChecks().filter(item => item.checked).length;
+  toast.textContent = count ? `已生成 ${count} 份成长册导出任务` : '请至少选择 1 名幼儿';
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 1600);
+  if (count) closeSheet();
+});
+
+function renderAll() {
+  config = readBookConfig();
+  renderSummary();
+  renderPre();
+  renderTable();
+  renderProgress();
+}
+renderAll();
+// 从编辑样板返回时刷新
+window.addEventListener('pageshow', renderAll);
 </script>
 </body>
 </html>

@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=390, initial-scale=1, user-scalable=no" />
+<title>成长册 · 家园共育</title>
+<link rel="stylesheet" href="home-school-common.css" />
+<link rel="stylesheet" href="growth-book-viewer.css" />
+<style>
+  .child-bar {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    background: var(--surface); border-radius: 14px; padding: 12px 14px; margin-bottom: 12px;
+  }
+  .child-bar strong { font-size: 15px; }
+  .child-bar .meta { font-size: 11px; color: var(--muted); margin-top: 3px; }
+  .ready-tag {
+    background: var(--green-light); color: var(--green);
+    border-radius: 999px; padding: 4px 9px; font-size: 11px; font-weight: 700; white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
+  <div class="nav-bar"><a class="back" href="growth-book.html">‹</a><div class="nav-title">成长册</div><span></span></div>
+  <div class="scroll" style="padding-bottom:20px">
+    <div class="child-bar">
+      <div>
+        <strong id="childName">—</strong>
+        <div class="meta" id="childMeta">中二班 · 2026 春季学期</div>
+      </div>
+      <span class="ready-tag">可生成</span>
+    </div>
+
+    <div class="book" id="book"></div>
+
+    <div class="controls">
+      <button class="nav-btn" id="prev" aria-label="上一页">‹</button>
+      <div class="page-indicator" id="indicator">1 / 1</div>
+      <button class="nav-btn" id="next" aria-label="下一页">›</button>
+    </div>
+
+    <div class="action-row" style="margin-top:12px">
+      <button class="btn" id="reset">回到封面</button>
+      <button class="btn primary" id="exportPdf">导出 PDF</button>
+    </div>
+    <div class="hint" style="margin-top:10px">点击书页或使用左右按钮翻页。</div>
+  </div>
+  <div class="toast" id="toast">已生成 PDF</div>
+</div>
+<script src="growth-book-render.js"></script>
+<script>
+const config = readBookConfig();
+const params = new URLSearchParams(location.search);
+const child = BOOK_CHILDREN.find(item => item.id === params.get('child')) || BOOK_CHILDREN[0];
+
+document.getElementById('childName').textContent = child.name;
+document.getElementById('childMeta').textContent =
+  `中二班 · 2026 春季学期 · 收录 ${bookSections(config).length} 项内容`;
+
+const viewer = initBookViewer({
+  book: document.getElementById('book'),
+  indicator: document.getElementById('indicator'),
+  prev: document.getElementById('prev'),
+  next: document.getElementById('next')
+});
+viewer.load(child.name, config);
+
+document.getElementById('reset').addEventListener('click', () => viewer.reset());
+document.getElementById('exportPdf').addEventListener('click', () => {
+  const toast = document.getElementById('toast');
+  toast.textContent = `已生成 ${child.name} 的成长册 PDF（${viewer.pageCount()} 页）`;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 1800);
+});
+</script>
+</body>
+</html>

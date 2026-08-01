@@ -148,18 +148,17 @@
         </select>
       </div>
       <div class="field">
-        <label for="taskFilter">任务名称</label>
+        <label for="taskFilter">任务类型</label>
         <select id="taskFilter">
           <option value="all">全部任务</option>
-          <option value="社区建筑里的纹样">社区建筑里的纹样</option>
-          <option value="社区里的食物来源">社区里的食物来源</option>
-          <option value="我会安全过街">我会安全过街</option>
+          <option value="daily">日常任务</option>
+          <option value="community">社区任务</option>
         </select>
       </div>
     </div>
 
     <div class="feed-list" id="feedList">
-      <article class="moment-card" data-time="week" data-task="社区建筑里的纹样">
+      <article class="moment-card" data-time="week" data-type="community" data-task="社区建筑里的纹样">
         <div class="avatar">陈</div>
         <div class="moment-body">
           <div class="moment-head"><strong>陈小明家长</strong><span>今天 09:18</span></div>
@@ -167,11 +166,11 @@
           <div class="photo-grid">
             <div class="feed-photo">门楼</div><div class="feed-photo">木雕</div><div class="feed-photo">记录</div>
           </div>
-          <div class="task-note">任务：社区建筑里的纹样</div>
+          <div class="task-note">社区任务：社区建筑里的纹样</div>
         </div>
       </article>
 
-      <article class="moment-card" data-time="week" data-task="我会安全过街">
+      <article class="moment-card" data-time="week" data-type="daily" data-task="我会安全过街">
         <div class="avatar green">李</div>
         <div class="moment-body">
           <div class="moment-head"><strong>李雨萱家长</strong><span>昨天 18:42</span></div>
@@ -179,11 +178,11 @@
           <div class="photo-grid two">
             <div class="feed-photo">路线图</div><div class="feed-photo">过街点</div>
           </div>
-          <div class="task-note">任务：我会安全过街</div>
+          <div class="task-note">日常任务：我会安全过街</div>
         </div>
       </article>
 
-      <article class="moment-card" data-time="month" data-task="社区里的食物来源">
+      <article class="moment-card" data-time="month" data-type="community" data-task="社区里的食物来源">
         <div class="avatar amber">张</div>
         <div class="moment-body">
           <div class="moment-head"><strong>张力轩家长</strong><span>6月18日</span></div>
@@ -191,11 +190,11 @@
           <div class="photo-grid">
             <div class="feed-photo">鱼档</div><div class="feed-photo">蔬菜</div><div class="feed-photo">流程画</div>
           </div>
-          <div class="task-note">任务：社区里的食物来源</div>
+          <div class="task-note">社区任务：社区里的食物来源</div>
         </div>
       </article>
 
-      <article class="moment-card" data-time="older" data-task="社区建筑里的纹样">
+      <article class="moment-card" data-time="older" data-type="community" data-task="社区建筑里的纹样">
         <div class="avatar blue">王</div>
         <div class="moment-body">
           <div class="moment-head"><strong>王子涵家长</strong><span>6月6日</span></div>
@@ -203,7 +202,7 @@
           <div class="photo-grid two">
             <div class="feed-photo">石阶</div><div class="feed-photo">合照</div>
           </div>
-          <div class="task-note">任务：社区建筑里的纹样</div>
+          <div class="task-note">社区任务：社区建筑里的纹样</div>
         </div>
       </article>
     </div>
@@ -225,7 +224,7 @@
 
     cards.forEach(card => {
       const matchTime = time === 'all' || card.dataset.time === time;
-      const matchTask = task === 'all' || card.dataset.task === task;
+      const matchTask = task === 'all' || card.dataset.type === task;
       const shouldShow = matchTime && matchTask;
       card.style.display = shouldShow ? 'grid' : 'none';
       if (shouldShow) visible += 1;

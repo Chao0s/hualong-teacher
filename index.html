@@ -62,12 +62,9 @@
     font-size: 13px; border-top: 1px solid var(--border);
   }
 
+  /* iframe 尺寸必须与内部手机页面(390x844)一致，否则会出现内部滚动条、底部 tab 被滚出视野 */
   @media (max-width: 900px) {
     .gallery { flex-wrap: wrap; justify-content: center; }
-    .screen-card iframe { width: 340px; height: 736px; border-radius: 34px; }
-  }
-  @media (max-width: 400px) {
-    .screen-card iframe { width: 300px; height: 650px; border-radius: 30px; }
   }
 </style>
 </head>

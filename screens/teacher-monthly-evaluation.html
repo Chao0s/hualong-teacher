@@ -5,35 +5,41 @@
 <meta name="viewport" content="width=390, initial-scale=1, user-scalable=no" />
 <title>教师月度评价 · 家园共育</title>
 <link rel="stylesheet" href="home-school-common.css" />
+<style>
+  .dot-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+  }
+</style>
 </head>
 <body>
 <div class="phone">
   <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
-  <div class="nav-bar"><a class="back" href="growth-record.html">‹</a><div class="nav-title">教师月度评价</div><span></span></div>
+  <div class="nav-bar"><a class="back" href="teacher-evaluation.html">‹</a><div class="nav-title">教师月度评价</div><span></span></div>
   <div class="scroll">
     <div class="chunk"><a class="btn primary" href="teacher-monthly-form.html">添加评价</a></div>
 
-    <div class="chunk">
-      <div class="hint" style="margin-bottom:8px">查看月份</div>
-      <select class="select" id="monthSelect">
-        <option>2026年6月</option><option>2026年5月</option><option>2026年4月</option>
-      </select>
-    </div>
-
-    <div class="sec">当月进度表</div>
+    <div class="sec">完成情况</div>
     <div class="table-wrap">
       <table class="prog-table">
-        <thead><tr><th style="text-align:left">幼儿</th><th>状态</th><th>最近更新</th></tr></thead>
+        <thead><tr><th style="text-align:left">幼儿</th><th>3月</th><th>4月</th><th>5月</th><th>6月</th></tr></thead>
         <tbody>
-          <tr><td class="name">陈小明</td><td><span class="status done">已完成</span></td><td>6月10日</td></tr>
-          <tr><td class="name">李雨萱</td><td><span class="status wait">草稿</span></td><td>6月9日</td></tr>
-          <tr><td class="name">张力轩</td><td><span class="status wait">草稿</span></td><td>6月8日</td></tr>
-          <tr><td class="name">王子涵</td><td><span class="status done">已完成</span></td><td>6月10日</td></tr>
-          <tr><td class="name">赵佳怡</td><td><span class="status miss">未填写</span></td><td>—</td></tr>
-          <tr><td class="name">刘浩然</td><td><span class="status done">已完成</span></td><td>6月11日</td></tr>
+          <tr><td class="name">陈小明</td><td><a class="dot-link" href="teacher-monthly-form.html?child=chen&month=3&view=1"><span class="dot-cell done" title="已完成" aria-label="已完成"></span></a></td><td><a class="dot-link" href="teacher-monthly-form.html?child=chen&month=4&view=1"><span class="dot-cell done" title="已完成" aria-label="已完成"></span></a></td><td><a class="dot-link" href="teacher-monthly-form.html?child=chen&month=5&view=1"><span class="dot-cell done" title="已完成" aria-label="已完成"></span></a></td><td><a class="dot-link" href="teacher-monthly-form.html?child=chen&month=6&view=1"><span class="dot-cell done" title="已完成" aria-label="已完成"></span></a></td></tr>
+          <tr><td class="name">李雨萱</td><td><a class="dot-link" href="teacher-monthly-form.html?child=li&month=3&view=1"><span class="dot-cell done" title="已完成" aria-label="已完成"></span></a></td><td><a class="dot-link" href="teacher-monthly-form.html?child=li&month=4&view=1"><span class="dot-cell done" title="已完成" aria-label="已完成"></span></a></td><td><a class="dot-link" href="teacher-monthly-form.html?child=li&month=5"><span class="dot-cell miss" title="未完成" aria-label="未完成"></span></a></td><td><a class="dot-link" href="teacher-monthly-form.html?child=li&month=6"><span class="dot-cell miss" title="未完成" aria-label="未完成"></span></a></td></tr>
+          <tr><td class="name">张力轩</td><td><a class="dot-link" href="teacher-monthly-form.html?child=zhang&month=3&view=1"><span class="dot-cell done" title="已完成" aria-label="已完成"></span></a></td><td><a class="dot-link" href="teacher-monthly-form.html?child=zhang&month=4"><span class="dot-cell miss" title="未完成" aria-label="未完成"></span></a></td><td><a class="dot-link" href="teacher-monthly-form.html?child=zhang&month=5"><span class="dot-cell miss" title="未完成" aria-label="未完成"></span></a></td><td><a class="dot-link" href="teacher-monthly-form.html?child=zhang&month=6"><span class="dot-cell miss" title="未完成" aria-label="未完成"></span></a></td></tr>
+          <tr><td class="name">王子涵</td><td><a class="dot-link" href="teacher-monthly-form.html?child=wang&month=3&view=1"><span class="dot-cell done" title="已完成" aria-label="已完成"></span></a></td><td><a class="dot-link" href="teacher-monthly-form.html?child=wang&month=4&view=1"><span class="dot-cell done" title="已完成" aria-label="已完成"></span></a></td><td><a class="dot-link" href="teacher-monthly-form.html?child=wang&month=5&view=1"><span class="dot-cell done" title="已完成" aria-label="已完成"></span></a></td><td><a class="dot-link" href="teacher-monthly-form.html?child=wang&month=6&view=1"><span class="dot-cell done" title="已完成" aria-label="已完成"></span></a></td></tr>
+          <tr><td class="name">赵佳怡</td><td><a class="dot-link" href="teacher-monthly-form.html?child=zhao&month=3"><span class="dot-cell miss" title="未完成" aria-label="未完成"></span></a></td><td><a class="dot-link" href="teacher-monthly-form.html?child=zhao&month=4"><span class="dot-cell miss" title="未完成" aria-label="未完成"></span></a></td><td><a class="dot-link" href="teacher-monthly-form.html?child=zhao&month=5"><span class="dot-cell miss" title="未完成" aria-label="未完成"></span></a></td><td><a class="dot-link" href="teacher-monthly-form.html?child=zhao&month=6"><span class="dot-cell miss" title="未完成" aria-label="未完成"></span></a></td></tr>
+          <tr><td class="name">刘浩然</td><td><a class="dot-link" href="teacher-monthly-form.html?child=liu&month=3&view=1"><span class="dot-cell done" title="已完成" aria-label="已完成"></span></a></td><td><a class="dot-link" href="teacher-monthly-form.html?child=liu&month=4&view=1"><span class="dot-cell done" title="已完成" aria-label="已完成"></span></a></td><td><a class="dot-link" href="teacher-monthly-form.html?child=liu&month=5&view=1"><span class="dot-cell done" title="已完成" aria-label="已完成"></span></a></td><td><a class="dot-link" href="teacher-monthly-form.html?child=liu&month=6&view=1"><span class="dot-cell done" title="已完成" aria-label="已完成"></span></a></td></tr>
         </tbody>
       </table>
+      <div class="dot-legend" aria-label="完成情况说明">
+        <span class="item"><i class="dot-cell done"></i>已完成</span>
+        <span class="item"><i class="dot-cell miss"></i>未完成</span>
+      </div>
     </div>
+    <div class="hint" style="margin-top:8px">月份列由已录入的评价月份自动生成；点击圆点可查看该幼儿当月评价详情，未完成则进入填写。</div>
   </div>
 </div>
 </body>

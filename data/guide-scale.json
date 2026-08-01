@@ -1,0 +1,2657 @@
+{
+  "instrument": {
+    "name": "3-6岁儿童学习与发展水平教师评定量表",
+    "version": "1.0",
+    "source_document": "《3-6岁儿童学习与发展指南》，中华人民共和国教育部，2012年9月",
+    "extraction_scope": "仅提取《指南》各目标下的年龄段发展水平表格内容；教育建议、说明部分未纳入。终止于艺术领域「表现与创造」目标2。",
+    "rater": "带班教师",
+    "response_format": {
+      "type": "likert-5",
+      "levels": {
+        "1": "达到3~4岁年龄段典型水平",
+        "2": "介于3~4岁与4~5岁水平之间",
+        "3": "达到4~5岁年龄段典型水平",
+        "4": "介于4~5岁与5~6岁水平之间",
+        "5": "达到5~6岁年龄段典型水平"
+      },
+      "anchor_note": "每题仅给出1、3、5三级行为锚点（分别对应《指南》三个年龄段的原文描述）。2分与4分为相邻锚点之间的过渡水平，由教师依据幼儿实际表现判断。"
+    },
+    "level_semantics": {
+      "anchored_levels": "该等级的锚点文字直接来自《指南》原文。",
+      "inferred_levels": "《指南》该年龄段未列出对应条目，锚点文字为保证5级连续性而补写的过渡描述，非《指南》原文。分析时如需严格忠于原文，可对含inferred_levels的题项做敏感性检验。"
+    },
+    "hierarchy": [
+      "domain",
+      "aspect",
+      "goal",
+      "item"
+    ],
+    "id_scheme": "item_id 形如 H1-2-3：H=领域代码(H健康/L语言/S社会/K科学/A艺术)，1=该领域第1个维度，2=该维度第2个目标，3=该目标第3个题项。逐级截断即得上级id。",
+    "scoring_rules": {
+      "item_score": "教师直接评定的1~5分整数。",
+      "goal_score": "该目标下所有题项得分的均值。",
+      "aspect_score": "该维度下所有题项得分的均值（题项级均值，非目标均值的均值，避免题项数不等造成的加权失真）。",
+      "domain_score": "该领域下所有题项得分的均值。",
+      "total_score": "全部题项得分的均值。",
+      "measurement_items": "item_type为measurement的题项由客观测量数据换算得分，可选择纳入或排除；排除时须在报告中说明。",
+      "aggregation_note": "各层级均可另行输出总和分(sum)。若采用总和分，须注意各目标/维度题项数不等，跨维度比较应使用均值。"
+    },
+    "counts": {
+      "domains": 5,
+      "aspects": 11,
+      "goals": 32,
+      "items": 124,
+      "likert_items": 123,
+      "measurement_items": 1
+    }
+  },
+  "domains": [
+    {
+      "domain_id": "H",
+      "domain_name": "健康",
+      "aspects": [
+        {
+          "aspect_id": "H1",
+          "aspect_name": "身心状况",
+          "goals": [
+            {
+              "goal_id": "H1-1",
+              "goal_name": "健康体态",
+              "goal_source": "目标1 具有健康的体态",
+              "items": [
+                {
+                  "item_id": "H1-1-1",
+                  "item_name": "身高体重适宜",
+                  "item_type": "measurement",
+                  "question": "该幼儿的身高和体重是否处于同龄参考范围内？",
+                  "anchors": {
+                    "1": "身高、体重达到3~4岁参考范围",
+                    "3": "身高、体重达到4~5岁参考范围",
+                    "5": "身高、体重达到5~6岁参考范围"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": [],
+                  "measurement_note": "本题不由教师主观评定。请按幼儿实测身高、体重对照下表，落入哪个年龄段参考范围即计该段对应分值；介于两段之间计2分或4分；低于3~4岁范围计1分。参考数据来源：《2006年世界卫生组织儿童生长标准》。",
+                  "reference_table": {
+                    "3~4岁": {
+                      "男孩": {
+                        "身高_cm": [
+                          94.9,
+                          111.7
+                        ],
+                        "体重_kg": [
+                          12.7,
+                          21.2
+                        ]
+                      },
+                      "女孩": {
+                        "身高_cm": [
+                          94.1,
+                          111.3
+                        ],
+                        "体重_kg": [
+                          12.3,
+                          21.5
+                        ]
+                      }
+                    },
+                    "4~5岁": {
+                      "男孩": {
+                        "身高_cm": [
+                          100.7,
+                          119.2
+                        ],
+                        "体重_kg": [
+                          14.1,
+                          24.2
+                        ]
+                      },
+                      "女孩": {
+                        "身高_cm": [
+                          99.9,
+                          118.9
+                        ],
+                        "体重_kg": [
+                          13.7,
+                          24.9
+                        ]
+                      }
+                    },
+                    "5~6岁": {
+                      "男孩": {
+                        "身高_cm": [
+                          106.1,
+                          125.8
+                        ],
+                        "体重_kg": [
+                          15.9,
+                          27.1
+                        ]
+                      },
+                      "女孩": {
+                        "身高_cm": [
+                          104.9,
+                          125.4
+                        ],
+                        "体重_kg": [
+                          15.3,
+                          27.8
+                        ]
+                      }
+                    }
+                  }
+                },
+                {
+                  "item_id": "H1-1-2",
+                  "item_name": "站坐行走姿势",
+                  "item_type": "likert",
+                  "question": "该幼儿保持正确站、坐、行走姿势的情况如何？",
+                  "anchors": {
+                    "1": "在提醒下能自然坐直、站直",
+                    "3": "在提醒下能保持正确的站、坐和行走姿势",
+                    "5": "经常保持正确的站、坐和行走姿势"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                }
+              ],
+              "item_count": 2
+            },
+            {
+              "goal_id": "H1-2",
+              "goal_name": "情绪安定愉快",
+              "goal_source": "目标2 情绪安定愉快",
+              "items": [
+                {
+                  "item_id": "H1-2-1",
+                  "item_name": "情绪稳定",
+                  "item_type": "likert",
+                  "question": "该幼儿日常情绪的稳定与愉快程度如何？",
+                  "anchors": {
+                    "1": "情绪比较稳定，很少因一点小事哭闹不止",
+                    "3": "经常保持愉快的情绪，不高兴时能较快缓解",
+                    "5": "经常保持愉快的情绪，知道引起自己某种情绪的原因，并努力缓解"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "H1-2-2",
+                  "item_name": "情绪调节与安抚",
+                  "item_type": "likert",
+                  "question": "该幼儿出现强烈情绪反应时，平静下来需要多少成人帮助？",
+                  "anchors": {
+                    "1": "有比较强烈的情绪反应时，能在成人的安抚下逐渐平静下来",
+                    "3": "有比较强烈的情绪反应时，能在成人提醒下逐渐平静下来",
+                    "5": "表达情绪的方式比较适度，不乱发脾气，能自己调节"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "H1-2-3",
+                  "item_name": "分享情绪",
+                  "item_type": "likert",
+                  "question": "该幼儿是否愿意把自己的情绪告诉他人？",
+                  "anchors": {
+                    "1": "尚未表现出主动告诉他人情绪的行为",
+                    "3": "愿意把自己的情绪告诉亲近的人，一起分享快乐或求得安慰",
+                    "5": "能主动向他人表达自己的情绪，并从中获得安慰或与人分享快乐"
+                  },
+                  "anchored_levels": [
+                    3
+                  ],
+                  "inferred_levels": [
+                    1,
+                    5
+                  ]
+                },
+                {
+                  "item_id": "H1-2-4",
+                  "item_name": "转换情绪",
+                  "item_type": "likert",
+                  "question": "该幼儿能否随活动需要转换情绪和注意？",
+                  "anchors": {
+                    "1": "尚未表现出该行为",
+                    "3": "偶尔在成人提醒下能转换情绪和注意",
+                    "5": "能随着活动的需要转换情绪和注意"
+                  },
+                  "anchored_levels": [
+                    5
+                  ],
+                  "inferred_levels": [
+                    1,
+                    3
+                  ]
+                }
+              ],
+              "item_count": 4
+            },
+            {
+              "goal_id": "H1-3",
+              "goal_name": "适应能力",
+              "goal_source": "目标3 具有一定的适应能力",
+              "items": [
+                {
+                  "item_id": "H1-3-1",
+                  "item_name": "适应冷热环境",
+                  "item_type": "likert",
+                  "question": "该幼儿在较热或较冷的户外环境中能活动多久？",
+                  "anchors": {
+                    "1": "能在较热或较冷的户外环境中活动",
+                    "3": "能在较热或较冷的户外环境中连续活动半小时左右",
+                    "5": "能在较热或较冷的户外环境中连续活动半小时以上"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "H1-3-2",
+                  "item_name": "身体适应环境变化",
+                  "item_type": "likert",
+                  "question": "环境或天气变化时，该幼儿的身体反应如何？",
+                  "anchors": {
+                    "1": "换新环境时情绪能较快稳定，睡眠、饮食基本正常",
+                    "3": "换新环境时较少出现身体不适",
+                    "5": "天气变化时较少感冒，能适应车、船等交通工具造成的轻微颠簸"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "H1-3-3",
+                  "item_name": "适应人际环境",
+                  "item_type": "likert",
+                  "question": "该幼儿适应新集体、新老师、新同伴的速度如何？",
+                  "anchors": {
+                    "1": "在帮助下能较快适应集体生活",
+                    "3": "能较快适应人际环境中发生的变化，如换了新老师能较快适应",
+                    "5": "能较快融入新的人际关系环境，如换了新的幼儿园或班级能较快适应"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                }
+              ],
+              "item_count": 3
+            }
+          ],
+          "goal_count": 3,
+          "item_count": 9
+        },
+        {
+          "aspect_id": "H2",
+          "aspect_name": "动作发展",
+          "goals": [
+            {
+              "goal_id": "H2-1",
+              "goal_name": "平衡与协调",
+              "goal_source": "目标1 具有一定的平衡能力，动作协调、灵敏",
+              "items": [
+                {
+                  "item_id": "H2-1-1",
+                  "item_name": "平衡行走",
+                  "item_type": "likert",
+                  "question": "该幼儿在窄面或不稳定物体上行走的平衡能力如何？",
+                  "anchors": {
+                    "1": "能沿地面直线或在较窄的低矮物体上走一段距离",
+                    "3": "能在较窄的低矮物体上平稳地走一段距离",
+                    "5": "能在斜坡、荡桥和有一定间隔的物体上较平稳地行走"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "H2-1-2",
+                  "item_name": "钻爬攀登",
+                  "item_type": "likert",
+                  "question": "该幼儿上下楼梯及钻、爬、攀登的能力如何？",
+                  "anchors": {
+                    "1": "能双脚灵活交替上下楼梯",
+                    "3": "能以匍匐、膝盖悬空等多种方式钻爬",
+                    "5": "能以手脚并用的方式安全地爬攀登架、网等"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "H2-1-3",
+                  "item_name": "跳跃能力",
+                  "item_type": "likert",
+                  "question": "该幼儿的跳跃动作发展到什么水平？",
+                  "anchors": {
+                    "1": "能身体平稳地双脚连续向前跳",
+                    "3": "能助跑跨跳过一定距离，或助跑跨跳过一定高度的物体",
+                    "5": "能连续跳绳"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "H2-1-4",
+                  "item_name": "跑动与躲闪",
+                  "item_type": "likert",
+                  "question": "该幼儿在跑动中躲避他人或物体的灵敏度如何？",
+                  "anchors": {
+                    "1": "分散跑时能躲避他人的碰撞",
+                    "3": "能与他人玩追逐、躲闪跑的游戏",
+                    "5": "能躲避他人滚过来的球或扔过来的沙包"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "H2-1-5",
+                  "item_name": "球类操控",
+                  "item_type": "likert",
+                  "question": "该幼儿抛接球、拍球的能力如何？",
+                  "anchors": {
+                    "1": "能双手向上抛球",
+                    "3": "能连续自抛自接球",
+                    "5": "能连续拍球"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                }
+              ],
+              "item_count": 5
+            },
+            {
+              "goal_id": "H2-2",
+              "goal_name": "力量与耐力",
+              "goal_source": "目标2 具有一定的力量和耐力",
+              "items": [
+                {
+                  "item_id": "H2-2-1",
+                  "item_name": "悬吊",
+                  "item_type": "likert",
+                  "question": "该幼儿双手抓杠悬空吊起能坚持多久？",
+                  "anchors": {
+                    "1": "能双手抓杠悬空吊起10秒左右",
+                    "3": "能双手抓杠悬空吊起15秒左右",
+                    "5": "能双手抓杠悬空吊起20秒左右"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "H2-2-2",
+                  "item_name": "投掷",
+                  "item_type": "likert",
+                  "question": "该幼儿单手将沙包向前投掷的距离如何？",
+                  "anchors": {
+                    "1": "能单手将沙包向前投掷2米左右",
+                    "3": "能单手将沙包向前投掷4米左右",
+                    "5": "能单手将沙包向前投掷5米左右"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "H2-2-3",
+                  "item_name": "单脚跳",
+                  "item_type": "likert",
+                  "question": "该幼儿单脚连续向前跳的距离如何？",
+                  "anchors": {
+                    "1": "能单脚连续向前跳2米左右",
+                    "3": "能单脚连续向前跳5米左右",
+                    "5": "能单脚连续向前跳8米左右"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "H2-2-4",
+                  "item_name": "快跑",
+                  "item_type": "likert",
+                  "question": "该幼儿能快跑的距离如何？",
+                  "anchors": {
+                    "1": "能快跑15米左右",
+                    "3": "能快跑20米左右",
+                    "5": "能快跑25米左右"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "H2-2-5",
+                  "item_name": "行走耐力",
+                  "item_type": "likert",
+                  "question": "该幼儿连续行走的距离如何（途中可适当停歇）？",
+                  "anchors": {
+                    "1": "能行走1公里左右",
+                    "3": "能连续行走1.5公里左右",
+                    "5": "能连续行走1.5公里以上"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                }
+              ],
+              "item_count": 5
+            },
+            {
+              "goal_id": "H2-3",
+              "goal_name": "手部精细动作",
+              "goal_source": "目标3 手的动作灵活协调",
+              "items": [
+                {
+                  "item_id": "H2-3-1",
+                  "item_name": "画图形",
+                  "item_type": "likert",
+                  "question": "该幼儿用笔画线条、图形的控制能力如何？",
+                  "anchors": {
+                    "1": "能用笔涂涂画画",
+                    "3": "能沿边线较直地画出简单图形，或能边线基本对齐地折纸",
+                    "5": "能根据需要画出图形，线条基本平滑"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "H2-3-2",
+                  "item_name": "使用餐具",
+                  "item_type": "likert",
+                  "question": "该幼儿使用勺子、筷子的熟练程度如何？",
+                  "anchors": {
+                    "1": "能熟练地用勺子吃饭",
+                    "3": "会用筷子吃饭",
+                    "5": "能熟练使用筷子"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "H2-3-3",
+                  "item_name": "使用剪刀",
+                  "item_type": "likert",
+                  "question": "该幼儿用剪刀剪纸的精细程度如何？",
+                  "anchors": {
+                    "1": "能用剪刀沿直线剪，边线基本吻合",
+                    "3": "能沿轮廓线剪出由直线构成的简单图形，边线吻合",
+                    "5": "能沿轮廓线剪出由曲线构成的简单图形，边线吻合且平滑"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "H2-3-4",
+                  "item_name": "使用劳动工具",
+                  "item_type": "likert",
+                  "question": "该幼儿使用简单劳动工具或用具的情况如何？",
+                  "anchors": {
+                    "1": "尚未表现出该行为",
+                    "3": "偶尔在成人帮助下使用简单的劳动工具或用具",
+                    "5": "能使用简单的劳动工具或用具"
+                  },
+                  "anchored_levels": [
+                    5
+                  ],
+                  "inferred_levels": [
+                    1,
+                    3
+                  ]
+                }
+              ],
+              "item_count": 4
+            }
+          ],
+          "goal_count": 3,
+          "item_count": 14
+        },
+        {
+          "aspect_id": "H3",
+          "aspect_name": "生活习惯与生活能力",
+          "goals": [
+            {
+              "goal_id": "H3-1",
+              "goal_name": "生活与卫生习惯",
+              "goal_source": "目标1 具有良好的生活与卫生习惯",
+              "items": [
+                {
+                  "item_id": "H3-1-1",
+                  "item_name": "作息与午睡",
+                  "item_type": "likert",
+                  "question": "该幼儿按时睡觉起床、坚持午睡的情况如何？",
+                  "anchors": {
+                    "1": "在提醒下，按时睡觉和起床，并能坚持午睡",
+                    "3": "每天按时睡觉和起床，并能坚持午睡",
+                    "5": "养成每天按时睡觉和起床的习惯"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "H3-1-2",
+                  "item_name": "参加体育活动",
+                  "item_type": "likert",
+                  "question": "该幼儿参加体育活动的主动性如何？",
+                  "anchors": {
+                    "1": "喜欢参加体育活动",
+                    "3": "喜欢参加体育活动",
+                    "5": "能主动参加体育活动"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": [],
+                  "note": "《指南》3~4岁与4~5岁此条表述相同，评分时1分与3分的差异可参考幼儿参与的频率与投入程度。"
+                },
+                {
+                  "item_id": "H3-1-3",
+                  "item_name": "饮食习惯",
+                  "item_type": "likert",
+                  "question": "该幼儿的进食习惯如何？",
+                  "anchors": {
+                    "1": "在引导下，不偏食、挑食，喜欢吃瓜果、蔬菜等新鲜食品",
+                    "3": "不偏食、挑食，不暴饮暴食，喜欢吃瓜果、蔬菜等新鲜食品",
+                    "5": "吃东西时细嚼慢咽"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "H3-1-4",
+                  "item_name": "饮水习惯",
+                  "item_type": "likert",
+                  "question": "该幼儿饮用白开水的主动性如何？",
+                  "anchors": {
+                    "1": "愿意饮用白开水，不贪喝饮料",
+                    "3": "常喝白开水，不贪喝饮料",
+                    "5": "主动饮用白开水，不贪喝饮料"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "H3-1-5",
+                  "item_name": "用眼卫生",
+                  "item_type": "likert",
+                  "question": "该幼儿保护眼睛、控制用眼时长的情况如何？",
+                  "anchors": {
+                    "1": "不用脏手揉眼睛，连续看电视等不超过15分钟",
+                    "3": "知道保护眼睛，不在光线过强或过暗的地方看书，连续看电视等不超过20分钟",
+                    "5": "主动保护眼睛，不在光线过强或过暗的地方看书，连续看电视等不超过30分钟"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "H3-1-6",
+                  "item_name": "刷牙与洗手",
+                  "item_type": "likert",
+                  "question": "该幼儿早晚刷牙、饭前便后洗手的情况如何？",
+                  "anchors": {
+                    "1": "在提醒下，每天早晚刷牙、饭前便后洗手",
+                    "3": "每天早晚刷牙、饭前便后洗手，方法基本正确",
+                    "5": "每天早晚主动刷牙，饭前便后主动洗手，方法正确"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                }
+              ],
+              "item_count": 6
+            },
+            {
+              "goal_id": "H3-2",
+              "goal_name": "生活自理能力",
+              "goal_source": "目标2 具有基本的生活自理能力",
+              "items": [
+                {
+                  "item_id": "H3-2-1",
+                  "item_name": "穿脱衣物",
+                  "item_type": "likert",
+                  "question": "该幼儿自己穿脱衣服、鞋袜的能力如何？",
+                  "anchors": {
+                    "1": "在帮助下能穿脱衣服或鞋袜",
+                    "3": "能自己穿脱衣服、鞋袜、扣纽扣",
+                    "5": "会自己系鞋带"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "H3-2-2",
+                  "item_name": "整理物品",
+                  "item_type": "likert",
+                  "question": "该幼儿收拾整理自己物品的能力如何？",
+                  "anchors": {
+                    "1": "能将玩具和图书放回原处",
+                    "3": "能整理自己的物品",
+                    "5": "能按类别整理好自己的物品"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "H3-2-3",
+                  "item_name": "根据冷热增减衣服",
+                  "item_type": "likert",
+                  "question": "该幼儿能否根据冷热自己增减衣服？",
+                  "anchors": {
+                    "1": "尚未表现出该行为",
+                    "3": "偶尔在成人提醒下增减衣服",
+                    "5": "能知道根据冷热增减衣服"
+                  },
+                  "anchored_levels": [
+                    5
+                  ],
+                  "inferred_levels": [
+                    1,
+                    3
+                  ]
+                }
+              ],
+              "item_count": 3
+            },
+            {
+              "goal_id": "H3-3",
+              "goal_name": "安全与自我保护",
+              "goal_source": "目标3 具备基本的安全知识和自我保护能力",
+              "items": [
+                {
+                  "item_id": "H3-3-1",
+                  "item_name": "防范陌生人",
+                  "item_type": "likert",
+                  "question": "该幼儿对陌生人的防范意识如何？",
+                  "anchors": {
+                    "1": "不吃陌生人给的东西，不跟陌生人走",
+                    "3": "知道在公共场合不远离成人的视线单独活动",
+                    "5": "未经大人允许不给陌生人开门"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "H3-3-2",
+                  "item_name": "遵守安全规则",
+                  "item_type": "likert",
+                  "question": "该幼儿遵守安全与交通规则的自觉程度如何？",
+                  "anchors": {
+                    "1": "在提醒下能注意安全，不做危险的事",
+                    "3": "认识常见的安全标志，能遵守安全规则",
+                    "5": "能自觉遵守基本的安全规则和交通规则"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "H3-3-3",
+                  "item_name": "运动中的安全",
+                  "item_type": "likert",
+                  "question": "该幼儿在运动中注意安全的情况如何？",
+                  "anchors": {
+                    "1": "尚未表现出该行为",
+                    "3": "运动时能主动躲避危险",
+                    "5": "运动时能注意安全，不给他人造成危险"
+                  },
+                  "anchored_levels": [
+                    3,
+                    5
+                  ],
+                  "inferred_levels": [
+                    1
+                  ]
+                },
+                {
+                  "item_id": "H3-3-4",
+                  "item_name": "求助与防灾",
+                  "item_type": "likert",
+                  "question": "该幼儿求助和防灾方面的知识与能力如何？",
+                  "anchors": {
+                    "1": "在公共场所走失时，能向警察或有关人员说出自己和家长的名字、电话号码等简单信息",
+                    "3": "知道简单的求助方式",
+                    "5": "知道一些基本的防灾知识"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                }
+              ],
+              "item_count": 4
+            }
+          ],
+          "goal_count": 3,
+          "item_count": 13
+        }
+      ],
+      "aspect_count": 3,
+      "goal_count": 9,
+      "item_count": 36
+    },
+    {
+      "domain_id": "L",
+      "domain_name": "语言",
+      "aspects": [
+        {
+          "aspect_id": "L1",
+          "aspect_name": "倾听与表达",
+          "goals": [
+            {
+              "goal_id": "L1-1",
+              "goal_name": "认真倾听与理解",
+              "goal_source": "目标1 认真听并能听懂常用语言",
+              "items": [
+                {
+                  "item_id": "L1-1-1",
+                  "item_name": "专注倾听",
+                  "item_type": "likert",
+                  "question": "该幼儿听别人讲话时的专注程度如何？",
+                  "anchors": {
+                    "1": "别人对自己说话时能注意听并做出回应",
+                    "3": "在群体中能有意识地听与自己有关的信息",
+                    "5": "在集体中能注意听老师或其他人讲话"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "L1-1-2",
+                  "item_name": "理解语言含义",
+                  "item_type": "likert",
+                  "question": "该幼儿理解他人话语含义的水平如何？",
+                  "anchors": {
+                    "1": "能听懂日常会话",
+                    "3": "能结合情境感受到不同语气、语调所表达的不同意思",
+                    "5": "能结合情境理解一些表示因果、假设等相对复杂的句子"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "L1-1-3",
+                  "item_name": "听不懂时提问",
+                  "item_type": "likert",
+                  "question": "该幼儿听不懂或有疑问时能否主动提问？",
+                  "anchors": {
+                    "1": "尚未表现出该行为",
+                    "3": "偶尔在成人鼓励下会提出疑问",
+                    "5": "听不懂或有疑问时能主动提问"
+                  },
+                  "anchored_levels": [
+                    5
+                  ],
+                  "inferred_levels": [
+                    1,
+                    3
+                  ]
+                },
+                {
+                  "item_id": "L1-1-4",
+                  "item_name": "听懂普通话",
+                  "item_type": "likert",
+                  "question": "该幼儿听懂普通话的水平如何（适用于方言地区和少数民族幼儿）？",
+                  "anchors": {
+                    "1": "尚未表现出该行为",
+                    "3": "能基本听懂普通话",
+                    "5": "能听懂普通话，并能结合情境理解较复杂的表达"
+                  },
+                  "anchored_levels": [
+                    3
+                  ],
+                  "inferred_levels": [
+                    1,
+                    5
+                  ],
+                  "note": "《指南》原文限定为方言地区和少数民族幼儿。普通话环境班级可将本题标记为不适用。"
+                }
+              ],
+              "item_count": 4
+            },
+            {
+              "goal_id": "L1-2",
+              "goal_name": "口语表达",
+              "goal_source": "目标2 愿意讲话并能清楚地表达",
+              "items": [
+                {
+                  "item_id": "L1-2-1",
+                  "item_name": "表达意愿",
+                  "item_type": "likert",
+                  "question": "该幼儿主动与人交谈、在众人面前说话的意愿如何？",
+                  "anchors": {
+                    "1": "愿意在熟悉的人面前说话，能大方地与人打招呼",
+                    "3": "愿意与他人交谈，喜欢谈论自己感兴趣的话题",
+                    "5": "愿意与他人讨论问题，敢在众人面前说话"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "L1-2-2",
+                  "item_name": "语言与发音",
+                  "item_type": "likert",
+                  "question": "该幼儿说本地语言和普通话的水平及发音清晰度如何？",
+                  "anchors": {
+                    "1": "基本会说本民族或本地区的语言",
+                    "3": "会说本民族或本地区的语言，基本会说普通话",
+                    "5": "会说本民族或本地区的语言和普通话，发音正确清晰"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "L1-2-3",
+                  "item_name": "表达需要与想法",
+                  "item_type": "likert",
+                  "question": "该幼儿讲述自己经历、表达需要与想法的完整程度如何？",
+                  "anchors": {
+                    "1": "愿意表达自己的需要和想法，必要时能配以手势动作",
+                    "3": "能基本完整地讲述自己的所见所闻和经历的事情",
+                    "5": "能有序、连贯、清楚地讲述一件事情"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "L1-2-4",
+                  "item_name": "讲述的连贯与生动",
+                  "item_type": "likert",
+                  "question": "该幼儿讲述时的口齿清晰度与语言生动性如何？",
+                  "anchors": {
+                    "1": "能口齿清楚地说儿歌、童谣或复述简短的故事",
+                    "3": "讲述比较连贯",
+                    "5": "讲述时能使用常见的形容词、同义词等，语言比较生动"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                }
+              ],
+              "item_count": 4
+            },
+            {
+              "goal_id": "L1-3",
+              "goal_name": "文明语言习惯",
+              "goal_source": "目标3 具有文明的语言习惯",
+              "items": [
+                {
+                  "item_id": "L1-3-1",
+                  "item_name": "交谈时的回应",
+                  "item_type": "likert",
+                  "question": "别人对该幼儿讲话时，他/她的回应情况如何？",
+                  "anchors": {
+                    "1": "与别人讲话时知道眼睛要看着对方",
+                    "3": "别人对自己讲话时能回应",
+                    "5": "别人讲话时能积极主动地回应"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "L1-3-2",
+                  "item_name": "调节音量语气",
+                  "item_type": "likert",
+                  "question": "该幼儿根据场合和对象调节说话音量、语气的能力如何？",
+                  "anchors": {
+                    "1": "说话自然，声音大小适中",
+                    "3": "能根据场合调节自己说话声音的大小",
+                    "5": "能根据谈话对象和需要，调整说话的语气"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "L1-3-3",
+                  "item_name": "使用礼貌用语",
+                  "item_type": "likert",
+                  "question": "该幼儿使用礼貌用语的主动性如何？",
+                  "anchors": {
+                    "1": "能在成人的提醒下使用恰当的礼貌用语",
+                    "3": "能主动使用礼貌用语，不说脏话、粗话",
+                    "5": "能有礼貌地与人交往，并依据所处情境使用恰当的语言"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3
+                  ],
+                  "inferred_levels": [
+                    5
+                  ]
+                },
+                {
+                  "item_id": "L1-3-4",
+                  "item_name": "轮流讲话",
+                  "item_type": "likert",
+                  "question": "该幼儿能否按次序轮流讲话、不随意打断别人？",
+                  "anchors": {
+                    "1": "尚未表现出该行为",
+                    "3": "在成人提醒下能等待轮到自己再讲话",
+                    "5": "懂得按次序轮流讲话，不随意打断别人"
+                  },
+                  "anchored_levels": [
+                    5
+                  ],
+                  "inferred_levels": [
+                    1,
+                    3
+                  ]
+                },
+                {
+                  "item_id": "L1-3-5",
+                  "item_name": "情境化语言",
+                  "item_type": "likert",
+                  "question": "该幼儿能否依据情境使用恰当的语言（如在别人难过时表示安慰）？",
+                  "anchors": {
+                    "1": "尚未表现出该行为",
+                    "3": "偶尔在成人引导下能说出安慰或鼓励的话",
+                    "5": "能依据所处情境使用恰当的语言，如在别人难过时会用恰当的语言表示安慰"
+                  },
+                  "anchored_levels": [
+                    5
+                  ],
+                  "inferred_levels": [
+                    1,
+                    3
+                  ]
+                }
+              ],
+              "item_count": 5
+            }
+          ],
+          "goal_count": 3,
+          "item_count": 13
+        },
+        {
+          "aspect_id": "L2",
+          "aspect_name": "阅读与书写准备",
+          "goals": [
+            {
+              "goal_id": "L2-1",
+              "goal_name": "阅读兴趣与习惯",
+              "goal_source": "目标1 喜欢听故事，看图书",
+              "items": [
+                {
+                  "item_id": "L2-1-1",
+                  "item_name": "主动阅读",
+                  "item_type": "likert",
+                  "question": "该幼儿主动要求听故事、看图书的表现如何？",
+                  "anchors": {
+                    "1": "主动要求成人讲故事、读图书",
+                    "3": "反复看自己喜欢的图书",
+                    "5": "能专注地阅读图书"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "L2-1-2",
+                  "item_name": "谈论图书内容",
+                  "item_type": "likert",
+                  "question": "该幼儿跟读儿歌、复述与谈论图书故事的表现如何？",
+                  "anchors": {
+                    "1": "喜欢跟读韵律感强的儿歌、童谣",
+                    "3": "喜欢把听过的故事或看过的图书讲给别人听",
+                    "5": "喜欢与他人一起谈论图书和故事的有关内容"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "L2-1-3",
+                  "item_name": "对文字符号的兴趣",
+                  "item_type": "likert",
+                  "question": "该幼儿对生活中标识、文字符号的兴趣与理解如何？",
+                  "anchors": {
+                    "1": "尚未表现出该行为",
+                    "3": "对生活中常见的标识、符号感兴趣，知道它们表示一定的意义",
+                    "5": "对图书和生活情境中的文字符号感兴趣，知道文字表示一定的意义"
+                  },
+                  "anchored_levels": [
+                    3,
+                    5
+                  ],
+                  "inferred_levels": [
+                    1
+                  ]
+                },
+                {
+                  "item_id": "L2-1-4",
+                  "item_name": "爱护图书",
+                  "item_type": "likert",
+                  "question": "该幼儿爱护图书的情况如何？",
+                  "anchors": {
+                    "1": "爱护图书，不乱撕、乱扔",
+                    "3": "能主动爱护图书，看完后放回原处",
+                    "5": "能爱护图书，并提醒同伴一起爱护"
+                  },
+                  "anchored_levels": [
+                    1
+                  ],
+                  "inferred_levels": [
+                    3,
+                    5
+                  ]
+                }
+              ],
+              "item_count": 4
+            },
+            {
+              "goal_id": "L2-2",
+              "goal_name": "阅读理解能力",
+              "goal_source": "目标2 具有初步的阅读理解能力",
+              "items": [
+                {
+                  "item_id": "L2-2-1",
+                  "item_name": "理解故事内容",
+                  "item_type": "likert",
+                  "question": "该幼儿理解并讲出所听所读作品内容的水平如何？",
+                  "anchors": {
+                    "1": "能听懂短小的儿歌或故事",
+                    "3": "能大体讲出所听故事的主要内容",
+                    "5": "能说出所阅读的幼儿文学作品的主要内容"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "L2-2-2",
+                  "item_name": "读图与推测情节",
+                  "item_type": "likert",
+                  "question": "该幼儿根据画面线索理解、推测故事情节的能力如何？",
+                  "anchors": {
+                    "1": "会看画面，能根据画面说出图中有什么，发生了什么事",
+                    "3": "能根据连续画面提供的信息，大致说出故事的情节",
+                    "5": "能根据故事的部分情节或图书画面的线索猜想故事情节的发展，或续编、创编故事"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "L2-2-3",
+                  "item_name": "作品的情绪体验",
+                  "item_type": "likert",
+                  "question": "该幼儿阅读时的情绪反应与个人看法表达如何？",
+                  "anchors": {
+                    "1": "尚未表现出该行为",
+                    "3": "能随着作品的展开产生喜悦、担忧等相应的情绪反应，体会作品所表达的情绪情感",
+                    "5": "对看过的图书、听过的故事能说出自己的看法"
+                  },
+                  "anchored_levels": [
+                    3,
+                    5
+                  ],
+                  "inferred_levels": [
+                    1
+                  ]
+                },
+                {
+                  "item_id": "L2-2-4",
+                  "item_name": "文字与画面的关系",
+                  "item_type": "likert",
+                  "question": "该幼儿对文字与画面对应关系、文学语言美感的认识如何？",
+                  "anchors": {
+                    "1": "能理解图书上的文字是和画面对应的，是用来表达画面意义的",
+                    "3": "知道文字承载着故事内容，会指认书中反复出现的字词",
+                    "5": "能初步感受文学语言的美"
+                  },
+                  "anchored_levels": [
+                    1,
+                    5
+                  ],
+                  "inferred_levels": [
+                    3
+                  ]
+                }
+              ],
+              "item_count": 4
+            },
+            {
+              "goal_id": "L2-3",
+              "goal_name": "书面表达准备",
+              "goal_source": "目标3 具有书面表达的愿望和初步技能",
+              "items": [
+                {
+                  "item_id": "L2-3-1",
+                  "item_name": "用图画符号表达",
+                  "item_type": "likert",
+                  "question": "该幼儿用涂画、图形或符号表达意思的水平如何？",
+                  "anchors": {
+                    "1": "喜欢用涂涂画画表达一定的意思",
+                    "3": "愿意用图画和符号表达自己的愿望和想法",
+                    "5": "愿意用图画和符号表现事物或故事"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "L2-3-2",
+                  "item_name": "书写姿势",
+                  "item_type": "likert",
+                  "question": "该幼儿写画时的姿势如何？",
+                  "anchors": {
+                    "1": "尚未表现出正确的写画姿势",
+                    "3": "在成人提醒下，写写画画时姿势正确",
+                    "5": "写画时姿势正确"
+                  },
+                  "anchored_levels": [
+                    3,
+                    5
+                  ],
+                  "inferred_levels": [
+                    1
+                  ]
+                },
+                {
+                  "item_id": "L2-3-3",
+                  "item_name": "书写自己的名字",
+                  "item_type": "likert",
+                  "question": "该幼儿书写自己名字的情况如何？",
+                  "anchors": {
+                    "1": "尚未表现出该行为",
+                    "3": "能在示范下描摹或部分写出自己的名字",
+                    "5": "会正确书写自己的名字"
+                  },
+                  "anchored_levels": [
+                    5
+                  ],
+                  "inferred_levels": [
+                    1,
+                    3
+                  ]
+                }
+              ],
+              "item_count": 3
+            }
+          ],
+          "goal_count": 3,
+          "item_count": 11
+        }
+      ],
+      "aspect_count": 2,
+      "goal_count": 6,
+      "item_count": 24
+    },
+    {
+      "domain_id": "S",
+      "domain_name": "社会",
+      "aspects": [
+        {
+          "aspect_id": "S1",
+          "aspect_name": "人际交往",
+          "goals": [
+            {
+              "goal_id": "S1-1",
+              "goal_name": "交往意愿",
+              "goal_source": "目标1 愿意与人交往",
+              "items": [
+                {
+                  "item_id": "S1-1-1",
+                  "item_name": "与同伴交往",
+                  "item_type": "likert",
+                  "question": "该幼儿与小朋友一起游戏、结交朋友的意愿如何？",
+                  "anchors": {
+                    "1": "愿意和小朋友一起游戏",
+                    "3": "喜欢和小朋友一起游戏，有经常一起玩的小伙伴",
+                    "5": "有自己的好朋友，也喜欢结交新朋友"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "S1-1-2",
+                  "item_name": "与长辈交往",
+                  "item_type": "likert",
+                  "question": "该幼儿与熟悉长辈交谈、交流的意愿如何？",
+                  "anchors": {
+                    "1": "愿意与熟悉的长辈一起活动",
+                    "3": "喜欢和长辈交谈，有事愿意告诉长辈",
+                    "5": "有问题愿意向别人请教"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "S1-1-3",
+                  "item_name": "分享快乐",
+                  "item_type": "likert",
+                  "question": "该幼儿是否愿意把高兴、有趣的事与大家分享？",
+                  "anchors": {
+                    "1": "尚未表现出该行为",
+                    "3": "偶尔会把高兴的事告诉熟悉的人",
+                    "5": "有高兴的或有趣的事愿意与大家分享"
+                  },
+                  "anchored_levels": [
+                    5
+                  ],
+                  "inferred_levels": [
+                    1,
+                    3
+                  ]
+                }
+              ],
+              "item_count": 3
+            },
+            {
+              "goal_id": "S1-2",
+              "goal_name": "同伴友好相处",
+              "goal_source": "目标2 能与同伴友好相处",
+              "items": [
+                {
+                  "item_id": "S1-2-1",
+                  "item_name": "加入同伴游戏",
+                  "item_type": "likert",
+                  "question": "该幼儿加入或发起同伴游戏的方式如何？",
+                  "anchors": {
+                    "1": "想加入同伴的游戏时，能友好地提出请求",
+                    "3": "会运用介绍自己、交换玩具等简单技巧加入同伴游戏",
+                    "5": "能想办法吸引同伴和自己一起游戏"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "S1-2-2",
+                  "item_name": "分享与合作",
+                  "item_type": "likert",
+                  "question": "该幼儿轮流、分享与分工合作的表现如何？",
+                  "anchors": {
+                    "1": "在成人指导下，不争抢、不独霸玩具",
+                    "3": "对大家都喜欢的东西能轮流、分享",
+                    "5": "活动时能与同伴分工合作，遇到困难能一起克服"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "S1-2-3",
+                  "item_name": "解决同伴冲突",
+                  "item_type": "likert",
+                  "question": "该幼儿与同伴发生冲突时的解决方式如何？",
+                  "anchors": {
+                    "1": "与同伴发生冲突时，能听从成人的劝解",
+                    "3": "与同伴发生冲突时，能在他人帮助下和平解决",
+                    "5": "与同伴发生冲突时能自己协商解决"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "S1-2-4",
+                  "item_name": "接纳他人意见",
+                  "item_type": "likert",
+                  "question": "该幼儿倾听并接受同伴意见的表现如何？",
+                  "anchors": {
+                    "1": "尚未表现出该行为",
+                    "3": "活动时愿意接受同伴的意见和建议",
+                    "5": "知道别人的想法有时和自己不一样，能倾听和接受别人的意见，不能接受时会说明理由"
+                  },
+                  "anchored_levels": [
+                    3,
+                    5
+                  ],
+                  "inferred_levels": [
+                    1
+                  ]
+                },
+                {
+                  "item_id": "S1-2-5",
+                  "item_name": "不欺负他人",
+                  "item_type": "likert",
+                  "question": "该幼儿在处理欺负行为方面的表现如何？",
+                  "anchors": {
+                    "1": "尚未表现出该行为",
+                    "3": "不欺负弱小",
+                    "5": "不欺负别人，也不允许别人欺负自己"
+                  },
+                  "anchored_levels": [
+                    3,
+                    5
+                  ],
+                  "inferred_levels": [
+                    1
+                  ]
+                }
+              ],
+              "item_count": 5
+            },
+            {
+              "goal_id": "S1-3",
+              "goal_name": "自尊自信自主",
+              "goal_source": "目标3 具有自尊、自信、自主的表现",
+              "items": [
+                {
+                  "item_id": "S1-3-1",
+                  "item_name": "自主选择与发起活动",
+                  "item_type": "likert",
+                  "question": "该幼儿自主选择、发起活动并出主意的表现如何？",
+                  "anchors": {
+                    "1": "能根据自己的兴趣选择游戏或其它活动",
+                    "3": "能按自己的想法进行游戏或其他活动",
+                    "5": "能主动发起活动或在活动中出主意、想办法"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "S1-3-2",
+                  "item_name": "自我肯定",
+                  "item_type": "likert",
+                  "question": "该幼儿对自己的行为与成果的评价与期待如何？",
+                  "anchors": {
+                    "1": "为自己的好行为或活动成果感到高兴",
+                    "3": "知道自己的一些优点和长处，并对此感到满意",
+                    "5": "做了好事或取得了成功后还想做得更好"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "S1-3-3",
+                  "item_name": "自己的事情自己做",
+                  "item_type": "likert",
+                  "question": "该幼儿独立完成自己事情的意愿如何？",
+                  "anchors": {
+                    "1": "自己能做的事情愿意自己做",
+                    "3": "自己的事情尽量自己做，不愿意依赖别人",
+                    "5": "自己的事情自己做，不会的愿意学"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "S1-3-4",
+                  "item_name": "承担任务与坚持",
+                  "item_type": "likert",
+                  "question": "该幼儿承担任务、面对困难时的坚持性如何？",
+                  "anchors": {
+                    "1": "喜欢承担一些小任务",
+                    "3": "敢于尝试有一定难度的活动和任务",
+                    "5": "主动承担任务，遇到困难能够坚持而不轻易求助"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "S1-3-5",
+                  "item_name": "坚持自己的意见",
+                  "item_type": "likert",
+                  "question": "该幼儿与他人看法不同时，能否坚持并说明理由？",
+                  "anchors": {
+                    "1": "尚未表现出该行为",
+                    "3": "偶尔会表达与他人不同的想法，但难以说明理由",
+                    "5": "与别人的看法不同时，敢于坚持自己的意见并说出理由"
+                  },
+                  "anchored_levels": [
+                    5
+                  ],
+                  "inferred_levels": [
+                    1,
+                    3
+                  ]
+                }
+              ],
+              "item_count": 5
+            },
+            {
+              "goal_id": "S1-4",
+              "goal_name": "关心尊重他人",
+              "goal_source": "目标4 关心尊重他人",
+              "items": [
+                {
+                  "item_id": "S1-4-1",
+                  "item_name": "与长辈的礼貌交往",
+                  "item_type": "likert",
+                  "question": "该幼儿与长辈交往时的倾听与礼貌表现如何？",
+                  "anchors": {
+                    "1": "长辈讲话时能认真听，并能听从长辈的要求",
+                    "3": "会用礼貌的方式向长辈表达自己的要求和想法",
+                    "5": "能有礼貌地与人交往"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "S1-4-2",
+                  "item_name": "关注他人情绪",
+                  "item_type": "likert",
+                  "question": "该幼儿察觉并回应他人情绪与需要的表现如何？",
+                  "anchors": {
+                    "1": "身边的人生病或不开心时表示同情",
+                    "3": "能注意到别人的情绪，并有关心、体贴的表现",
+                    "5": "能关注别人的情绪和需要，并能给予力所能及的帮助"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "S1-4-3",
+                  "item_name": "不打扰别人",
+                  "item_type": "likert",
+                  "question": "该幼儿不打扰别人的表现如何？",
+                  "anchors": {
+                    "1": "在提醒下能做到不打扰别人",
+                    "3": "多数情况下能自觉做到不打扰别人",
+                    "5": "能主动为别人着想，自觉不打扰他人"
+                  },
+                  "anchored_levels": [
+                    1
+                  ],
+                  "inferred_levels": [
+                    3,
+                    5
+                  ]
+                },
+                {
+                  "item_id": "S1-4-4",
+                  "item_name": "尊重劳动成果",
+                  "item_type": "likert",
+                  "question": "该幼儿理解和尊重他人劳动的表现如何？",
+                  "anchors": {
+                    "1": "尚未表现出该行为",
+                    "3": "知道父母的职业，能体会到父母为养育自己所付出的辛劳",
+                    "5": "尊重为大家提供服务的人，珍惜他们的劳动成果"
+                  },
+                  "anchored_levels": [
+                    3,
+                    5
+                  ],
+                  "inferred_levels": [
+                    1
+                  ]
+                },
+                {
+                  "item_id": "S1-4-5",
+                  "item_name": "接纳差异",
+                  "item_type": "likert",
+                  "question": "该幼儿接纳与自己生活方式或习惯不同的人的表现如何？",
+                  "anchors": {
+                    "1": "尚未表现出该行为",
+                    "3": "对与自己不同的生活方式或习惯感到好奇，不排斥",
+                    "5": "接纳、尊重与自己的生活方式或习惯不同的人"
+                  },
+                  "anchored_levels": [
+                    5
+                  ],
+                  "inferred_levels": [
+                    1,
+                    3
+                  ]
+                }
+              ],
+              "item_count": 5
+            }
+          ],
+          "goal_count": 4,
+          "item_count": 18
+        },
+        {
+          "aspect_id": "S2",
+          "aspect_name": "社会适应",
+          "goals": [
+            {
+              "goal_id": "S2-1",
+              "goal_name": "适应群体生活",
+              "goal_source": "目标1 喜欢并适应群体生活",
+              "items": [
+                {
+                  "item_id": "S2-1-1",
+                  "item_name": "参与群体活动",
+                  "item_type": "likert",
+                  "question": "该幼儿参加群体活动的兴趣与主动性如何？",
+                  "anchors": {
+                    "1": "对群体活动有兴趣",
+                    "3": "愿意并主动参加群体活动",
+                    "5": "在群体活动中积极、快乐"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "S2-1-2",
+                  "item_name": "对园所与小学的期待",
+                  "item_type": "likert",
+                  "question": "该幼儿对幼儿园生活及小学生活的态度如何？",
+                  "anchors": {
+                    "1": "对幼儿园的生活好奇，喜欢上幼儿园",
+                    "3": "愿意与家长一起参加社区的一些群体活动",
+                    "5": "对小学生活有好奇和向往"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                }
+              ],
+              "item_count": 2
+            },
+            {
+              "goal_id": "S2-2",
+              "goal_name": "遵守行为规范",
+              "goal_source": "目标2 遵守基本的行为规范",
+              "items": [
+                {
+                  "item_id": "S2-2-1",
+                  "item_name": "遵守规则",
+                  "item_type": "likert",
+                  "question": "该幼儿理解并遵守游戏和公共场所规则的水平如何？",
+                  "anchors": {
+                    "1": "在提醒下，能遵守游戏和公共场所的规则",
+                    "3": "感受规则的意义，并能基本遵守规则",
+                    "5": "理解规则的意义，能与同伴协商制定游戏和活动规则"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "S2-2-2",
+                  "item_name": "爱护与归还物品",
+                  "item_type": "likert",
+                  "question": "该幼儿对待自己和他人物品的态度如何？",
+                  "anchors": {
+                    "1": "知道不经允许不能拿别人的东西，借别人的东西要归还；在成人提醒下爱护玩具和其他物品",
+                    "3": "不私自拿不属于自己的东西",
+                    "5": "爱惜物品，用别人的东西时也知道爱护"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "S2-2-3",
+                  "item_name": "诚实不说谎",
+                  "item_type": "likert",
+                  "question": "该幼儿在诚实与承认错误方面的表现如何？",
+                  "anchors": {
+                    "1": "尚未表现出该行为",
+                    "3": "知道说谎是不对的",
+                    "5": "做了错事敢于承认，不说谎"
+                  },
+                  "anchored_levels": [
+                    3,
+                    5
+                  ],
+                  "inferred_levels": [
+                    1
+                  ]
+                },
+                {
+                  "item_id": "S2-2-4",
+                  "item_name": "完成任务",
+                  "item_type": "likert",
+                  "question": "该幼儿完成所接受任务的责任心如何？",
+                  "anchors": {
+                    "1": "尚未表现出该行为",
+                    "3": "知道接受了的任务要努力完成",
+                    "5": "能认真负责地完成自己所接受的任务"
+                  },
+                  "anchored_levels": [
+                    3,
+                    5
+                  ],
+                  "inferred_levels": [
+                    1
+                  ]
+                },
+                {
+                  "item_id": "S2-2-5",
+                  "item_name": "节约与爱护环境",
+                  "item_type": "likert",
+                  "question": "该幼儿节约资源、爱护环境的表现如何？",
+                  "anchors": {
+                    "1": "尚未表现出该行为",
+                    "3": "在提醒下，能节约粮食、水电等",
+                    "5": "爱护身边的环境，注意节约资源"
+                  },
+                  "anchored_levels": [
+                    3,
+                    5
+                  ],
+                  "inferred_levels": [
+                    1
+                  ]
+                }
+              ],
+              "item_count": 5
+            },
+            {
+              "goal_id": "S2-3",
+              "goal_name": "归属感",
+              "goal_source": "目标3 具有初步的归属感",
+              "items": [
+                {
+                  "item_id": "S2-3-1",
+                  "item_name": "家庭归属",
+                  "item_type": "likert",
+                  "question": "该幼儿对家庭成员关系的认识与情感联结如何？",
+                  "anchors": {
+                    "1": "知道和自己一起生活的家庭成员及与自己的关系，体会到自己是家庭的一员",
+                    "3": "能感受到家庭生活的温暖，爱父母，亲近与信赖长辈",
+                    "5": "能感受到家乡的发展变化并为此感到高兴"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": [],
+                  "note": "《指南》原文中「感受家庭温暖」列于3~4岁，此处按情感联结由家庭向家乡递进排列。"
+                },
+                {
+                  "item_id": "S2-3-2",
+                  "item_name": "集体归属",
+                  "item_type": "likert",
+                  "question": "该幼儿对所在幼儿园、班级集体的归属与贡献意愿如何？",
+                  "anchors": {
+                    "1": "尚未表现出该行为",
+                    "3": "喜欢自己所在的幼儿园和班级，积极参加集体活动",
+                    "5": "愿意为集体做事，为集体的成绩感到高兴"
+                  },
+                  "anchored_levels": [
+                    3,
+                    5
+                  ],
+                  "inferred_levels": [
+                    1
+                  ]
+                },
+                {
+                  "item_id": "S2-3-3",
+                  "item_name": "认识家乡",
+                  "item_type": "likert",
+                  "question": "该幼儿对自己家乡地理位置与特色的认识如何？",
+                  "anchors": {
+                    "1": "能说出自己家所在街道、小区（乡镇、村）的名称",
+                    "3": "能说出自己家所在地的省、市、县（区）名称，知道当地有代表性的物产或景观",
+                    "5": "能介绍家乡的物产、景观或风俗，并为家乡感到自豪"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3
+                  ],
+                  "inferred_levels": [
+                    5
+                  ]
+                },
+                {
+                  "item_id": "S2-3-4",
+                  "item_name": "国家认同",
+                  "item_type": "likert",
+                  "question": "该幼儿对国旗、国歌及国家的认识与情感如何？",
+                  "anchors": {
+                    "1": "认识国旗，知道国歌",
+                    "3": "知道自己是中国人；奏国歌、升国旗时能自动站好",
+                    "5": "知道国家一些重大成就，爱祖国，为自己是中国人感到自豪"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "S2-3-5",
+                  "item_name": "民族认识",
+                  "item_type": "likert",
+                  "question": "该幼儿对民族多样性与民族团结的认识如何？",
+                  "anchors": {
+                    "1": "尚未表现出该行为",
+                    "3": "知道自己的民族，知道人们有不同的民族",
+                    "5": "知道自己的民族，知道中国是一个多民族的大家庭，各民族之间要互相尊重，团结友爱"
+                  },
+                  "anchored_levels": [
+                    5
+                  ],
+                  "inferred_levels": [
+                    1,
+                    3
+                  ]
+                }
+              ],
+              "item_count": 5
+            }
+          ],
+          "goal_count": 3,
+          "item_count": 12
+        }
+      ],
+      "aspect_count": 2,
+      "goal_count": 7,
+      "item_count": 30
+    },
+    {
+      "domain_id": "K",
+      "domain_name": "科学",
+      "aspects": [
+        {
+          "aspect_id": "K1",
+          "aspect_name": "科学探究",
+          "goals": [
+            {
+              "goal_id": "K1-1",
+              "goal_name": "探究兴趣",
+              "goal_source": "目标1 亲近自然，喜欢探究",
+              "items": [
+                {
+                  "item_id": "K1-1-1",
+                  "item_name": "亲近自然与新事物",
+                  "item_type": "likert",
+                  "question": "该幼儿对自然界和新事物的兴趣如何？",
+                  "anchors": {
+                    "1": "喜欢接触大自然，对周围的很多事物和现象感兴趣",
+                    "3": "喜欢接触新事物，经常问一些与新事物有关的问题",
+                    "5": "对自己感兴趣的问题总是刨根问底"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "K1-1-2",
+                  "item_name": "动手动脑探索",
+                  "item_type": "likert",
+                  "question": "该幼儿提问、动手摆弄并寻找答案的表现如何？",
+                  "anchors": {
+                    "1": "经常问各种问题，或好奇地摆弄物品",
+                    "3": "常常动手动脑探索物体和材料，并乐在其中",
+                    "5": "能经常动手动脑寻找问题的答案"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "K1-1-3",
+                  "item_name": "探索中的成就感",
+                  "item_type": "likert",
+                  "question": "该幼儿在探索有所发现时的情绪反应如何？",
+                  "anchors": {
+                    "1": "尚未表现出该行为",
+                    "3": "有所发现时会表现出高兴，并愿意告诉他人",
+                    "5": "探索中有所发现时感到兴奋和满足"
+                  },
+                  "anchored_levels": [
+                    5
+                  ],
+                  "inferred_levels": [
+                    1,
+                    3
+                  ]
+                }
+              ],
+              "item_count": 3
+            },
+            {
+              "goal_id": "K1-2",
+              "goal_name": "探究能力",
+              "goal_source": "目标2 具有初步的探究能力",
+              "items": [
+                {
+                  "item_id": "K1-2-1",
+                  "item_name": "观察与比较",
+                  "item_type": "likert",
+                  "question": "该幼儿观察事物、发现特征与变化的水平如何？",
+                  "anchors": {
+                    "1": "对感兴趣的事物能仔细观察，发现其明显特征",
+                    "3": "能对事物或现象进行观察比较，发现其相同与不同",
+                    "5": "能通过观察、比较与分析，发现并描述不同种类物体的特征或某个事物前后的变化"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "K1-2-2",
+                  "item_name": "提出猜想并验证",
+                  "item_type": "likert",
+                  "question": "该幼儿用多种感官探索、提出猜测并验证的能力如何？",
+                  "anchors": {
+                    "1": "能用多种感官或动作去探索物体，关注动作所产生的结果",
+                    "3": "能根据观察结果提出问题，并大胆猜测答案",
+                    "5": "能用一定的方法验证自己的猜测"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "K1-2-3",
+                  "item_name": "调查收集信息",
+                  "item_type": "likert",
+                  "question": "该幼儿通过调查收集信息的能力如何？",
+                  "anchors": {
+                    "1": "尚未表现出该行为",
+                    "3": "能通过简单的调查收集信息",
+                    "5": "在成人的帮助下能制定简单的调查计划并执行"
+                  },
+                  "anchored_levels": [
+                    3,
+                    5
+                  ],
+                  "inferred_levels": [
+                    1
+                  ]
+                },
+                {
+                  "item_id": "K1-2-4",
+                  "item_name": "记录探究结果",
+                  "item_type": "likert",
+                  "question": "该幼儿记录探究过程与结果的方式如何？",
+                  "anchors": {
+                    "1": "尚未表现出该行为",
+                    "3": "能用图画或其他符号进行记录",
+                    "5": "能用数字、图画、图表或其他符号记录"
+                  },
+                  "anchored_levels": [
+                    3,
+                    5
+                  ],
+                  "inferred_levels": [
+                    1
+                  ]
+                },
+                {
+                  "item_id": "K1-2-5",
+                  "item_name": "探究中的合作交流",
+                  "item_type": "likert",
+                  "question": "该幼儿在探究中与他人合作交流的表现如何？",
+                  "anchors": {
+                    "1": "尚未表现出该行为",
+                    "3": "愿意把自己的发现告诉同伴或老师",
+                    "5": "探究中能与他人合作与交流"
+                  },
+                  "anchored_levels": [
+                    5
+                  ],
+                  "inferred_levels": [
+                    1,
+                    3
+                  ]
+                }
+              ],
+              "item_count": 5
+            },
+            {
+              "goal_id": "K1-3",
+              "goal_name": "认识周围事物与现象",
+              "goal_source": "目标3 在探究中认识周围事物和现象",
+              "items": [
+                {
+                  "item_id": "K1-3-1",
+                  "item_name": "认识动植物",
+                  "item_type": "likert",
+                  "question": "该幼儿对动植物特征、生长变化及其与环境关系的认识如何？",
+                  "anchors": {
+                    "1": "认识常见的动植物，能注意并发现周围的动植物是多种多样的",
+                    "3": "能感知和发现动植物的生长变化及其基本条件",
+                    "5": "能察觉到动植物的外形特征、习性与生存环境的适应关系"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "K1-3-2",
+                  "item_name": "认识材料特性",
+                  "item_type": "likert",
+                  "question": "该幼儿对物体与材料性质、结构与功能关系的认识如何？",
+                  "anchors": {
+                    "1": "能感知和发现物体和材料的软硬、光滑和粗糙等特性",
+                    "3": "能感知和发现常见材料的溶解、传热等性质或用途",
+                    "5": "能发现常见物体的结构与功能之间的关系"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "K1-3-3",
+                  "item_name": "认识物理现象",
+                  "item_type": "likert",
+                  "question": "该幼儿对简单物理现象的感知与探究水平如何？",
+                  "anchors": {
+                    "1": "尚未表现出该行为",
+                    "3": "能感知和发现简单物理现象，如物体形态或位置变化等",
+                    "5": "能探索并发现常见的物理现象产生的条件或影响因素，如影子、沉浮等"
+                  },
+                  "anchored_levels": [
+                    3,
+                    5
+                  ],
+                  "inferred_levels": [
+                    1
+                  ]
+                },
+                {
+                  "item_id": "K1-3-4",
+                  "item_name": "认识季节变化",
+                  "item_type": "likert",
+                  "question": "该幼儿对天气、季节变化及其影响的认识如何？",
+                  "anchors": {
+                    "1": "能感知和体验天气对自己生活和活动的影响",
+                    "3": "能感知和发现不同季节的特点，体验季节对动植物和人的影响",
+                    "5": "感知并了解季节变化的周期性，知道变化的顺序"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "K1-3-5",
+                  "item_name": "人与自然、科技的关系",
+                  "item_type": "likert",
+                  "question": "该幼儿对人与动植物、科技产品及自然环境关系的认识如何？",
+                  "anchors": {
+                    "1": "初步了解和体会动植物和人们生活的关系",
+                    "3": "初步感知常用科技产品与自己生活的关系，知道科技产品有利也有弊",
+                    "5": "初步了解人们的生活与自然环境的密切关系，知道尊重和珍惜生命，保护环境"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                }
+              ],
+              "item_count": 5
+            }
+          ],
+          "goal_count": 3,
+          "item_count": 13
+        },
+        {
+          "aspect_id": "K2",
+          "aspect_name": "数学认知",
+          "goals": [
+            {
+              "goal_id": "K2-1",
+              "goal_name": "数学兴趣与应用",
+              "goal_source": "目标1 初步感知生活中数学的有用和有趣",
+              "items": [
+                {
+                  "item_id": "K2-1-1",
+                  "item_name": "对形状的兴趣",
+                  "item_type": "likert",
+                  "question": "该幼儿对物体形状的关注与描述兴趣如何？",
+                  "anchors": {
+                    "1": "感知和发现周围物体的形状是多种多样的，对不同的形状感兴趣",
+                    "3": "在指导下，感知和体会有些事物可以用形状来描述",
+                    "5": "能发现事物简单的排列规律，并尝试创造新的排列规律"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "K2-1-2",
+                  "item_name": "对数的兴趣与应用",
+                  "item_type": "likert",
+                  "question": "该幼儿对生活中数的关注与运用数学解决问题的表现如何？",
+                  "anchors": {
+                    "1": "体验和发现生活中很多地方都用到数",
+                    "3": "在指导下，感知和体会有些事物可以用数来描述，对环境中各种数字的含义有进一步探究的兴趣",
+                    "5": "能发现生活中许多问题都可以用数学的方法来解决，体验解决问题的乐趣"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                }
+              ],
+              "item_count": 2
+            },
+            {
+              "goal_id": "K2-2",
+              "goal_name": "数、量与数量关系",
+              "goal_source": "目标2 感知和理解数、量及数量关系",
+              "items": [
+                {
+                  "item_id": "K2-2-1",
+                  "item_name": "区分量的特点",
+                  "item_type": "likert",
+                  "question": "该幼儿区分和描述物体量的特点的水平如何？",
+                  "anchors": {
+                    "1": "能感知和区分物体的大小、多少、高矮长短等量方面的特点，并能用相应的词表示",
+                    "3": "能感知和区分物体的粗细、厚薄、轻重等量方面的特点，并能用相应的词语描述",
+                    "5": "初步理解量的相对性"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "K2-2-2",
+                  "item_name": "比较数量多少",
+                  "item_type": "likert",
+                  "question": "该幼儿比较两组物体多少的方法与水平如何？",
+                  "anchors": {
+                    "1": "能通过一一对应的方法比较两组物体的多少",
+                    "3": "能通过数数比较两组物体的多少",
+                    "5": "借助实际情境和操作（如合并或拿取）理解「加」和「减」的实际意义"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "K2-2-3",
+                  "item_name": "点数与数的关系",
+                  "item_type": "likert",
+                  "question": "该幼儿点数、理解数间关系及加减运算的水平如何？",
+                  "anchors": {
+                    "1": "能手口一致地点数5个以内的物体，并能说出总数，能按数取物",
+                    "3": "能通过实际操作理解数与数之间的关系，如5比4多1；2和3合在一起是5",
+                    "5": "能通过实物操作或其它方法进行10以内的加减运算"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "K2-2-4",
+                  "item_name": "用数词描述与记录",
+                  "item_type": "likert",
+                  "question": "该幼儿用数词描述事物、记录数量关系的水平如何？",
+                  "anchors": {
+                    "1": "能用数词描述事物或动作，如「我有4本图书」",
+                    "3": "会用数词描述事物的排列顺序和位置",
+                    "5": "能用简单的记录表、统计图等表示简单的数量关系"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                }
+              ],
+              "item_count": 4
+            },
+            {
+              "goal_id": "K2-3",
+              "goal_name": "形状与空间关系",
+              "goal_source": "目标3 感知形状与空间关系",
+              "items": [
+                {
+                  "item_id": "K2-3-1",
+                  "item_name": "感知形状特征",
+                  "item_type": "likert",
+                  "question": "该幼儿感知、描述并运用几何形体的水平如何？",
+                  "anchors": {
+                    "1": "能注意物体较明显的形状特征，并能用自己的语言描述",
+                    "3": "能感知和发现常见几何图形的基本特征，并能进行分类",
+                    "5": "能说出常见几何形体的名称与特征，并能按不同标准进行分类"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3
+                  ],
+                  "inferred_levels": [
+                    5
+                  ]
+                },
+                {
+                  "item_id": "K2-3-2",
+                  "item_name": "形体结构与造型",
+                  "item_type": "likert",
+                  "question": "该幼儿感知物体形体结构并拼搭、画出造型的能力如何？",
+                  "anchors": {
+                    "1": "尚未表现出该行为",
+                    "3": "能感知物体的形体结构特征，画出或拼搭出该物体的造型",
+                    "5": "能用常见的几何形体有创意地拼搭和画出物体的造型"
+                  },
+                  "anchored_levels": [
+                    3,
+                    5
+                  ],
+                  "inferred_levels": [
+                    1
+                  ]
+                },
+                {
+                  "item_id": "K2-3-3",
+                  "item_name": "方位词与空间位置",
+                  "item_type": "likert",
+                  "question": "该幼儿理解和使用方位词描述空间位置的水平如何？",
+                  "anchors": {
+                    "1": "能感知物体基本的空间位置与方位，理解上下、前后、里外等方位词",
+                    "3": "能使用上下、前后、里外、中间、旁边等方位词描述物体的位置和运动方向",
+                    "5": "能按语言指示或根据简单示意图正确取放物品"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "K2-3-4",
+                  "item_name": "辨别左右",
+                  "item_type": "likert",
+                  "question": "该幼儿辨别自己左右的能力如何？",
+                  "anchors": {
+                    "1": "尚未表现出该行为",
+                    "3": "在成人提示下能分辨左右",
+                    "5": "能辨别自己的左右"
+                  },
+                  "anchored_levels": [
+                    5
+                  ],
+                  "inferred_levels": [
+                    1,
+                    3
+                  ]
+                }
+              ],
+              "item_count": 4
+            }
+          ],
+          "goal_count": 3,
+          "item_count": 10
+        }
+      ],
+      "aspect_count": 2,
+      "goal_count": 6,
+      "item_count": 23
+    },
+    {
+      "domain_id": "A",
+      "domain_name": "艺术",
+      "aspects": [
+        {
+          "aspect_id": "A1",
+          "aspect_name": "感受与欣赏",
+          "goals": [
+            {
+              "goal_id": "A1-1",
+              "goal_name": "喜欢生活中的美",
+              "goal_source": "目标1 喜欢自然界与生活中美的事物",
+              "items": [
+                {
+                  "item_id": "A1-1-1",
+                  "item_name": "感受自然之美",
+                  "item_type": "likert",
+                  "question": "该幼儿对自然界与生活环境中视觉美的关注水平如何？",
+                  "anchors": {
+                    "1": "喜欢观看花草树木、日月星空等大自然中美的事物",
+                    "3": "在欣赏自然界和生活环境中美的事物时，关注其色彩、形态等特征",
+                    "5": "乐于收集美的物品或向别人介绍所发现的美的事物"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "A1-1-2",
+                  "item_name": "感受声音之美",
+                  "item_type": "likert",
+                  "question": "该幼儿对自然界与生活中声音的感知和回应如何？",
+                  "anchors": {
+                    "1": "容易被自然界中的鸟鸣、风声、雨声等好听的声音所吸引",
+                    "3": "喜欢倾听各种好听的声音，感知声音的高低、长短、强弱等变化",
+                    "5": "乐于模仿自然界和生活环境中有特点的声音，并产生相应的联想"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                }
+              ],
+              "item_count": 2
+            },
+            {
+              "goal_id": "A1-2",
+              "goal_name": "欣赏艺术作品",
+              "goal_source": "目标2 喜欢欣赏多种多样的艺术形式和作品",
+              "items": [
+                {
+                  "item_id": "A1-2-1",
+                  "item_name": "欣赏表演艺术",
+                  "item_type": "likert",
+                  "question": "该幼儿欣赏音乐、舞蹈、戏剧等表演的专注度与表达如何？",
+                  "anchors": {
+                    "1": "喜欢听音乐或观看舞蹈、戏剧等表演",
+                    "3": "能够专心地观看自己喜欢的文艺演出，有模仿和参与的愿望",
+                    "5": "艺术欣赏时常常用表情、动作、语言等方式表达自己的理解"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "A1-2-2",
+                  "item_name": "欣赏美术作品",
+                  "item_type": "likert",
+                  "question": "该幼儿欣赏绘画、泥塑等美术作品时的反应与交流如何？",
+                  "anchors": {
+                    "1": "乐于观看绘画、泥塑或其它艺术形式的作品",
+                    "3": "欣赏艺术作品时会产生相应的联想和情绪反应",
+                    "5": "愿意和别人分享、交流自己喜爱的艺术作品和美感体验"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                }
+              ],
+              "item_count": 2
+            }
+          ],
+          "goal_count": 2,
+          "item_count": 4
+        },
+        {
+          "aspect_id": "A2",
+          "aspect_name": "表现与创造",
+          "goals": [
+            {
+              "goal_id": "A2-1",
+              "goal_name": "艺术活动的参与",
+              "goal_source": "目标1 喜欢进行艺术活动并大胆表现",
+              "items": [
+                {
+                  "item_id": "A2-1-1",
+                  "item_name": "参与音乐表演活动",
+                  "item_type": "likert",
+                  "question": "该幼儿参与唱歌、律动、舞蹈、表演等活动的主动性如何？",
+                  "anchors": {
+                    "1": "经常自哼自唱或模仿有趣的动作、表情和声调",
+                    "3": "经常唱唱跳跳，愿意参加歌唱、律动、舞蹈、表演等活动",
+                    "5": "积极参与艺术活动，有自己比较喜欢的活动形式"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "A2-1-2",
+                  "item_name": "参与美术创作活动",
+                  "item_type": "likert",
+                  "question": "该幼儿运用绘画、捏泥、手工等方式表现所见所想的表现如何？",
+                  "anchors": {
+                    "1": "经常涂涂画画、粘粘贴贴并乐在其中",
+                    "3": "经常用绘画、捏泥、手工制作等多种方式表现自己的所见所想",
+                    "5": "能用多种工具、材料或不同的表现手法表达自己的感受和想象"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "A2-1-3",
+                  "item_name": "合作与独立表现",
+                  "item_type": "likert",
+                  "question": "该幼儿在艺术活动中与他人配合及独立表现的能力如何？",
+                  "anchors": {
+                    "1": "尚未表现出该行为",
+                    "3": "在成人组织下能与同伴一起参加艺术活动",
+                    "5": "艺术活动中能与他人相互配合，也能独立表现"
+                  },
+                  "anchored_levels": [
+                    5
+                  ],
+                  "inferred_levels": [
+                    1,
+                    3
+                  ]
+                }
+              ],
+              "item_count": 3
+            },
+            {
+              "goal_id": "A2-2",
+              "goal_name": "艺术表现与创造能力",
+              "goal_source": "目标2 具有初步的艺术表现与创造能力",
+              "items": [
+                {
+                  "item_id": "A2-2-1",
+                  "item_name": "唱歌能力",
+                  "item_type": "likert",
+                  "question": "该幼儿唱歌时的音准、节奏与声音控制如何？",
+                  "anchors": {
+                    "1": "能模仿学唱短小歌曲",
+                    "3": "能用自然的、音量适中的声音基本准确地唱歌",
+                    "5": "能用基本准确的节奏和音调唱歌"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "A2-2-2",
+                  "item_name": "身体动作表现音乐",
+                  "item_type": "likert",
+                  "question": "该幼儿用身体动作、律动或舞蹈表现音乐与情绪的水平如何？",
+                  "anchors": {
+                    "1": "能跟随熟悉的音乐做身体动作",
+                    "3": "能用拍手、踏脚等身体动作或可敲击的物品敲打节拍和基本节奏",
+                    "5": "能用律动或简单的舞蹈动作表现自己的情绪或自然界的情景"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "A2-2-3",
+                  "item_name": "即兴创编与表演",
+                  "item_type": "likert",
+                  "question": "该幼儿模拟事物、即兴创编与自编自演的能力如何？",
+                  "anchors": {
+                    "1": "能用声音、动作、姿态模拟自然界的事物和生活情景",
+                    "3": "能通过即兴哼唱、即兴表演或给熟悉的歌曲编词来表达自己的心情",
+                    "5": "能自编自演故事，并为表演选择和搭配简单的服饰、道具或布景"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                },
+                {
+                  "item_id": "A2-2-4",
+                  "item_name": "美术创作与运用",
+                  "item_type": "likert",
+                  "question": "该幼儿绘画、手工创作及运用作品美化生活的水平如何？",
+                  "anchors": {
+                    "1": "能用简单的线条和色彩大体画出自己想画的人或事物",
+                    "3": "能运用绘画、手工制作等表现自己观察到或想象的事物",
+                    "5": "能用自己制作的美术作品布置环境、美化生活"
+                  },
+                  "anchored_levels": [
+                    1,
+                    3,
+                    5
+                  ],
+                  "inferred_levels": []
+                }
+              ],
+              "item_count": 4
+            }
+          ],
+          "goal_count": 2,
+          "item_count": 7
+        }
+      ],
+      "aspect_count": 2,
+      "goal_count": 4,
+      "item_count": 11
+    }
+  ]
+}

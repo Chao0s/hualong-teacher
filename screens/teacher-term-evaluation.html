@@ -22,6 +22,12 @@
     font-size: 12px;
     font-weight: 600;
   }
+  .dot-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+  }
   .sheet-mask {
     position: absolute;
     inset: 0;
@@ -109,7 +115,7 @@
 <body>
 <div class="phone">
   <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
-  <div class="nav-bar"><a class="back" href="growth-record.html">‹</a><div class="nav-title">教师学期评价</div><span></span></div>
+  <div class="nav-bar"><a class="back" href="teacher-evaluation.html">‹</a><div class="nav-title">教师学期评价</div><span></span></div>
   <div class="scroll">
     <div class="chunk"><a class="btn primary" href="teacher-term-form.html">添加评价</a></div>
 
@@ -121,15 +127,20 @@
       <table class="prog-table">
         <thead><tr><th style="text-align:left">幼儿</th><th>学期评价</th></tr></thead>
         <tbody>
-          <tr><td class="name">陈小明</td><td><span class="status done">已完成</span></td></tr>
-          <tr><td class="name">李雨萱</td><td><span class="status wait">草稿</span></td></tr>
-          <tr><td class="name">张力轩</td><td><span class="status miss">未完成</span></td></tr>
-          <tr><td class="name">王子涵</td><td><span class="status done">已完成</span></td></tr>
-          <tr><td class="name">赵佳怡</td><td><span class="status miss">未完成</span></td></tr>
-          <tr><td class="name">刘浩然</td><td><span class="status done">已完成</span></td></tr>
+          <tr><td class="name">陈小明</td><td><a class="dot-link" href="teacher-term-form.html?child=chen&view=1"><span class="dot-cell done" title="已完成" aria-label="已完成"></span></a></td></tr>
+          <tr><td class="name">李雨萱</td><td><a class="dot-link" href="teacher-term-form.html?child=li"><span class="dot-cell miss" title="未完成" aria-label="未完成"></span></a></td></tr>
+          <tr><td class="name">张力轩</td><td><a class="dot-link" href="teacher-term-form.html?child=zhang"><span class="dot-cell miss" title="未完成" aria-label="未完成"></span></a></td></tr>
+          <tr><td class="name">王子涵</td><td><a class="dot-link" href="teacher-term-form.html?child=wang&view=1"><span class="dot-cell done" title="已完成" aria-label="已完成"></span></a></td></tr>
+          <tr><td class="name">赵佳怡</td><td><a class="dot-link" href="teacher-term-form.html?child=zhao"><span class="dot-cell miss" title="未完成" aria-label="未完成"></span></a></td></tr>
+          <tr><td class="name">刘浩然</td><td><a class="dot-link" href="teacher-term-form.html?child=liu&view=1"><span class="dot-cell done" title="已完成" aria-label="已完成"></span></a></td></tr>
         </tbody>
       </table>
+      <div class="dot-legend" aria-label="完成情况说明">
+        <span class="item"><i class="dot-cell done"></i>已完成</span>
+        <span class="item"><i class="dot-cell miss"></i>未完成</span>
+      </div>
     </div>
+    <div class="hint" style="margin-top:8px">仅展示当前学期；点击圆点可查看该幼儿的学期评价详情，未完成则进入填写。</div>
   </div>
   <div class="sheet-mask" id="sheetMask"></div>
   <div class="sheet" id="exportSheet" aria-hidden="true">
@@ -146,7 +157,7 @@
       <input type="checkbox" class="child-check" checked>
     </label>
     <label class="check-row">
-      <div>李雨萱<span>草稿 · 可导出草稿</span></div>
+      <div>李雨萱<span>未完成 · 仅记录进度</span></div>
       <input type="checkbox" class="child-check">
     </label>
     <label class="check-row">

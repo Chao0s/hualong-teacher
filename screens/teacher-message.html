@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=390, initial-scale=1, user-scalable=no" />
+<title>教师寄语 · 儿童成长档案</title>
+<link rel="stylesheet" href="home-school-common.css" />
+<style>
+  .counter {
+    text-align: right;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+  .counter.limit { color: var(--danger); }
+  .dot-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+    border: 0;
+    background: none;
+    cursor: pointer;
+  }
+  .toast {
+    position: absolute;
+    left: 50%;
+    bottom: 34px;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(26,25,22,.88);
+    color: #fff;
+    border-radius: 999px;
+    padding: 9px 14px;
+    font-size: 12px;
+    opacity: 0;
+    pointer-events: none;
+    transition: .22s ease;
+    white-space: nowrap;
+    z-index: 40;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
+  <div class="nav-bar"><a class="back" href="teacher-evaluation.html">‹</a><div class="nav-title">教师寄语</div><span></span></div>
+  <div class="scroll">
+    <div class="sec">寄语内容</div>
+    <div class="chunk form-card">
+      <label for="targetSelect">添加到</label>
+      <select class="select" id="targetSelect">
+        <option value="all">全体幼儿</option>
+        <option value="chen">陈小明</option>
+        <option value="li">李雨萱</option>
+        <option value="zhang">张力轩</option>
+        <option value="wang">王子涵</option>
+        <option value="zhao">赵佳怡</option>
+        <option value="liu">刘浩然</option>
+      </select>
+      <label for="messageText">寄语</label>
+      <textarea class="textarea" id="messageText" maxlength="300" placeholder="写下想对孩子说的话（300字以内，仅支持文字）…"></textarea>
+      <div class="counter" id="counter">0/300</div>
+      <button class="btn primary sticky-action" id="submitMessage">提交寄语</button>
+    </div>
+
+    <div class="sec">完成情况</div>
+    <div class="table-wrap">
+      <table class="prog-table">
+        <thead><tr><th style="text-align:left">幼儿</th><th>教师寄语</th></tr></thead>
+        <tbody>
+          <tr><td class="name">陈小明</td><td><a class="dot-link" href="teacher-message-detail.html?child=chen"><span class="dot-cell done" title="已完成" aria-label="已完成"></span></a></td></tr>
+          <tr><td class="name">李雨萱</td><td><button class="dot-link msg-dot" data-child="li" data-name="李雨萱"><span class="dot-cell miss" title="未完成" aria-label="未完成"></span></button></td></tr>
+          <tr><td class="name">张力轩</td><td><button class="dot-link msg-dot" data-child="zhang" data-name="张力轩"><span class="dot-cell miss" title="未完成" aria-label="未完成"></span></button></td></tr>
+          <tr><td class="name">王子涵</td><td><button class="dot-link msg-dot" data-child="wang" data-name="王子涵"><span class="dot-cell miss" title="未完成" aria-label="未完成"></span></button></td></tr>
+          <tr><td class="name">赵佳怡</td><td><button class="dot-link msg-dot" data-child="zhao" data-name="赵佳怡"><span class="dot-cell miss" title="未完成" aria-label="未完成"></span></button></td></tr>
+          <tr><td class="name">刘浩然</td><td><a class="dot-link" href="teacher-message-detail.html?child=liu"><span class="dot-cell done" title="已完成" aria-label="已完成"></span></a></td></tr>
+        </tbody>
+      </table>
+      <div class="dot-legend" aria-label="完成情况说明">
+        <span class="item"><i class="dot-cell done"></i>已完成</span>
+        <span class="item"><i class="dot-cell miss"></i>未完成</span>
+      </div>
+    </div>
+    <div class="hint" style="margin-top:8px">点击圆点可查看该幼儿的寄语详情并重新编辑，未完成则定位到上方填写。</div>
+  </div>
+  <div class="toast" id="toast">已提交</div>
+</div>
+<script>
+const targetSelect = document.getElementById('targetSelect');
+const textarea = document.getElementById('messageText');
+const counter = document.getElementById('counter');
+const toast = document.getElementById('toast');
+
+textarea.addEventListener('input', () => {
+  const len = textarea.value.length;
+  counter.textContent = `${len}/300`;
+  counter.classList.toggle('limit', len >= 300);
+});
+
+function showToast(text) {
+  toast.textContent = text;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 1500);
+}
+
+document.getElementById('submitMessage').addEventListener('click', () => {
+  if (!textarea.value.trim()) return showToast('请先填写寄语内容');
+  const name = targetSelect.options[targetSelect.selectedIndex].text;
+  showToast(targetSelect.value === 'all' ? '已为全体幼儿提交寄语' : `已为 ${name} 提交寄语`);
+});
+
+document.querySelectorAll('.msg-dot').forEach(dot => {
+  dot.addEventListener('click', () => {
+    const { child, name } = dot.dataset;
+    targetSelect.value = child;
+    document.querySelector('.scroll').scrollTo({ top: 0, behavior: 'smooth' });
+    textarea.focus();
+    showToast(`请为 ${name} 填写寄语`);
+  });
+});
+</script>
+</body>
+</html>
