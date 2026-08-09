@@ -3,8 +3,8 @@ COMPREHENSIVE_COORDINATION_BACKEND_OBJECT_SPEC
 scope (范围) = screens/comprehensive-coordination.html
 source_page (参考页面) = comprehensive-coordination.html
 static_node_count (固定可点击节点数) = 12
-dynamic_content_node_count (动态内容节点数) = 0
-runtime_clickable_node_count (运行时可点击节点数) = 12
+dynamic_content_node_count (动态内容节点数) = 0:k
+runtime_clickable_node_count (运行时可点击节点数) = 12:(12+3k)
 field_format (字段格式) = field_key (中文字段名), cardinality, type|enum, ui
 id_rule (ID规则) = integer, database_auto_generated
 null_rule (空值规则) = 0:1
@@ -14,7 +14,7 @@ list_rule (列表规则) = 0:k | 1:k
 [SHARED_OBJECT_RULE]
 
 shared_object_source (共享对象来源) = home-spec.md
-shared_objects (共享对象) = db_teacher, db_school, db_file
+shared_objects (共享对象) = db_teacher, db_school, db_admin, db_file, db_file_ref, db_content_access_event
 shared_nav_objects (共享导航对象) = nav_home, nav_party, nav_coord, nav_training, nav_home_school
 rename_shared_object (重命名共享对象) = FORBIDDEN
 
@@ -30,7 +30,7 @@ ui_context_rule (上下文字段界面规则) = context.hidden 表示不显示�
 
 [DATA_INITIALIZATION_RULE]
 
-prototype_content (原型内容) = HTML 中呈现的文件数量、文件标题、日期、部门和推荐内容均视为 demo|test Mock
+prototype_content (原型内容) = HTML 中呈现的文件数量、文件标题、日期、部门和附件均视为 demo|test Mock
 static_ui_content (保留的静态界面内容) = 页面标题、说明文案和七个分类入口
 production_seed (生产环境业务种子数据) = NONE
 production_initial_db_coord_document (综合协调文档初始状态) = EMPTY
@@ -66,12 +66,12 @@ environment_isolation (环境隔离) = demo|test 数据不得复制到 productio
 | c1 | policy | 政策法规 | 行政统筹 |
 | c2 | notice | 通知文件 | 行政统筹 |
 | c3 | org | 组织架构 | 行政统筹 |
-| c4 | safety | 安全管理 | 通勤保障 |
-| c5 | health | 卫生保健 | 通勤保障 |
+| c4 | safety | 安全管理 | 后勤保障 |
+| c5 | health | 卫生保健 | 后勤保障 |
 | c6 | ethics | 师德师风 | 人事管理 |
 | c7 | exchange | 跟岗交流 | 人事管理 |
 
-category_rule (分类规则) = query_value 仅用于 URL；数据库必须存储 coord_category 枚举值 c1:c7
+category_rule (分类规则) = query_value 仅用于 URL；数据库必须存储固定 coord_category 枚举值 c1:c7，不提供自定义分类
 
 
 [PAGE_OBJECT]
@@ -96,36 +96,38 @@ object_type (对象类型) = aggregate
 
 document_id (文档ID), 1:1, integer, ui=coord_file.card.hidden|coord_file_detail.hidden
 school_id (园所ID), 1:1, integer, ui=coord_file.hidden
-coord_category (文档分类), 1:1, c1=policy(政策法规)|c2=notice(通知文件)|c3=org(组织架构)|c4=safety(安全管理)|c5=health(卫生保健)|c6=ethics(师德师风)|c7=exchange(跟岗交流), ui=coord_file.filter|coord_file.card.category
+coord_category (文档分类), 1:1, c1=policy(政策法规)|c2=notice(通知文件)|c3=org(组织架构)|c4=safety(安全管理)|c5=health(卫生保健)|c6=ethics(师德师风)|c7=exchange(跟岗交流), ui=coord_file.card.category
 document_title (文档标题), 1:1, max_len=150, ui=coord_file.card.title|coord_file_detail.title
-document_summary (文档摘要), 0:1, max_len=300, ui=coord_file.card.summary|coord_file_detail.summary
+document_content (文档正文), 1:1, max_len=2000, ui=coord_file.card.summary|coord_file_detail.content
 publisher_department (发布部门), 0:1, max_len=50, ui=coord_file.card.department|coord_file_detail.department
 published_at (发布日期), 1:1, datetime, ui=coord_file.card.date|coord_file_detail.date
-effective_date (生效日期), 0:1, date, ui=coord_file_detail.effective_date
-file_id (文件ID), 1:k, integer, ui=coord_file.preview|coord_file.download
-allow_preview (允许预览), 1:1, boolean, ui=coord_file.preview
-allow_download (允许下载), 1:1, boolean, ui=coord_file.download
-document_status (文档状态), 1:1, s1=draft(草稿)|s2=pending(待审核)|s3=approved(已通过)|s4=rejected(已驳回), ui=coord_file.hidden
-created_by (创建教师ID), 1:1, integer, ui=coord_file.hidden
+effective_date (生效日期), 0:1, date, only_for=c1|c4|c5, display_only=1
+file_id (文件ID), 1:k, integer, via=db_file_ref, ui=coord_file.preview|coord_file.download|coord_file_detail.attachment
+document_status (文档状态), 1:1, s1=draft(草稿)|s3=approved(已发布)|s5=withdrawn(已下架), ui=coord_file.hidden
+created_by_admin_id (创建管理员ID), 1:1, integer, server-derived
 created_at (创建时间), 1:1, datetime, ui=coord_file.hidden
 
 rel_count (关系数量) = 3
-rel_db (关联表) = db_school, db_teacher, db_file
-rel_map (关系字段) = db_coord_document{school_id}<->db_school{school_id}; db_coord_document{created_by}<->db_teacher{teacher_id}; db_coord_document{file_id}<->db_file{file_id}
+rel_db (关联表) = db_school, db_admin, db_file_ref|db_file
+rel_map (关系字段) = db_coord_document{school_id}<->db_school{school_id}; db_coord_document{created_by_admin_id}<->db_admin{admin_id}; db_coord_document{document_id}<->db_file_ref{owner_id WHERE owner_object=db_coord_document}<->db_file{file_id}
 
 method (方法):
-list = FILTER(school_id=current_school_id, coord_category, document_status=s3) ORDER BY published_at DESC
+list = FILTER(school_id=current_school_id, coord_category, document_status=s3) ORDER BY published_at DESC, document_id DESC USING cursor; search=NONE; filter=NONE
 IF list_count=0, return []
-preview = REQUIRE allow_preview=1 AND file_id EXISTS
-download = REQUIRE allow_download=1 AND file_id EXISTS
-click = return document_id
+detail = REQUIRE active teacher AND same school AND document_status=s3; return full body + metadata + attachment list; append e3 viewed after successful sheet open
+preview = REQUIRE authorized file AND preview capability derived from MIME/client support
+download = REQUIRE authorized file; append e4 downloaded with file_id after successful file response
+file_rule = exactly one usage_key=main_file; usage_key=inline_media|download optional
+effective_date_rule = coord_category IN(c1,c4,c5) MAY set; all other categories REQUIRE NULL; value never gates visibility or download
+notice_receipt = NONE; tracked notices/tasks use db_notification or task objects
+load_more = use stable cursor; repeated successful view/download actions append repeated events
 
 
 [EMPTY_STATE]
 
 IF category_document_count=0, show_empty_state=1
 empty_title = 暂无相关文件
-empty_description = 文件发布并审核通过后，将显示在这里
+empty_description = 管理员发布文件后，将显示在这里
 empty_action = NONE
 
 
@@ -143,4 +145,6 @@ data_source (数据来源) = static_ui_content
 IF node_key IN(btn_coord_policy,btn_coord_notice,btn_coord_org,btn_coord_safety,btn_coord_health,btn_coord_ethics,btn_coord_exchange), REQUIRE coord_category IN(c1,c2,c3,c4,c5,c6,c7)
 IF query_value NOT_IN(policy,notice,org,safety,health,ethics,exchange), return 400
 IF document_id NOT_FOUND, return 404
-IF document_status IN(s1,s2,s4,rejected,deleted), return 403
+IF teacher_status != s1 OR document_status != s3 OR document.school_id != current_school_id, return 403
+IF partner_account caller, return 403
+IF file_id NOT linked to document_id through db_file_ref, return 404

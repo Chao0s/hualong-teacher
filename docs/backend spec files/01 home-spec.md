@@ -12,7 +12,7 @@ list_rule (列表规则) = 0:k | 1:k
 
 [DATA_INITIALIZATION_RULE]
 
-prototype_content (原型内容) = HTML 中的轮播、待办、评估、培训、在园时光、月度评价、资源、案例、数量和完成状态均为 demo|test Mock
+prototype_content (原型内容) = HTML 中的固定 banner、待办、评估、培训、在园时光、月度评价、资源、案例、数量和完成状态均为 demo|test Mock
 demo_content_purpose (演示内容用途) = 仅用于展示用户后续创建或上传业务内容后的界面效果
 demo_content_scope (演示内容适用环境) = demo|test
 demo_content_names (演示案例名称) = 祠堂里的故事|龙舟竞渡|醒狮从哪里来
@@ -73,6 +73,7 @@ school_id (当前园所ID), 1:1, integer, ui=context.hidden
 class_id (当前班级ID), 1:1, integer, ui=context.hidden
 upload_id (上传记录ID), 0:1, integer, ui=home.todo.upload
 task_id (任务ID), 0:k, integer, ui=home.todo.task
+pending_task_count (未完成任务数), 1:1, integer, min=0, ui=home.todo.task.badge
 assessment_id (评估ID), 0:1, integer, ui=home.todo.assessment
 training_id (培训ID), 0:k, integer, ui=home.quick.training
 moment_id (在园时光ID), 0:k, integer, ui=home.quick.moment
@@ -80,11 +81,13 @@ month_eval_id (月度评价ID), 0:k, integer, ui=home.quick.month_eval
 resource_id (资源ID), 0:k, integer, ui=home.quick.resource
 home_case_id (首页推荐案例ID), 0:k, integer, ui=home.case.list
 
-rel_count (关系数量) = 11
-rel_db (关联表) = db_teacher, db_school, db_class, db_upload, db_task, db_assessment, db_training, db_moment, db_month_eval, db_resource, db_home_case
-rel_map (关系字段) = db_home{teacher_id}<->db_teacher{teacher_id}; db_home{school_id}<->db_school{school_id}; db_home{class_id}<->db_class{class_id}; db_home{*_id}<->rel_db{*_id}
+rel_count (关系数量) = 12
+rel_db (关联表) = db_teacher, db_school, db_class, db_upload, db_task, db_task_assign, db_assessment, db_training, db_moment, db_month_eval, db_resource, db_home_case
+rel_map (关系字段) = db_home{teacher_id}<->db_teacher{teacher_id}; db_home{school_id}<->db_school{school_id}; db_home{class_id}<->db_class{class_id}; db_home{task_id}<->db_task{task_id}; db_task{task_id}<->db_task_assign{task_id}; db_home{*_id}<->rel_db{*_id}
 persist (是否持久化) = 0
 object_type (对象类型) = aggregate
+pending_task_count_rule (未完成任务计数规则) = COUNT db_task_assign WHERE teacher_id=$ctx_teacher AND assign_status IN(a1,a2); a3 不计; teacher_id 由登录上下文派生
+pending_task_badge_rule (待办徽标规则) = 显示“待处理 N”; N=0 时仍显示“待处理 0”; 正式环境必须由接口结果覆盖原型值
 
 
 [IDENTITY_OBJECTS]
@@ -174,7 +177,7 @@ task_title (任务标题), 1:1, max_len=50, ui=home.todo.task|task.card.title|ta
 task_intro (任务说明), 1:1, max_len=300, ui=task.card.summary|task_detail.intro
 task_division (任务分工), 1:1, max_len=300, ui=task_detail.division
 due_at (截止时间), 1:1, datetime, ui=task.card.deadline|task_detail.deadline
-task_status (任务状态), 1:1, t1=wait_accept(待接收)|t2=in_progress(进行中)|t3=complete(已完成)|t4=cancelled(已取消), ui=home.todo.task.badge|task.card.status|task_detail.status
+task_status (任务状态), 1:1, t1=wait_accept(待接收)|t2=in_progress(进行中)|t3=complete(已完成)|t4=cancelled(已取消), ui=task.card.status|task_detail.status
 created_by (任务发起人ID), 1:1, integer, ui=task.card.creator|task_detail.creator
 file_id (任务附件ID), 0:k, integer, ui=task_detail.attachment
 
@@ -250,25 +253,38 @@ rel_map (关系字段) = db_assessment_item{assessment_id}<->db_assessment{asses
 
 training_id (培训ID), 1:1, integer, ui=training.card.hidden|training_detail.hidden
 school_id (园所ID), 1:1, integer, ui=training.hidden
-training_type (培训类型), 1:1, t1=current(最新研修)|t2=history(历史研修), ui=training.section
 training_title (培训标题), 1:1, max_len=100, ui=training.card.title|training_detail.title
-training_intro (培训简介), 0:1, max_len=300, ui=training.card.summary|training_detail.intro
+training_content (培训正文), 1:1, max_len=2000, ui=training.card.summary|training_detail.intro
 start_at (开始时间), 1:1, datetime, ui=training.card.time|training_detail.time
 end_at (结束时间), 0:1, datetime, ui=training_detail.time
 location (培训地点), 0:1, max_len=100, ui=training.card.location|training_detail.location
+meeting_link_title (会议链接显示标题), 0:1, max_len=100, ui=training_detail.meeting_button
 meeting_url (会议链接), 0:1, url, ui=training_detail.meeting_button
 speaker (主讲人), 0:1, max_len=50, ui=training.card.speaker|training_detail.speaker
-training_status (培训状态), 1:1, s1=open(开放报名)|s2=registered(已报名)|s3=in_progress(进行中)|s4=complete(已完成), ui=training.card.badge|training_detail.status
-created_by (创建教师ID), 1:1, integer, ui=training.hidden
-file_id (研修材料ID), 0:k, integer, ui=training.card.material_count|training_detail.material
+training_status (培训发布状态), 1:1, s0=draft(草稿)|s1=published(已发布)|s5=withdrawn(已撤回)
+training_phase (培训显示阶段), 1:1, derived(training_time_phase), ui=training.card.badge|training_detail.status
+created_by_admin_id (创建管理员ID), 1:1, integer, server-derived
+file_id (研修材料ID), 0:k, integer, via=db_file_ref, optional=1, ui=training.card.material_count|training_detail.material
 
 rel_count (关系数量) = 3
-rel_db (关联表) = db_school, db_teacher, db_file
-rel_map (关系字段) = db_training{school_id}<->db_school{school_id}; db_training{created_by}<->db_teacher{teacher_id}; db_training{file_id}<->db_file{file_id}
+rel_db (关联表) = db_school, db_admin, db_file_ref|db_file
+rel_map (关系字段) = db_training{school_id}<->db_school{school_id}; db_training{created_by_admin_id}<->db_admin{admin_id}; db_training{training_id}<->db_file_ref{owner_id WHERE owner_object=db_training}<->db_file{file_id}
 
 method (方法):
-list = FILTER(school_id, training_type)
+list = FILTER(school_id, training_status=s1)；按园所时区与 start_at/effective_end_at 派生 latest|history
 click = return training_id
+excerpt = LEFT(training_content,100), computed, not stored
+creator_rule = only authorized admin may create; teacher creator is forbidden
+hours_rule = no credit_hours field; Teacher App must not display学时
+effective_end_at = COALESCE(end_at, END_OF_SCHOOL_LOCAL_DATE(start_at))；仅派生不落列
+phase_rule = NOW<start_at => upcoming；start_at<=NOW<=effective_end_at => in_progress；NOW>effective_end_at => history
+status_boundary = 活动列只保存发布生命週期，个人 registered|cancelled|completed 只在 db_training_participation
+meeting_rule = meeting_link_title 与 meeting_url 同空同非空，每场最多一组；教师只复制链接并提示到浏览器或会议 App 打开，不内嵌
+participation_method_rule = 发布时 location 或完整 meeting_link_title+meeting_url 至少一项；只有 location=线下，只有会议入口=线上，两者都有=混合
+withdrawal_visibility = training_status=s5 时，全量列表隐藏；「我的研修」可为既有 participation 返回活动已撤回的题名／时间壳，但材料、会议入口和公开回馈均不可返回
+reschedule_rule = 已发布活动仅 NOW<当前 start_at 时可由管理员改 start_at/end_at；新 start_at 必须 >NOW，end_at 非空时必须 >=新 start_at。保留 participation，并向当时 registered 教师建立 n5 通知；NOW>=当前 start_at 后两项时间冻结
+published_edit_rule = training_status=s1 且 NOW<当前 start_at 时，管理员可改标题／正文／地点／会议入口／主讲人及材料；开始后全部冻结。标题／地点／会议入口／主讲人变化通知 registered 教师，正文／材料变化不通知
+withdrawn_terminal = training_status=s5 不得恢复或编辑；重新举办必须建立新 training_id
 
 
 在园时光 (Kindergarten Moments / db_moment)
@@ -413,26 +429,31 @@ mock_rule = mock_key 不是 case_id；若 demo|test 环境导入数据库，case
 publish_flow (发布流程):
 teacher_upload -> create db_case -> case_status=s1|s2
 review_approved -> case_status=s3 -> visible_in_case_library
-set_home_recommendation -> create db_home_case -> visible_on_home
+set_home_recommendation -> atomically upsert db_home_case + db_training_recommendation(p3) -> visible_on_home and training/partner recommendation
 upload_or_approval_only -> NOT automatically visible_on_home
 
 
 首页推荐案例 (Home Case Recommendation / db_home_case)
 
 home_case_id (首页推荐案例ID), 1:1, integer, ui=home.case_card.hidden
+school_id (园所ID), 1:1, integer, ui=context.hidden
 case_id (案例ID), 1:1, integer, ui=home.case_card.hidden
-display_order (首页排序), 1:1, integer, ui=home.case_card.order
 is_visible (是否显示), 1:1, boolean, ui=home.case_card.visible
-start_at (显示开始时间), 0:1, datetime, ui=home_case.hidden
-end_at (显示结束时间), 0:1, datetime, ui=home_case.hidden
+created_at (首次推荐时间), 1:1, datetime, server-managed
+updated_at (最近推荐时间), 1:1, datetime, server-managed
 
-rel_count (关系数量) = 1
-rel_db (关联表) = db_case
-rel_map (关系字段) = db_home_case{case_id}<->db_case{case_id}
+rel_count (关系数量) = 2
+rel_db (关联表) = db_school, db_case
+rel_map (关系字段) = db_home_case{school_id}<->db_school{school_id}; db_home_case{case_id}<->db_case{case_id}
+unique (唯一键) = school_id + case_id
 
 method (方法):
+current_grade = SELECT grade FROM db_class WHERE class_id=$ctx_class_id AND school_id=$ctx_school_id；class_id/school_id 均来自登录上下文
 list = db_home_case JOIN db_case ON db_home_case.case_id=db_case.case_id
-list = FILTER(is_visible=1, case_status=s3, school_id=current_school_id, (start_at IS NULL OR start_at<=NOW), (end_at IS NULL OR end_at>=NOW)) ORDER BY display_order ASC LIMIT 3
+eligible = FILTER(db_home_case.school_id=current_school_id, db_case.school_id=current_school_id, db_case.case_grade=current_grade, is_visible=1, case_status=s3)
+ordering_rule = updated_at DESC, home_case_id DESC；取消后重推复用同一列并更新 updated_at；不得使用管理端表格的前端会话排序，也不提供上移/下移
+recommendation_write = 管理员推荐／取消案例时，本列与同园 db_training_recommendation(p3) 必须同一交易同步；资源推荐不写本表
+list = eligible ORDER BY updated_at DESC, home_case_id DESC LIMIT 3
 IF list_count=0, return []
 click = return case_id
 
@@ -523,15 +544,8 @@ rel_count (关系数量) = 0
 node_name_cn (节点中文名) = 轮播图
 node_name_en (节点英文名) = Banner
 clickable (是否可点击) = 0
-slide_count (轮播数量) = 3
-auto_interval_ms (自动切换间隔) = 3500
-swipe_threshold_px (滑动阈值) = 40
-
-轮播圆点 (Banner Dot / banner_dot)
-node_name_cn (节点中文名) = 轮播圆点
-node_name_en (节点英文名) = Banner Dot
-clickable (是否可点击) = 0
-count (数量) = 3
+slide_count (轮播数量) = 1
+asset_rule (素材规则) = 单张静态图片由美术设计并随前端发版，不可点击，后端不管理
 
 
 [JUMP_VALIDATION]

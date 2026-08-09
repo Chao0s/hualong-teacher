@@ -22,9 +22,11 @@
   .chunk{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:12px;margin-bottom:14px}
   .file{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
   .file:last-child{border-bottom:0}.file-name{font-size:13px;font-weight:700;line-height:1.35}.action{border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:6px 9px;font-size:11px;color:var(--fg);text-decoration:none}
+  .meeting{display:grid;gap:8px}.meeting-title{font-size:13px;font-weight:700}.meeting-url{font-size:11px;line-height:1.45;color:var(--accent-dark);overflow-wrap:anywhere}.meeting-hint{font-size:11px;line-height:1.5;color:var(--muted)}
   .feedback{padding:10px 0;border-bottom:1px solid var(--border)}.feedback:last-child{border-bottom:0}
   .feedback-top{display:flex;justify-content:space-between;gap:8px;margin-bottom:6px}.teacher{font-size:13px;font-weight:700}.time{font-size:11px;color:var(--muted)}.text{font-size:12px;line-height:1.55;color:var(--fg)}
   .input{display:flex;gap:8px;border-top:1px solid var(--border);padding-top:10px;margin-top:8px}.input input{flex:1;border:1px solid var(--border);outline:0;background:var(--bg);border-radius:999px;padding:8px 10px;font-size:12px}.input button{border:0;border-radius:999px;background:var(--accent);color:#fff;font-size:12px;font-weight:700;padding:7px 11px}
+  .feedback-hint{margin-top:7px;font-size:11px;line-height:1.5;color:var(--muted)}
   .signup{display:grid;gap:10px}.signup p{font-size:12px;line-height:1.6;color:var(--muted)}.primary{border:0;border-radius:14px;background:var(--accent);color:#fff;font-size:14px;font-weight:800;padding:12px}.ghost{border:1px solid var(--border);border-radius:14px;background:var(--surface);color:var(--fg);font-size:13px;font-weight:700;padding:10px}
   .toast{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);background:rgba(26,25,22,.88);color:#fff;border-radius:999px;padding:8px 13px;font-size:12px;opacity:0;pointer-events:none;transition:.2s}.toast.show{opacity:1}
 </style>
@@ -48,12 +50,21 @@
     <div class="sec">研修材料 <span>预览 / 下载</span></div>
     <div class="chunk" id="materials"></div>
 
+    <section id="meetingBlock" hidden>
+      <div class="sec">线上会议 <span>复制后打开</span></div>
+      <div class="chunk meeting">
+        <div class="meeting-title" id="meetingTitle"></div>
+        <div class="meeting-url" id="meetingUrl"></div>
+        <div class="meeting-hint">请复制链接到浏览器或会议 App 打开。</div>
+        <button class="ghost" type="button" id="copyMeetingBtn">复制会议链接</button>
+      </div>
+    </section>
+
     <section id="signupBlock">
       <div class="sec">报名入口 <span>最新研修</span></div>
       <div class="chunk signup">
         <p>报名后将自动记录到教师个人研修档案。请确认时间安排后提交报名。</p>
         <button class="primary" type="button" id="signupBtn">立即报名</button>
-        <button class="ghost" type="button" id="calendarBtn">加入日程提醒</button>
       </div>
     </section>
 
@@ -61,7 +72,9 @@
     <div class="sec">研修反馈 <span id="feedbackCount">3 条</span></div>
     <div class="chunk">
       <div id="feedbacks"></div>
-      <div class="input"><input id="feedbackInput" placeholder="写下你的研修反馈..." /><button type="button" data-send="feedback">提交</button></div>
+      <button class="ghost" type="button" id="feedbackMore">加载更多反馈</button>
+      <div class="input"><input id="feedbackInput" maxlength="1000" placeholder="写下你的研修反馈（最多 1000 字）..." /><button type="button" data-send="feedback">提交</button></div>
+      <div class="feedback-hint">不保存草稿；提交后内容不可修改，审核通过后公开。</div>
     </div>
     </section>
 
@@ -72,15 +85,16 @@
 const DATA = {
   "game-course": {
     status:"即将开始", title:"幼儿园课程游戏化的理论与实践", meta:"6月28日 14:00 · 多功能厅 · 主讲：陈园长", summary:"围绕游戏化课程设计、材料投放和教师观察支持展开。",
+    meeting:{title:"腾讯会议：课程游戏化专题研修",url:"https://meeting.tencent.com/dm/example"},
     materials:["课程游戏化培训讲义.pdf","游戏材料投放观察表.xlsx","小组研讨记录模板.docx","园本案例：建构区里的桥.pdf"]
   },
   "observation": {
     status:"已完成", title:"幼儿行为观察与记录方法", meta:"6月12日 15:00 · 会议室二 · 主讲：李老师", summary:"练习轶事记录、时间取样和事件取样，并形成班级观察记录样例。",
-    materials:["行为观察方法讲义.pdf","轶事记录示例.docx","时间取样记录表.xlsx","观察记录评价标准.pdf","班级观察案例包.zip"]
+    materials:["行为观察方法讲义.pdf","轶事记录示例.docx","时间取样记录表.xlsx","观察记录评价标准.pdf","班级观察案例包.zip"], completedParticipant:true
   },
   "home-connect": {
     status:"已完成", title:"家园沟通技巧与案例分享", meta:"5月30日 10:00 · 线上会议 · 主讲：王主任", summary:"聚焦家长沟通边界、正向反馈和争议场景的回应策略。",
-    materials:["家园沟通案例手册.pdf","沟通记录表.docx","线上会议回放链接.txt"]
+    materials:["家园沟通案例手册.pdf","沟通记录表.docx","线上会议回放链接.txt"], completedParticipant:true
   },
   "lingnan": {
     status:"报名中", title:"岭南文化融入幼儿园课程专题研修", meta:"7月8日 09:30 · 区教师发展中心 · 主讲：外聘专家", summary:"从地方文化资源采集、活动转化和课程评价三个层面展开。",
@@ -102,7 +116,12 @@ document.getElementById("title").textContent = item.title;
 document.getElementById("meta").textContent = item.meta;
 document.getElementById("summary").textContent = item.summary;
 document.getElementById("signupBlock").style.display = isHistory ? "none" : "block";
-document.getElementById("feedbackBlock").style.display = isHistory ? "block" : "none";
+document.getElementById("feedbackBlock").style.display = isHistory && item.completedParticipant ? "block" : "none";
+if(item.meeting){
+  document.getElementById("meetingBlock").hidden = false;
+  document.getElementById("meetingTitle").textContent = item.meeting.title;
+  document.getElementById("meetingUrl").textContent = item.meeting.url;
+}
 document.getElementById("materials").innerHTML = item.materials.map(name => `
   <div class="file"><div class="file-name">${name}</div><a class="action" href="#" onclick="alert('预览：${name}');return false;">预览</a><a class="action" download="${name}" href="data:text/plain;charset=utf-8,${encodeURIComponent(name + ' 示例文件')}">下载</a></div>
 `).join("");
@@ -113,8 +132,21 @@ function showToast(text){
   clearTimeout(window.__toastTimer);
   window.__toastTimer = setTimeout(() => toast.classList.remove("show"), 1300);
 }
-document.getElementById("signupBtn").addEventListener("click", () => showToast("已提交报名"));
-document.getElementById("calendarBtn").addEventListener("click", () => showToast("已加入日程提醒"));
+let isRegistered = false;
+document.getElementById("signupBtn").addEventListener("click", event => {
+  isRegistered = !isRegistered;
+  event.currentTarget.textContent = isRegistered ? "取消报名" : "立即报名";
+  showToast(isRegistered ? "报名成功" : "已取消报名");
+});
+document.getElementById("copyMeetingBtn").addEventListener("click", async () => {
+  if(!item.meeting) return;
+  try {
+    await navigator.clipboard.writeText(item.meeting.url);
+    showToast("会议链接已复制");
+  } catch (error) {
+    showToast("复制失败，请长按链接复制");
+  }
+});
 function renderFeedbacks(){
   document.getElementById("feedbacks").innerHTML = feedbacks.map(([teacher,time,text]) => `
     <div class="feedback"><div class="feedback-top"><span class="teacher">${teacher}</span><span class="time">${time}</span></div><div class="text">${text}</div></div>
@@ -123,13 +155,15 @@ function renderFeedbacks(){
 }
 document.querySelector('[data-send="feedback"]').addEventListener("click", () => {
   const input = document.getElementById("feedbackInput");
+  const button = document.querySelector('[data-send="feedback"]');
   const value = input.value.trim();
   if(!value) return;
-  feedbacks.unshift(["我","刚刚",value]);
-  input.value = "";
-  renderFeedbacks();
-  showToast("反馈已提交");
+  input.disabled = true;
+  button.disabled = true;
+  button.textContent = "已提交";
+  showToast("反馈已提交，内容不可修改；审核通过后公开");
 });
+document.getElementById("feedbackMore").addEventListener("click", () => showToast("没有更多已公开反馈"));
 renderFeedbacks();
 </script>
 </body>

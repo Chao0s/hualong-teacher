@@ -112,14 +112,36 @@
     font-weight: 600;
   }
 
-  .task-note {
-    color: var(--accent-dark);
-    background: var(--accent-light);
-    border-radius: 10px;
-    padding: 8px 10px;
-    font-size: 12px;
-    line-height: 1.35;
+  /* 卡片底行：左侧任务类型标签，右侧「加入成长册」按钮 */
+  .moment-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
   }
+
+  .add-material {
+    flex: none;
+    border: 1px solid var(--accent);
+    background: var(--surface);
+    color: var(--accent);
+    border-radius: 999px;
+    padding: 5px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .add-material.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  .toast {
+    position: absolute; left: 50%; bottom: 34px; transform: translateX(-50%) translateY(20px);
+    background: rgba(31,41,55,.9); color: #fff; border-radius: 999px;
+    padding: 9px 14px; font-size: 12px; opacity: 0; pointer-events: none; transition: .22s ease; z-index: 40;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
   .empty {
     display: none;
@@ -158,7 +180,7 @@
     </div>
 
     <div class="feed-list" id="feedList">
-      <article class="moment-card" data-time="week" data-type="community" data-task="社区建筑里的纹样">
+      <article class="moment-card" data-id="c1" data-time="week" data-type="community" data-task="社区建筑里的纹样">
         <div class="avatar">陈</div>
         <div class="moment-body">
           <div class="moment-head"><strong>陈小明家长</strong><span>今天 09:18</span></div>
@@ -166,11 +188,14 @@
           <div class="photo-grid">
             <div class="feed-photo">门楼</div><div class="feed-photo">木雕</div><div class="feed-photo">记录</div>
           </div>
-          <div class="task-note">社区任务：社区建筑里的纹样</div>
+          <div class="moment-foot">
+            <span class="pill">社区任务</span>
+            <button class="add-material" data-add title="加入成长册" aria-label="加入成长册">+ 加入成长册</button>
+          </div>
         </div>
       </article>
 
-      <article class="moment-card" data-time="week" data-type="daily" data-task="我会安全过街">
+      <article class="moment-card" data-id="c2" data-time="week" data-type="daily" data-task="我会安全过街">
         <div class="avatar green">李</div>
         <div class="moment-body">
           <div class="moment-head"><strong>李雨萱家长</strong><span>昨天 18:42</span></div>
@@ -178,11 +203,14 @@
           <div class="photo-grid two">
             <div class="feed-photo">路线图</div><div class="feed-photo">过街点</div>
           </div>
-          <div class="task-note">日常任务：我会安全过街</div>
+          <div class="moment-foot">
+            <span class="pill">日常任务</span>
+            <button class="add-material" data-add title="加入成长册" aria-label="加入成长册">+ 加入成长册</button>
+          </div>
         </div>
       </article>
 
-      <article class="moment-card" data-time="month" data-type="community" data-task="社区里的食物来源">
+      <article class="moment-card" data-id="c3" data-time="month" data-type="community" data-task="社区里的食物来源">
         <div class="avatar amber">张</div>
         <div class="moment-body">
           <div class="moment-head"><strong>张力轩家长</strong><span>6月18日</span></div>
@@ -190,11 +218,14 @@
           <div class="photo-grid">
             <div class="feed-photo">鱼档</div><div class="feed-photo">蔬菜</div><div class="feed-photo">流程画</div>
           </div>
-          <div class="task-note">社区任务：社区里的食物来源</div>
+          <div class="moment-foot">
+            <span class="pill">社区任务</span>
+            <button class="add-material" data-add title="加入成长册" aria-label="加入成长册">+ 加入成长册</button>
+          </div>
         </div>
       </article>
 
-      <article class="moment-card" data-time="older" data-type="community" data-task="社区建筑里的纹样">
+      <article class="moment-card" data-id="c4" data-time="older" data-type="community" data-task="社区建筑里的纹样">
         <div class="avatar blue">王</div>
         <div class="moment-body">
           <div class="moment-head"><strong>王子涵家长</strong><span>6月6日</span></div>
@@ -202,15 +233,20 @@
           <div class="photo-grid two">
             <div class="feed-photo">石阶</div><div class="feed-photo">合照</div>
           </div>
-          <div class="task-note">社区任务：社区建筑里的纹样</div>
+          <div class="moment-foot">
+            <span class="pill">社区任务</span>
+            <button class="add-material" data-add title="加入成长册" aria-label="加入成长册">+ 加入成长册</button>
+          </div>
         </div>
       </article>
     </div>
 
     <div class="empty" id="emptyState">当前筛选下暂无家长提交内容</div>
   </div>
+  <div class="toast" id="toast">已加入成长册</div>
 </div>
 
+<script src="growth-book-render.js"></script>
 <script>
   const timeFilter = document.getElementById('timeFilter');
   const taskFilter = document.getElementById('taskFilter');
@@ -235,6 +271,52 @@
 
   timeFilter.addEventListener('change', applyFilters);
   taskFilter.addEventListener('change', applyFilters);
+
+  /* ---------- 加入成长册：与「在园时光」写入同一条成长资料通道 ---------- */
+  const config = readBookConfig();
+  const toast = document.getElementById('toast');
+  const findMaterial = id => (config.material || []).find(item => item.id === id);
+
+  function syncCards() {
+    cards.forEach(card => {
+      const item = findMaterial(card.dataset.id);
+      const btn = card.querySelector('[data-add]');
+      btn.classList.toggle('on', !!item);
+      btn.textContent = item ? `✓ 已加入（${item.photos.length} 张）` : '+ 加入成长册';
+      btn.title = item ? '已加入成长册，点击可移出' : '加入成长册';
+      btn.setAttribute('aria-label', btn.title);
+    });
+  }
+
+  function showToast(text) {
+    toast.textContent = text;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 1600);
+  }
+
+  cards.forEach(card => {
+    card.querySelector('[data-add]').addEventListener('click', () => {
+      const id = card.dataset.id;
+      const added = !!findMaterial(id);
+      config.material = (config.material || []).filter(item => item.id !== id);
+      if (added) {
+        showToast('已移出成长册');
+      } else {
+        const photos = Array.from(card.querySelectorAll('.feed-photo')).map(el => el.textContent);
+        config.material.push({
+          id: id,
+          title: `${card.dataset.task}（${card.querySelector('strong').textContent}）`,
+          date: card.querySelector('.moment-head span').textContent,
+          photos: photos
+        });
+        showToast(`已加入成长册（${photos.length} 张照片）`);
+      }
+      writeBookConfig(config);
+      syncCards();
+    });
+  });
+
+  syncCards();
 </script>
 </body>
 </html>

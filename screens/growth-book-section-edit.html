@@ -1,0 +1,551 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=390, initial-scale=1, user-scalable=no" />
+<title>栏目版面 · 成长册</title>
+<link rel="stylesheet" href="home-school-common.css" />
+<style>
+  /* 工具列：加组件、页管理、缩放 */
+  .tool-row { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+  .tool-btn {
+    border: 1px solid var(--border); background: var(--surface); border-radius: 999px;
+    padding: 7px 11px; font-size: 12px; font-weight: 700; color: var(--fg); white-space: nowrap;
+  }
+  .tool-btn.on { border-color: var(--accent); background: var(--accent-light); color: var(--accent-dark); }
+  .tool-btn:disabled { opacity: .4; }
+  .page-tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; flex: 1; }
+  .page-tabs::-webkit-scrollbar { display: none; }
+
+  /* 画布：A4 直式，边距放美术边框，内容区才是 15×24 网格 */
+  .canvas-wrap {
+    background: var(--surface); border-radius: 14px; padding: 10px;
+    overflow: auto; max-height: 430px; margin-bottom: 10px;
+    scrollbar-width: thin;
+  }
+  .a4 {
+    position: relative; margin: 0 auto; background: #fff;
+    box-shadow: 0 4px 16px rgba(0,0,0,.12); border-radius: 4px;
+  }
+  .a4-margin { position: absolute; inset: 0; border: 1px dashed #dbe6e6; border-radius: 4px; pointer-events: none; }
+  .grid-area { position: absolute; touch-action: none; }
+  .grid-lines { position: absolute; inset: 0; pointer-events: none; opacity: .5; }
+
+  .wg {
+    position: absolute; box-sizing: border-box;
+    border: 1px solid var(--accent); border-radius: 6px;
+    background: rgba(24,155,145,.10); overflow: hidden;
+    font-size: 9px; color: var(--accent-dark); padding: 3px 4px; cursor: grab;
+  }
+  .wg.text { background: rgba(51,136,252,.08); border-color: var(--blue); color: #1f4e8c; }
+  .wg.sel { box-shadow: 0 0 0 2px var(--accent); z-index: 5; }
+  .wg.bad { border-color: var(--danger); background: rgba(214,69,69,.14); color: var(--danger); }
+  .wg .handle {
+    position: absolute; right: -1px; bottom: -1px; width: 16px; height: 16px;
+    border-radius: 4px 0 6px 0; background: var(--accent); cursor: nwse-resize;
+  }
+  .wg.text .handle { background: var(--blue); }
+
+  .warn { font-size: 11px; color: var(--danger); line-height: 1.5; margin-bottom: 8px; font-weight: 600; }
+  .meta-row { font-size: 11px; color: var(--muted); line-height: 1.6; margin-bottom: 10px; }
+
+  /* 属性抽屉：基本控制项在面上，其余进抽屉（W8） */
+  .drawer {
+    background: var(--surface); border-radius: 14px; padding: 12px 14px 14px; margin-bottom: 12px;
+  }
+  .drawer h3 { font-size: 13px; margin-bottom: 2px; }
+  .field-label { font-size: 11px; color: var(--muted); margin: 10px 0 5px; }
+  .seg { display: flex; gap: 6px; }
+  .seg button {
+    flex: 1; border: 1px solid var(--border); background: #fff; border-radius: 9px;
+    padding: 7px 0; font-size: 12px; font-weight: 600; color: var(--fg);
+  }
+  .seg button.on { border-color: var(--accent); background: var(--accent-light); color: var(--accent-dark); }
+  /* 文字工具列：加粗 / 斜体 / 颜色逐段套用；字级与对齐是整个组件级 */
+  .rt-bar { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; margin-bottom: 6px; }
+  .rt-bar button {
+    border: 1px solid var(--border); background: #fff; border-radius: 8px;
+    min-width: 30px; height: 30px; font-size: 13px; color: var(--fg); padding: 0 6px;
+  }
+  .rt-bar button.on { border-color: var(--accent); background: var(--accent-light); color: var(--accent-dark); }
+  .rt-bar select { height: 30px; border: 1px solid var(--border); border-radius: 8px; background: #fff; font-size: 12px; padding: 0 4px; }
+  .rt-bar .sep { width: 1px; height: 18px; background: var(--border); }
+  .rt-bar .sw { min-width: 22px; width: 22px; height: 22px; border-radius: 50%; border: 1px solid rgba(0,0,0,.14); padding: 0; }
+  .rt-bar .sw.on { box-shadow: 0 0 0 2px var(--accent); }
+  .rt {
+    min-height: 74px; border: 1px solid var(--border); border-radius: 10px;
+    padding: 8px 10px; line-height: 1.6; background: #fff; outline: none;
+  }
+  .rt:focus { border-color: var(--accent); }
+  .btn-del {
+    width: 100%; margin-top: 12px; border: 1px solid #f4cfcf; background: #fff;
+    border-radius: 10px; padding: 9px 0; font-size: 12px; font-weight: 700; color: var(--danger);
+  }
+  .cap { font-size: 11px; color: var(--muted); margin-top: 5px; line-height: 1.5; }
+  .cap.bad { color: var(--danger); font-weight: 600; }
+  .toast {
+    position: absolute; left: 50%; bottom: 34px; transform: translateX(-50%) translateY(20px);
+    background: rgba(31,41,55,.9); color: #fff; border-radius: 999px;
+    padding: 9px 14px; font-size: 12px; opacity: 0; pointer-events: none; transition: .22s ease; z-index: 40;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
+  <div class="nav-bar"><a class="back" href="growth-book-edit.html">‹</a><div class="nav-title" id="navTitle">栏目版面</div><span></span></div>
+  <div class="scroll">
+    <div class="tool-row">
+      <div class="page-tabs" id="pageTabs"></div>
+      <button class="tool-btn" id="addPage">+ 页</button>
+      <button class="tool-btn" id="delPage">删页</button>
+    </div>
+    <div class="tool-row">
+      <button class="tool-btn" id="addImage">+ 图片</button>
+      <button class="tool-btn" id="addText">+ 文字</button>
+      <span style="flex:1"></span>
+      <button class="tool-btn" id="zoomOut">−</button>
+      <span style="font-size:11px;color:var(--muted);min-width:46px;text-align:center" id="zoomLabel">1.0×</span>
+      <button class="tool-btn" id="zoomIn">+</button>
+    </div>
+
+    <div class="warn" id="warn" hidden></div>
+    <div class="canvas-wrap" id="canvasWrap">
+      <div class="a4" id="a4">
+        <div class="a4-margin"></div>
+        <div class="grid-area" id="gridArea">
+          <svg class="grid-lines" id="gridLines" preserveAspectRatio="none"></svg>
+        </div>
+      </div>
+    </div>
+    <div class="meta-row" id="metaRow"></div>
+
+    <div class="drawer" id="drawer"></div>
+
+    <button class="btn primary" style="width:100%" id="save">保存版面</button>
+    <div class="hint" style="padding:8px 2px 10px">拖动组件移动，拖右下角把手缩放，最小 2 × 2 格。网格 15 × 24 格，一格 10mm；组件占几格就是几公分，长宽比即占格之比。边距 30mm / 28.5mm 留给美术边框，组件不能放进去。</div>
+  </div>
+  <div class="toast" id="toast">已保存</div>
+</div>
+<script src="growth-book-render.js"></script>
+<script>
+let config = readBookConfig();
+const sectionId = new URLSearchParams(location.search).get('id');
+const section = (config.custom || []).find(item => item.id === sectionId) || (config.custom || [])[0];
+const locked = bookPublished(config);
+
+/* 征集比例的快捷值：都是整数格数，比例逐像素成立（W1a / W9） */
+const IMAGE_RATIOS = [{ w:1, h:1 }, { w:4, h:3 }, { w:3, h:4 }, { w:3, h:2 }, { w:2, h:3 }];
+
+let widgets = JSON.parse(JSON.stringify(sectionWidgets(section)));
+let pageCount = Math.max(1, section.pages || 1, ...widgets.map(w => w.page + 1));
+let page = 0, selected = null, zoom = 1, seq = widgets.length;
+
+document.getElementById('navTitle').textContent = section ? section.name : '栏目版面';
+
+/* ---------- 画布几何：先算格子边长，两轴共用同一个整数像素（W1a） ---------- */
+const BASE_W = 340;   // best-fit 时的页宽
+function geometry() {
+  const pageW = Math.round(BASE_W * zoom);
+  const cell = Math.floor(pageW * (1 - GRID.marginX * 2 / GRID.pageW) / GRID.cols);
+  const contentW = cell * GRID.cols, contentH = cell * GRID.rows;
+  const padX = Math.round((pageW - contentW) / 2);
+  /* 余数并入上下边距，页高由内容高 + 边距反推，保证格子精确正方 */
+  const padY = Math.round(pageW * GRID.marginY / GRID.pageW);
+  return { pageW: pageW, pageH: contentH + padY * 2, cell: cell, padX: padX, padY: padY };
+}
+
+function renderCanvas() {
+  const g = geometry();
+  const a4 = document.getElementById('a4');
+  a4.style.width = g.pageW + 'px';
+  a4.style.height = g.pageH + 'px';
+  const area = document.getElementById('gridArea');
+  area.style.left = g.padX + 'px';
+  area.style.top = g.padY + 'px';
+  area.style.width = g.cell * GRID.cols + 'px';
+  area.style.height = g.cell * GRID.rows + 'px';
+
+  const lines = [];
+  for (let i = 1; i < GRID.cols; i++) lines.push(`<line x1="${i * g.cell}" y1="0" x2="${i * g.cell}" y2="${g.cell * GRID.rows}" stroke="#e3edec"/>`);
+  for (let j = 1; j < GRID.rows; j++) lines.push(`<line x1="0" y1="${j * g.cell}" x2="${g.cell * GRID.cols}" y2="${j * g.cell}" stroke="#e3edec"/>`);
+  const svg = document.getElementById('gridLines');
+  svg.setAttribute('viewBox', `0 0 ${g.cell * GRID.cols} ${g.cell * GRID.rows}`);
+  svg.innerHTML = lines.join('');
+
+  const bad = overlapIds(widgets);
+  area.querySelectorAll('.wg').forEach(el => el.remove());
+  widgets.filter(w => w.page === page).forEach(widget => {
+    const el = document.createElement('div');
+    el.className = 'wg ' + widget.type + (widget.id === selected ? ' sel' : '') + (bad.has(widget.id) ? ' bad' : '');
+    el.style.left = widget.x * g.cell + 'px';
+    el.style.top = widget.y * g.cell + 'px';
+    el.style.width = widget.w * g.cell + 'px';
+    el.style.height = widget.h * g.cell + 'px';
+    el.textContent = widgetLabel(widget);
+    el.dataset.id = widget.id;
+    if (!locked) el.innerHTML += '<span class="handle" data-resize></span>';
+    area.appendChild(el);
+  });
+  document.getElementById('zoomLabel').textContent = zoom.toFixed(1) + '×';
+  /* 44pt 是 iOS 建议的最小点击目标；best-fit 下一格只有 18.6pt，需放大 2.37 倍（W1c） */
+  document.getElementById('metaRow').innerHTML =
+    `一格 ${g.cell}px（${(g.cell * 0.75).toFixed(1)}pt）${g.cell * 0.75 < 44 ? ' · 放大到 2.4× 才达 44pt 触控标准' : ' · 已达 44pt 触控标准'}`
+    + `<br>本栏目 ${pageCount} 页 · 共 ${widgets.length} 个组件 · 征集槽位 ${widgets.filter(w => w.binding === 'collected').length} 个`;
+  renderTabs();
+  renderWarn(bad);
+  renderDrawer();
+}
+/* 拖曳中只改既有元素的样式，不重建 DOM —— 重建会把持有 pointer capture 的元素抽掉 */
+function syncPositions() {
+  const g = geometry();
+  const bad = overlapIds(widgets);
+  area.querySelectorAll('.wg').forEach(el => {
+    const widget = widgets.find(w => w.id === el.dataset.id);
+    if (!widget) return;
+    el.style.left = widget.x * g.cell + 'px';
+    el.style.top = widget.y * g.cell + 'px';
+    el.style.width = widget.w * g.cell + 'px';
+    el.style.height = widget.h * g.cell + 'px';
+    el.classList.toggle('bad', bad.has(widget.id));
+    el.firstChild.textContent = widgetLabel(widget);
+  });
+  renderWarn(bad);
+  renderDrawer();
+}
+function widgetLabel(widget) {
+  const bind = bindingOf(widget.binding);
+  const size = `${widget.w}×${widget.h}`;
+  if (widget.type === 'text' && widget.binding === 'literal') return (contentText(widget.content) || '文字') + ` ${size}`;
+  return (bind ? bind.name : '未设来源') + ` ${size}`;
+}
+function renderTabs() {
+  document.getElementById('pageTabs').innerHTML = Array.from({ length: pageCount }, (_, i) =>
+    `<button class="tool-btn${i === page ? ' on' : ''}" data-page="${i}">第 ${i + 1} 页</button>`).join('');
+  document.getElementById('delPage').disabled = locked || pageCount < 2;
+}
+/* 存档闸门：重叠、无来源、bound 型框太小，任何一项成立都关掉保存（W6 / W18） */
+function renderWarn(bad) {
+  const small = widgets.filter(widgetTooSmall);
+  const nobind = widgets.filter(w => !w.binding);
+  const msgs = [];
+  if (bad.size) msgs.push(`有 ${bad.size} 个组件重叠（标红），请移开后再保存 —— 重叠一律拒绝放置，不做弹开推挤。`);
+  if (nobind.length) msgs.push(`有 ${nobind.length} 个组件未选内容来源。`);
+  small.forEach(w => {
+    const bind = bindingOf(w.binding);
+    msgs.push(`「${bind.name}」的框只能放 ${textCapacity(w)} 字，小于来源上限 ${bind.limit} 字，请放大或调小字级。`);
+  });
+  /* 打完字再把字级调大导致超出：挡住存档并提示，不可默默截断（W18） */
+  widgets.filter(w => w.binding === 'literal' && contentLength(w.content) > textCapacity(w)).forEach(w => {
+    msgs.push(`「${contentText(w.content).slice(0, 8)}…」已有 ${contentLength(w.content)} 字，超过当前字级下的容量 ${textCapacity(w)} 字，请调小字级或放大框。`);
+  });
+  const warn = document.getElementById('warn');
+  warn.hidden = !msgs.length;
+  warn.innerHTML = msgs.join('<br>');
+  document.getElementById('save').disabled = locked || !!msgs.length;
+  document.getElementById('save').style.opacity = (locked || msgs.length) ? '.45' : '';
+}
+
+/* ---------- 属性抽屉 ---------- */
+function renderDrawer() {
+  const widget = widgets.find(w => w.id === selected);
+  const box = document.getElementById('drawer');
+  if (!widget) {
+    box.innerHTML = '<h3>组件属性</h3><div class="cap">点选画布上的组件后，在这里设定内容来源与呈现方式。</div>';
+    return;
+  }
+  const bind = bindingOf(widget.binding) || {};
+  const cfg = widget.config || {};
+  const options = BINDING_KEYS.filter(item => item.types.includes(widget.type));
+  const cap = textCapacity(widget);
+  box.innerHTML = `
+    <h3>${widget.type === 'image' ? '图片组件' : '文字组件'} · ${widget.w} × ${widget.h} 格（${widget.w * 10} × ${widget.h * 10}mm，比例 ${ratioText(widget)}）</h3>
+    <div class="field-label">内容来源</div>
+    <select class="select" id="bindSel">
+      ${options.map(item => `<option value="${item.key}"${item.key === widget.binding ? ' selected' : ''}>${item.name}</option>`).join('')}
+    </select>
+    ${widget.binding === 'literal' ? `
+      <div class="field-label">文字内容</div>
+      <div class="rt-bar">
+        <button data-cmd="bold" title="加粗"><b>B</b></button>
+        <button data-cmd="italic" title="斜体"><i>I</i></button>
+        <span class="sep"></span>
+        ${TEXT_COLORS.map(c => `<button class="sw" data-color="${c}" style="background:${c}" title="${c}"></button>`).join('')}
+        <span class="sep"></span>
+        <select data-size title="字级（整个组件）">
+          ${[10,12,14,18,24].map(n => `<option value="${n}"${(cfg.size || 14) === n ? ' selected' : ''}>${n}pt</option>`).join('')}
+        </select>
+        <span class="sep"></span>
+        ${[['left','靠左','左'],['center','置中','中'],['right','靠右','右']].map(([v, t, icon]) =>
+          `<button data-align="${v}" class="${(cfg.align || 'left') === v ? 'on' : ''}" title="${t}" style="font-size:12px">${icon}</button>`).join('')}
+      </div>
+      <div class="rt" id="literalText" contenteditable
+           style="font-size:${cfg.size || 14}px;text-align:${cfg.align || 'left'}">${runsToHtml(widget.content)}</div>` : ''}
+    ${widget.type === 'image' && widget.binding === 'collected' ? `
+      <div class="field-label">征集比例（家长端的裁剪框按此出框）</div>
+      <div class="seg" id="ratioSeg">
+        ${IMAGE_RATIOS.map(r => `<button data-ratio="${r.w}:${r.h}" class="${widget.w * r.h === widget.h * r.w ? 'on' : ''}">${r.w}:${r.h}</button>`).join('')}
+      </div>
+      <div class="cap">家长在手机上按 ${ratioText(widget)} 裁好才提交，进册后不会变形也不会被二次裁切，因此这里不需要设定显示方式。</div>` : ''}
+    ${widget.type === 'text' ? `
+      ${widget.binding === 'literal' ? '' : `
+        <div class="rt-bar" style="margin-top:10px">
+          <select data-size title="字级">
+            ${[10,12,14,18,24].map(n => `<option value="${n}"${(cfg.size || 14) === n ? ' selected' : ''}>${n}pt</option>`).join('')}
+          </select>
+          <span class="sep"></span>
+          ${[['left','靠左','左'],['center','置中','中'],['right','靠右','右']].map(([v, t, icon]) =>
+            `<button data-align="${v}" class="${(cfg.align || 'left') === v ? 'on' : ''}" title="${t}" style="font-size:12px">${icon}</button>`).join('')}
+        </div>`}
+      <div class="cap ${widgetTooSmall(widget) ? 'bad' : ''}" id="capNote">本框可容 ${cap} 字${
+        widget.binding === 'literal' ? ` · 已用 ${contentLength(widget.content)} 字（加粗/斜体/颜色不影响容量）` : ''
+      }${bind.limit ? ` · 来源上限 ${bind.limit} 字` : ''}</div>`
+    : widget.binding === 'child.assessment' ? `
+      <div class="cap">雷达图不是素材，是按题项分即时绘制的向量图，会自动填满 ${ratioText(widget)} 的框，无需设定显示方式。</div>`
+    : widget.binding === 'collected' ? '' : `
+      <div class="field-label">显示方式</div>
+      <div class="seg" id="fitSeg">
+        ${[['fill','拉伸'],['cover','裁切填满'],['crop','自订裁切']].map(([v, t]) =>
+          `<button data-fit="${v}" class="${(cfg.fit || 'cover') === v ? 'on' : ''}">${t}</button>`).join('')}
+      </div>
+      <div class="cap">「${bind.name}」的照片不经成长册的裁剪工具，比例不定，需要指定对不上框时怎么放。</div>`}
+    <button class="btn-del" id="delWidget">删除此组件</button>`;
+  if (locked) box.querySelectorAll('select,textarea,button').forEach(el => { el.disabled = true; });
+}
+
+/* ---------- 交互 ---------- */
+const area = document.getElementById('gridArea');
+document.getElementById('pageTabs').addEventListener('click', event => {
+  const btn = event.target.closest('[data-page]');
+  if (btn) { page = Number(btn.dataset.page); selected = null; renderCanvas(); }
+});
+document.getElementById('addPage').addEventListener('click', () => {
+  if (locked) return showToast('已定稿，需先撤回发布');
+  pageCount += 1; page = pageCount - 1; selected = null; renderCanvas();
+});
+document.getElementById('delPage').addEventListener('click', () => {
+  widgets = widgets.filter(w => w.page !== page).map(w => w.page > page ? { ...w, page: w.page - 1 } : w);
+  pageCount -= 1; page = Math.min(page, pageCount - 1); selected = null; renderCanvas();
+});
+document.getElementById('zoomIn').addEventListener('click', () => { zoom = Math.min(3, zoom + .4); renderCanvas(); });
+document.getElementById('zoomOut').addEventListener('click', () => { zoom = Math.max(1, zoom - .4); renderCanvas(); });
+
+function freeSpot(w, h) {
+  for (let y = 0; y + h <= GRID.rows; y++) for (let x = 0; x + w <= GRID.cols; x++) {
+    const box = { page: page, x: x, y: y, w: w, h: h };
+    if (!widgets.some(other => other.page === page && widgetsOverlap(other, box))) return { x: x, y: y };
+  }
+  return { x: 0, y: 0 };
+}
+/* 占格数约分即比例：6×6 显示成 1:1、8×6 显示成 4:3 */
+function ratioText(widget) {
+  const gcd = (a, b) => b ? gcd(b, a % b) : a;
+  const g = gcd(widget.w, widget.h);
+  return `${widget.w / g}:${widget.h / g}`;
+}
+/* 套用征集比例：取最接近当前面积的整数倍，必要时回推位置让它留在网格内 */
+function setRatio(widget, text) {
+  const [rw, rh] = text.split(':').map(Number);
+  let k = Math.max(1, Math.round(Math.sqrt(widget.w * widget.h / (rw * rh))));
+  k = Math.min(k, Math.floor(GRID.cols / rw), Math.floor(GRID.rows / rh));
+  while (k > 1 && (rw * k < GRID.min || rh * k < GRID.min)) k -= 1;
+  widget.w = Math.max(GRID.min, rw * k);
+  widget.h = Math.max(GRID.min, rh * k);
+  widget.x = Math.min(widget.x, GRID.cols - widget.w);
+  widget.y = Math.min(widget.y, GRID.rows - widget.h);
+}
+function addWidget(type) {
+  if (locked) return showToast('已定稿，需先撤回发布');
+  const w = type === 'image' ? 6 : 13, h = type === 'image' ? 6 : 4;
+  const spot = freeSpot(w, h);
+  seq += 1;
+  const widget = {
+    id: section.id + '-w' + seq + Date.now().toString(36).slice(-3),
+    page: page, x: spot.x, y: spot.y, w: w, h: h, type: type,
+    binding: type === 'image' ? 'collected' : 'literal', content: '',
+    config: type === 'image' ? { fit: 'cover' } : { size: 14, align: 'left' }
+  };
+  widgets.push(widget);
+  selected = widget.id;
+  renderCanvas();
+}
+document.getElementById('addImage').addEventListener('click', () => addWidget('image'));
+document.getElementById('addText').addEventListener('click', () => addWidget('text'));
+
+/* 拖曳移动 / 右下把手缩放；平移交给外层容器的原生卷动，两者手势不冲突 */
+let drag = null;
+const markSelection = () =>
+  area.querySelectorAll('.wg').forEach(el => el.classList.toggle('sel', el.dataset.id === selected));
+
+area.addEventListener('pointerdown', event => {
+  const el = event.target.closest('.wg');
+  if (!el) { selected = null; markSelection(); renderDrawer(); return; }
+  selected = el.dataset.id;
+  markSelection();
+  renderDrawer();
+  if (locked) return;
+  const widget = widgets.find(w => w.id === selected);
+  drag = {
+    mode: event.target.hasAttribute('data-resize') ? 'resize' : 'move',
+    cell: geometry().cell, sx: event.clientX, sy: event.clientY,
+    ox: widget.x, oy: widget.y, ow: widget.w, oh: widget.h
+  };
+  try { el.setPointerCapture(event.pointerId); } catch (e) {}
+});
+/* 监听挂在 window：拖到画布外也不会中断（W1c 要求的边缘行为，卷动交给容器） */
+window.addEventListener('pointermove', event => {
+  if (!drag) return;
+  const widget = widgets.find(w => w.id === selected);
+  const dx = Math.round((event.clientX - drag.sx) / drag.cell);
+  const dy = Math.round((event.clientY - drag.sy) / drag.cell);
+  if (drag.mode === 'move') {
+    widget.x = Math.max(0, Math.min(GRID.cols - widget.w, drag.ox + dx));
+    widget.y = Math.max(0, Math.min(GRID.rows - widget.h, drag.oy + dy));
+  } else {
+    widget.w = Math.max(GRID.min, Math.min(GRID.cols - widget.x, drag.ow + dx));
+    widget.h = Math.max(GRID.min, Math.min(GRID.rows - widget.y, drag.oh + dy));
+  }
+  syncPositions();
+});
+window.addEventListener('pointerup', () => { if (drag) { drag = null; renderCanvas(); } });
+window.addEventListener('pointercancel', () => { if (drag) { drag = null; renderCanvas(); } });
+
+/* ---------- literal 文字：逐段套用加粗 / 斜体 / 颜色 ---------- */
+/* 把 contenteditable 的 DOM 摊平成 run 阵列，只保留 b / i / color 三种样式 */
+function serializeRuns(root) {
+  const runs = [];
+  const push = (text, style) => {
+    if (!text) return;
+    const last = runs[runs.length - 1];
+    if (last && last.b === style.b && last.i === style.i && last.c === style.c) last.t += text;
+    else runs.push({ t: text, b: style.b, i: style.i, c: style.c });
+  };
+  const walk = (node, style, isFirstBlock) => {
+    if (node.nodeType === 3) return push(node.nodeValue, style);
+    if (node.nodeName === 'BR') return push('\n', style);
+    /* execCommand 依 styleWithCSS 会产出 <b>/<i> 或 style，两种都要认 */
+    const next = { b: style.b, i: style.i, c: style.c };
+    const st = node.style || {};
+    if (node.nodeName === 'B' || node.nodeName === 'STRONG' || st.fontWeight === 'bold' || Number(st.fontWeight) >= 600) next.b = 1;
+    if (node.nodeName === 'I' || node.nodeName === 'EM' || st.fontStyle === 'italic') next.i = 1;
+    const color = st.color || node.getAttribute?.('color');
+    if (color) next.c = toHex(color);
+    /* contenteditable 每行包一个 div，第二行起补换行 */
+    if ((node.nodeName === 'DIV' || node.nodeName === 'P') && !isFirstBlock && runs.length) push('\n', style);
+    Array.from(node.childNodes).forEach(child => walk(child, next, false));
+  };
+  Array.from(root.childNodes).forEach((node, i) => walk(node, {}, i === 0));
+  return runs.filter(run => run.t).map(run => {
+    const out = { t: run.t };
+    if (run.b) out.b = 1;
+    if (run.i) out.i = 1;
+    if (run.c) out.c = run.c;
+    return out;
+  });
+}
+const toHex = color => {
+  const m = color.match(/\d+/g);
+  return m ? '#' + m.slice(0, 3).map(n => Number(n).toString(16).padStart(2, '0')).join('') : color;
+};
+/* 打字时不重建抽屉（会丢游标），只回写资料并同步画布标签与字数 */
+function syncLiteral(box, widget) {
+  widget.content = serializeRuns(box);
+  const el = area.querySelector(`.wg[data-id="${widget.id}"]`);
+  if (el) el.firstChild.textContent = widgetLabel(widget);
+  const note = document.getElementById('capNote');
+  if (note) note.textContent = `本框可容 ${textCapacity(widget)} 字 · 已用 ${contentLength(widget.content)} 字（加粗/斜体/颜色不影响容量）`;
+}
+document.getElementById('drawer').addEventListener('input', event => {
+  const box = event.target.closest('#literalText');
+  if (!box) return;
+  const widget = widgets.find(w => w.id === selected);
+  const cap = textCapacity(widget);
+  /* 打满就打不下去：超出即还原到上一个合法状态（W18） */
+  if (contentLength(serializeRuns(box)) > cap) {
+    box.innerHTML = runsToHtml(widget.content);
+    placeCaretEnd(box);
+    showToast(`已达本框上限 ${cap} 字`);
+    return;
+  }
+  syncLiteral(box, widget);
+});
+function placeCaretEnd(box) {
+  const range = document.createRange();
+  range.selectNodeContents(box);
+  range.collapse(false);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
+/* 工具列按下时保住选取范围，否则 execCommand 无对象可套 */
+document.getElementById('drawer').addEventListener('mousedown', event => {
+  if (event.target.closest('[data-cmd],[data-color]')) event.preventDefault();
+});
+document.getElementById('drawer').addEventListener('change', event => {
+  const widget = widgets.find(w => w.id === selected);
+  if (!widget) return;
+  if (event.target.id === 'bindSel') {
+    widget.binding = event.target.value;
+    if (widget.binding !== 'literal') widget.content = '';
+    renderCanvas();
+  } else if (event.target.hasAttribute('data-size')) {
+    widget.config.size = Number(event.target.value);
+    renderCanvas();
+  }
+});
+document.getElementById('drawer').addEventListener('click', event => {
+  const widget = widgets.find(w => w.id === selected);
+  if (!widget || locked) return;
+  const cmd = event.target.closest('[data-cmd]');
+  const color = event.target.closest('[data-color]');
+  const align = event.target.closest('[data-align]');
+  const fit = event.target.closest('[data-fit]');
+  const ratio = event.target.closest('[data-ratio]');
+  const box = document.getElementById('literalText');
+  /* 加粗 / 斜体 / 颜色作用于当前选取，不影响整个组件 */
+  if (cmd || color) {
+    if (!box) return;
+    box.focus();
+    if (window.getSelection().isCollapsed) return showToast('先选取要套用的文字');
+    /* 让 foreColor 产出 <span style="color:…"> 而不是 <font color>，序列化时才读得到 */
+    document.execCommand('styleWithCSS', false, true);
+    document.execCommand(cmd ? cmd.dataset.cmd : 'foreColor', false, color ? color.dataset.color : null);
+    syncLiteral(box, widget);
+    if (cmd) cmd.classList.toggle('on', document.queryCommandState(cmd.dataset.cmd));
+    return;
+  }
+  if (align) widget.config.align = align.dataset.align;
+  else if (fit) widget.config.fit = fit.dataset.fit;
+  else if (ratio) setRatio(widget, ratio.dataset.ratio);
+  else if (event.target.id === 'delWidget') {
+    widgets = widgets.filter(w => w.id !== selected);
+    selected = null;
+  } else return;
+  renderCanvas();
+});
+
+document.getElementById('save').addEventListener('click', () => {
+  const target = (config.custom || []).find(item => item.id === section.id);
+  target.widgets = widgets;
+  target.pages = pageCount;
+  writeBookConfig(config);
+  showToast(`已保存 · ${pageCount} 页 · ${widgets.filter(w => w.binding === 'collected').length} 个征集槽位`);
+});
+
+function showToast(text) {
+  const toast = document.getElementById('toast');
+  toast.textContent = text;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 1600);
+}
+
+if (locked) {
+  document.getElementById('addImage').disabled = true;
+  document.getElementById('addText').disabled = true;
+  document.getElementById('addPage').disabled = true;
+}
+renderCanvas();
+</script>
+</body>
+</html>

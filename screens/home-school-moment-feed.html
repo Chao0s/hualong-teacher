@@ -6,18 +6,17 @@
 <title>全部活动 · 在园时光</title>
 <link rel="stylesheet" href="home-school-common.css" />
 <style>
-  /* 左列纵向：头像在上，加入成长资料的「+」在其下方 */
-  .moment-side { display: flex; flex-direction: column; align-items: center; gap: 8px; }
   /* 标题占满剩余宽度，日期顶到最右 */
   .moment-head strong { flex: 1; min-width: 0; }
+  /* 卡片底行：左侧统计信息，右侧「加入成长册」按钮 */
+  .moment-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; }
+  .moment-foot .moment-meta { margin-top: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   .add-material {
-    width: 26px; height: 26px; border: 1px solid var(--accent); background: var(--surface);
-    color: var(--accent); border-radius: 50%; padding: 0;
-    font-size: 16px; font-weight: 700; line-height: 1; cursor: pointer;
-    display: grid; place-items: center;
+    flex: none; border: 1px solid var(--accent); background: var(--surface); color: var(--accent);
+    border-radius: 999px; padding: 5px 10px;
+    font-size: 11px; font-weight: 600; line-height: 1; white-space: nowrap; cursor: pointer;
   }
   .add-material.on { background: var(--accent); border-color: var(--accent); color: #fff; }
-  .mat-note { font-size: 11px; color: var(--accent-dark); margin-top: 6px; font-weight: 600; }
 
   .sheet-mask { position: absolute; inset: 0; background: rgba(31,41,55,.32); opacity: 0; pointer-events: none; transition: .2s ease; z-index: 30; }
   .sheet-mask.show { opacity: 1; pointer-events: auto; }
@@ -61,13 +60,12 @@
   <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
   <div class="nav-bar"><a class="back" href="home-school-moments.html">‹</a><div class="nav-title">全部活动</div><span></span></div>
   <div class="scroll">
-    <div class="hint" style="padding:2px 2px 10px">点动态左侧的 + 可将其加入成长资料；加入后会作为成长册「在园时光」栏目的内容（全班共用）。</div>
+    <div class="hint" style="padding:2px 2px 10px">点动态右下角的「+ 加入成长册」可将其加入成长资料；加入后会作为成长册「在园时光」栏目的内容（全班共用）。</div>
 
     <article class="moment-card" data-id="m1" data-title="端午手作：艾草香囊" data-date="6月12日"
              data-photos="穿绳,装袋,合影,选材,展示">
       <div class="moment-side">
         <div class="avatar">时</div>
-        <button class="add-material" data-add title="加入成长资料" aria-label="加入成长资料">+</button>
       </div>
       <div class="moment-body">
         <div class="moment-head"><strong>端午手作：艾草香囊</strong><span>今天 10:20</span></div>
@@ -75,8 +73,10 @@
         <div class="photo-grid">
           <div class="feed-photo">穿绳</div><div class="feed-photo">装袋</div><div class="feed-photo">合影</div>
         </div>
-        <div class="moment-meta">涉及 24/28 人 · 18 位家长已查看</div>
-        <div class="mat-note" data-note hidden></div>
+        <div class="moment-foot">
+          <div class="moment-meta">涉及 24/28 人 · 18 位家长已查看</div>
+          <button class="add-material" data-add title="加入成长册" aria-label="加入成长册">+ 加入成长册</button>
+        </div>
       </div>
     </article>
 
@@ -84,7 +84,6 @@
              data-photos="排队等待,完成挑战,加油,合影">
       <div class="moment-side">
         <div class="avatar green">时</div>
-        <button class="add-material" data-add title="加入成长资料" aria-label="加入成长资料">+</button>
       </div>
       <div class="moment-body">
         <div class="moment-head"><strong>户外运动：平衡木挑战</strong><span>6月10日</span></div>
@@ -92,8 +91,10 @@
         <div class="photo-grid two">
           <div class="feed-photo">排队等待</div><div class="feed-photo">完成挑战</div>
         </div>
-        <div class="moment-meta">涉及 26/28 人 · 22 位家长已查看</div>
-        <div class="mat-note" data-note hidden></div>
+        <div class="moment-foot">
+          <div class="moment-meta">涉及 26/28 人 · 22 位家长已查看</div>
+          <button class="add-material" data-add title="加入成长册" aria-label="加入成长册">+ 加入成长册</button>
+        </div>
       </div>
     </article>
 
@@ -101,7 +102,6 @@
              data-photos="设计图,搭建中,成品,讨论,分享">
       <div class="moment-side">
         <div class="avatar amber">时</div>
-        <button class="add-material" data-add title="加入成长资料" aria-label="加入成长资料">+</button>
       </div>
       <div class="moment-body">
         <div class="moment-head"><strong>区域游戏：小小建筑师</strong><span>6月7日</span></div>
@@ -109,8 +109,10 @@
         <div class="photo-grid">
           <div class="feed-photo">设计图</div><div class="feed-photo">搭建中</div><div class="feed-photo">成品</div>
         </div>
-        <div class="moment-meta">涉及 22/28 人 · 20 位家长已查看</div>
-        <div class="mat-note" data-note hidden></div>
+        <div class="moment-foot">
+          <div class="moment-meta">涉及 22/28 人 · 20 位家长已查看</div>
+          <button class="add-material" data-add title="加入成长册" aria-label="加入成长册">+ 加入成长册</button>
+        </div>
       </div>
     </article>
   </div>
@@ -147,13 +149,10 @@ function syncCards() {
   document.querySelectorAll('.moment-card').forEach(card => {
     const item = findMaterial(card.dataset.id);
     const btn = card.querySelector('[data-add]');
-    const note = card.querySelector('[data-note]');
     btn.classList.toggle('on', !!item);
-    btn.textContent = item ? '✓' : '+';
-    btn.title = item ? '已收录，点击可调整' : '加入成长资料';
+    btn.textContent = item ? `✓ 已加入（${item.photos.length} 张）` : '+ 加入成长册';
+    btn.title = item ? '已收录，点击可调整' : '加入成长册';
     btn.setAttribute('aria-label', btn.title);
-    note.hidden = !item;
-    if (item) note.textContent = `已加入成长资料 · 收录 ${item.photos.length} 张照片`;
   });
 }
 

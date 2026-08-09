@@ -23,6 +23,19 @@
 .page-title { font-size: 19px; font-weight: 800; margin: 6px 0 12px; }
 .page-text { font-size: 12px; line-height: 1.75; color: #444; }
 
+/* 新增栏目的 widget 网格：内容区 150 × 240mm，比例必须守住，
+   否则「占几格即长宽比」在预览里就不成立（W1a + E3 第 11 点预览与 PDF 同源） */
+.wg-area { position: relative; height: 100%; aspect-ratio: 150 / 240; margin: 0 auto; }
+.wg-box {
+  position: absolute; border-radius: 8px; overflow: hidden;
+  padding: 4px 6px; box-sizing: border-box;
+}
+.wg-img {
+  display: flex; align-items: flex-end; font-size: 9px; font-weight: 600; color: var(--accent-dark);
+  background: linear-gradient(135deg, var(--accent-light), var(--blue-light));
+}
+.wg-text { line-height: 1.5; color: #444; overflow: hidden; }
+
 /* 图片占位：正式模版由园所上传的背景图/照片替换 */
 .bg-photo {
   border-radius: 10px; display: flex; align-items: flex-end; padding: 8px;

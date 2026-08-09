@@ -12,7 +12,7 @@
   }
   .summary-card .grow { flex: 1; min-width: 0; }
   .summary-card b { font-size: 15px; }
-  .summary-card .list { font-size: 11px; color: var(--muted); margin-top: 5px; line-height: 1.5; }
+  .summary-card .list { display: block; font-size: 11px; color: var(--muted); margin-top: 5px; line-height: 1.5; }
   .summary-card .enter { color: var(--accent); font-size: 12px; font-weight: 600; white-space: nowrap; }
 
   /* 班级级前置条件：全班内容相同，不进幼儿列 */
@@ -77,6 +77,7 @@
         <b id="sumTitle">已收录 0 项内容</b>
         <span class="list" id="sumList"></span>
       </span>
+      <span class="pill" id="tplState">草稿</span>
       <span class="enter">编辑样板 ›</span>
     </a>
 
@@ -84,6 +85,7 @@
       <a class="btn" href="growth-book-sample.html">成长册样本</a>
       <button class="btn primary" id="openExport">导出报告</button>
     </div>
+    <div class="hint" id="exportGate" style="margin:-6px 0 12px" hidden>模版尚未发布，只能预览；在编辑样板中点「发布成长册」定稿后才可批量导出。</div>
 
     <div class="chunk">
       <div style="display:flex;justify-content:space-between;align-items:center">
@@ -98,6 +100,7 @@
 
     <div class="sec">生成检查表</div>
     <div class="chunk" id="preList" style="padding:6px 14px"></div>
+    <div class="hint" id="sizeNote" style="padding:2px 12px 8px"></div>
     <div class="table-wrap">
       <table class="prog-table wide" id="bookTable">
         <thead><tr id="tableHead"></tr></thead>
@@ -122,6 +125,7 @@
       <input type="checkbox" id="selectAll">
     </label>
     <div class="sheet-list" id="exportList"></div>
+    <div class="hint" id="sheetSizeNote" style="margin-top:10px"></div>
     <div class="sheet-actions">
       <button class="btn ghost" id="cancelExport">取消</button>
       <button class="btn primary" id="confirmExport">导出</button>
@@ -145,6 +149,19 @@ function renderSummary() {
   document.getElementById('sumList').textContent = sections.length
     ? sections.map(s => s.name).join(' · ')
     : '尚未收录任何内容，点击进入编辑样板';
+  /* 未定稿只能预览，不能批量导出（W16 草稿匣） */
+  const published = bookPublished(config);
+  document.getElementById('tplState').textContent = TEMPLATE_STATUS[config.status];
+  document.getElementById('openExport').disabled = !published;
+  document.getElementById('openExport').style.opacity = published ? '' : '.45';
+  document.getElementById('exportGate').hidden = published;
+}
+
+/* 预估页数与档案大小；软上限只提示不阻挡（W21） */
+function estimateText() {
+  const est = bookPageEstimate(config);
+  return `预估 ${est.pages} 页 · 约 ${est.size}`
+    + (est.over ? `（已超过 ${BOOK_PAGE_SOFT_LIMIT} 页的建议值，文件较大可能不便传阅，仍可导出）` : '');
 }
 
 function renderPre() {
@@ -170,8 +187,10 @@ function renderTable() {
     '<th>查看</th>';
   document.getElementById('tableBody').innerHTML = BOOK_CHILDREN.map(child => {
     const cells = cols.map(section => {
+      /* 新增栏目：全部槽位交齐才算完成 */
+      const item = section.custom && config.custom.find(entry => entry.id === section.key);
       const ok = section.custom
-        ? (config.custom.find(item => item.id === section.key).submitted || []).includes(child.id)
+        ? sectionFilled(item, child.id) >= sectionSlots(item)
         : child.done[section.key];
       return `<td><span class="dot-cell ${ok ? 'done' : 'miss'}" title="${ok ? '完成' : '未完成'}" aria-label="${ok ? '完成' : '未完成'}"></span></td>`;
     }).join('');
@@ -211,6 +230,7 @@ function renderSheet() {
     </label>`;
   }).join('');
   exportList.querySelectorAll('.child-check').forEach(item => item.addEventListener('change', syncSelectAll));
+  document.getElementById('sheetSizeNote').textContent = '每本 ' + estimateText();
   syncSelectAll();
 }
 const availableChecks = () => Array.from(exportList.querySelectorAll('.child-check:not(:disabled)'));
@@ -244,6 +264,7 @@ function renderAll() {
   renderPre();
   renderTable();
   renderProgress();
+  document.getElementById('sizeNote').textContent = '每本 ' + estimateText();
 }
 renderAll();
 // 从编辑样板返回时刷新

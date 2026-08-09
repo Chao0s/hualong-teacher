@@ -27,23 +27,15 @@
   .scroll { flex: 1; overflow-y: auto; padding: 0 16px 92px; scroll-behavior: smooth; }
   .scroll::-webkit-scrollbar { display: none; }
 
-  .recommend { position: relative; overflow: hidden; min-height: 154px; border-radius: 18px; margin-bottom: 14px; background: linear-gradient(135deg, var(--accent-dark), #43beb5); color: #fff; }
-  .recommend-track { display: flex; height: 100%; transition: transform .36s ease; }
-  .recommend-slide { flex: 0 0 100%; min-height: 154px; padding: 18px 18px 16px; display: flex; flex-direction: column; justify-content: flex-end; }
-  .recommend-kicker { width: max-content; max-width: 100%; height: 24px; display: inline-flex; align-items: center; padding: 0 10px; border-radius: 999px; background: rgba(255,255,255,.18); font-size: 11px; font-weight: 800; }
-  .recommend-title { margin-top: 30px; font-size: 21px; line-height: 1.22; font-weight: 800; letter-spacing: -.01em; }
-  .recommend-meta { margin-top: 7px; font-size: 12px; opacity: .86; }
-  .recommend-dots { position: absolute; right: 14px; bottom: 14px; display: flex; gap: 5px; }
-  .recommend-dots button { width: 6px; height: 6px; border-radius: 999px; border: 0; background: rgba(255,255,255,.42); padding: 0; cursor: pointer; }
-  .recommend-dots button.on { width: 16px; background: #fff; }
-
   .sec { font-size: 16px; font-weight: 700; margin: 18px 0 10px; display: flex; align-items: center; justify-content: space-between; }
   .doc-list { display: grid; gap: 8px; }
-  .doc-card { display: grid; grid-template-columns: 1fr 104px; align-items: center; gap: 10px; min-height: 58px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 11px 12px; }
+  .doc-card { display: grid; grid-template-columns: 1fr 104px; align-items: center; gap: 10px; min-height: 82px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 11px 12px; }
   .doc-title { min-width: 0; font-size: 14px; font-weight: 700; line-height: 1.35; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .doc-summary { margin-top: 5px; color: var(--muted); font-size: 11px; line-height: 1.45; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
   .doc-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
   .doc-actions button, .doc-actions a { height: 32px; border-radius: 9px; border: 1px solid var(--border); background: var(--surface); color: var(--fg); font: inherit; font-size: 12px; font-weight: 700; display: grid; place-items: center; text-decoration: none; cursor: pointer; }
   .doc-actions .primary { border-color: var(--accent); background: var(--accent); color: #fff; }
+  .load-more { width: 100%; height: 40px; margin-top: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--accent-dark); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
 
   .tabs { position: absolute; bottom: 0; left: 0; right: 0; z-index: 10; display: grid; grid-template-columns: repeat(5, 1fr); align-items: center; padding: 8px 6px 28px; background: var(--surface); border-top: 1px solid var(--border); }
   .tabs a { display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; color: var(--muted); font-size: 10px; font-weight: 400; padding: 4px 0; min-width: 0; white-space: nowrap; text-decoration: none; }
@@ -59,6 +51,9 @@
   .preview-meta { margin-top: 8px; color: var(--muted); font-size: 12px; }
   .preview-body { margin-top: 14px; border-top: 1px solid var(--border); padding-top: 14px; color: #343330; font-size: 13px; line-height: 1.75; }
   .preview-body p + p { margin-top: 9px; }
+  .attachment-title { margin-top: 16px; font-size: 13px; font-weight: 800; }
+  .attachment-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 8px; padding: 10px; border: 1px solid var(--border); border-radius: 10px; font-size: 12px; }
+  .attachment-row a { color: var(--accent-dark); font-weight: 800; text-decoration: none; }
   .toast { position: absolute; left: 50%; bottom: 92px; transform: translateX(-50%) translateY(12px); max-width: 300px; padding: 9px 13px; border-radius: 999px; background: rgba(26,25,22,.86); color: #fff; font-size: 12px; opacity: 0; pointer-events: none; transition: .22s ease; z-index: 40; white-space: nowrap; }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 </style>
@@ -68,13 +63,9 @@
   <div class="status-bar"><span class="time">9:41</span><span class="status-icons" style="font-size:12px">WiFi · ▮▮▮▮</span></div>
   <div class="nav-bar"><a class="back" href="comprehensive-coordination.html" aria-label="返回综合协调">‹</a><span id="navTitle">文件列表</span></div>
   <main class="scroll">
-    <section class="recommend" aria-label="推荐文件">
-      <div class="recommend-track" id="recommendTrack"></div>
-      <div class="recommend-dots" id="recommendDots" aria-label="轮播分页"></div>
-    </section>
-
-    <div class="sec"><span>最新文件</span></div>
+    <div class="sec"><span>全部文件</span></div>
     <section class="doc-list" id="docList" aria-label="最新文件"></section>
+    <button class="load-more" id="loadMore" type="button">加载更多</button>
   </main>
 
   <div class="tabs" aria-label="底部导航">
@@ -95,6 +86,8 @@
         <button class="close" type="button" id="closePreview" aria-label="关闭">×</button>
       </div>
       <div class="preview-body" id="previewBody"></div>
+      <div class="attachment-title">附件</div>
+      <div id="previewAttachments"></div>
     </article>
   </div>
   <div class="toast" id="toast">入口链接后续导入</div>
@@ -144,7 +137,7 @@
     },
     safety: {
       title: '安全管理',
-      kicker: '通勤保障',
+      kicker: '后勤保障',
       desc: '安全巡检、应急预案、校车与户外活动保障材料。',
       icon: '安',
       docs: [
@@ -157,7 +150,7 @@
     },
     health: {
       title: '卫生保健',
-      kicker: '通勤保障',
+      kicker: '后勤保障',
       desc: '晨检、消毒、传染病防控与健康提醒文件。',
       icon: '卫',
       docs: [
@@ -200,12 +193,10 @@
   var type = params.get('type') || 'policy';
   var current = catalog[type] || catalog.policy;
   var docList = document.getElementById('docList');
-  var recommendTrack = document.getElementById('recommendTrack');
-  var recommendDots = document.getElementById('recommendDots');
   var toast = document.getElementById('toast');
   var timer;
-  var activeSlide = 0;
-  var slideTimer;
+  var renderedCount = 0;
+  var pageSize = 3;
 
   document.title = current.title + ' · 综合协调部';
   document.getElementById('navTitle').textContent = current.title;
@@ -215,58 +206,36 @@
     return 'data:text/plain;charset=utf-8,' + encodeURIComponent(content);
   }
 
-  function renderRecommendations() {
-    var featured = current.docs.slice(0, 3);
-    recommendTrack.innerHTML = featured.map(function(doc){
-      return '<article class="recommend-slide">' +
-        '<div class="recommend-kicker">' + current.kicker + ' · 推荐文件</div>' +
-        '<div class="recommend-title">' + doc[0] + '</div>' +
-        '<div class="recommend-meta">' + doc[1] + ' · ' + doc[2] + '</div>' +
-      '</article>';
-    }).join('');
-    recommendDots.innerHTML = featured.map(function(_, index){
-      return '<button type="button" data-slide="' + index + '" aria-label="查看第' + (index + 1) + '个推荐文件"></button>';
-    }).join('');
-    setSlide(0);
-    clearInterval(slideTimer);
-    slideTimer = setInterval(function(){
-      setSlide((activeSlide + 1) % featured.length);
-    }, 3200);
-  }
-
-  function setSlide(index) {
-    activeSlide = index;
-    recommendTrack.style.transform = 'translateX(-' + (index * 100) + '%)';
-    recommendDots.querySelectorAll('button').forEach(function(dot, dotIndex){
-      dot.classList.toggle('on', dotIndex === index);
+  function renderNextPage() {
+    current.docs.slice(renderedCount, renderedCount + pageSize).forEach(function(doc, offset){
+      var index = renderedCount + offset;
+      var card = document.createElement('article');
+      card.className = 'doc-card';
+      card.innerHTML =
+        '<div><div class="doc-title">' + doc[0] + '</div>' +
+        '<div class="doc-summary">' + doc[3].slice(0, 100) + '</div></div>' +
+        '<div class="doc-actions">' +
+          '<button class="primary" type="button" data-preview="' + index + '">详情</button>' +
+          '<a href="' + makeDownload(doc) + '" download="' + doc[0] + '.txt">下载</a>' +
+        '</div>';
+      docList.appendChild(card);
     });
+    renderedCount = Math.min(renderedCount + pageSize, current.docs.length);
+    document.getElementById('loadMore').hidden = renderedCount >= current.docs.length;
   }
 
-  recommendDots.addEventListener('click', function(event){
-    var dot = event.target.closest('[data-slide]');
-    if (!dot) return;
-    setSlide(Number(dot.getAttribute('data-slide')));
-  });
-
-  current.docs.forEach(function(doc, index){
-    var card = document.createElement('article');
-    card.className = 'doc-card';
-    card.innerHTML =
-      '<div class="doc-title">' + doc[0] + '</div>' +
-      '<div class="doc-actions">' +
-        '<button class="primary" type="button" data-preview="' + index + '">预览</button>' +
-        '<a href="' + makeDownload(doc) + '" download="' + doc[0] + '.txt">下载</a>' +
-      '</div>';
-    docList.appendChild(card);
-  });
-
-  renderRecommendations();
+  renderNextPage();
+  document.getElementById('loadMore').addEventListener('click', renderNextPage);
 
   function openPreview(doc) {
     document.getElementById('previewTitle').textContent = doc[0];
-    document.getElementById('previewMeta').textContent = doc[1] + ' · ' + doc[2];
+    var effective = (type === 'policy' || type === 'safety' || type === 'health') ? ' · 生效日期：未填写' : '';
+    document.getElementById('previewMeta').textContent = doc[1] + ' · 发布于 ' + doc[2] + effective;
     document.getElementById('previewBody').innerHTML =
       '<p>' + doc[3] + '</p>';
+    document.getElementById('previewAttachments').innerHTML =
+      '<div class="attachment-row"><span>主文件 · ' + doc[0] + '.txt</span>' +
+      '<a href="' + makeDownload(doc) + '" download="' + doc[0] + '.txt">下载</a></div>';
     document.getElementById('sheet').classList.add('show');
   }
 

@@ -39,8 +39,6 @@
   .scroll::-webkit-scrollbar { display: none; }
 
   .banner-wrap { position: relative; border-radius: 16px; overflow: hidden; margin-bottom: 4px; }
-  .banner-slide { display: none; }
-  .banner-slide.on { display: block; }
   .banner-img {
     width: 100%; height: 150px; border-radius: 16px; display: flex; flex-direction: column;
     align-items: flex-start; justify-content: flex-end; font-size: 18px; font-weight: 700;
@@ -48,11 +46,6 @@
   }
   .banner-sub { font-size: 12px; font-weight: 400; opacity: .88; margin-top: 4px; }
   .banner-img.b1 { background: linear-gradient(135deg, #067e76, #189b91, #45bfb5); }
-  .banner-img.b2 { background: linear-gradient(135deg, #2e6b8a, #3388fc, #65b7ff); }
-  .banner-img.b3 { background: linear-gradient(135deg, #327f4e, #4b9a5a, #6db87d); }
-  .banner-dots { display: flex; gap: 6px; justify-content: center; margin-top: 10px; margin-bottom: 2px; }
-  .banner-dot { width: 6px; height: 6px; border-radius: 50%; background: #c9e7e7; transition: .3s; }
-  .banner-dot.on { background: var(--accent); width: 20px; border-radius: 3px; }
 
   .sec { font-size: 16px; font-weight: 650; margin: 22px 0 12px; display: flex; align-items: center; justify-content: space-between; }
   .sec .hint { font-size: 12px; color: var(--muted); font-weight: 500; }
@@ -137,14 +130,11 @@
   <div class="nav-bar">首页</div>
 
   <div class="scroll">
-    <div class="banner-wrap" id="banner">
-      <div class="banner-slide on"><div class="banner-img b1">教师工作台<span class="banner-sub">上传资源、处理待办任务</span></div></div>
-      <div class="banner-slide"><div class="banner-img b2">教研培训<span class="banner-sub">查看培训安排、会议链接与研修材料</span></div></div>
-      <div class="banner-slide"><div class="banner-img b3">课程资源<span class="banner-sub">进入课程库与资源库，支持后续统一跳转</span></div></div>
+    <div class="banner-wrap">
+      <div class="banner-img b1">教师工作台<span class="banner-sub">上传资源、处理待办任务</span></div>
     </div>
-    <div class="banner-dots"><span class="banner-dot on"></span><span class="banner-dot"></span><span class="banner-dot"></span></div>
 
-    <div class="sec">待办事项 <span class="hint">3项</span></div>
+    <div class="sec">近期任务</div>
     <div class="todo-cards">
       <a class="todo-card" href="upload-resource.html" data-od-id="todo-card-upload">
         <span class="dot-icon upload">传</span>
@@ -154,7 +144,7 @@
       <a class="todo-card" href="teacher-tasks.html" data-od-id="todo-card-tasks">
         <span class="dot-icon task">办</span>
         <span class="todo-title">待办任务</span>
-        <span class="todo-badge state-warn">待处理</span>
+        <span class="todo-badge state-warn" id="pendingTaskBadge">待处理 0</span>
       </a>
       <a class="todo-card" href="assessment-tool.html" data-od-id="todo-card-assessment">
         <span class="dot-icon assess">评</span>
@@ -211,18 +201,6 @@
 
 <script>
 (function(){
-  var slides=document.querySelectorAll('.banner-slide'),dots=document.querySelectorAll('.banner-dot'),idx=0;
-  function go(i){
-    slides.forEach(function(s){s.classList.remove('on')});
-    dots.forEach(function(d){d.classList.remove('on')});
-    idx=((i%slides.length)+slides.length)%slides.length;
-    slides[idx].classList.add('on');dots[idx].classList.add('on');
-  }
-  setInterval(function(){go(idx+1)},3500);
-  var banner=document.getElementById('banner'),sx=0;
-  banner.addEventListener('touchstart',function(e){sx=e.touches[0].clientX});
-  banner.addEventListener('touchend',function(e){var dx=e.changedTouches[0].clientX-sx;if(Math.abs(dx)>40)go(idx+(dx<0?1:-1))});
-
   // 质量评估进度徽标：与测评页共享 localStorage
   try {
     var raw = localStorage.getItem('hualong_assessment_v1');

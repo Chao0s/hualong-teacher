@@ -18,7 +18,7 @@
   .nav-bar{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;padding:8px 12px 12px}
   .nav-bar a{display:grid;place-items:center;width:36px;height:36px;color:var(--fg);text-decoration:none}.nav-title{text-align:center;font-size:17px;font-weight:600}
   .scroll{flex:1;overflow-y:auto;padding:0 16px 28px}.scroll::-webkit-scrollbar{display:none}
-  .sec{font-size:16px;font-weight:700;margin:12px 0 10px}
+  .sec{font-size:16px;font-weight:700;margin:12px 0 10px;display:flex;align-items:center;justify-content:space-between}.sec a{font-size:12px;color:var(--accent-dark);font-weight:700;text-decoration:none}
   .profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
   .profile-card{display:block;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px;text-decoration:none;color:inherit;min-height:104px}
   .profile-icon{width:34px;height:34px;border-radius:12px;background:var(--accent-light);color:var(--accent-dark);display:grid;place-items:center;margin-bottom:12px}
@@ -57,7 +57,7 @@
       </a>
     </div>
 
-    <div class="sec">最新研修</div>
+    <div class="sec"><span>最新研修</span><a href="training-list.html?section=latest&amp;view=all">更多</a></div>
     <a class="card" href="training-detail.html?id=game-course&type=latest">
       <div class="top"><div class="title">幼儿园课程游戏化的理论与实践</div><span class="badge">即将开始</span></div>
       <div class="meta">6月28日 14:00 · 多功能厅 · 主讲：陈园长</div>
@@ -71,18 +71,18 @@
       <div class="foot"><span class="pill">研修材料 4</span><span class="pill">开放报名</span></div>
     </a>
 
-    <div class="sec">历史研修</div>
+    <div class="sec"><span>历史研修</span><a href="training-list.html?section=history&amp;view=all">更多</a></div>
     <a class="card" href="training-detail.html?id=observation&type=history">
       <div class="top"><div class="title">幼儿行为观察与记录方法</div><span class="badge">已完成</span></div>
       <div class="meta">6月12日 15:00 · 会议室二 · 主讲：李老师</div>
       <div class="summary">练习轶事记录、时间取样和事件取样，并形成班级观察记录样例。</div>
-      <div class="foot"><span class="pill">研修材料 5</span><span class="pill">反馈 24</span><span class="pill">评论 15</span></div>
+      <div class="foot"><span class="pill">研修材料 5</span><span class="pill">反馈 24</span></div>
     </a>
     <a class="card" href="training-detail.html?id=home-connect&type=history">
       <div class="top"><div class="title">家园沟通技巧与案例分享</div><span class="badge">已完成</span></div>
       <div class="meta">5月30日 10:00 · 线上会议 · 主讲：王主任</div>
       <div class="summary">聚焦家长沟通边界、正向反馈和争议场景的回应策略。</div>
-      <div class="foot"><span class="pill">研修材料 3</span><span class="pill">反馈 21</span><span class="pill">评论 12</span></div>
+      <div class="foot"><span class="pill">研修材料 3</span><span class="pill">反馈 21</span></div>
     </a>
   </div>
 </div>
