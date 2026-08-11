@@ -61,7 +61,6 @@ production_initial_db_growth_book_section (成长册新增栏目初始状态) = 
 production_initial_db_book_widget (成长册组件初始状态) = EMPTY
 production_initial_db_book_material_submission (成长册素材提交初始状态) = EMPTY
 production_initial_db_growth_material (成长资料初始状态) = EMPTY
-production_initial_db_community_submission (社区共育提交初始状态) = EMPTY
 production_initial_db_scale_item (量表题库初始状态) = 非空；按量表版本导入(scale_code=guide, scale_version=1.0, 124 题项)，属参考数据不属业务种子数据，来源 hualong-teacher/data/guide-scale.json
 page_layout_library (页版式库) = 不入库；预设 6 个栏目的页面版式为仓库内的版本化 JSON，地位比照 db/rubric/，随代码部署（W13）
 base_identity_data (基础身份数据) = db_school|db_teacher|db_class|db_teacher_class|db_child 由部署或园所管理员导入，不属于 Mock 业务内容
@@ -78,7 +77,7 @@ environment_isolation (环境隔离) = demo|test 数据不得复制到 productio
 | 1 | 在园时光 | Kindergarten Moments | btn_home_school_moment | db_moment | school_id, class_id, teacher_id | home-school.html > home-school-moments.html |
 | 2 | 亲子任务 | Parent-Child Tasks | btn_parent_task | db_parent_task | school_id, class_id, teacher_id | home-school.html > parent-tasks.html |
 | 3 | 成长档案 | Growth Record | btn_growth_record | db_growth_record | school_id, class_id, teacher_id | home-school.html > growth-record.html |
-| 4 | 社区共育 | Community Coeducation | btn_community_coeducation | db_community_submission | school_id, class_id | home-school.html > community-coeducation.html |
+| 4 | 社区共育 | Community Coeducation | btn_community_coeducation | db_parent_task + db_parent_task_submission | school_id, class_id, parent_task_type=t2 | home-school.html > community-coeducation.html |
 | 5 | 首页 | Home | nav_home | nav_home | NULL | home.html |
 | 6 | 党建管理 | Party Affairs | nav_party | nav_party | NULL | school-affairs.html |
 | 7 | 综合协调 | Comprehensive Coordination | nav_coord | nav_coord | NULL | comprehensive-coordination.html |
@@ -100,14 +99,13 @@ moment_id (在园时光ID), 0:k, integer, ui=home_school.quick.moment
 parent_task_id (亲子任务ID), 0:k, integer, ui=home_school.quick.parent_task
 growth_record_id (成长档案ID), 0:k, integer, ui=home_school.quick.growth_record
 growth_book_id (成长册ID), 0:k, integer, ui=home_school.progress.growth_book
-community_submission_id (社区共育提交ID), 0:k, integer, ui=home_school.quick.community
 child_count (班级幼儿数), 1:1, integer, derived(db_child), ui=home_school.metric.child_count
 average_completion (平均完成率), 1:1, percent, derived(db_home_school_progress), ui=home_school.metric.average_completion
 reminder_count (待提醒幼儿数), 1:1, integer, derived(db_home_school_progress), ui=home_school.metric.reminder_count
 
-rel_count (关系数量) = 10
-rel_db (关联表) = db_teacher, db_school, db_class, db_child, db_home_school_progress, db_moment, db_parent_task, db_growth_record, db_growth_book, db_community_submission
-rel_map (关系字段) = db_home_school{teacher_id}<->db_teacher{teacher_id}; db_home_school{school_id}<->db_school{school_id}; db_home_school{class_id}<->db_class{class_id}; db_home_school{child_id}<->db_child{child_id}; db_home_school{home_school_progress_id}<->db_home_school_progress{home_school_progress_id}; db_home_school{moment_id}<->db_moment{moment_id}; db_home_school{parent_task_id}<->db_parent_task{parent_task_id}; db_home_school{growth_record_id}<->db_growth_record{growth_record_id}; db_home_school{growth_book_id}<->db_growth_book{growth_book_id}; db_home_school{community_submission_id}<->db_community_submission{community_submission_id}
+rel_count (关系数量) = 9
+rel_db (关联表) = db_teacher, db_school, db_class, db_child, db_home_school_progress, db_moment, db_parent_task, db_growth_record, db_growth_book
+rel_map (关系字段) = db_home_school{teacher_id}<->db_teacher{teacher_id}; db_home_school{school_id}<->db_school{school_id}; db_home_school{class_id}<->db_class{class_id}; db_home_school{child_id}<->db_child{child_id}; db_home_school{home_school_progress_id}<->db_home_school_progress{home_school_progress_id}; db_home_school{moment_id}<->db_moment{moment_id}; db_home_school{parent_task_id}<->db_parent_task{parent_task_id}; db_home_school{growth_record_id}<->db_growth_record{growth_record_id}; db_home_school{growth_book_id}<->db_growth_book{growth_book_id}
 persist (是否持久化) = 0
 object_type (对象类型) = aggregate
 
@@ -269,9 +267,12 @@ parent_task_submission_id (亲子任务提交ID), 1:1, integer, ui=parent_task.s
 parent_task_id (亲子任务ID), 1:1, integer, ui=parent_task.submission.hidden
 child_id (幼儿ID), 1:1, integer, ui=parent_task.submission.child
 submission_text (提交文字), 0:1, max_len=1000, ui=parent_task.submission.text
-file_id (提交图片或视频ID), 0:k, integer, ui=parent_task.submission.media
+file_id (提交图片ID), 0:k, integer, ui=parent_task.submission.media
 submission_status (提交状态), 1:1, c1=complete(已完成)|c2=incomplete(未完成), ui=parent_task.submission.status
 submitted_at (提交时间), 0:1, datetime, ui=parent_task.submission.time
+active_check_batch_key (家庭内容检查批次), 0:1, batch_key, ui=parent_task.submission.review_status
+parent_book_included (家长分支进册), 1:1, boolean, ui=context.hidden
+teacher_book_included (教师分支进册), 1:1, boolean, ui=growth_book.task.teacher_included
 
 rel_count (关系数量) = 3
 rel_db (关联表) = db_parent_task, db_child, db_file
@@ -537,23 +538,10 @@ completion_rule (完成规则):
 任一必需评估缺失或未完成，主页成长档案状态均为 h2=未完成
 
 
-社区共育提交 (Community Coeducation Submission / db_community_submission)
+社区共育 Feed (Community Coeducation Feed / derived)
 
-community_submission_id (社区共育提交ID), 1:1, integer, ui=community.card.hidden
-school_id (园所ID), 1:1, integer, ui=community.hidden
-class_id (班级ID), 1:1, integer, ui=community.class
-child_id (幼儿ID), 1:1, integer, ui=community.child
-task_label (任务标签), 0:1, max_len=100, ui=community.card.task_label
-submission_text (提交内容), 0:1, max_len=1000, ui=community.card.text
-file_id (图片或视频ID), 0:k, integer, ui=community.card.media
-publish_status (发布状态), 1:1, s1=draft(草稿)|s2=published(已发布), ui=community.status
-published_at (发布时间), 0:1, datetime, ui=community.card.time
-
-rel_count (关系数量) = 4
-rel_db (关联表) = db_school, db_class, db_child, db_file
-rel_map (关系字段) = db_community_submission{school_id}<->db_school{school_id}; db_community_submission{class_id}<->db_class{class_id}; db_community_submission{child_id}<->db_child{child_id}; db_community_submission{file_id}<->db_file{file_id}
-
-pending_removal (待处理，本次未改) = DECISIONS.md B11 已定拔掉 db_community_submission —— 社区共育不是实体，是 db_parent_task + db_parent_task_submission 的 feed 视图，按 parent_task_type 筛选；E5 确认前端已把筛选器改为任务类型（全部 / 日常 t1 / 社区 t2），data-type="daily|community" 即对应该栏，data-task 不再参与筛选。本区块的重写属 B 组落地范围，本次改版（E1-E7）未动，登记于此以免被当成仍然成立的定义
+source_rule = db_parent_task.parent_task_type=t2 JOIN db_parent_task_submission；`db_community_submission` 已由 B11 删除，不得恢复或复制
+visibility_rule = 教师只读本人班级 c1 完成提交；c2 家庭草稿与进行中的微信检查不得返回
 
 
 [GROWTH_BOOK]
@@ -593,7 +581,7 @@ teacher_id (评价教师ID), 1:1, integer, ui=context.hidden
 term_id (学期ID), 1:1, school_term, ui=growth_book.period
 layout_seed (版式随机种子), 1:1, integer, ui=growth_book.hidden
 can_generate (是否可生成), 1:1, derived(can_generate_rule), ui=growth_book.status
-generation_status (成长册生成状态), 1:1, g1=not_generated(未生成)|g2=generated(已生成), ui=growth_book.generation_status
+generation_status (成长册生成状态), 1:1, g1=not_generated(未生成)|g0=generating(生成中)|g2=generated(已生成), ui=growth_book.generation_status
 generated_file_id (成长册文件ID), 0:1, integer, ui=growth_book.preview|growth_book.download
 generated_at (生成时间), 0:1, datetime, ui=growth_book.generated_at
 included_sections (本册收录栏目), 0:1, json, ui=growth_book.hidden
@@ -671,6 +659,7 @@ template_id (成长册模版ID), 1:1, integer, ui=growth_book_section.hidden
 name (栏目名称), 1:1, max_len=10, ui=growth_book_section.name_input
 anchor_after (插入位置), 1:1, cover|section_key, ui=growth_book_section.anchor_select
 created_by (创建教师ID), 1:1, integer, ui=growth_book_section.hidden
+collection_status (征集状态), 1:1, c1=inactive(未征集)|c2=collecting(征集中), ui=growth_book_section.collection_status
 created_at (创建时间), 1:1, datetime, ui=growth_book_section.hidden
 
 rel_count (关系数量) = 3
@@ -773,7 +762,7 @@ radar_rule (雷达图 / W12) = 不存任何文件、不存 base64、不落任何
 成长册素材提交 (Growth Book Material Submission / db_book_material_submission) [REUSE]
 
 reuse_source (复用来源) = Parent App growth-book-spec.md (canonical definition)
-引用字段 = book_material_submission_id, widget_id, child_id, submission_text, file_id, crop, submitted_by, submitted_at
+引用字段 = book_material_submission_id, widget_id, child_id, submission_text, file_id, submitted_by, submitted_at, active_check_batch_key
 unique (唯一键) = widget_id + child_id
 row_meaning (一列的含义) = 一个槽位一名幼儿
 submitted_by (提交来源) = parent(家长提交)|teacher(教师代传)
@@ -781,7 +770,7 @@ cross_app_rule (跨端规则) = 家长端为 canonical，教师端仅引用，�
 teacher_write_surface (教师端写入面) = growth-book-edit.html「提交情况」弹层的代传按钮，写 file_id / submission_text，沿用家长端的 ui=book_material.submission.upload 与 ui=book_material.submission.text，本 specification 不另立名字
 submitted_by_rule (代传规则 / E3 第 6 点) = 该值由服务端依登录身份设定，请求体不得指定
 no_request_table (不建征集请求表) = db_book_material_request 不建表。一个 binding_key=collected 的 widget 存在本身就是一次征集，状态由提交记录的有无派生
-crop_note (裁切框形态) = crop JSON 的形态待定，见 DECISIONS.md E3 的开放项
+crop_note (裁切框形态) = NONE。Q62-j6 已删除 crop；只存裁切后的处理 JPEG，以实际像素比例复验
 pk_naming_conflict (主键命名待统一) = DECISIONS.md E3 的 DDL 草图写 submission_id，家长端 canonical 写 book_material_submission_id；两者指同一列，DDL 落地时须择一，此处依 canonical 引用
 
 collection_lifecycle (素材征集生命周期 / W15 + W16):
@@ -790,8 +779,8 @@ collection_lifecycle (素材征集生命周期 / W15 + W16):
 齐备判定 = 该栏目全部槽位都有东西，不是「至少交一件」
 不接受「可以不交」：允许缺件等于把压力与责任转嫁给教师，且缺件必然产生留白，排出来的东西违反教师设计时的原意
 已知代价：教师多摆两个槽位就可能卡住全班出册。这与「新增栏目不设上限」「征集不设时限」叠加，是三条已定决策共同造成的风险，缓解手段只有教师代传
-征集不设时限：无 due_date、无逾期状态、无提醒任务，以学期结束为自然边界，催办走线下（E3 第 4 点）
-发起征集 = 该栏目版面冻结。教师在发布前有责任先预览；发布后只能撤回
+征集不设时限：无 due_date、无逾期状态、无提醒任务；栏目永久跨学期共用，不以学期结束自动关闭
+征集启停由 db_growth_book_section.collection_status 独立控制；template d2 只冻结版面，不自动发布或撤回征集
 撤回的语意是删除不是保留：该栏目已收的提交一并删除，不留孤儿档，重新发布时家长要重交。理由是裁切比例已失效（W17 只存成品无原图），且符合 PIPL 第六条最小必要
 can_generate 对该幼儿逐栏目比对「该栏目的 collected widget 数」与「该幼儿在这些 widget 上的提交数」
 
@@ -829,15 +818,13 @@ channel_rule (成长资料通道规则 / E3 第 7 点 + W11，2026-08-02 前端�
 管理入口在 growth-book-edit.html 的「在园时光 · 管理」弹层：可上移、可移除
 上千张的数量上限未定，见 GAPS.md G29
 
-source_change (来源扩充 / 2026-08-02 前端评审，推翻本节原「只收在园时光」的隐含前提):
-社区共育（community-coeducation.html）的家长投稿同样带「+ 加入成长册」，教师可将其收进本通道，故 moment_id 由 1:1 放宽为 0:1，另加 source_type 区分来源
-社区来源的外键尚不能定：DECISIONS.md B11 已定拔掉 db_community_submission，社区共育是 db_parent_task + db_parent_task_submission 的 feed 视图，故 r2 该指向哪张表须待 B11 落地后补，登记为开放项
-粒度冲突已知并接受：社区投稿本身是幼儿级（带 child_id），收进本通道后按班级级呈现，等于教师把某个家庭的投稿选为全班共享素材，这是评审的原意
+source_change (来源收敛 / Q62-d):
+db_growth_material 只承载教师发布的班级级在园时光素材。任何家庭的日常／社区亲子任务提交都保持幼儿级，不能塞进本通道后扩散到全班
+社区任务同样是 db_parent_task(parent_task_type=t2) + db_parent_task_submission，教师在对应幼儿提交上操作 teacher 分支
 
-task_selection_rule (亲子活动收录筛选 / 2026-08-02 前端评审，推翻原「亲子活动一律进册」):
-亲子活动不再全量进册，改为教师在 growth-book-edit.html 的「亲子活动 · 管理」弹层逐次勾选收录哪几次活动
-勾选结果是班级级（一次勾选对全班生效），每名幼儿在被收录的活动里呈现自己家庭的提交
-落列待后端确认：暂建议存 db_growth_book_template 上的一列（如 selected_tasks json），与 enabled_sections 同层，随模版 d1/d2 冻结
+task_selection_rule (亲子活动收录筛选 / Q62-d—d4):
+收录粒度是一笔 c1 db_parent_task_submission，不是班级任务。家长与教师分别写 parent_book_included／teacher_book_included，任一为真即入册；两分支照片用 db_file_ref usage_key=book_parent|book_teacher，取 file_id 联集并去重
+教师只能操作本人班级幼儿的 teacher 分支，不能覆盖家长分支；家长端不显示教师选择。选择不随 template d2 冻结，而在该幼儿首次 g0 时冻结
 
 
 [GROWTH_BOOK_RENDERING]
@@ -944,3 +931,16 @@ IF page=teacher-message.html AND child_id NOT_IN current_class_id, return 403
 IF page=growth-book-view.html AND can_generate=0, 禁止进入（前端置灰），return 409
 IF page=growth-book-edit.html AND template_status=d2, 栏目版面冻结，写入请求 return 409（须先撤回）
 IF 写入 db_school.book_cover AND role!=admin, return 403
+
+
+[F10_F15_JOURNEY_OVERRIDE_2026_08_12]
+
+moment_publish = s1 草稿服务端自动保存；标题 1—50 字，至少一名同班幼儿，trim 后 1—600 字评语或至少 1 张图片；最多 9 张。教师在当前页面完整预览并点发布即为人工把关，不送微信 API
+moment_edit = s3 编辑只在本机形成候选快照，点保存修改后原子替换；不通知家长、不显示修改 badge；首次发布也不通知。家长 feed 只读 s3
+image_pipeline = 教师／家长统一：输入单档最多 10 MB，只接受 JPEG|PNG|WebP|HEIC，校正方向、移除 metadata、长边超过 2000px 才缩小，统一 MozJPEG q82—85，只存处理后 JPEG
+task_book_branch = 教师只能改 c1 提交的 teacher_book_included 与 book_teacher 引用；与家长分支 OR 合并，照片联集去重。首次 g0 后永久冻结，不能因 template d2 提前冻结
+generation_transition = 首次生成请求原子 g1→g0 并冻结该幼儿该学期全部进册选择；失败 g0→g1 并解冻，成功 g0→g2。g2 重导出保持旧档直到新档成功原子替换，内容不解冻
+collection_toggle = 每个新增 section 以 collection_status c1↔c2 独立启停；template d2 只冻结版面。c2 才接受家庭草稿与教师代传；撤回同交易删检查列、全部 submission 与引用。相关幼儿任一 g0 暂禁撤回，任一 g2 后永久禁撤回
+teacher_material = 教师代传／更正前完整预览并点一次确认，作为人工把关；不送微信、不建 review_action。active family batch 期间不得接管；首次 g0 后永久冻结
+permanent_collection = template、section、widget 与 material submission 不带 term_id；同一份 collected 内容永久供往后学期共用
+crop_removed = db_book_material_submission.crop 已删除，只存按 widget 比例处理后的 JPEG，服务端复验实际像素宽高

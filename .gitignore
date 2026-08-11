@@ -1,3 +1,7 @@
 .od-skills/
 *.artifact.json
 ~$*
+
+# Local design-tool workspaces
+lanhu-mcp/
+*.pen

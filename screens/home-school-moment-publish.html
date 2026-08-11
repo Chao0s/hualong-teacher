@@ -69,6 +69,7 @@
       linear-gradient(150deg, var(--green-light), var(--blue-light));
   }
 </style>
+<script src="https://mcp.figma.com/mcp/html-to-design/capture.js" async></script>
 </head>
 <body>
 <div class="phone">
@@ -77,15 +78,16 @@
   <div class="scroll">
     <div class="chunk form-card">
       <label>活动名称</label>
-      <input class="input" value="端午手作：艾草香囊">
+      <input class="input" id="momentTitle" maxlength="50" value="端午手作：艾草香囊">
       <label>活动评语</label>
-      <textarea class="textarea">孩子们能主动选择材料，尝试闻一闻、摸一摸艾草，并在穿绳和装袋环节互相提醒，整体参与度较高。</textarea>
-      <label>添加照片</label>
+      <textarea class="textarea" id="momentContent" maxlength="600">孩子们能主动选择材料，尝试闻一闻、摸一摸艾草，并在穿绳和装袋环节互相提醒，整体参与度较高。</textarea>
+      <label>添加照片（最多 9 张）</label>
       <div class="photo-row moment-upload-row">
         <div class="photo add-photo"><span class="plus">+</span><span>添加</span></div>
         <div class="photo photo-thumb"><span class="photo-label">手作过程</span></div>
         <div class="photo photo-thumb group"><span class="photo-label">小组合影</span></div>
       </div>
+      <div class="hint" id="saveState" style="margin-top:10px">已自动保存</div>
     </div>
 
     <div class="chunk">
@@ -119,7 +121,7 @@
       </div>
     </div>
 
-    <button class="btn primary sticky-action" type="button">提交活动</button>
+    <button class="btn primary sticky-action" id="publishMoment" type="button">发布活动</button>
   </div>
 </div>
 <script>
@@ -140,6 +142,27 @@
     selectedRate.innerHTML = `<span class="status ${rate >= 80 ? 'done' : 'wait'}">${rate}%</span>`;
   }
   childChecks.forEach(item => item.addEventListener('change', syncSelectedChildren));
+  const saveState = document.getElementById('saveState');
+  let saveTimer = null;
+  function autoSave() {
+    saveState.textContent = '保存中…';
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => { saveState.textContent = '已自动保存'; }, 600);
+  }
+  document.getElementById('momentTitle').addEventListener('input', autoSave);
+  document.getElementById('momentContent').addEventListener('input', autoSave);
+  childChecks.forEach(item => item.addEventListener('change', autoSave));
+  document.getElementById('publishMoment').addEventListener('click', () => {
+    const title = document.getElementById('momentTitle').value.trim();
+    const content = document.getElementById('momentContent').value.trim();
+    const selected = Array.from(childChecks).filter(item => item.checked).length;
+    const photoCount = document.querySelectorAll('.moment-upload-row .photo-thumb').length;
+    if (!title || !selected || (!content && !photoCount)) {
+      saveState.textContent = '发布前须填写标题、至少关联一名幼儿，并提供评语或照片';
+      return;
+    }
+    saveState.textContent = '已由教师确认内容并发布；不另送微信机审';
+  });
   syncSelectedChildren();
 </script>
 </body>

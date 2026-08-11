@@ -4,6 +4,8 @@
 
 本仓库为**纯静态 HTML/CSS/JS 原型**，用于产品设计评审与交互演示，暂不包含后端服务。
 
+GitHub 仓库：<https://github.com/Chao0s/hualong-teacher>
+
 但它已经不只是一套画面。经 2026-07-31 与 2026-08-01 两轮评审、2026-08-02 后端回覆与同日的成长册改版之后，本仓库承载了三样**有约束力**的东西：
 
 - **成长册有了真实的版式契约，而且已经落地** —— A4 页为版面单位、15 × 24 网格、格子 10mm 精确正方、左右边距 30mm 上下 28.5mm、widget 不跨页、预设页面由后端团队作者且教师不可修改。契约全文在 `docs/frontend spec files/growth-book-layout-spec.md`（含「已对齐 / 仍有差距」对照表）；教师端的网格编辑器是 `screens/growth-book-section-edit.html`。改动成长册相关页面前必须先读它与 `decision.md` 第 16、21—26 条。

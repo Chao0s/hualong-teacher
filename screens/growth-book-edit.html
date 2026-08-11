@@ -61,6 +61,7 @@
   }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 </style>
+<script src="https://mcp.figma.com/mcp/html-to-design/capture.js" async></script>
 </head>
 <body>
 <div class="phone">
@@ -171,14 +172,14 @@ function renderState() {
   tag.textContent = TEMPLATE_STATUS[config.status];
   tag.classList.toggle('frozen', on);
   document.getElementById('stateNote').textContent = on
-    ? '版面已冻结，全班按此样板生成；如需修改请先撤回发布。'
+    ? '版面已冻结，全班按此样板生成；征集可按栏目独立启停。'
     : '草稿可随时修改，仅本人可见。确认整本预览无误后再发布。';
   document.getElementById('publishRow').innerHTML = on
     ? '<button class="btn danger" style="width:100%" id="unpublish">撤回发布</button>'
     : '<button class="btn primary" style="width:100%" id="publish">发布成长册</button>';
   document.getElementById('footHint').textContent = on
-    ? '撤回会删除各新增栏目已收到的家长提交，重新发布后家长需要重新提交。'
-    : '发布后全班幼儿的成长册均按此样板生成，各新增栏目同时向家长发起素材征集。';
+    ? '撤回模版只解除版面冻结，不会自动撤回栏目征集或删除家庭素材。'
+    : '发布后全班幼儿按此样板生成；新增栏目的素材征集仍须逐栏目另行发布。';
   const btn = document.getElementById(on ? 'unpublish' : 'publish');
   btn.addEventListener('click', () => openConfirm(on ? 'unpublish' : 'publish'));
 }
@@ -191,6 +192,7 @@ function renderPresets() {
       return `<div class="row-item">
         <span class="pill">新增</span>
         <span class="grow"><b>${section.name}</b></span>
+        <button class="tag-btn ${section.collecting ? 'danger' : ''}" data-collect="${section.key}">${section.collecting ? '撤回征集' : '发布征集'}</button>
         <button class="tag-btn" data-manage="${section.key}">管理</button>
         <a class="tag-btn" href="growth-book-section-edit.html?id=${section.key}">版面</a>
         <button class="tag-btn danger" data-del="${section.key}" ${on ? 'disabled' : ''}>删除</button>
@@ -215,6 +217,23 @@ document.getElementById('presetList').addEventListener('change', event => {
 document.getElementById('presetList').addEventListener('click', event => {
   const manage = event.target.closest('[data-manage]');
   const del = event.target.closest('[data-del]');
+  const collect = event.target.closest('[data-collect]');
+  if (collect) {
+    event.preventDefault();
+    const item = config.custom.find(entry => entry.id === collect.dataset.collect);
+    if (item.collecting) {
+      const ok = window.confirm('撤回后会删除该栏目全部家庭与教师素材；若已有相关成长册生成则服务端会拒绝。确认撤回？');
+      if (!ok) return;
+      item.collecting = false;
+      item.submitted = {};
+      showToast('征集已撤回，栏目素材已删除');
+    } else {
+      item.collecting = true;
+      showToast('征集已发布，家庭端可见');
+    }
+    renderAll();
+    return;
+  }
   if (del && !del.disabled) {
     event.preventDefault();
     /* 锚在被删栏目之后的，改锚到它原本的锚点，不留孤儿 */
@@ -253,7 +272,7 @@ document.getElementById('confirmSection').addEventListener('click', () => {
   /* 新栏目落地即带一页空白网格，版面到编辑器里排 */
   config.custom = (config.custom || []).concat([{
     id: id, name: name, after: document.getElementById('secAfter').value,
-    pages: 1, widgets: [], submitted: {}
+    pages: 1, widgets: [], submitted: {}, collecting: false
   }]);
   writeBookConfig(config);
   location.href = 'growth-book-section-edit.html?id=' + id;
@@ -314,9 +333,10 @@ document.getElementById('taskList').addEventListener('change', event => {
 let subId = null;
 function openSubmissions(id) {
   subId = id;
-  document.getElementById('subHint').textContent = locked()
-    ? '齐备的判定是该栏目全部槽位都有内容；未交齐的幼儿可由教师代传，避免个别家长拖住整班出册。'
-    : '尚未发布，家长还未收到该栏目的素材征集，暂不能代传。';
+  const item = config.custom.find(entry => entry.id === id);
+  document.getElementById('subHint').textContent = item.collecting
+    ? '齐备须全部槽位终局完成；未交齐可由教师预览后确认代传，已完成可在幼儿第一次生成前更正。'
+    : '该栏目尚未发布征集；请先回到清单点「发布征集」。';
   renderSectionMeta();
   renderSubmissions();
   openSheet('subSheet');
@@ -325,6 +345,7 @@ function openSubmissions(id) {
 function renderSectionMeta() {
   const item = config.custom.find(entry => entry.id === subId);
   const on = locked();
+  const collecting = !!item.collecting;
   document.getElementById('subTitle').textContent =
     `${item.name} · ${sectionPages(item)} 页 · ${sectionSlots(item)} 个槽位`;
   document.getElementById('secMeta').innerHTML = `
@@ -356,7 +377,7 @@ function renderSubmissions() {
       <span class="dot-cell ${ok ? 'done' : 'miss'}"></span>
       <div style="flex:1;font-size:13px;font-weight:600;margin-left:4px">${child.name}
         <span style="font-weight:400;color:var(--muted)"> · 已交 ${filled}/${slots}</span></div>
-      <button class="tag-btn" data-child="${child.id}" ${on ? '' : 'disabled'}>${ok ? '撤回' : '代传'}</button>
+      <button class="tag-btn" data-child="${child.id}" ${collecting ? '' : 'disabled'}>${ok ? '更正' : '代传'}</button>
     </div>`;
   }).join('');
 }
@@ -365,9 +386,12 @@ document.getElementById('subList').addEventListener('click', event => {
   if (!btn || btn.disabled) return;
   const item = config.custom.find(entry => entry.id === subId);
   const id = btn.dataset.child;
-  /* 代传按 submitted_by=teacher 写同一张提交表，一次补齐该栏目全部槽位 */
+  /* 原型以一次确认代表教师已完整预览将保存的文字／裁切成品；服务端逐槽位重验。 */
   const slots = sectionSlots(item);
-  item.submitted[id] = sectionFilled(item, id) >= slots ? 0 : slots;
+  const action = sectionFilled(item, id) >= slots ? '更正' : '代传';
+  if (!window.confirm(`确认${action} ${slots} 个槽位？此操作由教师本人承担发布前人工把关。`)) return;
+  item.submitted[id] = slots;
+  showToast(`已确认${action}`);
   renderSubmissions();
   writeBookConfig(config);
 });
@@ -377,11 +401,10 @@ let confirmKind = null;
 function openConfirm(kind) {
   confirmKind = kind;
   const publish = kind === 'publish';
-  const collect = (config.custom || []).length;
   document.getElementById('confirmTitle').textContent = publish ? '发布成长册' : '撤回发布';
   document.getElementById('confirmBody').textContent = publish
-    ? `发布后模版定稿、版面冻结，全班幼儿按此样板生成成长册${collect ? `，并向家长发起 ${collect} 个新增栏目的素材征集` : ''}。发布前请先翻完上方预览确认无误。`
-    : '撤回后可继续编辑版面，但各新增栏目已收到的家长提交会一并删除（照片只存裁切后的成品，无法保留），重新发布后家长需要重新提交。';
+    ? '发布后模版定稿、版面冻结，全班幼儿按此样板生成成长册。栏目征集不会自动发布，须在栏目行独立操作。发布前请先翻完整本预览。'
+    : '撤回后可继续编辑版面；已发布的栏目征集及其家庭素材保持不变。';
   const go = document.getElementById('confirmGo');
   go.textContent = publish ? '确认发布' : '确认撤回';
   go.className = publish ? 'btn primary' : 'btn danger';
@@ -393,8 +416,7 @@ document.getElementById('confirmGo').addEventListener('click', () => {
     showToast('已发布，版面已冻结');
   } else {
     config.status = 'd1';
-    (config.custom || []).forEach(item => { item.submitted = {}; });
-    showToast('已撤回，家长提交已删除');
+    showToast('已撤回模版，栏目征集保持不变');
   }
   closeSheets();
   renderAll();

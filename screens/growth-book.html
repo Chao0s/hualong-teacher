@@ -65,6 +65,7 @@
   }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 </style>
+<script src="https://mcp.figma.com/mcp/html-to-design/capture.js" async></script>
 </head>
 <body>
 <div class="phone">
@@ -252,7 +253,7 @@ mask.addEventListener('click', closeSheet);
 
 document.getElementById('confirmExport').addEventListener('click', () => {
   const count = availableChecks().filter(item => item.checked).length;
-  toast.textContent = count ? `已生成 ${count} 份成长册导出任务` : '请至少选择 1 名幼儿';
+  toast.textContent = count ? `已提交 ${count} 份生成任务，所选幼儿内容已冻结` : '请至少选择 1 名幼儿';
   toast.classList.add('show');
   setTimeout(() => toast.classList.remove('show'), 1600);
   if (count) closeSheet();
