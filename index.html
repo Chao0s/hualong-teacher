@@ -3,7 +3,19 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>幼儿园教师端 · 5 屏并排原型</title>
+<title>幼儿园教师端小程序 · 产品原型</title>
+<script>
+  (() => {
+    let savedView = null;
+    try { savedView = localStorage.getItem('prototype-view'); } catch (error) {}
+    const isMobile = window.matchMedia('(max-width: 700px)').matches;
+    document.documentElement.dataset.view = savedView || (isMobile ? 'mobile' : 'desktop');
+    document.documentElement.style.setProperty(
+      '--phone-scale',
+      String(Math.min(1, Math.max(0, (window.innerWidth - 32) / 390)))
+    );
+  })();
+</script>
 <style>
   :root {
     --bg: #f0eeeb; --fg: #1a1916; --muted: #8c8a84; --border: #e0ded9;
@@ -16,11 +28,29 @@
     min-height: 100vh;
   }
   .topbar {
+    position: relative;
     text-align: center; padding: 32px 20px 24px;
     background: #fff; border-bottom: 1px solid var(--border);
   }
   .topbar h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
   .topbar p { font-size: 14px; color: var(--muted); margin-top: 6px; }
+
+  .view-switch {
+    position: absolute; top: 20px; right: 20px;
+    display: inline-flex; gap: 3px; padding: 4px;
+    border: 1px solid var(--border); border-radius: 12px;
+    background: #f5f4f1; box-shadow: 0 4px 14px rgba(0,0,0,.05);
+  }
+  .view-switch button {
+    appearance: none; border: 0; border-radius: 8px; background: transparent;
+    padding: 8px 12px; color: var(--muted); font: 600 13px/1 var(--font);
+    cursor: pointer; transition: background .18s, color .18s, box-shadow .18s;
+  }
+  .view-switch button:hover { color: var(--fg); }
+  .view-switch button:focus-visible { outline: 2px solid #2f6feb; outline-offset: 2px; }
+  .view-switch button[aria-selected="true"] {
+    color: var(--fg); background: #fff; box-shadow: 0 1px 5px rgba(0,0,0,.1);
+  }
 
   .gallery-wrap {
     padding: 28px 16px;
@@ -29,16 +59,16 @@
   }
   .gallery {
     display: flex; gap: 20px;
-    justify-content: center;
-    min-width: min-content;
+    width: max-content; margin-inline: auto;
   }
   .screen-card { text-align: center; flex-shrink: 0; }
-  .screen-card iframe {
+  .phone-frame {
     width: 390px; height: 844px;
-    border: none; border-radius: 40px;
+    border-radius: 40px; overflow: hidden;
     box-shadow: 0 16px 48px rgba(0,0,0,.12), 0 4px 12px rgba(0,0,0,.06);
     background: #f5f4f1;
   }
+  .screen-card iframe { display: block; width: 390px; height: 844px; border: none; }
   .screen-label {
     margin-top: 14px; font-size: 15px; font-weight: 600; color: var(--fg);
   }
@@ -47,75 +77,136 @@
   }
   .screen-card:hover .screen-label { color: #2f6feb; }
 
-  .link-bar {
-    max-width: 1000px; margin: 24px auto; padding: 0 20px; text-align: center;
-  }
-  .link-bar a {
-    display: inline-block; padding: 8px 18px; margin: 4px;
-    background: #fff; border-radius: 8px; border: 1px solid var(--border);
-    text-decoration: none; color: var(--fg); font-size: 13px; transition: .15s;
-  }
-  .link-bar a:hover { border-color: #2f6feb; color: #2f6feb; }
-
   footer {
     text-align: center; padding: 32px 20px; color: var(--muted);
     font-size: 13px; border-top: 1px solid var(--border);
   }
 
-  /* iframe 尺寸必须与内部手机页面(390x844)一致，否则会出现内部滚动条、底部 tab 被滚出视野 */
-  @media (max-width: 900px) {
-    .gallery { flex-wrap: wrap; justify-content: center; }
+  /* PC：保留 390×844 的真实原型尺寸，并可横向浏览全部页面。 */
+  html[data-view="desktop"] .gallery-wrap { overflow-x: auto; }
+
+  /* 手机：只展示首页，其他页面通过手机框内部的底部 Tab 进入。 */
+  html[data-view="mobile"] .gallery-wrap {
+    width: 100%; max-width: 422px; margin-inline: auto;
+    overflow: hidden;
+  }
+  html[data-view="mobile"] .gallery {
+    width: 100%; margin-inline: 0; gap: 0; justify-content: center;
+  }
+  html[data-view="mobile"] .screen-card {
+    width: calc(390px * var(--phone-scale));
+  }
+  html[data-view="mobile"] .screen-card:not(:first-child),
+  html[data-view="mobile"] .screen-label,
+  html[data-view="mobile"] .screen-sub { display: none; }
+  html[data-view="mobile"] .phone-frame {
+    width: calc(390px * var(--phone-scale));
+    height: calc(844px * var(--phone-scale));
+    border-radius: clamp(24px, 8vw, 40px);
+  }
+  html[data-view="mobile"] .screen-card iframe {
+    transform: scale(var(--phone-scale)); transform-origin: top left;
+  }
+
+  @media (max-width: 700px) {
+    .topbar { padding: 76px 16px 20px; }
+    .topbar h1 { font-size: 21px; }
+    .topbar p { font-size: 13px; }
+    .view-switch { top: 16px; right: 50%; transform: translateX(50%); }
+    .gallery-wrap { padding-block: 20px; }
+    footer { padding: 24px 16px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .view-switch button { transition: none; }
   }
 </style>
 </head>
 <body>
 <div class="topbar">
   <h1>幼儿园教师端小程序</h1>
-  <p>5 个主 Tab 页面并排展示 — 点击下方手机框内部可交互体验</p>
+  <p id="view-description">5 个主 Tab 页面并排展示 — 点击手机框内部可交互体验</p>
+  <div class="view-switch" role="tablist" aria-label="页面查看方式">
+    <button type="button" role="tab" data-view-value="desktop">PC 浏览</button>
+    <button type="button" role="tab" data-view-value="mobile">手机浏览</button>
+  </div>
 </div>
 
 <div class="gallery-wrap">
   <div class="gallery">
     <div class="screen-card">
-      <iframe src="screens/home.html" loading="eager" title="首页" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation-by-user-activation"></iframe>
+      <div class="phone-frame"><iframe src="screens/home.html" loading="eager" title="首页" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation-by-user-activation"></iframe></div>
       <div class="screen-label">首页</div>
       <div class="screen-sub">轮播 Banner · 待办事项 · 常用入口 · 推荐课程资源</div>
     </div>
     <div class="screen-card">
-      <iframe src="screens/school-affairs.html" loading="lazy" title="党建管理" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation-by-user-activation"></iframe>
+      <div class="phone-frame"><iframe src="screens/school-affairs.html" loading="lazy" title="党建管理" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation-by-user-activation"></iframe></div>
       <div class="screen-label">党建管理</div>
       <div class="screen-sub">党建学习 · 党建活动 · 品牌建设</div>
     </div>
     <div class="screen-card">
-      <iframe src="screens/comprehensive-coordination.html" loading="lazy" title="综合协调" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation-by-user-activation"></iframe>
+      <div class="phone-frame"><iframe src="screens/comprehensive-coordination.html" loading="lazy" title="综合协调" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation-by-user-activation"></iframe></div>
       <div class="screen-label">综合协调</div>
       <div class="screen-sub">行政统筹 · 通勤保障 · 人事管理</div>
     </div>
     <div class="screen-card">
-      <iframe src="screens/training-center.html" loading="lazy" title="教研培训部" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation-by-user-activation"></iframe>
+      <div class="phone-frame"><iframe src="screens/training-center.html" loading="lazy" title="教研培训部" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation-by-user-activation"></iframe></div>
       <div class="screen-label">教研培训部</div>
       <div class="screen-sub">课程建设 · 课程资源 · 教研培训 · 推荐资源/案例</div>
     </div>
     <div class="screen-card">
-      <iframe src="screens/home-school.html" loading="lazy" title="家园共育" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation-by-user-activation"></iframe>
+      <div class="phone-frame"><iframe src="screens/home-school.html" loading="lazy" title="家园共育" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation-by-user-activation"></iframe></div>
       <div class="screen-label">家园共育</div>
       <div class="screen-sub">在园时光 · 亲子任务 · 儿童成长档案 · 成长册 · 完成度汇总</div>
     </div>
   </div>
 </div>
 
-<div class="link-bar">
-  <a href="screens/home.html" target="_blank">首页 ↗</a>
-  <a href="screens/school-affairs.html" target="_blank">党建管理 ↗</a>
-  <a href="screens/comprehensive-coordination.html" target="_blank">综合协调 ↗</a>
-  <a href="screens/training-center.html" target="_blank">教研培训部 ↗</a>
-  <a href="screens/home-school.html" target="_blank">家园共育 ↗</a>
-  <a href="screens/home-school-moments.html" target="_blank">在园时光 ↗</a>
-  <a href="screens/growth-record.html" target="_blank">成长档案 ↗</a>
-  <a href="screens/growth-book.html" target="_blank">成长册 ↗</a>
-  <a href="landing.html" target="_blank">产品落地页 ↗</a>
-</div>
-
 <footer>幼儿园教师端小程序 · 产品原型 · 2026</footer>
+<script>
+  (() => {
+    const buttons = [...document.querySelectorAll('[data-view-value]')];
+    const description = document.getElementById('view-description');
+
+    function syncPhoneScale() {
+      const scale = Math.min(1, Math.max(0, (window.innerWidth - 32) / 390));
+      document.documentElement.style.setProperty('--phone-scale', String(scale));
+    }
+
+    function setView(view, persist = true) {
+      const previousView = document.documentElement.dataset.view;
+      document.documentElement.dataset.view = view;
+      buttons.forEach((button) => {
+        const selected = button.dataset.viewValue === view;
+        button.setAttribute('aria-selected', String(selected));
+        button.tabIndex = selected ? 0 : -1;
+      });
+      description.textContent = view === 'mobile'
+        ? '通过手机底部 Tab 切换页面 — 点击手机框内部可交互体验'
+        : '5 个主 Tab 页面并排展示 — 点击手机框内部可交互体验';
+      if (view === 'mobile' && previousView !== 'mobile') {
+        document.querySelector('.screen-card:first-child iframe').src = 'screens/home.html';
+      }
+      if (persist) {
+        try { localStorage.setItem('prototype-view', view); } catch (error) {}
+      }
+    }
+
+    buttons.forEach((button) => {
+      button.addEventListener('click', () => setView(button.dataset.viewValue));
+      button.addEventListener('keydown', (event) => {
+        if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+        event.preventDefault();
+        const next = button.dataset.viewValue === 'desktop' ? 'mobile' : 'desktop';
+        setView(next);
+        document.querySelector(`[data-view-value="${next}"]`).focus();
+      });
+    });
+
+    window.addEventListener('resize', syncPhoneScale, { passive: true });
+    syncPhoneScale();
+    setView(document.documentElement.dataset.view || 'desktop', false);
+  })();
+</script>
 </body>
 </html>
