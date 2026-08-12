@@ -5,25 +5,24 @@ const BOOK_COMPONENTS = {
 };
 /* 预设栏目的固定顺序 */
 const BOOK_ORDER = ['intro', 'time', 'task', 'term', 'comp', 'message'];
-/* 园所级 / 班级级栏目：全班内容相同，不进检查表的幼儿列 */
-const BOOK_CLASS_LEVEL = ['intro', 'time'];
+/* 纯园所／班级级栏目：在园时光已含家长逐幼儿选片，必须进幼儿检查列。 */
+const BOOK_CLASS_LEVEL = ['intro'];
 
 /* 封面归园所（W19）：db_school.book_cover，一园一份、只有 admin 能改，教师端只读 */
 const SCHOOL_COVER = { layout: 'full', image: '', title: '的成长册' };
 
-/* 模版状态（W16）：草稿可编可预览，定稿冻结版面，只能撤回 */
+/* 模版状态（F16）：草稿可编可预览，首次发布后永久冻结 */
 const TEMPLATE_STATUS = { d1: '草稿', d2: '已定稿' };
 
-/* 页数软上限（W21）：超过只提示不阻挡；每页约 400KB */
-const BOOK_PAGE_SOFT_LIMIT = 40;
-const BOOK_PAGE_KB = 400;
+/* F17：整册无最低页数，硬上限 200 页 */
+const BOOK_PAGE_LIMIT = 200;
 
 const BOOK_CHILDREN = [
-  { id:'chen',  name:'陈小明', done:{ intro:1, time:1, task:1, term:1, comp:1, message:1 } },
-  { id:'li',    name:'李雨萱', done:{ intro:1, time:1, task:1, term:0, comp:1, message:0 } },
-  { id:'zhang', name:'张力轩', done:{ intro:1, time:1, task:0, term:0, comp:0, message:0 } },
-  { id:'wang',  name:'王子涵', done:{ intro:1, time:1, task:1, term:1, comp:1, message:1 } },
-  { id:'zhao',  name:'赵佳怡', done:{ intro:1, time:0, task:0, term:1, comp:1, message:0 } }
+  { id:'chen',  name:'陈小明', pages:{ intro:3,time:26,task:18,term:2,comp:2,message:1,custom:4 }, done:{ intro:1, time:1, task:1, term:1, comp:1, message:1 } },
+  { id:'li',    name:'李雨萱', pages:{ intro:3,time:32,task:20,term:0,comp:2,message:0,custom:4 }, done:{ intro:1, time:1, task:1, term:0, comp:1, message:0 } },
+  { id:'zhang', name:'张力轩', pages:{ intro:3,time:22,task:0,term:0,comp:0,message:0,custom:4 }, done:{ intro:1, time:1, task:0, term:0, comp:0, message:0 } },
+  { id:'wang',  name:'王子涵', pages:{ intro:3,time:58,task:41,term:2,comp:2,message:1,custom:6 }, done:{ intro:1, time:1, task:1, term:1, comp:1, message:1 } },
+  { id:'zhao',  name:'赵佳怡', pages:{ intro:3,time:126,task:68,term:2,comp:2,message:1,custom:4 }, done:{ intro:1, time:1, task:1, term:1, comp:1, message:1 } }
 ];
 
 /* 亲子活动候选池：并非全部进册，由教师在编辑样板页手动勾选 */
@@ -46,7 +45,7 @@ const BINDING_KEYS = [
   { key: 'school.intro',   name: '园所介绍',       types: ['text'],          collected: false },
   { key: 'class.material', name: '成长资料',       types: ['image','text'],  collected: false },
   { key: 'child.message',  name: '教师寄语',       types: ['text'],          collected: false, limit: 300 },
-  { key: 'child.term_eval',name: '期末评估',       types: ['text'],          collected: false },
+  { key: 'child.term_eval',name: '期末评估',       types: ['text'],          collected: false, limit: 500 },
   { key: 'child.task',     name: '亲子活动',       types: ['image','text'],  collected: false, limit: 1000 },
   { key: 'child.assessment',name: '综合评估雷达图', types: ['image'],        collected: false }
 ];
@@ -113,7 +112,9 @@ function defaultBookConfig() {
     status: 'd1',    // 模版状态 d1=草稿 / d2=已定稿
     selected: BOOK_ORDER.slice(),
     custom: [],      // 新增栏目 [{ id, name, after, pages, widgets:[], submitted:{childId:件数} }]
-    material: [],    // 成长资料（班级级）[{ id, title, date, photos:[] }]
+    material: [],    // 教师成长资料（班级级）[{ id, title, date, photos:[] }]
+    momentMaterial: [], // 家长按幼儿从在园时光选择的 book_parent 原型数据
+    publishedChildren: [], // 原型持久化 b2 幼儿 id；真实来源为 db_growth_book.book_status
     taskPicked: BOOK_TASKS.map(item => item.id)   // 收录进册的亲子活动 id
   };
 }
@@ -143,24 +144,34 @@ function readBookConfig() {
       if (saved.status === 'd2') base.status = 'd2';
       if (Array.isArray(saved.custom)) base.custom = saved.custom.map(normalizeSection);
       if (Array.isArray(saved.material)) base.material = saved.material;
+      if (Array.isArray(saved.momentMaterial)) base.momentMaterial = saved.momentMaterial;
+      if (Array.isArray(saved.publishedChildren)) base.publishedChildren = saved.publishedChildren;
       if (Array.isArray(saved.taskPicked)) base.taskPicked = saved.taskPicked;
     }
   } catch (e) {}
   return base;
 }
 const bookPublished = config => config.status === 'd2';
+const bookChildPublished = (child, config) => (config.publishedChildren || []).includes(child.id);
 /* 该幼儿在某新增栏目上已交的件数 */
 const sectionFilled = (item, childId) => (item.submitted || {})[childId] || 0;
-/* 预估页数与档案大小（W21：提示落在生成检查表与批量导出弹层） */
-function bookPageEstimate(config) {
+/* F17：页数含封面、固定内容、启用栏目与封底；逐幼儿预检可带服务端分栏结果 */
+function bookPageEstimate(config, child) {
+  if (child && child.pages) {
+    const sections = bookSections(config);
+    const breakdown = {};
+    sections.forEach(section => {
+      breakdown[section.key] = section.custom
+        ? (child.pages.custom || sectionPages(section.item))
+        : (child.pages[section.key] || 0);
+    });
+    const pages = 2 + Object.values(breakdown).reduce((sum, value) => sum + value, 0);
+    return { pages, breakdown, over: pages > BOOK_PAGE_LIMIT };
+  }
   const custom = (config.custom || []).reduce((sum, item) => sum + sectionPages(item), 0);
   const preset = bookSections(config).filter(s => !s.custom).length;
   const pages = preset + custom + 2;   // 封面 + 各栏目页 + 封底
-  return {
-    pages: pages,
-    size: (pages * BOOK_PAGE_KB / 1024).toFixed(1) + 'MB',
-    over: pages > BOOK_PAGE_SOFT_LIMIT
-  };
+  return { pages, breakdown: {}, over: pages > BOOK_PAGE_LIMIT };
 }
 function writeBookConfig(config) {
   try { localStorage.setItem(BOOK_STORE_KEY, JSON.stringify(config)); } catch (e) {}
@@ -224,21 +235,28 @@ function bookAnchors(config, excludeId) {
   return list;
 }
 
-/* 班级级栏目是否就绪：园所介绍恒为真，在园时光取决于成长资料是否非空 */
+/* 纯班级级栏目是否就绪。 */
 function classLevelReady(key, config) {
-  if (key === 'time') return (config.material || []).length > 0;
   return true;
 }
+function childSectionReady(key, child, config) {
+  if (key === 'time') {
+    const teacherReady = (config.material || []).length > 0;
+    const parentReady = (config.momentMaterial || []).some(item => !item.childId || item.childId === child.id);
+    return teacherReady || parentReady;
+  }
+  return !!child.done[key];
+}
 /* 某幼儿是否齐备：因人而异的预设栏目 + 各新增栏目「全部槽位」都有提交（W15） */
-function bookCanGenerate(child, config) {
+function bookCanFinalize(child, config) {
   const sections = bookSections(config);
   if (!sections.length) return false;
   const classOk = sections.filter(s => !s.custom && BOOK_CLASS_LEVEL.includes(s.key))
     .every(s => classLevelReady(s.key, config));
   const childOk = sections.filter(s => !s.custom && !BOOK_CLASS_LEVEL.includes(s.key))
-    .every(s => child.done[s.key]);
+    .every(s => childSectionReady(s.key, child, config));
   const customOk = (config.custom || []).every(item => sectionFilled(item, child.id) >= sectionSlots(item));
-  return classOk && childOk && customOk;
+  return classOk && childOk && customOk && !bookPageEstimate(config, child).over;
 }
 
 function bookMiniRadar(scores) {
@@ -273,7 +291,13 @@ function taskBlock(config) {
 
 /* 在园时光页：由成长资料渲染；未收录时给出提示 */
 function materialBlock(config) {
-  const list = config.material || [];
+  const byId = new Map();
+  [...(config.material || []), ...(config.momentMaterial || [])].forEach(item => {
+    const existing = byId.get(item.id);
+    if (!existing) byId.set(item.id, item);
+    else existing.photos = Array.from(new Set([...(existing.photos || []), ...(item.photos || [])]));
+  });
+  const list = Array.from(byId.values());
   if (!list.length) {
     return `<p class="page-text" style="color:var(--muted)">尚未收录成长资料。在「在园时光」或「社区共育」的动态上点「+ 加入成长册」后，会显示在这里。</p>`;
   }
@@ -306,7 +330,7 @@ function widgetPreviewText(widget, name) {
   };
   return sample[widget.binding] || (bind ? bind.name : '');
 }
-/* 新增栏目的某一页：按 widget 网格实排（W3 网格适用全册；与 PDF 同源） */
+/* 新增栏目的某一页：按 widget 网格实排（W3；教师预览与 App 查看同源） */
 function customPage(item, pageIndex, name) {
   const list = sectionWidgets(item).filter(w => w.page === pageIndex);
   if (!list.length) return '<p class="page-text" style="color:var(--muted)">本页尚未放置组件。</p>';

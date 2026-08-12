@@ -138,7 +138,7 @@
     </div>
   </div>
 
-  <!-- 发布 / 撤回确认 -->
+  <!-- 发布确认 -->
   <div class="sheet" id="confirmSheet" aria-hidden="true">
     <div class="sheet-head"><h2 id="confirmTitle">发布成长册</h2><button class="close" data-close aria-label="关闭">×</button></div>
     <p class="sheet-text" id="confirmBody"></p>
@@ -154,7 +154,7 @@
 <script>
 let config = readBookConfig();
 let seq = (config.custom || []).length;
-/* 定稿后栏目版面冻结：模版写入一律拦下，只留「撤回发布」与教师代传 */
+/* 定稿后永久冻结：模版写入一律拦下；提交完成的素材也不再更正。 */
 const locked = () => bookPublished(config);
 
 const viewer = initBookViewer({
@@ -172,16 +172,16 @@ function renderState() {
   tag.textContent = TEMPLATE_STATUS[config.status];
   tag.classList.toggle('frozen', on);
   document.getElementById('stateNote').textContent = on
-    ? '版面已冻结，全班按此样板生成；征集可按栏目独立启停。'
+    ? '版面已永久冻结，全班按此样板定稿；征集可按栏目独立启停。'
     : '草稿可随时修改，仅本人可见。确认整本预览无误后再发布。';
   document.getElementById('publishRow').innerHTML = on
-    ? '<button class="btn danger" style="width:100%" id="unpublish">撤回发布</button>'
-    : '<button class="btn primary" style="width:100%" id="publish">发布成长册</button>';
+    ? '<button class="btn ghost" style="width:100%" disabled>模板已发布（永久锁定）</button>'
+    : '<button class="btn primary" style="width:100%" id="publish">发布班级模板</button>';
   document.getElementById('footHint').textContent = on
-    ? '撤回模版只解除版面冻结，不会自动撤回栏目征集或删除家庭素材。'
-    : '发布后全班幼儿按此样板生成；新增栏目的素材征集仍须逐栏目另行发布。';
-  const btn = document.getElementById(on ? 'unpublish' : 'publish');
-  btn.addEventListener('click', () => openConfirm(on ? 'unpublish' : 'publish'));
+    ? '模板发布后不可撤回；新增栏目的征集仍可按栏目独立启停。'
+    : '发布后全班幼儿按此样板定稿；新增栏目的素材征集仍须逐栏目另行发布。';
+  const btn = document.getElementById('publish');
+  if (btn) btn.addEventListener('click', () => openConfirm());
 }
 
 /* ---------- 成长册内容：预设 6 项 + 新增栏目同列，顺序即页序 ---------- */
@@ -222,7 +222,7 @@ document.getElementById('presetList').addEventListener('click', event => {
     event.preventDefault();
     const item = config.custom.find(entry => entry.id === collect.dataset.collect);
     if (item.collecting) {
-      const ok = window.confirm('撤回后会删除该栏目全部家庭与教师素材；若已有相关成长册生成则服务端会拒绝。确认撤回？');
+      const ok = window.confirm('撤回后会删除该栏目全部家庭与教师素材；若已有相关幼儿成长册已定稿开放则服务端会拒绝。确认撤回？');
       if (!ok) return;
       item.collecting = false;
       item.submitted = {};
@@ -258,7 +258,7 @@ document.getElementById('presetList').addEventListener('click', event => {
 });
 
 document.getElementById('addSection').addEventListener('click', () => {
-  if (locked()) { showToast('已定稿，需先撤回发布'); return; }
+  if (locked()) { showToast('模板已永久定稿，不能修改'); return; }
   document.getElementById('secName').value = '';
   document.getElementById('secAfter').innerHTML = bookAnchors(config)
     .map(item => `<option value="${item.id}">${item.name}</option>`).join('');
@@ -335,7 +335,7 @@ function openSubmissions(id) {
   subId = id;
   const item = config.custom.find(entry => entry.id === id);
   document.getElementById('subHint').textContent = item.collecting
-    ? '齐备须全部槽位终局完成；未交齐可由教师预览后确认代传，已完成可在幼儿第一次生成前更正。'
+    ? '齐备须全部槽位终局完成；未交齐可由教师预览后确认代传，提交完成后永久只读。'
     : '该栏目尚未发布征集；请先回到清单点「发布征集」。';
   renderSectionMeta();
   renderSubmissions();
@@ -356,7 +356,7 @@ function renderSectionMeta() {
       ${bookAnchors(config, item.id).map(anchor =>
         `<option value="${anchor.id}"${anchor.id === item.after ? ' selected' : ''}>${anchor.name}</option>`).join('')}
     </select>
-    ${on ? '<div class="hint" style="margin-top:8px">已定稿，栏目名称与插入位置已冻结，需先撤回发布。</div>' : ''}`;
+    ${on ? '<div class="hint" style="margin-top:8px">模板已永久定稿，栏目名称与插入位置不可修改。</div>' : ''}`;
 }
 document.getElementById('secMeta').addEventListener('change', event => {
   const item = config.custom.find(entry => entry.id === subId);
@@ -368,7 +368,6 @@ document.getElementById('secMeta').addEventListener('change', event => {
 });
 function renderSubmissions() {
   const item = config.custom.find(entry => entry.id === subId);
-  const on = locked();
   const slots = sectionSlots(item);
   document.getElementById('subList').innerHTML = BOOK_CHILDREN.map(child => {
     const filled = sectionFilled(item, child.id);
@@ -377,7 +376,7 @@ function renderSubmissions() {
       <span class="dot-cell ${ok ? 'done' : 'miss'}"></span>
       <div style="flex:1;font-size:13px;font-weight:600;margin-left:4px">${child.name}
         <span style="font-weight:400;color:var(--muted)"> · 已交 ${filled}/${slots}</span></div>
-      <button class="tag-btn" data-child="${child.id}" ${collecting ? '' : 'disabled'}>${ok ? '更正' : '代传'}</button>
+      <button class="tag-btn" data-child="${child.id}" ${collecting && !ok ? '' : 'disabled'}>${ok ? '已提交' : '代传'}</button>
     </div>`;
   }).join('');
 }
@@ -388,36 +387,27 @@ document.getElementById('subList').addEventListener('click', event => {
   const id = btn.dataset.child;
   /* 原型以一次确认代表教师已完整预览将保存的文字／裁切成品；服务端逐槽位重验。 */
   const slots = sectionSlots(item);
-  const action = sectionFilled(item, id) >= slots ? '更正' : '代传';
-  if (!window.confirm(`确认${action} ${slots} 个槽位？此操作由教师本人承担发布前人工把关。`)) return;
+  const action = '代传';
+  if (!window.confirm(`确认${action} ${slots} 个槽位？此操作由教师本人承担发布前人工把关，提交后不可更正。`)) return;
   item.submitted[id] = slots;
   showToast(`已确认${action}`);
   renderSubmissions();
   writeBookConfig(config);
 });
 
-/* ---------- 发布 / 撤回 ---------- */
-let confirmKind = null;
-function openConfirm(kind) {
-  confirmKind = kind;
-  const publish = kind === 'publish';
-  document.getElementById('confirmTitle').textContent = publish ? '发布成长册' : '撤回发布';
-  document.getElementById('confirmBody').textContent = publish
-    ? '发布后模版定稿、版面冻结，全班幼儿按此样板生成成长册。栏目征集不会自动发布，须在栏目行独立操作。发布前请先翻完整本预览。'
-    : '撤回后可继续编辑版面；已发布的栏目征集及其家庭素材保持不变。';
+/* ---------- 发布 ---------- */
+function openConfirm() {
+  document.getElementById('confirmTitle').textContent = '发布班级模板';
+  document.getElementById('confirmBody').textContent =
+    '发布后模板永久定稿，不能撤回或修改；全班幼儿按此样板定稿成长册。栏目征集不会自动发布，须在栏目行独立操作。发布前请先翻完整本预览。';
   const go = document.getElementById('confirmGo');
-  go.textContent = publish ? '确认发布' : '确认撤回';
-  go.className = publish ? 'btn primary' : 'btn danger';
+  go.textContent = '确认永久发布';
+  go.className = 'btn primary';
   openSheet('confirmSheet');
 }
 document.getElementById('confirmGo').addEventListener('click', () => {
-  if (confirmKind === 'publish') {
-    config.status = 'd2';
-    showToast('已发布，版面已冻结');
-  } else {
-    config.status = 'd1';
-    showToast('已撤回模版，栏目征集保持不变');
-  }
+  config.status = 'd2';
+  showToast('模板已发布并永久冻结');
   closeSheets();
   renderAll();
 });

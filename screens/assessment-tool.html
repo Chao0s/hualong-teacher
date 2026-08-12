@@ -163,16 +163,19 @@
   <div class="toast" id="toast">已保存</div>
 </div>
 
+<script src="assessment-manifest.js"></script>
 <script src="assessment-data.js"></script>
 <script>
 (function(){
+  var TOOL = window.ASSESSMENT_TOOL;
   var DATA = window.ASSESSMENT;
-  if(!DATA){ document.getElementById('empty').hidden=false; document.getElementById('empty').textContent='评价数据未能加载'; return; }
+  if(!TOOL || !DATA || DATA.indicators.length!==TOOL.itemCount){ document.getElementById('empty').hidden=false; document.getElementById('empty').textContent='评价工具版本或题数不匹配'; return; }
   var OPTS = DATA.scoring.options;          // [{score,label}]
   var LEVELS = DATA.scoring.levels;         // [{min,max,label}]
   var LABELS = {}; OPTS.forEach(function(o){ LABELS[o.score]=o.label; });
 
-  var KEY='hualong_assessment_v1', NKEY='hualong_assessment_notes_v1';
+  var STORE_TAG=TOOL.code+'_'+TOOL.version;
+  var KEY='hualong_assessment_'+STORE_TAG, NKEY='hualong_assessment_notes_'+STORE_TAG;
   var SCORES={}, NOTES={};
   try{ SCORES=JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ SCORES={}; }
   try{ NOTES=JSON.parse(localStorage.getItem(NKEY)||'{}')||{}; }catch(e){ NOTES={}; }
@@ -283,8 +286,8 @@
     dial.style.setProperty('--p', s.n?pct:0);
     document.getElementById('dialTxt').innerHTML = s.n? (pct+'<small>%</small>') : '—';
     document.getElementById('sumLvl').textContent = s.n? levelOf(s.ratio) : '未开始';
-    document.getElementById('sumCount').textContent = '已评 '+s.n+' / 120 项 · 保育教育质量指导手册';
-    document.getElementById('sumBar').style.width = Math.round(s.n/120*100)+'%';
+    document.getElementById('sumCount').textContent = '已评 '+s.n+' / '+TOOL.itemCount+' 项 · '+TOOL.code+' v'+TOOL.version;
+    document.getElementById('sumBar').style.width = Math.round(s.n/TOOL.itemCount*100)+'%';
     document.getElementById('footScore').innerHTML = s.n? (pct+'<small> 分（得分率）</small>') : '—<small> 分</small>';
     document.getElementById('footLvl').textContent = s.n? ('总体等级：'+levelOf(s.ratio)+' · 有效评价 '+s.n+' 项') : '尚未开始评价';
   }

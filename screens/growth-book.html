@@ -26,7 +26,7 @@
   .pre-row .state.ok { color: var(--green); }
   .pre-row .state.no { color: var(--danger); }
 
-  /* 生成检查表：列多时横向滚动，幼儿列固定 */
+  /* 定稿检查表：列多时横向滚动，幼儿列固定 */
   .table-wrap { overflow-x: auto; scrollbar-width: thin; scrollbar-color: #b8cbcb transparent; }
   .table-wrap::-webkit-scrollbar { display: block; height: 6px; }
   .table-wrap::-webkit-scrollbar-track { background: transparent; }
@@ -84,24 +84,24 @@
 
     <div class="action-row" style="margin-bottom:12px">
       <a class="btn" href="growth-book-sample.html">成长册样本</a>
-      <button class="btn primary" id="openExport">导出报告</button>
+      <button class="btn primary" id="openFinalize">全班定稿</button>
     </div>
-    <div class="hint" id="exportGate" style="margin:-6px 0 12px" hidden>模版尚未发布，只能预览；在编辑样板中点「发布成长册」定稿后才可批量导出。</div>
+    <div class="hint" id="finalizeGate" style="margin:-6px 0 12px" hidden>模版尚未发布，只能预览；请先在编辑样板中完整预览并发布班级模板。</div>
 
     <div class="chunk">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div>
-          <div style="font-size:15px;font-weight:600">班级生成进度</div>
-          <div class="hint" style="margin-top:4px" id="progressNote">依据已收录内容判断是否可生成</div>
+          <div style="font-size:15px;font-weight:600">班级定稿进度</div>
+          <div class="hint" style="margin-top:4px" id="progressNote">依据内容齐备与 200 页上限判断</div>
         </div>
         <strong id="overall" style="color:var(--accent);font-size:20px">0%</strong>
       </div>
       <div class="progress-line"><div class="bar"><span id="overallBar" style="width:0%"></span></div></div>
     </div>
 
-    <div class="sec">生成检查表</div>
+    <div class="sec">定稿前检查</div>
     <div class="chunk" id="preList" style="padding:6px 14px"></div>
-    <div class="hint" id="sizeNote" style="padding:2px 12px 8px"></div>
+    <div class="hint" id="pageNote" style="padding:2px 12px 8px">每名幼儿显示总页数；超过 200 页会阻挡定稿。</div>
     <div class="table-wrap">
       <table class="prog-table wide" id="bookTable">
         <thead><tr id="tableHead"></tr></thead>
@@ -116,28 +116,28 @@
   </div>
 
   <div class="sheet-mask" id="sheetMask"></div>
-  <div class="sheet" id="exportSheet" aria-hidden="true">
+  <div class="sheet" id="finalizeSheet" aria-hidden="true">
     <div class="sheet-head">
-      <h2>批量导出成长册</h2>
-      <button class="close" id="closeExport" aria-label="关闭">×</button>
+      <h2>全班定稿并开放</h2>
+      <button class="close" id="closeFinalize" aria-label="关闭">×</button>
     </div>
     <label class="check-row">
       <div>全选</div>
       <input type="checkbox" id="selectAll">
     </label>
-    <div class="sheet-list" id="exportList"></div>
-    <div class="hint" id="sheetSizeNote" style="margin-top:10px"></div>
+    <div class="sheet-list" id="finalizeList"></div>
+    <div class="hint" id="sheetPageNote" style="margin-top:10px">问题幼儿默认跳过并保留草稿；请先处理问题，或明确跳过后定稿其余幼儿。</div>
     <div class="sheet-actions">
-      <button class="btn ghost" id="cancelExport">取消</button>
-      <button class="btn primary" id="confirmExport">导出</button>
+      <button class="btn ghost" id="cancelFinalize">取消</button>
+      <button class="btn primary" id="confirmFinalize">定稿并开放</button>
     </div>
   </div>
-  <div class="toast" id="toast">已生成导出任务</div>
+  <div class="toast" id="toast">已定稿并开放</div>
 </div>
 <script src="growth-book-render.js"></script>
 <script>
 let config = readBookConfig();
-const canGenerate = child => bookCanGenerate(child, config);
+const canFinalize = child => bookCanFinalize(child, config);
 /* 因人而异的栏目才进表格：预设里的非班级级项 + 全部新增栏目（家长征集） */
 const childColumns = () => bookSections(config)
   .filter(section => section.custom || !BOOK_CLASS_LEVEL.includes(section.key));
@@ -150,19 +150,17 @@ function renderSummary() {
   document.getElementById('sumList').textContent = sections.length
     ? sections.map(s => s.name).join(' · ')
     : '尚未收录任何内容，点击进入编辑样板';
-  /* 未定稿只能预览，不能批量导出（W16 草稿匣） */
+  /* 班级模板未发布时只能预览，不能逐册定稿 */
   const published = bookPublished(config);
   document.getElementById('tplState').textContent = TEMPLATE_STATUS[config.status];
-  document.getElementById('openExport').disabled = !published;
-  document.getElementById('openExport').style.opacity = published ? '' : '.45';
-  document.getElementById('exportGate').hidden = published;
+  document.getElementById('openFinalize').disabled = !published;
+  document.getElementById('openFinalize').style.opacity = published ? '' : '.45';
+  document.getElementById('finalizeGate').hidden = published;
 }
 
-/* 预估页数与档案大小；软上限只提示不阻挡（W21） */
-function estimateText() {
-  const est = bookPageEstimate(config);
-  return `预估 ${est.pages} 页 · 约 ${est.size}`
-    + (est.over ? `（已超过 ${BOOK_PAGE_SOFT_LIMIT} 页的建议值，文件较大可能不便传阅，仍可导出）` : '');
+function estimateText(child) {
+  const est = bookPageEstimate(config, child);
+  return `${est.pages} 页${est.over ? `（超过 ${BOOK_PAGE_LIMIT} 页）` : ''}`;
 }
 
 function renderPre() {
@@ -180,61 +178,78 @@ function renderPre() {
   }).join('') : '<div class="pre-row"><span class="grow" style="color:var(--muted)">未收录班级级内容</span></div>';
 }
 
+function childIssues(child) {
+  const issues = [];
+  bookSections(config).forEach(section => {
+    if (section.custom) {
+      const item = config.custom.find(entry => entry.id === section.key);
+      if (sectionFilled(item, child.id) < sectionSlots(item)) issues.push(`${section.name}缺素材`);
+    } else if (BOOK_CLASS_LEVEL.includes(section.key)) {
+      if (!classLevelReady(section.key, config)) issues.push(`${section.name}未就绪`);
+    } else if (!childSectionReady(section.key, child, config)) {
+      issues.push(`${section.name}未完成`);
+    }
+  });
+  if (bookPageEstimate(config, child).over) issues.push(`超过 ${BOOK_PAGE_LIMIT} 页`);
+  return issues;
+}
+
 function renderTable() {
   const cols = childColumns();
   document.getElementById('tableHead').innerHTML =
     '<th style="text-align:left">幼儿</th>' +
     cols.map(section => `<th>${section.name}</th>`).join('') +
-    '<th>查看</th>';
+    '<th>页数</th><th>问题</th><th>查看</th>';
   document.getElementById('tableBody').innerHTML = BOOK_CHILDREN.map(child => {
     const cells = cols.map(section => {
       /* 新增栏目：全部槽位交齐才算完成 */
       const item = section.custom && config.custom.find(entry => entry.id === section.key);
       const ok = section.custom
         ? sectionFilled(item, child.id) >= sectionSlots(item)
-        : child.done[section.key];
+        : childSectionReady(section.key, child, config);
       return `<td><span class="dot-cell ${ok ? 'done' : 'miss'}" title="${ok ? '完成' : '未完成'}" aria-label="${ok ? '完成' : '未完成'}"></span></td>`;
     }).join('');
-    const ok = canGenerate(child);
-    const view = ok
-      ? `<a class="view-link" href="growth-book-view.html?child=${child.id}">查看</a>`
-      : `<span class="view-link off" title="内容未齐备，暂不可生成">查看</span>`;
-    return `<tr><td class="name">${child.name}</td>${cells}<td>${view}</td></tr>`;
+    const est = bookPageEstimate(config, child);
+    const issues = childIssues(child);
+    const state = bookChildPublished(child, config) ? '<span style="color:var(--green)">已开放</span>' : (issues.length ? issues.join('；') : '可定稿');
+    return `<tr><td class="name">${child.name}</td>${cells}<td>${est.pages}</td><td style="min-width:118px;font-size:11px">${state}</td><td><a class="view-link" href="growth-book-view.html?child=${child.id}">预览</a></td></tr>`;
   }).join('');
-  document.getElementById('bookTable').style.minWidth = Math.max(340, 104 + (cols.length + 1) * 74) + 'px';
+  document.getElementById('bookTable').style.minWidth = Math.max(520, 250 + (cols.length + 1) * 74) + 'px';
 }
 
 function renderProgress() {
-  const ready = BOOK_CHILDREN.filter(canGenerate).length;
-  const value = Math.round(ready / BOOK_CHILDREN.length * 100);
+  const published = BOOK_CHILDREN.filter(child => bookChildPublished(child, config)).length;
+  const ready = BOOK_CHILDREN.filter(child => !bookChildPublished(child, config) && canFinalize(child)).length;
+  const value = Math.round(published / BOOK_CHILDREN.length * 100);
   document.getElementById('overall').textContent = value + '%';
   document.getElementById('overallBar').style.width = value + '%';
   const total = bookSections(config).length;
   document.getElementById('progressNote').textContent = total
-    ? `已收录 ${total} 项内容，${ready}/${BOOK_CHILDREN.length} 名幼儿可生成`
-    : '尚未收录任何内容，无法生成成长册';
+    ? `已开放 ${published}/${BOOK_CHILDREN.length} 本，另有 ${ready} 名幼儿可定稿`
+    : '尚未收录任何内容，无法定稿成长册';
 }
 
-/* ---------- 批量导出：不可生成的仅置灰禁用 ---------- */
+/* ---------- 全班定稿：问题幼儿置灰，教师可明确跳过 ---------- */
 const mask = document.getElementById('sheetMask');
-const sheet = document.getElementById('exportSheet');
-const exportList = document.getElementById('exportList');
+const sheet = document.getElementById('finalizeSheet');
+const finalizeList = document.getElementById('finalizeList');
 const selectAll = document.getElementById('selectAll');
 const toast = document.getElementById('toast');
 
 function renderSheet() {
-  exportList.innerHTML = BOOK_CHILDREN.map(child => {
-    const ok = canGenerate(child);
+  finalizeList.innerHTML = BOOK_CHILDREN.map(child => {
+    const published = bookChildPublished(child, config);
+    const ok = canFinalize(child) && !published;
+    const issues = childIssues(child);
     return `<label class="check-row${ok ? '' : ' blocked'}">
-      <div>${child.name}</div>
-      <input type="checkbox" class="child-check" ${ok ? 'checked' : 'disabled'}>
+      <div>${child.name}<div style="font-size:11px;font-weight:400;color:var(--muted);margin-top:3px">${estimateText(child)} · ${published ? '已定稿开放' : (issues.join('；') || '内容齐备')}</div></div>
+      <input type="checkbox" class="child-check" data-child="${child.id}" ${ok ? 'checked' : 'disabled'}>
     </label>`;
   }).join('');
-  exportList.querySelectorAll('.child-check').forEach(item => item.addEventListener('change', syncSelectAll));
-  document.getElementById('sheetSizeNote').textContent = '每本 ' + estimateText();
+  finalizeList.querySelectorAll('.child-check').forEach(item => item.addEventListener('change', syncSelectAll));
   syncSelectAll();
 }
-const availableChecks = () => Array.from(exportList.querySelectorAll('.child-check:not(:disabled)'));
+const availableChecks = () => Array.from(finalizeList.querySelectorAll('.child-check:not(:disabled)'));
 function syncSelectAll() {
   const list = availableChecks();
   selectAll.checked = list.length > 0 && list.every(item => item.checked);
@@ -246,17 +261,28 @@ selectAll.addEventListener('change', () => {
 
 function openSheet() { renderSheet(); mask.classList.add('show'); sheet.classList.add('show'); sheet.setAttribute('aria-hidden','false'); }
 function closeSheet() { mask.classList.remove('show'); sheet.classList.remove('show'); sheet.setAttribute('aria-hidden','true'); }
-document.getElementById('openExport').addEventListener('click', openSheet);
-document.getElementById('closeExport').addEventListener('click', closeSheet);
-document.getElementById('cancelExport').addEventListener('click', closeSheet);
+document.getElementById('openFinalize').addEventListener('click', openSheet);
+document.getElementById('closeFinalize').addEventListener('click', closeSheet);
+document.getElementById('cancelFinalize').addEventListener('click', closeSheet);
 mask.addEventListener('click', closeSheet);
 
-document.getElementById('confirmExport').addEventListener('click', () => {
-  const count = availableChecks().filter(item => item.checked).length;
-  toast.textContent = count ? `已提交 ${count} 份生成任务，所选幼儿内容已冻结` : '请至少选择 1 名幼儿';
+document.getElementById('confirmFinalize').addEventListener('click', () => {
+  const selected = availableChecks().filter(item => item.checked);
+  if (!selected.length) {
+    toast.textContent = '请至少选择 1 名幼儿';
+  } else {
+    const skipped = BOOK_CHILDREN.filter(child => !bookChildPublished(child, config) && !selected.some(item => item.dataset.child === child.id));
+    if (skipped.length && !window.confirm(`将跳过 ${skipped.length} 名问题幼儿，所选 ${selected.length} 名定稿后永久锁定并向家长开放。确认继续？`)) return;
+    selected.forEach(item => {
+      if (!config.publishedChildren.includes(item.dataset.child)) config.publishedChildren.push(item.dataset.child);
+    });
+    writeBookConfig(config);
+    toast.textContent = `已定稿并开放 ${selected.length} 本；App 内通知将发给当前监护人`;
+    closeSheet();
+    renderAll();
+  }
   toast.classList.add('show');
   setTimeout(() => toast.classList.remove('show'), 1600);
-  if (count) closeSheet();
 });
 
 function renderAll() {
@@ -265,7 +291,6 @@ function renderAll() {
   renderPre();
   renderTable();
   renderProgress();
-  document.getElementById('sizeNote').textContent = '每本 ' + estimateText();
 }
 renderAll();
 // 从编辑样板返回时刷新

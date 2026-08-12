@@ -211,6 +211,8 @@ rel_map (关系字段) = db_task_assign{task_id}<->db_task{task_id}; db_task_ass
 assessment_id (评估ID), 1:1, integer, ui=assessment.hidden
 teacher_id (评估教师ID), 1:1, integer, ui=assessment.hidden
 class_id (评估班级ID), 1:1, integer, ui=assessment.hidden
+tool_code (固定工具代码), 1:1, max_len=64, ui=assessment.hidden
+tool_version (固定工具版本), 1:1, max_len=32, ui=assessment.hidden
 assessment_scope (评估范围), 1:1, a1=teacher(教师)|a2=class(班级)|a3=school(园所), ui=assessment.scope
 assessment_period (评估周期), 1:1, YYYY-MM, ui=assessment.period
 required_count (指标总数), 1:1, integer, ui=home.todo.assessment.badge.denominator|assessment.summary.total
@@ -224,8 +226,9 @@ rel_db (关联表) = db_teacher, db_class, db_assessment_item
 rel_map (关系字段) = db_assessment{teacher_id}<->db_teacher{teacher_id}; db_assessment{class_id}<->db_class{class_id}; db_assessment{assessment_id}<->db_assessment_item{assessment_id}
 
 method (方法):
+工具清单为 screens/assessment-manifest.js，题库为 screens/assessment-data.js；现役工具 school-quality-120@1.0.0 固定 120 题，由 developer 随代码版本维护，admin 与教师均不得编辑题文或结构
 completed_count = COUNT(db_assessment_item.score WHERE score=1:5)
-required_count = COUNT(db_assessment_item.item_id WHERE is_active=1)
+required_count = 固定工具版本中的题项数（现为 120）
 badge = completed_count + '/' + required_count
 IF completed_count=0, assessment_status=s1
 IF completed_count>0 AND completed_count<required_count, assessment_status=s2
@@ -236,17 +239,16 @@ IF completed_count=required_count, assessment_status=s3
 
 item_id (评估指标ID), 1:1, integer, ui=assessment.item.hidden
 assessment_id (评估ID), 1:1, integer, ui=assessment.hidden
-section_id (一级指标ID), 1:1, integer, ui=assessment.section
-subsection_id (二级指标ID), 1:1, integer, ui=assessment.subsection
-item_text (指标内容), 1:1, text, ui=assessment.item.title
+tool_item_code (固定工具题项代码), 1:1, max_len=32, ui=assessment.item.hidden
 score (指标得分), 0:1, 1:5, ui=assessment.item.score_button
 note (评价记录), 0:1, max_len=300, ui=assessment.item.note
 file_id (佐证材料ID), 0:k, integer, ui=assessment.item.evidence
-is_active (是否启用), 1:1, boolean, ui=assessment.hidden
 
 rel_count (关系数量) = 2
 rel_db (关联表) = db_assessment, db_file
 rel_map (关系字段) = db_assessment_item{assessment_id}<->db_assessment{assessment_id}; db_assessment_item{file_id}<->db_file{file_id}
+tool_resolution_rule (工具解析规则) = 以 db_assessment.tool_code + tool_version + db_assessment_item.tool_item_code 从版本化代码资产解析题文、一级／二级结构与量尺锚点；每次评估不复制题文
+unique (唯一键) = assessment_id + tool_item_code
 
 
 教研培训 (Teaching Research and Training / db_training)

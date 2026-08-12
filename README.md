@@ -8,7 +8,7 @@ GitHub 仓库：<https://github.com/Chao0s/hualong-teacher>
 
 但它已经不只是一套画面。经 2026-07-31 与 2026-08-01 两轮评审、2026-08-02 后端回覆与同日的成长册改版之后，本仓库承载了三样**有约束力**的东西：
 
-- **成长册有了真实的版式契约，而且已经落地** —— A4 页为版面单位、15 × 24 网格、格子 10mm 精确正方、左右边距 30mm 上下 28.5mm、widget 不跨页、预设页面由后端团队作者且教师不可修改。契约全文在 `docs/frontend spec files/growth-book-layout-spec.md`（含「已对齐 / 仍有差距」对照表）；教师端的网格编辑器是 `screens/growth-book-section-edit.html`。改动成长册相关页面前必须先读它与 `decision.md` 第 16、21—26 条。
+- **成长册有了真实的版式契约，而且已经落地** —— A4 页为版面单位、15 × 24 网格、格子 10mm 精确正方、widget 不跨页、预设页面由 developer 维护且教师不可修改。F17 之后成长册只在 App 内预览与开放，不生成或分享 PDF；整本硬上限 200 页。契约全文在 `docs/frontend spec files/growth-book-layout-spec.md`，现行覆盖项见 `decision.md` 最后一节。
 - **`decision.md` 是前后端闭环记录** —— 第 1—10 条是前端改完写给后端看的，「后端答复」一节是后端推翻或更正前端假设的地方，第 19—26 条是前端按契约落地后**反过来推翻后端已定规则**的 4 条改判。**它是本仓库改动的第一顺位参考。**
 - **`data/guide-scale.json` 是综合评估的权威量表** —— 《3-6岁儿童学习与发展指南》教师评定量表 v1.0，5 领域 / 11 维度 / 32 目标 / **124 题**，题库不得在页面里另抄一份。
 
@@ -47,7 +47,7 @@ python -m http.server 8000
 
 | 工具 | 对象 | 量表 | 数据源 |
 | --- | --- | --- | --- |
-| 办园质量评估 `screens/assessment-tool.html` | 幼儿园 / 班级 / 教师 | 9 个一级指标、120 题，**不含五大领域这个维度** | `screens/assessment-data.js` |
+| 办园质量评估 `screens/assessment-tool.html` | 幼儿园 / 班级 / 教师 | 9 个一级指标、120 题，固定版本，由 developer 维护，admin 不可编辑 | `screens/assessment-manifest.js` + `screens/assessment-data.js` |
 | 幼儿综合评估 `screens/comprehensive-assessment-form.html` | 单一幼儿 | 《指南》教师评定量表 v1.0，5 领域 / 124 题 | `data/guide-scale.json` |
 
 幼儿综合评估的结果页只保留五大领域雷达图与逐题明细，**不输出任何文字性分析结论**；领域均分一律由题项级得分聚合而来（题项级均值，非下级均值的均值）。`H1-1-1` 身高体重题按 `decision.md` 第 13 条改由教师照参考表主观评定，这是对量表原典的一处**明示偏离**。
@@ -69,6 +69,7 @@ python -m http.server 8000
 │   ├── training-center.html   # 教研培训部
 │   ├── home-school.html       # 家园共育
 │   ├── assessment-tool.html   # 办园质量评估工具
+│   ├── assessment-manifest.js # 办园质量评估 tool_code / tool_version / 固定题数
 │   ├── assessment-data.js     # 办园质量评估量表数据
 │   ├── comprehensive-assessment-form.html  # 幼儿综合评估（124 题）
 │   ├── assessment-store.js    # 综合评估的题库 / 草稿 / 状态单一数据源

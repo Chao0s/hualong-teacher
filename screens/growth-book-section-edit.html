@@ -322,7 +322,7 @@ document.getElementById('pageTabs').addEventListener('click', event => {
   if (btn) { page = Number(btn.dataset.page); selected = null; renderCanvas(); }
 });
 document.getElementById('addPage').addEventListener('click', () => {
-  if (locked) return showToast('已定稿，需先撤回发布');
+  if (locked) return showToast('模板已永久定稿，不能修改');
   pageCount += 1; page = pageCount - 1; selected = null; renderCanvas();
 });
 document.getElementById('delPage').addEventListener('click', () => {
@@ -357,7 +357,7 @@ function setRatio(widget, text) {
   widget.y = Math.min(widget.y, GRID.rows - widget.h);
 }
 function addWidget(type) {
-  if (locked) return showToast('已定稿，需先撤回发布');
+  if (locked) return showToast('模板已永久定稿，不能修改');
   const w = type === 'image' ? 6 : 13, h = type === 'image' ? 6 : 4;
   const spot = freeSpot(w, h);
   seq += 1;
