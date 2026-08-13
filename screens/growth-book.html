@@ -15,26 +15,13 @@
   .summary-card .list { display: block; font-size: 11px; color: var(--muted); margin-top: 5px; line-height: 1.5; }
   .summary-card .enter { color: var(--accent); font-size: 12px; font-weight: 600; white-space: nowrap; }
 
-  /* 班级级前置条件：全班内容相同，不进幼儿列 */
-  .pre-row {
-    display: flex; align-items: center; gap: 8px;
-    font-size: 12px; padding: 9px 0; border-bottom: 1px solid var(--border);
-  }
-  .pre-row:last-child { border-bottom: 0; }
-  .pre-row .grow { flex: 1; }
-  .pre-row .state { font-size: 11px; font-weight: 700; }
-  .pre-row .state.ok { color: var(--green); }
-  .pre-row .state.no { color: var(--danger); }
-
-  /* 定稿检查表：列多时横向滚动，幼儿列固定 */
+  /* 栏目进度表：只显示教师已经勾选的栏目 */
   .table-wrap { overflow-x: auto; scrollbar-width: thin; scrollbar-color: #b8cbcb transparent; }
   .table-wrap::-webkit-scrollbar { display: block; height: 6px; }
   .table-wrap::-webkit-scrollbar-track { background: transparent; }
   .table-wrap::-webkit-scrollbar-thumb { background: #b8cbcb; border-radius: 999px; }
   .prog-table th:first-child { position: sticky; left: 0; z-index: 2; background: var(--accent-light); }
   .prog-table .name { position: sticky; left: 0; z-index: 1; background: var(--surface); }
-  .view-link { font-size: 11px; font-weight: 700; color: var(--accent); white-space: nowrap; }
-  .view-link.off { color: var(--muted); opacity: .5; }
 
   .sheet-mask { position: absolute; inset: 0; background: rgba(31,41,55,.32); opacity: 0; pointer-events: none; transition: .2s ease; z-index: 30; }
   .sheet-mask.show { opacity: 1; pointer-events: auto; }
@@ -92,27 +79,25 @@
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div>
           <div style="font-size:15px;font-weight:600">班级定稿进度</div>
-          <div class="hint" style="margin-top:4px" id="progressNote">依据内容齐备与 200 页上限判断</div>
+          <div class="hint" style="margin-top:4px" id="progressNote">各幼儿成长册开放进度</div>
         </div>
         <strong id="overall" style="color:var(--accent);font-size:20px">0%</strong>
       </div>
       <div class="progress-line"><div class="bar"><span id="overallBar" style="width:0%"></span></div></div>
     </div>
 
-    <div class="sec">定稿前检查</div>
-    <div class="chunk" id="preList" style="padding:6px 14px"></div>
-    <div class="hint" id="pageNote" style="padding:2px 12px 8px">每名幼儿显示总页数；超过 200 页会阻挡定稿。</div>
+    <div class="sec">栏目进度</div>
     <div class="table-wrap">
       <table class="prog-table wide" id="bookTable">
         <thead><tr id="tableHead"></tr></thead>
         <tbody id="tableBody"></tbody>
       </table>
     </div>
-    <div class="dot-legend" aria-label="检查表状态说明">
+    <div class="dot-legend" aria-label="栏目进度状态说明">
       <span class="item"><i class="dot-cell done"></i>完成</span>
       <span class="item"><i class="dot-cell miss"></i>未完成</span>
     </div>
-    <div class="hint" style="padding:0 12px 8px">上方为全班共用的班级级内容；表格只列因人而异的栏目，可左右滑动查看，幼儿列保持固定。</div>
+    <div class="hint" style="padding:0 12px 8px">只显示在学期编册页中已经勾选的栏目。</div>
   </div>
 
   <div class="sheet-mask" id="sheetMask"></div>
@@ -138,21 +123,19 @@
 <script>
 let config = readBookConfig();
 const canFinalize = child => bookCanFinalize(child, config);
-/* 因人而异的栏目才进表格：预设里的非班级级项 + 全部新增栏目（家长征集） */
+/* 主页只显示教师在编册管理面上勾选的栏目。 */
 const childColumns = () => bookSections(config)
-  .filter(section => section.custom || !BOOK_CLASS_LEVEL.includes(section.key));
-const classColumns = () => bookSections(config)
-  .filter(section => !section.custom && BOOK_CLASS_LEVEL.includes(section.key));
+  .filter(section => section.custom || section.key === 'time' || section.key === 'task');
 
 function renderSummary() {
-  const sections = bookSections(config);
+  const sections = childColumns();
   document.getElementById('sumTitle').textContent = `已收录 ${sections.length} 项内容`;
   document.getElementById('sumList').textContent = sections.length
     ? sections.map(s => s.name).join(' · ')
     : '尚未收录任何内容，点击进入编辑样板';
   /* 班级模板未发布时只能预览，不能逐册定稿 */
   const published = bookPublished(config);
-  document.getElementById('tplState').textContent = TEMPLATE_STATUS[config.status];
+  document.getElementById('tplState').textContent = COMPILATION_STATUS[config.compilationStatus] || '编册中';
   document.getElementById('openFinalize').disabled = !published;
   document.getElementById('openFinalize').style.opacity = published ? '' : '.45';
   document.getElementById('finalizeGate').hidden = published;
@@ -161,21 +144,6 @@ function renderSummary() {
 function estimateText(child) {
   const est = bookPageEstimate(config, child);
   return `${est.pages} 页${est.over ? `（超过 ${BOOK_PAGE_LIMIT} 页）` : ''}`;
-}
-
-function renderPre() {
-  const list = classColumns();
-  document.getElementById('preList').innerHTML = list.length ? list.map(section => {
-    const ok = classLevelReady(section.key, config);
-    const note = section.key === 'time'
-      ? `已收录 ${(config.material || []).length} 条成长资料`
-      : '园所统一内容';
-    return `<div class="pre-row">
-      <span class="dot-cell ${ok ? 'done' : 'miss'}"></span>
-      <span class="grow"><b>${section.name}</b> <span style="color:var(--muted)">· ${note}</span></span>
-      <span class="state ${ok ? 'ok' : 'no'}">${ok ? '已就绪' : '未就绪'}</span>
-    </div>`;
-  }).join('') : '<div class="pre-row"><span class="grow" style="color:var(--muted)">未收录班级级内容</span></div>';
 }
 
 function childIssues(child) {
@@ -198,8 +166,7 @@ function renderTable() {
   const cols = childColumns();
   document.getElementById('tableHead').innerHTML =
     '<th style="text-align:left">幼儿</th>' +
-    cols.map(section => `<th>${section.name}</th>`).join('') +
-    '<th>页数</th><th>问题</th><th>查看</th>';
+    cols.map(section => `<th>${section.name}</th>`).join('');
   document.getElementById('tableBody').innerHTML = BOOK_CHILDREN.map(child => {
     const cells = cols.map(section => {
       /* 新增栏目：全部槽位交齐才算完成 */
@@ -209,12 +176,9 @@ function renderTable() {
         : childSectionReady(section.key, child, config);
       return `<td><span class="dot-cell ${ok ? 'done' : 'miss'}" title="${ok ? '完成' : '未完成'}" aria-label="${ok ? '完成' : '未完成'}"></span></td>`;
     }).join('');
-    const est = bookPageEstimate(config, child);
-    const issues = childIssues(child);
-    const state = bookChildPublished(child, config) ? '<span style="color:var(--green)">已开放</span>' : (issues.length ? issues.join('；') : '可定稿');
-    return `<tr><td class="name">${child.name}</td>${cells}<td>${est.pages}</td><td style="min-width:118px;font-size:11px">${state}</td><td><a class="view-link" href="growth-book-view.html?child=${child.id}">预览</a></td></tr>`;
+    return `<tr><td class="name">${child.name}</td>${cells}</tr>`;
   }).join('');
-  document.getElementById('bookTable').style.minWidth = Math.max(520, 250 + (cols.length + 1) * 74) + 'px';
+  document.getElementById('bookTable').style.minWidth = Math.max(320, 120 + cols.length * 82) + 'px';
 }
 
 function renderProgress() {
@@ -288,7 +252,6 @@ document.getElementById('confirmFinalize').addEventListener('click', () => {
 function renderAll() {
   config = readBookConfig();
   renderSummary();
-  renderPre();
   renderTable();
   renderProgress();
 }

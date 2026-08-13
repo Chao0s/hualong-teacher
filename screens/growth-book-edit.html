@@ -1,448 +1,122 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=390, initial-scale=1, user-scalable=no" />
-<title>编辑样板 · 成长册</title>
-<link rel="stylesheet" href="home-school-common.css" />
-<link rel="stylesheet" href="growth-book-viewer.css" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1, user-scalable=no">
+<title>学期编册 · 成长册</title>
+<link rel="stylesheet" href="home-school-common.css">
+<link rel="stylesheet" href="growth-book-viewer.css">
 <style>
-  .mini-book { transform: scale(.62); transform-origin: top center; }
-  .mini-wrap { height: 292px; overflow: hidden; margin-bottom: 8px; }
-  .field-label { font-size: 12px; color: var(--muted); margin: 12px 0 6px; }
-
-  /* 模版状态条：草稿可编，定稿冻结 */
-  .tpl-state { display: flex; align-items: center; gap: 10px; background: var(--surface); border-radius: 14px; padding: 12px 14px; margin-bottom: 12px; }
-  .tpl-state .txt { flex: 1; min-width: 0; font-size: 11px; color: var(--muted); line-height: 1.5; }
-  .pill.frozen { background: var(--amber-light); color: var(--orange); }
-
-  .row-item {
-    display: flex; align-items: center; gap: 10px;
-    border: 1px solid var(--border); border-radius: 12px;
-    padding: 10px 12px; margin-bottom: 8px; font-size: 13px; background: var(--surface);
-  }
-  .row-item .grow { flex: 1; min-width: 0; }
-  .row-item .sub { font-size: 11px; color: var(--muted); margin-top: 3px; line-height: 1.4; }
-  .row-item input[type=checkbox] { accent-color: var(--accent); width: 17px; height: 17px; }
-  .tag-btn {
-    border: 1px solid var(--border); background: var(--surface); border-radius: 999px;
-    padding: 5px 10px; font-size: 11px; font-weight: 700; color: var(--fg); white-space: nowrap;
-  }
-  .tag-btn.danger { color: var(--danger); border-color: #f4cfcf; }
-  .tag-btn:disabled, .row-item input:disabled { opacity: .4; }
-  .empty { font-size: 12px; color: var(--muted); padding: 6px 2px 10px; line-height: 1.6; }
-  .mat-item { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--border); }
-  .mat-item:last-child { border-bottom: 0; }
-  .mat-item input[type=checkbox] { accent-color: var(--accent); width: 17px; height: 17px; flex: 0 0 auto; }
-  .mat-thumb {
-    width: 44px; height: 36px; border-radius: 8px; flex: 0 0 auto;
-    background: linear-gradient(135deg, var(--accent-light), var(--blue-light));
-    display: grid; place-items: center; font-size: 9px; color: var(--accent-dark); font-weight: 700;
-  }
-  .sheet-mask { position: absolute; inset: 0; background: rgba(31,41,55,.32); opacity: 0; pointer-events: none; transition: .2s ease; z-index: 30; }
-  .sheet-mask.show { opacity: 1; pointer-events: auto; }
-  .sheet {
-    position: absolute; left: 0; right: 0; bottom: 0; z-index: 31;
-    background: var(--surface); border-radius: 24px 24px 0 0;
-    padding: 18px 16px 22px; transform: translateY(105%); transition: .24s ease;
-  }
-  .sheet.show { transform: translateY(0); }
-  .sheet-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-  .sheet-head h2 { font-size: 17px; }
-  .close { border: 0; background: #f3f7f7; border-radius: 50%; width: 30px; height: 30px; font-size: 18px; color: var(--muted); }
-  .sheet-text { font-size: 13px; line-height: 1.65; }
-  .sheet-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
-  .btn.ghost { border: 1px solid var(--border); background: #fff; color: var(--fg); }
-  .btn.danger { background: var(--danger); color: #fff; border: 0; }
-  .toast {
-    position: absolute; left: 50%; bottom: 34px; transform: translateX(-50%) translateY(20px);
-    background: rgba(31,41,55,.9); color: #fff; border-radius: 999px;
-    padding: 9px 14px; font-size: 12px; opacity: 0; pointer-events: none; transition: .22s ease; z-index: 40;
-  }
-  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .preview-book{width:300px;height:auto;aspect-ratio:210 / 297;margin:0 auto 10px}.preview-label{font-size:11px;color:var(--muted);font-weight:500}
+  .preview-controls{width:300px;margin:0 auto}
+  .section-list{display:grid;gap:9px;margin-bottom:18px}
+  .section-row{display:flex;align-items:center;gap:11px;padding:5px 12px 5px 14px;background:#fff;border:1px solid var(--border);border-radius:13px}
+  .section-row input{width:19px;height:19px;accent-color:var(--accent);flex:0 0 auto}
+  .section-link{display:flex;align-items:center;gap:10px;min-height:46px;flex:1;color:var(--fg);text-decoration:none}
+  .section-link b{flex:1;font-size:14px}.section-link .go{font-size:20px;line-height:1;color:var(--muted)}
+  .lock-button{width:100%;margin-top:12px}
+  .btn.ghost{background:#fff;border:1px solid var(--border);color:var(--fg)}
+  .toast{position:absolute;left:50%;bottom:32px;transform:translateX(-50%) translateY(20px);background:rgba(31,41,55,.92);color:#fff;padding:9px 14px;border-radius:999px;font-size:12px;opacity:0;transition:.2s;z-index:20;white-space:nowrap}.toast.show{opacity:1;transform:translateX(-50%)}
 </style>
-<script src="https://mcp.figma.com/mcp/html-to-design/capture.js" async></script>
 </head>
 <body>
 <div class="phone">
   <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
-  <div class="nav-bar"><a class="back" href="growth-book.html">‹</a><div class="nav-title">编辑样板</div><span></span></div>
+  <div class="nav-bar"><a class="back" href="growth-book.html">‹</a><div class="nav-title">2026 春季学期编册</div><span></span></div>
   <div class="scroll">
-    <div class="tpl-state">
-      <span class="pill" id="stateTag">草稿</span>
-      <span class="txt" id="stateNote"></span>
-    </div>
-
-    <!-- 改完立刻在上方预览看到效果；发布前教师有责任先预览整本 -->
-    <div class="mini-wrap">
-      <div class="book mini-book" id="book"></div>
-    </div>
-    <div class="controls" style="margin-bottom:14px">
+    <div class="sec">实时预览 <span class="preview-label">陈小明</span></div>
+    <div class="book preview-book" id="book"></div>
+    <div class="controls preview-controls">
       <button class="nav-btn" id="prev" aria-label="上一页">‹</button>
       <div class="page-indicator" id="indicator">1 / 1</div>
       <button class="nav-btn" id="next" aria-label="下一页">›</button>
     </div>
 
-    <div class="sec">成长册内容 <button class="more" id="addSection" style="border:0;background:none">+ 新增栏目</button></div>
-    <div class="chunk" id="presetList"></div>
-
-    <div style="margin:14px 0 4px" id="publishRow"></div>
-    <div class="hint" style="padding-bottom:8px" id="footHint"></div>
+    <div class="sec">栏目管理 <a class="more" id="addSection" href="growth-book-section-edit.html?new=1">＋ 新建栏目</a></div>
+    <div class="section-list" id="outline"></div>
+    <button class="btn primary lock-button" id="lock" data-ui="growth_book_compilation.status">锁定编册</button>
   </div>
-
-  <div class="sheet-mask" id="sheetMask"></div>
-
-  <!-- 新增栏目 -->
-  <div class="sheet" id="sectionSheet" aria-hidden="true">
-    <div class="sheet-head"><h2>新增栏目</h2><button class="close" data-close aria-label="关闭">×</button></div>
-    <div class="field-label">栏目名称</div>
-    <input class="input" id="secName" maxlength="10" placeholder="如：入学第一天">
-    <div class="field-label">插入位置</div>
-    <select class="select" id="secAfter"></select>
-    <div class="hint" style="margin-top:10px">添加后进入版面编辑器摆放组件；征集槽位数由版面上「家长上传」的组件数决定。发布成长册后才会向家长发起该栏目的素材征集。</div>
-    <div class="sheet-actions">
-      <button class="btn ghost" data-close>取消</button>
-      <button class="btn primary" id="confirmSection">添加</button>
-    </div>
-  </div>
-
-  <!-- 在园时光：成长资料管理 -->
-  <div class="sheet" id="matSheet" aria-hidden="true">
-    <div class="sheet-head"><h2>在园时光</h2><button class="close" data-close aria-label="关闭">×</button></div>
-    <div id="matList" style="max-height:320px;overflow-y:auto"></div>
-    <div class="hint" style="margin-top:10px">在「在园时光」或「社区共育」的动态上点「+ 加入成长册」即可加入；此处收录的内容为全班共用。</div>
-    <div class="sheet-actions" style="grid-template-columns:1fr">
-      <button class="btn primary" data-close>完成</button>
-    </div>
-  </div>
-
-  <!-- 亲子活动：收录筛选 -->
-  <div class="sheet" id="taskSheet" aria-hidden="true">
-    <div class="sheet-head"><h2>亲子活动</h2><button class="close" data-close aria-label="关闭">×</button></div>
-    <div id="taskList" style="max-height:320px;overflow-y:auto"></div>
-    <div class="hint" style="margin-top:10px">只有勾选的活动会进入成长册；每名幼儿呈现自己家庭提交的照片，未提交者该次留空。</div>
-    <div class="sheet-actions" style="grid-template-columns:1fr">
-      <button class="btn primary" data-close>完成</button>
-    </div>
-  </div>
-
-  <!-- 新增栏目管理：栏目设定 + 家长提交情况 / 教师代传 -->
-  <div class="sheet" id="subSheet" aria-hidden="true">
-    <div class="sheet-head"><h2 id="subTitle">栏目管理</h2><button class="close" data-close aria-label="关闭">×</button></div>
-    <div id="secMeta"></div>
-    <div class="field-label">家长提交情况</div>
-    <div id="subList" style="max-height:240px;overflow-y:auto"></div>
-    <div class="hint" style="margin-top:10px" id="subHint"></div>
-    <div class="sheet-actions" style="grid-template-columns:1fr">
-      <button class="btn primary" data-close>完成</button>
-    </div>
-  </div>
-
-  <!-- 发布确认 -->
-  <div class="sheet" id="confirmSheet" aria-hidden="true">
-    <div class="sheet-head"><h2 id="confirmTitle">发布成长册</h2><button class="close" data-close aria-label="关闭">×</button></div>
-    <p class="sheet-text" id="confirmBody"></p>
-    <div class="sheet-actions">
-      <button class="btn ghost" data-close>取消</button>
-      <button class="btn primary" id="confirmGo">确认发布</button>
-    </div>
-  </div>
-
-  <div class="toast" id="toast">已保存</div>
+  <div class="toast" id="toast"></div>
 </div>
 <script src="growth-book-render.js"></script>
 <script>
-let config = readBookConfig();
-let seq = (config.custom || []).length;
-/* 定稿后永久冻结：模版写入一律拦下；提交完成的素材也不再更正。 */
-const locked = () => bookPublished(config);
-
+const config = readBookConfig();
+config.compilationStatus = config.compilationStatus || 'e1';
+const previewChild = BOOK_CHILDREN[0];
+const locked = () => config.compilationStatus === 'e2';
 const viewer = initBookViewer({
   book: document.getElementById('book'),
   indicator: document.getElementById('indicator'),
   prev: document.getElementById('prev'),
   next: document.getElementById('next')
 });
-const preview = keep => viewer.load('示例幼儿', config, keep);
 
-/* ---------- 模版状态 ---------- */
-function renderState() {
-  const on = locked();
-  const tag = document.getElementById('stateTag');
-  tag.textContent = TEMPLATE_STATUS[config.status];
-  tag.classList.toggle('frozen', on);
-  document.getElementById('stateNote').textContent = on
-    ? '版面已永久冻结，全班按此样板定稿；征集可按栏目独立启停。'
-    : '草稿可随时修改，仅本人可见。确认整本预览无误后再发布。';
-  document.getElementById('publishRow').innerHTML = on
-    ? '<button class="btn ghost" style="width:100%" disabled>模板已发布（永久锁定）</button>'
-    : '<button class="btn primary" style="width:100%" id="publish">发布班级模板</button>';
-  document.getElementById('footHint').textContent = on
-    ? '模板发布后不可撤回；新增栏目的征集仍可按栏目独立启停。'
-    : '发布后全班幼儿按此样板定稿；新增栏目的素材征集仍须逐栏目另行发布。';
-  const btn = document.getElementById('publish');
-  if (btn) btn.addEventListener('click', () => openConfirm());
+function manageableSections() {
+  return bookOutline(config).filter(item => item.custom || item.key === 'time' || item.key === 'task');
 }
 
-/* ---------- 成长册内容：预设 6 项 + 新增栏目同列，顺序即页序 ---------- */
-function renderPresets() {
-  const on = locked();
-  document.getElementById('presetList').innerHTML = bookOutline(config).map(section => {
-    if (section.custom) {
-      return `<div class="row-item">
-        <span class="pill">新增</span>
-        <span class="grow"><b>${section.name}</b></span>
-        <button class="tag-btn ${section.collecting ? 'danger' : ''}" data-collect="${section.key}">${section.collecting ? '撤回征集' : '发布征集'}</button>
-        <button class="tag-btn" data-manage="${section.key}">管理</button>
-        <a class="tag-btn" href="growth-book-section-edit.html?id=${section.key}">版面</a>
-        <button class="tag-btn danger" data-del="${section.key}" ${on ? 'disabled' : ''}>删除</button>
-      </div>`;
-    }
-    /* 在园时光、亲子活动的内容需要教师挑选，故各带一个「管理」入口 */
-    const manage = section.key === 'time' || section.key === 'task';
-    return `<label class="row-item">
-      <input type="checkbox" data-key="${section.key}" ${section.on ? 'checked' : ''} ${on ? 'disabled' : ''}>
-      <span class="grow"><b>${section.name}</b></span>
-      ${manage ? `<button class="tag-btn" data-manage="${section.key}">管理</button>` : ''}
-    </label>`;
-  }).join('');
+function sectionHref(item) {
+  if (item.custom) {
+    return item.item && item.item.sectionStatus === 'd2'
+      ? `growth-book-section-materials.html?id=${item.key}`
+      : `growth-book-section-edit.html?id=${item.key}`;
+  }
+  return item.key === 'time' ? 'growth-book-time-manage.html' : 'growth-book-task-manage.html';
 }
-document.getElementById('presetList').addEventListener('change', event => {
-  const box = event.target.closest('[data-key]');
-  if (!box) return;
-  const key = box.dataset.key;
-  config.selected = box.checked ? config.selected.concat([key]) : config.selected.filter(k => k !== key);
-  renderAll();
-});
-document.getElementById('presetList').addEventListener('click', event => {
-  const manage = event.target.closest('[data-manage]');
-  const del = event.target.closest('[data-del]');
-  const collect = event.target.closest('[data-collect]');
-  if (collect) {
-    event.preventDefault();
-    const item = config.custom.find(entry => entry.id === collect.dataset.collect);
-    if (item.collecting) {
-      const ok = window.confirm('撤回后会删除该栏目全部家庭与教师素材；若已有相关幼儿成长册已定稿开放则服务端会拒绝。确认撤回？');
-      if (!ok) return;
-      item.collecting = false;
-      item.submitted = {};
-      showToast('征集已撤回，栏目素材已删除');
-    } else {
-      item.collecting = true;
-      showToast('征集已发布，家庭端可见');
-    }
-    renderAll();
-    return;
-  }
-  if (del && !del.disabled) {
-    event.preventDefault();
-    /* 锚在被删栏目之后的，改锚到它原本的锚点，不留孤儿 */
-    const gone = config.custom.find(item => item.id === del.dataset.del);
-    config.custom = config.custom
-      .filter(item => item.id !== gone.id)
-      .map(item => item.after === gone.id ? Object.assign({}, item, { after: gone.after }) : item);
-    renderAll();
-    return;
-  }
-  if (!manage) return;
-  event.preventDefault();
-  if (manage.dataset.manage === 'time') {
-    renderMaterial();
-    openSheet('matSheet');
-  } else if (manage.dataset.manage === 'task') {
-    renderTaskPick();
-    openSheet('taskSheet');
+
+function render(keepPage = false) {
+  document.getElementById('outline').innerHTML = manageableSections().map(item => `
+    <div class="section-row">
+      <input type="checkbox" data-toggle-section="${item.key}" data-custom="${item.custom ? '1' : '0'}"
+        data-ui="growth_book_compilation.enabled_sections"${item.on ? ' checked' : ''}${locked() ? ' disabled' : ''}>
+      <a class="section-link" href="${sectionHref(item)}"><b>${item.name}</b><span class="go">›</span></a>
+    </div>`).join('');
+  viewer.load(previewChild.name, config, keepPage, previewChild);
+  const on = locked();
+  const lockButton = document.getElementById('lock');
+  lockButton.disabled = on;
+  lockButton.textContent = on ? '已锁定' : '锁定编册';
+  document.getElementById('addSection').style.pointerEvents = on ? 'none' : '';
+  document.getElementById('addSection').style.opacity = on ? '.4' : '';
+}
+
+document.getElementById('outline').addEventListener('change', event => {
+  const checkbox = event.target.closest('[data-toggle-section]');
+  if (!checkbox || locked()) return;
+  const key = checkbox.dataset.toggleSection;
+  if (checkbox.dataset.custom === '1') {
+    const section = (config.custom || []).find(item => item.id === key);
+    if (section) section.enabled = checkbox.checked;
   } else {
-    openSubmissions(manage.dataset.manage);   // 新增栏目：看家长提交情况
+    const selected = new Set(config.selected || BOOK_ORDER);
+    checkbox.checked ? selected.add(key) : selected.delete(key);
+    config.selected = BOOK_ORDER.filter(item => selected.has(item));
   }
-});
-
-document.getElementById('addSection').addEventListener('click', () => {
-  if (locked()) { showToast('模板已永久定稿，不能修改'); return; }
-  document.getElementById('secName').value = '';
-  document.getElementById('secAfter').innerHTML = bookAnchors(config)
-    .map(item => `<option value="${item.id}">${item.name}</option>`).join('');
-  openSheet('sectionSheet');
-});
-document.getElementById('confirmSection').addEventListener('click', () => {
-  const name = document.getElementById('secName').value.trim();
-  if (!name) { showToast('请填写栏目名称'); return; }
-  seq += 1;
-  const id = 'cs' + seq;
-  /* 新栏目落地即带一页空白网格，版面到编辑器里排 */
-  config.custom = (config.custom || []).concat([{
-    id: id, name: name, after: document.getElementById('secAfter').value,
-    pages: 1, widgets: [], submitted: {}, collecting: false
-  }]);
   writeBookConfig(config);
-  location.href = 'growth-book-section-edit.html?id=' + id;
+  render(true);
+  toast(checkbox.checked ? '栏目已加入成长册' : '栏目已从成长册隐藏');
 });
 
-/* ---------- 成长资料管理 ---------- */
-function renderMaterial() {
-  const list = config.material || [];
-  document.getElementById('matList').innerHTML = list.length ? list.map((item, i) => `
-    <div class="mat-item">
-      <div class="mat-thumb">${item.photos.length} 图</div>
-      <div class="grow" style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:600">${item.title}</div>
-        <div class="sub" style="font-size:11px;color:var(--muted);margin-top:2px">${item.date}</div>
-      </div>
-      <button class="tag-btn" data-up="${i}" ${i === 0 ? 'disabled' : ''}>上移</button>
-      <button class="tag-btn danger" data-rm="${i}">移除</button>
-    </div>`).join('')
-    : '<div class="empty">尚未收录。在「在园时光」或「社区共育」的动态上点「+ 加入成长册」即可加入。</div>';
-}
-document.getElementById('matList').addEventListener('click', event => {
-  const up = event.target.closest('[data-up]');
-  const rm = event.target.closest('[data-rm]');
-  if (up && !up.disabled) {
-    const i = Number(up.dataset.up);
-    const list = config.material;
-    [list[i - 1], list[i]] = [list[i], list[i - 1]];
-  } else if (rm) {
-    config.material.splice(Number(rm.dataset.rm), 1);
-  } else return;
-  renderMaterial();
-  renderAll();
-});
-
-/* ---------- 亲子活动收录筛选 ---------- */
-function renderTaskPick() {
-  const picked = config.taskPicked || [];
-  document.getElementById('taskList').innerHTML = BOOK_TASKS.map(item => `
-    <label class="mat-item">
-      <input type="checkbox" data-task="${item.id}" ${picked.includes(item.id) ? 'checked' : ''}>
-      <div style="flex:1;min-width:0;margin-left:4px">
-        <div style="font-size:13px;font-weight:600">${item.title}</div>
-        <div class="sub" style="font-size:11px;color:var(--muted);margin-top:2px">${item.date} · 家长已交 ${item.submitted}/${BOOK_CHILDREN.length}</div>
-      </div>
-    </label>`).join('');
-}
-document.getElementById('taskList').addEventListener('change', event => {
-  const box = event.target.closest('[data-task]');
-  if (!box) return;
-  const id = box.dataset.task;
-  config.taskPicked = box.checked
-    ? (config.taskPicked || []).concat([id])
-    : (config.taskPicked || []).filter(x => x !== id);
-  renderAll();
-});
-
-/* ---------- 家长提交 / 教师代传 ---------- */
-let subId = null;
-function openSubmissions(id) {
-  subId = id;
-  const item = config.custom.find(entry => entry.id === id);
-  document.getElementById('subHint').textContent = item.collecting
-    ? '齐备须全部槽位终局完成；未交齐可由教师预览后确认代传，提交完成后永久只读。'
-    : '该栏目尚未发布征集；请先回到清单点「发布征集」。';
-  renderSectionMeta();
-  renderSubmissions();
-  openSheet('subSheet');
-}
-/* 栏目名称与插入位置：创建后仍可改，定稿冻结（写 db_growth_book_section） */
-function renderSectionMeta() {
-  const item = config.custom.find(entry => entry.id === subId);
-  const on = locked();
-  const collecting = !!item.collecting;
-  document.getElementById('subTitle').textContent =
-    `${item.name} · ${sectionPages(item)} 页 · ${sectionSlots(item)} 个槽位`;
-  document.getElementById('secMeta').innerHTML = `
-    <div class="field-label">栏目名称</div>
-    <input class="input" id="secNameEdit" maxlength="10" value="${item.name}" ${on ? 'disabled' : ''}>
-    <div class="field-label">插入位置</div>
-    <select class="select" id="secAfterEdit" ${on ? 'disabled' : ''}>
-      ${bookAnchors(config, item.id).map(anchor =>
-        `<option value="${anchor.id}"${anchor.id === item.after ? ' selected' : ''}>${anchor.name}</option>`).join('')}
-    </select>
-    ${on ? '<div class="hint" style="margin-top:8px">模板已永久定稿，栏目名称与插入位置不可修改。</div>' : ''}`;
-}
-document.getElementById('secMeta').addEventListener('change', event => {
-  const item = config.custom.find(entry => entry.id === subId);
-  if (event.target.id === 'secAfterEdit') item.after = event.target.value;
-  else if (event.target.id === 'secNameEdit') item.name = event.target.value.trim() || item.name;
-  else return;
-  renderSectionMeta();
-  renderAll();
-});
-function renderSubmissions() {
-  const item = config.custom.find(entry => entry.id === subId);
-  const slots = sectionSlots(item);
-  document.getElementById('subList').innerHTML = BOOK_CHILDREN.map(child => {
-    const filled = sectionFilled(item, child.id);
-    const ok = filled >= slots;
-    return `<div class="mat-item">
-      <span class="dot-cell ${ok ? 'done' : 'miss'}"></span>
-      <div style="flex:1;font-size:13px;font-weight:600;margin-left:4px">${child.name}
-        <span style="font-weight:400;color:var(--muted)"> · 已交 ${filled}/${slots}</span></div>
-      <button class="tag-btn" data-child="${child.id}" ${collecting && !ok ? '' : 'disabled'}>${ok ? '已提交' : '代传'}</button>
-    </div>`;
-  }).join('');
-}
-document.getElementById('subList').addEventListener('click', event => {
-  const btn = event.target.closest('[data-child]');
-  if (!btn || btn.disabled) return;
-  const item = config.custom.find(entry => entry.id === subId);
-  const id = btn.dataset.child;
-  /* 原型以一次确认代表教师已完整预览将保存的文字／裁切成品；服务端逐槽位重验。 */
-  const slots = sectionSlots(item);
-  const action = '代传';
-  if (!window.confirm(`确认${action} ${slots} 个槽位？此操作由教师本人承担发布前人工把关，提交后不可更正。`)) return;
-  item.submitted[id] = slots;
-  showToast(`已确认${action}`);
-  renderSubmissions();
+document.getElementById('lock').addEventListener('click', () => {
+  const timeEnabled = (config.selected || []).includes('time');
+  const ungrouped = timeEnabled ? (config.material || []).filter(item => !item.topicId) : [];
+  const drafts = (config.custom || []).filter(item => item.enabled !== false && item.sectionStatus !== 'd2');
+  if (ungrouped.length) return toast(`还有 ${ungrouped.length} 项在园活动未分节`);
+  if (drafts.length) return toast(`还有 ${drafts.length} 个已勾选栏目未发布`);
+  if (!window.confirm('锁定后本学期的栏目与入册内容不可再修改。确认锁定？')) return;
+  config.compilationStatus = 'e2';
   writeBookConfig(config);
+  render(true);
+  toast('编册已锁定');
 });
 
-/* ---------- 发布 ---------- */
-function openConfirm() {
-  document.getElementById('confirmTitle').textContent = '发布班级模板';
-  document.getElementById('confirmBody').textContent =
-    '发布后模板永久定稿，不能撤回或修改；全班幼儿按此样板定稿成长册。栏目征集不会自动发布，须在栏目行独立操作。发布前请先翻完整本预览。';
-  const go = document.getElementById('confirmGo');
-  go.textContent = '确认永久发布';
-  go.className = 'btn primary';
-  openSheet('confirmSheet');
+function toast(text) {
+  const el = document.getElementById('toast');
+  el.textContent = text;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 1800);
 }
-document.getElementById('confirmGo').addEventListener('click', () => {
-  config.status = 'd2';
-  showToast('模板已发布并永久冻结');
-  closeSheets();
-  renderAll();
-});
-
-/* ---------- 弹层 ---------- */
-const mask = document.getElementById('sheetMask');
-function openSheet(id) {
-  mask.classList.add('show');
-  const sheet = document.getElementById(id);
-  sheet.classList.add('show');
-  sheet.setAttribute('aria-hidden', 'false');
-}
-function closeSheets() {
-  mask.classList.remove('show');
-  document.querySelectorAll('.sheet').forEach(sheet => {
-    sheet.classList.remove('show');
-    sheet.setAttribute('aria-hidden', 'true');
-  });
-}
-mask.addEventListener('click', closeSheets);
-document.querySelectorAll('[data-close]').forEach(btn => btn.addEventListener('click', closeSheets));
-
-function showToast(text) {
-  const toast = document.getElementById('toast');
-  toast.textContent = text;
-  toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 1600);
-}
-function renderAll() {
-  renderState();
-  renderPresets();
-  preview(true);
-  writeBookConfig(config);
-}
-renderAll();
+render();
 </script>
 </body>
 </html>

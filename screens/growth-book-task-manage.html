@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1, user-scalable=no">
+<title>亲子时光管理</title>
+<link rel="stylesheet" href="home-school-common.css">
+<style>
+  .child-card{background:#fff;border:1px solid var(--border);border-radius:13px;margin-bottom:9px;overflow:hidden}
+  .child-row{width:100%;border:0;background:#fff;display:flex;align-items:center;gap:11px;padding:12px;text-align:left;color:var(--fg)}
+  .avatar{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--accent-light);color:var(--accent-dark);font-size:12px;font-weight:700;flex:0 0 auto}
+  .child-name{flex:1;font-size:13px;font-weight:700}.record-count{font-size:12px;color:var(--accent-dark);font-weight:700}.go{font-size:18px;color:var(--muted);transition:.2s}.child-card.open .go{transform:rotate(90deg)}
+  .records{display:none;border-top:1px solid var(--border);padding:4px 12px;background:#fbfdfd}.child-card.open .records{display:block}
+  .record{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #eaf0f0}.record:last-child{border:0}.record b{flex:1;font-size:12px;font-weight:600}.record button{border:0;background:transparent;color:var(--danger);padding:5px;font-size:11px}
+  .empty{padding:12px 0;text-align:center;color:var(--muted);font-size:11px}
+  .toast{position:absolute;bottom:30px;left:50%;transform:translateX(-50%) translateY(15px);background:#263238;color:#fff;padding:8px 13px;border-radius:99px;font-size:11px;opacity:0;transition:.2s;white-space:nowrap}.toast.show{opacity:1;transform:translateX(-50%)}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
+  <div class="nav-bar"><a class="back" href="growth-book-edit.html">‹</a><div class="nav-title">亲子时光管理</div><span></span></div>
+  <div class="scroll">
+    <div class="sec">幼儿名单</div>
+    <div id="list"></div>
+  </div>
+  <div class="toast" id="toast"></div>
+</div>
+<script src="growth-book-render.js"></script>
+<script>
+const config = readBookConfig();
+config.taskSelections = config.taskSelections || defaultTaskSelections();
+let openChildId = null;
+const locked = () => config.compilationStatus === 'e2';
+
+function childTasks(childId) {
+  return (config.taskSelections[childId] || []).map(id => BOOK_TASKS.find(task => task.id === id)).filter(Boolean);
+}
+
+function render() {
+  document.getElementById('list').innerHTML = BOOK_CHILDREN.map(child => {
+    const tasks = childTasks(child.id);
+    const open = openChildId === child.id;
+    const records = tasks.length ? tasks.map(task => `
+      <div class="record"><b>${task.title}</b><button data-remove-task="${task.id}" data-child-id="${child.id}"
+        data-ui="growth_book.task.teacher_included"${locked() ? ' disabled' : ''}>删除</button></div>`).join('') : '<div class="empty">暂无亲子时光</div>';
+    return `<article class="child-card${open ? ' open' : ''}">
+      <button class="child-row" data-open-child="${child.id}"><span class="avatar">${child.name.slice(-1)}</span><span class="child-name">${child.name}</span><span class="record-count">${tasks.length} 条</span><span class="go">›</span></button>
+      <div class="records">${records}</div>
+    </article>`;
+  }).join('');
+}
+
+document.getElementById('list').addEventListener('click', event => {
+  const remove = event.target.closest('[data-remove-task]');
+  if (remove) {
+    if (locked()) return;
+    const task = BOOK_TASKS.find(item => item.id === remove.dataset.removeTask);
+    if (!window.confirm(`从这名幼儿的成长册中删除“${task.title}”？`)) return;
+    const childId = remove.dataset.childId;
+    config.taskSelections[childId] = (config.taskSelections[childId] || []).filter(id => id !== task.id);
+    writeBookConfig(config);
+    render();
+    toast('已从该幼儿成长册删除');
+    return;
+  }
+  const row = event.target.closest('[data-open-child]');
+  if (!row) return;
+  openChildId = openChildId === row.dataset.openChild ? null : row.dataset.openChild;
+  render();
+});
+
+function toast(message) {
+  const el = document.getElementById('toast');
+  el.textContent = message;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 1700);
+}
+render();
+</script>
+</body>
+</html>

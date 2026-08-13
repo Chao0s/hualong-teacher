@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1, user-scalable=no">
+<title>在园时光管理</title>
+<link rel="stylesheet" href="home-school-common.css">
+<style>
+  .count-line{display:flex;gap:8px;margin-bottom:14px}.count-pill{flex:1;padding:10px 12px;border-radius:12px;background:#fff;border:1px solid var(--border);font-size:12px;color:var(--muted)}.count-pill b{display:block;margin-top:2px;font-size:18px;color:var(--fg)}
+  .topic{margin-bottom:14px}.topic-head{display:flex;align-items:center;gap:8px;padding:11px 12px;background:var(--accent-light);border-radius:12px 12px 0 0}.topic-head b{flex:1;font-size:13px}.topic-head .count{font-size:11px;color:var(--accent-dark)}.topic-title-input{min-width:0;flex:1;border:1px solid var(--accent);border-radius:8px;background:#fff;padding:6px 8px;font-size:12px;outline:none}
+  .text-button{border:0;background:transparent;color:var(--accent-dark);font-size:11px;padding:4px}.text-button.danger{color:var(--danger)}
+  .activity{display:flex;align-items:center;gap:10px;padding:11px 12px;background:#fff;border:1px solid var(--border);border-top:0}.activity:last-child{border-radius:0 0 12px 12px}.activity b{flex:1;font-size:12px;font-weight:600}.activity time{font-size:11px;color:var(--muted);white-space:nowrap}.activity input{width:17px;height:17px;accent-color:var(--accent)}
+  .empty{padding:16px;background:#fff;border:1px dashed var(--border);border-radius:0 0 12px 12px;font-size:12px;color:var(--muted);text-align:center}
+  .new-topic{display:grid;grid-template-columns:1fr auto;gap:8px;margin:0 0 18px}.new-topic input{min-width:0;border:1px solid var(--border);border-radius:12px;background:#fff;padding:10px 12px;font-size:12px;outline:none}.new-topic input:focus{border-color:var(--accent)}.new-topic button{border:0;border-radius:12px;background:var(--accent);color:#fff;padding:0 14px;font-size:12px;font-weight:700}.toolbar{display:flex;gap:8px;margin-bottom:8px}.search{flex:1;border:1px solid var(--border);border-radius:12px;background:#fff;padding:10px 12px;font-size:12px;outline:none}.search:focus{border-color:var(--accent)}
+  .select-all{border:1px solid var(--border);border-radius:12px;background:#fff;padding:0 11px;font-size:11px;white-space:nowrap;color:var(--fg)}
+  .batch{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;background:#fff;border:1px solid var(--border);border-radius:12px;padding:9px 10px;margin-bottom:10px;position:sticky;top:0;z-index:3}.batch span{font-size:11px;color:var(--muted);white-space:nowrap}.batch select{min-width:0;border:1px solid var(--border);border-radius:9px;padding:8px;font-size:11px;background:#fff}.batch button{border:0;border-radius:9px;background:var(--accent);color:#fff;padding:8px 10px;font-size:11px;white-space:nowrap}.batch button:disabled{opacity:.45}
+  .pending-list{border-radius:12px;overflow:hidden;margin-bottom:20px}.pending-list .activity:first-child{border-top:1px solid var(--border);border-radius:12px 12px 0 0}
+  .toast{position:absolute;left:50%;bottom:30px;transform:translateX(-50%) translateY(16px);background:#263238;color:#fff;padding:8px 13px;border-radius:99px;font-size:11px;opacity:0;transition:.2s;z-index:10;white-space:nowrap}.toast.show{opacity:1;transform:translateX(-50%)}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
+  <div class="nav-bar"><a class="back" href="growth-book-edit.html">‹</a><div class="nav-title">在园时光管理</div><span></span></div>
+  <div class="scroll">
+    <div class="count-line">
+      <div class="count-pill">主题<b id="topicCount">0</b></div>
+      <div class="count-pill">全部活动<b id="activityCount">0</b></div>
+      <div class="count-pill">未归类<b id="ungroupedCount">0</b></div>
+    </div>
+
+    <div class="sec">主题</div>
+    <div id="topics"></div>
+    <div class="new-topic">
+      <input class="mutating" id="newTopicName" maxlength="30" placeholder="输入新主题名称" data-ui="growth_book_time_topic.title">
+      <button class="mutating" id="createTopic">新建主题</button>
+    </div>
+
+    <div class="sec">未归类成长素材</div>
+    <div class="toolbar">
+      <input class="search" id="search" type="search" placeholder="搜索活动名称">
+      <button class="select-all mutating" id="selectAll">全选结果</button>
+    </div>
+    <div class="batch">
+      <span id="selectedCount">已选 0 项</span>
+      <select id="targetTopic" class="mutating" data-ui="growth_material.topic"></select>
+      <button id="assign" class="mutating" data-ui="growth_material.topic">归入主题</button>
+    </div>
+    <div class="pending-list" id="ungrouped"></div>
+  </div>
+  <div class="toast" id="toast"></div>
+</div>
+<script src="growth-book-render.js"></script>
+<script>
+const config = readBookConfig();
+config.timeTopics = config.timeTopics && config.timeTopics.length ? config.timeTopics : [
+  { id:'p1', title:'春天来了', sort:1 },
+  { id:'p2', title:'一起划龙舟', sort:2 }
+];
+
+const activityNames = [
+  '认识我们的新教室','晨间自主游戏','第一次值日','搭建我们的幼儿园','彩色树叶拓印','寻找春天的颜色','种子的秘密','给小苗浇水',
+  '春风里的纸飞机','花园昆虫观察','雨后的水洼','小小天气播报员','户外平衡挑战','沙池里的城堡','轮胎滚滚乐','合作运球',
+  '绘本里的春天','故事角色表演','我会整理图书','有趣的影子','声音从哪里来','磁铁好朋友','沉与浮小实验','泡泡变变变',
+  '蔬菜印章画','黏土里的小动物','音乐节奏游戏','彩带舞起来','春日野餐会','安全过马路','消防疏散练习','保护牙齿',
+  '爱眼小课堂','我会自己穿衣','午餐小帮手','安静午睡日','认识端午节','一起包粽子','端午香包','龙舟接力赛',
+  '夏天的味道','寻找校园里的圆','水枪运水赛','毕业班来做客','班级植物观察','纸箱创意搭建','小小分享会','学期作品展'
+];
+
+function demoActivities() {
+  const start = new Date('2026-02-24T00:00:00');
+  return activityNames.map((title, index) => {
+    const date = new Date(start);
+    date.setDate(start.getDate() + index * 3);
+    return {
+      id: `demo-time-${String(index + 1).padStart(2, '0')}`,
+      title,
+      date: `${date.getMonth() + 1}月${date.getDate()}日`,
+      dateValue: date.toISOString().slice(0, 10),
+      photos: [`${title}照片1`, `${title}照片2`],
+      description: `孩子们在${title}中认真观察、主动表达，并记录了自己的发现。`,
+      topicId: index < 4 ? 'p1' : index < 8 ? 'p2' : null
+    };
+  });
+}
+
+if ((config.timeMaterialDemoVersion || 0) < 2) {
+  const byId = new Map((config.material || []).map(item => [item.id, item]));
+  demoActivities().forEach(item => { if (!byId.has(item.id)) byId.set(item.id, item); });
+  config.material = Array.from(byId.values());
+  config.timeMaterialInitialized = true;
+  config.timeMaterialDemoVersion = 2;
+  writeBookConfig(config);
+}
+
+const selected = new Set();
+let editingTopicId = null;
+let pendingRemoveId = null;
+const locked = () => config.compilationStatus === 'e2';
+const byNewest = (a, b) => materialDateValue(b) - materialDateValue(a);
+const byOldest = (a, b) => materialDateValue(a) - materialDateValue(b);
+
+function activityRow(item, selectable) {
+  const check = selectable
+    ? `<input class="mutating" type="checkbox" data-pick="${item.id}" data-ui="growth_material.photo_select"${selected.has(item.id) ? ' checked' : ''}>`
+    : '';
+  const action = selectable
+    ? `<button class="text-button danger mutating" data-remove="${item.id}" data-ui="growth_material.photo_select">${pendingRemoveId === item.id ? '确认删除' : '删除'}</button>`
+    : `<button class="text-button mutating" data-undo="${item.id}" data-ui="growth_material.topic">撤销</button>`;
+  return `<div class="activity">${check}<b>${item.title}</b><time>${item.date}</time>${action}</div>`;
+}
+
+function visibleUngrouped() {
+  const query = document.getElementById('search').value.trim().toLowerCase();
+  return (config.material || []).filter(item => !item.topicId && (!query || item.title.toLowerCase().includes(query))).sort(byNewest);
+}
+
+function render() {
+  const topics = orderedTimeTopics(config.timeTopics, config.material);
+  document.getElementById('topics').innerHTML = topics.map(topic => {
+    const items = config.material.filter(item => item.topicId === topic.id).sort(byOldest);
+    const heading = editingTopicId === topic.id
+      ? `<input class="topic-title-input mutating" maxlength="30" value="${topic.title}" data-topic-title="${topic.id}" data-ui="growth_book_time_topic.title"><button class="text-button mutating" data-save-rename="${topic.id}">保存</button><button class="text-button mutating" data-cancel-rename="${topic.id}">取消</button>`
+      : `<b>${topic.title}</b><span class="count">${items.length} 项</span><button class="text-button mutating" data-rename="${topic.id}">重命名</button><button class="text-button danger mutating" data-delete="${topic.id}">删除</button>`;
+    return `<section class="topic"><div class="topic-head">${heading}</div>${items.length ? items.map(item => activityRow(item, false)).join('') : '<div class="empty">暂无活动</div>'}</section>`;
+  }).join('');
+
+  const visible = visibleUngrouped();
+  const looseIds = new Set(config.material.filter(item => !item.topicId).map(item => item.id));
+  [...selected].forEach(id => { if (!looseIds.has(id)) selected.delete(id); });
+  document.getElementById('ungrouped').innerHTML = visible.length
+    ? visible.map(item => activityRow(item, true)).join('')
+    : '<div class="empty" style="border-radius:12px">没有匹配的未归类素材</div>';
+  document.getElementById('targetTopic').innerHTML = '<option value="">选择主题</option>' + topics.map(topic => `<option value="${topic.id}">${topic.title}</option>`).join('');
+  document.getElementById('topicCount').textContent = topics.length;
+  document.getElementById('activityCount').textContent = config.material.length;
+  document.getElementById('ungroupedCount').textContent = config.material.filter(item => !item.topicId).length;
+  document.getElementById('selectedCount').textContent = `已选 ${selected.size} 项`;
+  document.getElementById('assign').disabled = locked() || !selected.size;
+  document.querySelectorAll('.mutating').forEach(control => { if (locked()) control.disabled = true; });
+}
+
+document.getElementById('search').addEventListener('input', render);
+document.getElementById('selectAll').addEventListener('click', () => {
+  const visible = visibleUngrouped();
+  const allSelected = visible.length && visible.every(item => selected.has(item.id));
+  visible.forEach(item => allSelected ? selected.delete(item.id) : selected.add(item.id));
+  render();
+});
+document.getElementById('ungrouped').addEventListener('change', event => {
+  if (!event.target.dataset.pick) return;
+  event.target.checked ? selected.add(event.target.dataset.pick) : selected.delete(event.target.dataset.pick);
+  document.getElementById('selectedCount').textContent = `已选 ${selected.size} 项`;
+  document.getElementById('assign').disabled = !selected.size;
+});
+document.getElementById('assign').addEventListener('click', () => {
+  const topicId = document.getElementById('targetTopic').value;
+  if (!topicId) return toast('请先选择主题');
+  config.material.forEach(item => { if (selected.has(item.id)) item.topicId = topicId; });
+  const count = selected.size;
+  selected.clear();
+  save(`已归入 ${count} 项活动`);
+});
+function createTopic() {
+  const input = document.getElementById('newTopicName');
+  const title = input.value.trim();
+  if (!title) return toast('请输入主题名称');
+  if (config.timeTopics.some(item => item.title === title)) return toast('已经有同名主题');
+  config.timeTopics.push({ id:`p${Date.now()}`, title, sort:config.timeTopics.length + 1 });
+  input.value = '';
+  save('主题已新建');
+}
+document.getElementById('createTopic').addEventListener('click', createTopic);
+document.getElementById('newTopicName').addEventListener('keydown', event => {
+  if (event.key === 'Enter') { event.preventDefault(); createTopic(); }
+});
+
+document.addEventListener('click', event => {
+  const button = event.target.closest('button');
+  if (!button || locked()) return;
+  if (button.dataset.rename) {
+    editingTopicId = button.dataset.rename;
+    render();
+    const input = document.querySelector(`[data-topic-title="${editingTopicId}"]`);
+    if (input) { input.focus(); input.select(); }
+    return;
+  }
+  if (button.dataset.cancelRename) {
+    editingTopicId = null;
+    render();
+    return;
+  }
+  if (button.dataset.saveRename) {
+    saveTopicRename(button.dataset.saveRename);
+    return;
+  }
+  if (button.dataset.delete) {
+    const topic = config.timeTopics.find(item => item.id === button.dataset.delete);
+    if (!topic) return;
+    config.material.forEach(item => { if (item.topicId === topic.id) item.topicId = null; });
+    config.timeTopics = config.timeTopics.filter(item => item.id !== topic.id);
+    editingTopicId = null;
+    save('主题已删除');
+    return;
+  }
+  if (button.dataset.undo) {
+    const material = config.material.find(item => item.id === button.dataset.undo);
+    if (!material) return;
+    material.topicId = null;
+    save('已撤销归类');
+    return;
+  }
+  if (button.dataset.remove) {
+    if (pendingRemoveId !== button.dataset.remove) {
+      pendingRemoveId = button.dataset.remove;
+      render();
+      return;
+    }
+    config.material = config.material.filter(item => item.id !== button.dataset.remove);
+    selected.delete(button.dataset.remove);
+    pendingRemoveId = null;
+    writeBookConfig(config);
+    render();
+  }
+});
+
+document.getElementById('topics').addEventListener('keydown', event => {
+  const input = event.target.closest('[data-topic-title]');
+  if (!input) return;
+  if (event.key === 'Enter') { event.preventDefault(); saveTopicRename(input.dataset.topicTitle); }
+  if (event.key === 'Escape') { editingTopicId = null; render(); }
+});
+
+function saveTopicRename(topicId) {
+  const topic = config.timeTopics.find(item => item.id === topicId);
+  const input = document.querySelector(`[data-topic-title="${topicId}"]`);
+  if (!topic || !input) return;
+  const title = input.value.trim();
+  if (!title) return toast('请输入主题名称');
+  if (config.timeTopics.some(item => item.id !== topicId && item.title === title)) return toast('已经有同名主题');
+  topic.title = title;
+  editingTopicId = null;
+  save('主题已更新');
+}
+
+function save(message) { writeBookConfig(config); render(); toast(message); }
+function toast(message) {
+  const el = document.getElementById('toast');
+  el.textContent = message;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 1700);
+}
+render();
+</script>
+</body>
+</html>

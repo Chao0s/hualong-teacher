@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1, user-scalable=no">
+<title>栏目投稿管理</title>
+<link rel="stylesheet" href="home-school-common.css">
+<style>
+  .summary{display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid var(--border);border-radius:13px;padding:12px 14px;margin-bottom:12px}.summary span{font-size:12px;color:var(--muted)}.summary b{font-size:18px}
+  .tabs{position:static;display:flex;gap:6px;margin-bottom:12px;padding:0;background:transparent;border:0}.tabs button{border:1px solid var(--border);background:#fff;border-radius:99px;padding:7px 12px;font-size:11px}.tabs button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .submission{background:#fff;border:1px solid var(--border);border-radius:12px;margin-bottom:8px;overflow:hidden}.row{display:flex;gap:10px;align-items:center;padding:12px}.avatar{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--accent-light);color:var(--accent-dark);font-size:12px}.grow{flex:1}.grow b{display:block;font-size:12px}.meta{font-size:10px;color:var(--muted);margin-top:3px}.row button{border:1px solid var(--border);background:#fff;border-radius:99px;padding:6px 10px;font-size:10px}.row button.primary-action{background:var(--accent);border-color:var(--accent);color:#fff}
+  .detail{display:none;border-top:1px solid var(--border);padding:12px}.submission.open .detail{display:block}.photos{display:grid;grid-template-columns:1fr 1fr;gap:8px}.photo{height:92px;border-radius:10px;background:linear-gradient(145deg,#dff4ef,#f8d8bc);display:grid;place-items:center;padding:8px;text-align:center;color:#52706d;font-size:11px}.parent-text{font-size:12px;line-height:1.7;margin:10px 2px 0;color:var(--fg)}
+  .empty{padding:24px;background:#fff;border:1px dashed var(--border);border-radius:12px;text-align:center;font-size:12px;color:var(--muted)}
+  .section-actions{display:grid;gap:10px;margin-top:18px}.section-actions .btn{width:100%}.btn.danger{background:#fff;border:1px solid #f0c8c8;color:var(--danger)}
+  .toast{position:absolute;left:50%;bottom:30px;transform:translateX(-50%) translateY(16px);background:#263238;color:#fff;padding:8px 13px;border-radius:99px;font-size:11px;opacity:0;transition:.2s}.toast.show{opacity:1;transform:translateX(-50%)}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
+  <div class="nav-bar"><a class="back" id="back" href="growth-book-edit.html">‹</a><div class="nav-title" id="pageTitle">栏目投稿</div><span></span></div>
+  <div class="scroll">
+    <div class="summary"><span>已收齐</span><b id="completeCount">0 / 0</b></div>
+    <div class="tabs" id="tabs">
+      <button class="on" data-filter="all">全部</button>
+      <button data-filter="done">已完成</button>
+      <button data-filter="missing">未提交</button>
+    </div>
+    <div id="list"></div>
+    <div class="section-actions">
+      <button class="btn danger" id="deleteSection">删除栏目</button>
+    </div>
+  </div>
+  <div class="toast" id="toast"></div>
+</div>
+<script src="growth-book-render.js"></script>
+<script>
+const config = readBookConfig();
+const id = new URLSearchParams(location.search).get('id');
+const section = (config.custom || []).find(item => item.id === id);
+const title = section ? section.name : '栏目投稿';
+document.getElementById('pageTitle').textContent = title;
+document.getElementById('back').href = 'growth-book-edit.html';
+let filter = 'all';
+
+function recordFor(child) {
+  const submission = section ? sectionSubmission(section, child.id) : null;
+  const complete = section && sectionFilled(section, child.id) >= sectionSlots(section);
+  return { child, submission, state: complete ? 'done' : 'missing' };
+}
+
+function render() {
+  const records = BOOK_CHILDREN.map(recordFor);
+  const doneCount = records.filter(item => item.state === 'done').length;
+  document.getElementById('completeCount').textContent = `${doneCount} / ${records.length}`;
+  const visible = records.filter(item => filter === 'all' || item.state === filter);
+  document.getElementById('list').innerHTML = visible.length ? visible.map(({ child, submission, state }) => {
+    const images = submission && submission.images ? submission.images : [];
+    const text = submission && submission.text ? submission.text : '';
+    const detail = state === 'done' ? `<div class="detail"><div class="photos">${images.slice(0, 2).map(label => `<div class="photo">${escapeText(label)}</div>`).join('')}</div><p class="parent-text">${escapeText(text)}</p></div>` : '';
+    return `<article class="submission" data-child="${child.id}"><div class="row"><span class="avatar">${child.name.slice(-1)}</span><div class="grow"><b>${child.name}</b><div class="meta">${state === 'done' ? '2 张照片 · 1 段文字' : '未提交'}</div></div>${state === 'done' ? '<button data-view>查看</button>' : '<button class="primary-action" data-remind>提醒家长</button>'}</div>${detail}</article>`;
+  }).join('') : '<div class="empty">暂无记录</div>';
+}
+
+document.getElementById('tabs').addEventListener('click', event => {
+  const button = event.target.closest('button');
+  if (!button) return;
+  filter = button.dataset.filter;
+  document.querySelectorAll('#tabs button').forEach(item => item.classList.toggle('on', item === button));
+  render();
+});
+document.getElementById('list').addEventListener('click', event => {
+  const card = event.target.closest('.submission');
+  if (!card) return;
+  if (event.target.closest('[data-view]')) {
+    card.classList.toggle('open');
+    event.target.textContent = card.classList.contains('open') ? '收起' : '查看';
+  }
+  if (event.target.closest('[data-remind]')) {
+    const child = BOOK_CHILDREN.find(item => item.id === card.dataset.child);
+    section.reminders = section.reminders || {};
+    const previous = section.reminders[card.dataset.child] || { count:0 };
+    section.reminders[card.dataset.child] = { count:previous.count + 1, remindedAt:Date.now() };
+    writeBookConfig(config);
+    toast(`已提醒${child ? child.name : ''}家长`);
+  }
+});
+document.getElementById('deleteSection').addEventListener('click', () => {
+  if (!section) return;
+  if (config.compilationStatus === 'e2') return toast('编册已经锁定');
+  (config.custom || []).forEach(item => {
+    if (item.id !== section.id && item.after === section.id) item.after = section.after || 'time';
+  });
+  config.custom = (config.custom || []).filter(item => item.id !== section.id);
+  writeBookConfig(config);
+  location.href = 'growth-book-edit.html';
+});
+document.getElementById('deleteSection').disabled = !section || config.compilationStatus === 'e2';
+function toast(message) {
+  const el = document.getElementById('toast');
+  el.textContent = message;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 1600);
+}
+render();
+</script>
+</body>
+</html>

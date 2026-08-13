@@ -23,8 +23,8 @@ shared_objects (共享对象) = db_teacher, db_school, db_school_term, db_class,
 shared_nav_objects (共享导航对象) = nav_home, nav_party, nav_coord, nav_training, nav_home_school
 rename_shared_object (重命名共享对象) = FORBIDDEN
 duplicate_shared_object_definition (重复定义共享对象) = FORBIDDEN
-new_canonical_objects (本次新增业务对象) = db_term_eval, db_child_assessment, db_teacher_message, db_scale_item, db_child_assessment_item, db_growth_book_template, db_growth_book_section, db_book_widget, db_growth_material
-new_object_source (新增业务对象依据) = db_teacher_message 来自 E1; db_scale_item 与 db_child_assessment_item 来自 E2; db_growth_book_template|db_growth_book_section|db_book_widget|db_growth_material 来自 E3(W11-W19)
+new_canonical_objects (本次新增业务对象) = db_term_eval, db_child_assessment, db_teacher_message, db_scale_item, db_child_assessment_item, db_growth_book_compilation, db_growth_book_time_topic, db_growth_book_task_item, db_growth_book_section, db_book_widget, db_growth_material
+new_object_source (新增业务对象依据) = db_teacher_message 来自 E1; db_scale_item 与 db_child_assessment_item 来自 E2; db_growth_book_compilation|db_growth_book_time_topic|db_growth_book_task_item|db_growth_book_section|db_book_widget|db_growth_material 来自 F19 对 E3 的覆写
 external_identity_object (跨端身份对象) = db_parent; 由家长端统一定义并由教师端引用
 external_business_object (跨端业务对象) = db_parent_evaluation, db_book_material_submission; 前者由家长端 home-spec.md 统一定义(canonical)，后者由家长端 growth-book-spec.md 统一定义(canonical)；教师端仅引用，不得另建同义表
 
@@ -57,7 +57,9 @@ production_initial_db_growth_record (成长档案初始状态) = EMPTY
 production_initial_db_growth_book (成长册初始状态) = EMPTY
 production_initial_db_teacher_message (教师寄语初始状态) = EMPTY
 production_initial_db_child_assessment_item (综合评估题项分初始状态) = EMPTY
-production_initial_db_growth_book_template (成长册模版初始状态) = EMPTY
+production_initial_db_growth_book_compilation (成长册学期编册初始状态) = EMPTY
+production_initial_db_growth_book_time_topic (在园主题初始状态) = EMPTY
+production_initial_db_growth_book_task_item (亲子入册关系初始状态) = EMPTY
 production_initial_db_growth_book_section (成长册新增栏目初始状态) = EMPTY
 production_initial_db_book_widget (成长册组件初始状态) = EMPTY
 production_initial_db_book_material_submission (成长册素材提交初始状态) = EMPTY
@@ -552,7 +554,7 @@ visibility_rule = 教师只读本人班级 c1 完成提交；c2 家庭草稿与�
 [GROWTH_BOOK]
 
 依据 (source) = DECISIONS.md E3 及其下 W1-W21；本节整体推翻 B12 的「模板重新解读为汇出页、v1 不需要 template_code」
-source_page (参考页面) = growth-book.html, growth-book-edit.html, growth-book-section-edit.html, growth-book-sample.html, growth-book-view.html
+source_page (参考页面) = growth-book.html, growth-book-edit.html, growth-book-time-manage.html, growth-book-task-manage.html, growth-book-section-edit.html, growth-book-section-materials.html, growth-book-sample.html, growth-book-view.html
 model (模型) = 模版是实打实的版式配置对象，比 template_code 更重 —— 是 widget 网格上的自由布局
 export_page_removed (作废页面) = export-growth-book.html。F17 已取消所有成长册文件导出；growth-book.html 底部弹层只做整班定稿并开放
 
@@ -561,19 +563,18 @@ section_order (内容组成 6 项，固定顺序):
 | n | section_key | 名称 | 粒度 | 数据来源 |
 |---:|---|---|---|---|
 | 1 | intro | 园所介绍 | 班级级（园所统一） | db_school.school_intro |
-| 2 | time | 在园时光 | 班级级＋幼儿级 | 教师 db_growth_material＋家长 db_file_ref(book_parent) 联集 |
-| 3 | task | 亲子活动 | 幼儿级 | db_parent_task + db_parent_task_submission |
-| 4 | term | 期末评估 | 幼儿级 | db_term_eval.eval_text |
-| 5 | comp | 综合评估 | 幼儿级 | db_child_assessment_item（雷达图即时算） |
-| 6 | message | 教师寄语 | 幼儿级 | db_teacher_message.content |
+| 1 | time | 在园时光 | 班级级＋幼儿级 | 教师 db_growth_material＋家长 db_file_ref(book_parent) 联集 |
+| 2 | task | 亲子时光 | 幼儿级 | db_parent_task + db_parent_task_submission |
+| 3 | term | 教师综合评估 | 幼儿级 | db_term_eval.eval_text |
+| 4 | comp | 五大领域评估 | 幼儿级 | db_child_assessment_item（雷达图即时算） |
+| 5 | message | 学期寄语 | 园所学期级 | db_school_term.growth_book_message |
 
-section_order_note (相对 B12 的变动) = 删 parent 家长动态；eval 发展评估拆成 term + comp；comment 幼儿评语更名 message 教师寄语并改读 db_teacher_message；砍体检数据维持不变
+section_order_note (相对 B12 的变动) = 删 parent 家长动态；eval 发展评估拆成 term + comp；F19 将固定 message 更正为全园同一学期共用的学期寄语并改读 db_school_term；逐幼儿 db_teacher_message 不再进入固定正文；砍体检数据维持不变
 no_manual_sort (不做整体拖拽排序) = 预设 6 项顺序固定。曾试「勾选 + 拖动排序」，2026-08-01 评审回退（纵向排序清单在手机上太笨重），故模版不需要 sort_order
 cover_ownership (封面归属 / W19) = 封面归园所，存 db_school.book_cover JSON {layout_id, image_file_id, title_text}，一园一份，只有 admin 能改，school_id derived；教师端不提供封面写入控件，故本 specification 不为封面出 ui= 标注
 cover_conflict_note (待上游澄清) = W13 把「选封面」列为教师可配置的三件事之一，W19 则把封面收归 admin。两条并存于 DECISIONS.md，本 specification 依 W19 处理并登记此冲突，不自行改判
 border_ownership (美术边框归属 / W1b + W19) = 边框是设计不是内容，放页版式库 JSON，不提供上传；边框必须跟着 App 内书页渲染
-teacher_configurable (教师可配置的范围 / W13) = 开关栏目、新增栏目（含其版面）两件事；预设 6 个栏目的页面由我们（developer）预先设计，教师完全不能改，因此没有 override 表、没有班班版面分歧
-teacher_configurable_addendum (F16 + F17) = 上述两件事之外，教师还配置「内容进不进册」：亲子活动与逐幼儿在园时光选片在该幼儿 b2 时冻结；在园时光班级成长资料在首本 b2 后永久冻结。两者都不改版面
+teacher_configurable (F19 第三轮评审) = 园所前置页、教师综合评估、五大领域评估与学期寄语固定；教师可勾选在园时光、亲子时光及每个自定义栏目是否入册，并管理本学期主题、活动批量分节／删除与新增栏目版面，全部在 compilation=e1 时可写。学期寄语由管理端维护，教师只读且不形成逐幼儿进度列
 
 
 成长册 (Growth Book / db_growth_book)
@@ -584,6 +585,8 @@ class_id (班级ID), 1:1, integer, ui=growth_book.class
 child_id (幼儿ID), 1:1, integer, ui=growth_book.child
 teacher_id (评价教师ID), 1:1, integer, ui=context.hidden
 term_id (学期ID), 1:1, school_term, ui=growth_book.period
+compilation_id (学期编册ID), 1:1, integer, ui=growth_book.hidden
+pack_code (建册时模板代码), 1:1, string, ui=growth_book.hidden
 layout_seed (版式随机种子), 1:1, integer, ui=growth_book.hidden
 can_finalize (是否可定稿), 1:1, derived(can_finalize_rule), persist=0, ui=growth_book.status
 book_status (成长册状态), 1:1, b1=preparing(准备中)|b2=published(已定稿开放), ui=growth_book.book_status
@@ -599,10 +602,10 @@ method (方法):
 book_eval_status 已拔掉不落列，改为实时派生的布尔 can_finalize（DECISIONS.md F17）
 IF book_status=b2, homepage growth_book_status=h1
 IF book_status=b1 OR record NOT_FOUND, homepage growth_book_status=h2
-主页不得显示逐项缺失；定稿前检查页负责呈现问题幼儿及具体缺项
+主页不得显示逐项缺失、页数或问题列；只以「幼儿 × 已勾选栏目」矩阵显示完成／未完成。正式定稿的服务端完整重验仍保留
 school_id 为本次补列，见 GAPS.md G14
 
-included_sections_removed (Q62-j39) = B12 曾列于 db_growth_book 的 included_sections 已正式作废，不落 DDL、不保留 hidden ui，也不改为逐册快照。预设栏目统一读取 db_growth_book_template.enabled_sections；新增栏目按冻结 template／section 解析。B12 同批的 book_message 亦已由 E1 作废，寄语改读 db_teacher_message
+included_sections_removed (F19 第三轮覆写) = db_growth_book.included_sections 与旧 template.enabled_sections 仍作废；改由本学期 compilation.enabled_sections 保存教师管理面上勾选的 time、task 与自定义 section_id。term、comp、message 不进入开关且固定启用
 
 layout_seed_rule (版式种子规则 / W14):
 不定长内容（task 亲子活动、time 在园时光）用「重复页样板池 + 随机挑选」：我们为该栏目设计 3-4 个页版式（各自宣告容量），渲染时挑版式、重复铺，直到盖完实际件数
@@ -619,56 +622,74 @@ can_finalize = 班级级栏目就绪 AND 该幼儿的因人而异栏目齐备 AN
 每名幼儿 b2 时同一事务向每位当前 caretaker 各写一则 n5 App 内通知；v1 不接微信订阅消息
 
 checklist_rule (定稿检查表规则 / E3 第 8 点 + F17):
-检查表只把纯班级级的园所介绍移到表上方；在园时光因 F17 加入家长逐幼儿选片，必须留在幼儿列
-表内为在园时光、亲子活动、期末评估、综合评估、教师寄语 + N 个新增栏目
-接口对园所介绍回班级级状态；在园时光逐幼儿回教师班级素材与家长选片联集后的状态
+检查表只把纯班级级的前置页移到表上方；在园时光因 F17 加入家长逐幼儿选片，必须留在幼儿列
+表内只显示 compilation 中已勾选的在园时光、亲子时光与自定义栏目；未勾选栏目不入册也不参与齐备判断。教师综合评估、五大领域评估与全园学期寄语虽固定入册，但不是教师在本页逐幼儿管理的栏目进度列
+接口对园所前置内容回班级级状态；在园时光逐幼儿只统计本 compilation 已登记活动中的教师素材与家长选片联集
 
 
-成长册模版 (Growth Book Template / db_growth_book_template)
+学期编册 (Growth Book Compilation / db_growth_book_compilation)
 
-template_id (成长册模版ID), 1:1, integer, ui=growth_book_template.hidden
-school_id (园所ID), 1:1, integer, ui=growth_book_template.hidden
-class_id (班级ID), 1:1, integer, ui=growth_book_template.hidden
-enabled_sections (启用栏目), 1:1, json, ui=growth_book_template.section_toggle
-template_status (模版状态), 1:1, d1=draft(草稿)|d2=published(已定稿), ui=growth_book_template.status
-updated_at (更新时间), 1:1, datetime, ui=growth_book_template.hidden
+compilation_id (学期编册ID), 1:1, integer, ui=growth_book_compilation.hidden
+school_id (园所ID), 1:1, integer, ui=growth_book_compilation.hidden
+class_id (班级ID), 1:1, integer, ui=growth_book_compilation.hidden
+term_id (园所学期ID), 1:1, string, ui=growth_book_compilation.term
+compilation_status (编册状态), 1:1, e1=editing|e2=locked, ui=growth_book_compilation.status
+enabled_sections (教师选择入册的栏目键), 1:1, json, ui=growth_book_compilation.enabled_sections
+revision (并发修订号), 1:1, bigint, ui=growth_book_compilation.hidden
+locked_by (锁定教师ID), 0:1, integer, ui=growth_book_compilation.hidden
+locked_at (锁定时间), 0:1, datetime, ui=growth_book_compilation.hidden
+updated_at (更新时间), 1:1, datetime, ui=growth_book_compilation.hidden
 
-rel_count (关系数量) = 3
-rel_db (关联表) = db_school, db_class, db_growth_book_section
-rel_map (关系字段) = db_growth_book_template{school_id}<->db_school{school_id}; db_growth_book_template{class_id}<->db_class{class_id}; db_growth_book_template{template_id}<->db_growth_book_section{template_id}
-unique (唯一键) = class_id
-object_scope (归属层级 / W19) = 纯班级级。封面已移到 db_school.book_cover，本表不含封面字段
-enabled_sections_value (取值) = 预设 6 项的开关，如 ["intro","time","task","term","comp","message"]
+unique (唯一键) = class_id + term_id
+fixed_spine_rule (F19 第三轮覆写) = 相对顺序不可改；term／comp／message 固定启用，message 读取 db_school_term.growth_book_message。time／task 与每个自定义栏目由 compilation.enabled_sections 控制，未勾选者不进入 resolved manifest、TOC、页数与齐备判断
+lock_rule (F19) = e1 可管理主题、活动、栏目与排序；教师显式锁定时服务端同交易重验主题归属、排序、栏目发布、内容安全、齐备、anchor、pack、db_school_term.growth_book_message 非空与每册 200 页。任一班级锁定成功后该园所学期寄语永久唯读。e2 单向只读，只有 e2 才允许逐幼儿 b1→b2
 
-version_rule (版本化规则 / E3 第 3 点 + W16):
-不做模版版本化、不做快照。故本表无 version，已定稿册不绑模版快照
-W16 的草稿/定稿两态把 E3 第 3 点从使用假设变成系统约束：定稿后模版冻结，全班拿到同一个版面，因此仍然不需要版本化与快照
-注意本条与 E2 的量表处理相反：量表必须版本化，成长册模版不必
 
-draft_rule (草稿匣规则 / W16):
-教师把栏目设计完之后不是立刻向家庭开放。中间有草稿阶段：可回头重编、可预览整本册子的实际呈现，确认无误才点「发布班级模板」定稿
-d1=draft 可编、可预览；d2=published 永久冻结，幼儿册依此定稿
-发布之前是草稿；F16 后发布为 d2 即永久唯读，不得撤回成 d1 再改，也不提供「发布了再偷偷改」的中间态
+在园时光主题 (Growth Book Time Topic / db_growth_book_time_topic)
+
+topic_id (主题ID), 1:1, integer, ui=growth_book_time_topic.hidden
+compilation_id (学期编册ID), 1:1, integer, ui=growth_book_time_topic.hidden
+title (主题标题), 1:1, max_len=50, ui=growth_book_time_topic.title
+sort_order (主题排序), 1:1, integer, ui=growth_book_time_topic.hidden
+created_by (创建教师ID), 1:1, integer, ui=growth_book_time_topic.hidden
+created_at (创建时间), 1:1, datetime, ui=growth_book_time_topic.hidden
+
+topic_rule (F19) = 每项入册 db_growth_material 在锁定时必须且只能属于本 compilation 一个 topic；主题是 TOC 一级，活动是二级
+topic_order_rule (F19 第六轮评审) = 主题按其中全部活动的最早来源日期升序派生，最早活动越久远越靠前；空主题在有活动主题之后，同一最早日期再以 sort_order、topic_id 稳定打破平手。管理页、resolved manifest、正文与 TOC 必须使用同一派生顺序，不提供教师手动排序
+
+
+亲子活动入册关系 (Growth Book Task Item / db_growth_book_task_item)
+
+task_item_id (入册关系ID), 1:1, integer, ui=growth_book_task_item.hidden
+compilation_id (学期编册ID), 1:1, integer, ui=growth_book_task_item.hidden
+parent_task_id (亲子任务ID), 1:1, integer, ui=growth_book_task_item.hidden
+sort_order (活动排序), 1:1, integer, ui=growth_book_task_item.hidden
+created_at (创建时间), 1:1, datetime, ui=growth_book_task_item.hidden
+
+unique (唯一键) = compilation_id + parent_task_id
+task_rule (F19 第三轮评审) = 亲子时光不分节；一级标题固定，活动标题为二级。教师管理页按幼儿名单显示该幼儿已有记录数，展开后通过删除将目标 c1 submission 的 teacher_book_included 改为 0；不删除任务、家庭提交或附件。活动顺序按来源时间自动维护，不提供教师排序
 
 
 成长册新增栏目 (Growth Book Custom Section / db_growth_book_section)
 
 section_id (新增栏目ID), 1:1, integer, ui=growth_book_section.hidden
-template_id (成长册模版ID), 1:1, integer, ui=growth_book_section.hidden
+compilation_id (学期编册ID), 1:1, integer, ui=growth_book_section.hidden
 name (栏目名称), 1:1, max_len=10, ui=growth_book_section.name_input
-anchor_after (插入位置), 1:1, cover|section_key, ui=growth_book_section.anchor_select
+anchor_after (插入位置), 1:1, section_key|section_id, ui=growth_book_section.anchor_select
 created_by (创建教师ID), 1:1, integer, ui=growth_book_section.hidden
+section_status (版面状态), 1:1, d1=draft|d2=published, ui=growth_book_section.section_status
 collection_status (征集状态), 1:1, c1=inactive(未征集)|c2=collecting(征集中), ui=growth_book_section.collection_status
 created_at (创建时间), 1:1, datetime, ui=growth_book_section.hidden
 
 rel_count (关系数量) = 3
-rel_db (关联表) = db_growth_book_template, db_teacher, db_book_widget
-rel_map (关系字段) = db_growth_book_section{template_id}<->db_growth_book_template{template_id}; db_growth_book_section{created_by}<->db_teacher{teacher_id}; db_growth_book_section{section_id}<->db_book_widget{section_id}
-row_scope (落列范围 / W13) = 只存「新增栏目」。预设 6 项不落列，退回成 db_growth_book_template.enabled_sections 的开关
-anchor_after_rule (插入位置规则) = 取 'cover' 或某个预设 section_key，决定新增栏目插在哪。W13 确认 anchor_after 仍需要 —— 新增栏目要能插在预设项之间
+rel_db (关联表) = db_growth_book_compilation, db_teacher, db_book_widget
+rel_map (关系字段) = db_growth_book_section{compilation_id}<->db_growth_book_compilation{compilation_id}; db_growth_book_section{created_by}<->db_teacher{teacher_id}; db_growth_book_section{section_id}<->db_book_widget{section_id}
+row_scope (F19) = 只存本学期教师新增栏目；栏目名同时是活动标题，不跨学期复用
+publish_rule (F19) = d1 直接在版面页自动保存或删除；完整预览确认后 d1→d2，版面永久冻结并进入征集。section_status 与 collection_status 分离
+anchor_after_rule (F19) = 只能锚在 TOC 后固定正文项或另一合法新增栏目之后，不得指向封面、园所介绍、扉页、TOC 或封底
 
-anchor_after_extension (锚点扩充到新增栏目 / 2026-08-02 前端评审，放宽本节原规则):
-anchor_after 的取值扩充为 cover | 预设 section_key | **另一个新增栏目的 section_id** —— 原规则下两个新增栏目无法连排（想把「毕业典礼」放在「入学第一天」之后就做不到，只能各自锚到预设项）
+anchor_after_extension (锚点扩充到新增栏目 / 2026-08-02 前端评审，F19 再收窄):
+anchor_after 的取值为 TOC 后固定正文 section_key | **另一个新增栏目的 section_id**；F19 已删除 cover 锚点，新增栏目不得穿入前置页
 落列影响：anchor_after 成为对本表的自我参照，DDL 落地时需能区分「预设 key」与「section_id」两类值（建议加一个 anchor_type，或把预设 key 与整数 id 分列，本 specification 不自行改判）
 成环必须挡住：A 锚在 B 之后、B 又锚在 A 之后会形成环。前端的做法是在下拉选项中排除自己与所有（递回）锚定到自己的栏目；**服务端必须重做一次校验**，前端 UI 不是完整性边界（同 W6 的一般原则）
 孤儿处理：删除某新增栏目时，锚在它之后的栏目改锚到它原本的锚点。若资料仍出现无法解析的锚点（锚点已不存在或成环），渲染端一律落到册尾，不得让该栏目消失
@@ -688,7 +709,7 @@ grid_y (格子纵坐标), 1:1, integer(0:23), ui=book_widget.grid_y
 grid_w (占用横格数), 1:1, integer(2:15), ui=book_widget.grid_w
 grid_h (占用纵格数), 1:1, integer(2:24), ui=book_widget.grid_h
 widget_type (组件型别), 1:1, image|text, ui=book_widget.type_select
-binding_key (内容来源键), 1:1, literal|collected|school.intro|class.material|child.message|child.term_eval|child.task|child.assessment, ui=book_widget.binding_select
+binding_key (内容来源键), 1:1, literal|collected|school.intro|school.term_message|class.material|child.message|child.term_eval|child.task|child.assessment, ui=book_widget.binding_select
 content (字面内容), 0:1, text, ui=book_widget.text_input
 config (呈现配置), 0:1, json, ui=book_widget.style_panel
 
@@ -745,6 +766,7 @@ binding_key_registry (内容来源登记表 / W11):
 | literal | widget | db_book_widget 这一列自己（content） | image, text | 否 |
 | collected | child | db_book_material_submission（家长上传，触发征集） | image, text | 是 |
 | school.intro | school | db_school.school_intro | text | 否 |
+| school.term_message | school-term | db_school_term.growth_book_message | text | 班级锁定前置 |
 | class.material | class | db_growth_material（成长资料） | image, text | 班级级前置 |
 | child.message | child | db_teacher_message.content | text | 是 |
 | child.term_eval | child | db_term_eval.eval_text | text | 是 |
@@ -764,10 +786,10 @@ reuse_source (复用来源) = Parent App growth-book-spec.md (canonical definiti
 引用字段 = book_material_submission_id, widget_id, child_id, submission_text, file_id, submitted_by, submitted_at, active_check_batch_key
 unique (唯一键) = widget_id + child_id
 row_meaning (一列的含义) = 一个槽位一名幼儿
-submitted_by (提交来源) = parent(家长提交)|teacher(教师代传)
-cross_app_rule (跨端规则) = 家长端为 canonical，教师端仅引用，不得重复定义或另建同义表；教师代传写同一张表，只有 submitted_by 不同
-teacher_write_surface (教师端写入面) = growth-book-edit.html「提交情况」弹层的代传按钮，写 file_id / submission_text，沿用家长端的 ui=book_material.submission.upload 与 ui=book_material.submission.text，本 specification 不另立名字
-submitted_by_rule (代传规则 / E3 第 6 点) = 该值由服务端依登录身份设定，请求体不得指定
+submitted_by (提交来源) = parent(家长提交)|teacher(历史兼容值；F19 最新教师端评审后禁止新增 teacher 提交)
+cross_app_rule (跨端规则) = 家长端为 canonical，教师端只读投稿进度与终局内容，不得新增、接管或更正 submission
+teacher_write_surface (教师端写入面) = NONE；growth-book-section-materials.html 的未提交行只建立催办通知，不写 file_id／submission_text
+submitted_by_rule (F19 最新覆写) = 新提交只允许 parent；submitted_by 由服务端依登录身份设定，请求体不得指定，教师写 submission 返回 403
 no_request_table (不建征集请求表) = db_book_material_request 不建表。一个 binding_key=collected 的 widget 存在本身就是一次征集，状态由提交记录的有无派生
 crop_note (裁切框形态) = NONE。Q62-j6 已删除 crop；只存裁切后的处理 JPEG，以实际像素比例复验
 pk_naming_conflict (主键命名待统一) = DECISIONS.md E3 的 DDL 草图写 submission_id，家长端 canonical 写 book_material_submission_id；两者指同一列，DDL 落地时须择一，此处依 canonical 引用
@@ -777,11 +799,14 @@ collection_lifecycle (素材征集生命周期 / W15 + W16):
 一个新增栏目 = 家长端一则待办，点进去列出该栏目所有页上的全部 collected 槽位，一次交完
 齐备判定 = 该栏目全部槽位都有东西，不是「至少交一件」
 不接受「可以不交」：允许缺件等于把压力与责任转嫁给教师，且缺件必然产生留白，排出来的东西违反教师设计时的原意
-已知代价：教师多摆两个槽位就可能卡住全班出册。这与「新增栏目不设上限」「征集不设时限」叠加，是三条已定决策共同造成的风险，缓解手段只有教师代传
-征集不设时限：无 due_date、无逾期状态、无提醒任务；栏目永久跨学期共用，不以学期结束自动关闭
-征集启停由 db_growth_book_section.collection_status 独立控制；template d2 只冻结版面，不自动发布或撤回征集
+已知代价：教师多摆两个槽位就可能卡住全班出册。这与「新增栏目不设上限」「征集不设时限」叠加，是三条已定决策共同造成的风险；F19 最新评审取消教师代传，只允许教师再次提醒家长
+征集不设 due_date；栏目属于本学期 compilation，不跨学期复用
+section d1→d2 时冻结版面并开始征集；collection_status 仍表达当前是否征集中，撤回删除本栏目本学期全部提交
 撤回的语意是删除不是保留：该栏目已收的提交一并删除，不留孤儿档，重新发布时家长要重交。理由是裁切比例已失效（W17 只存成品无原图），且符合 PIPL 第六条最小必要
 can_finalize 对该幼儿逐栏目比对「该栏目的 collected widget 数」与「该幼儿在这些 widget 上的提交数」
+teacher_entry_state (教师入口状态 / F19 最新评审) = d1 从编册页进入 growth-book-section-edit.html，底部固定保存手稿／删除栏目／发布征集；d2 从编册页直接进入 growth-book-section-materials.html，不再经过只含“管理素材”的中转态
+section_delete_rule (栏目删除) = compilation=e1 时 d1／d2 都允许删除整个栏目；d2 删除须同交易删除该栏目 widget、家庭草稿、终局 submission、检查列与文件引用，并把直接／递归锚向它的同编册栏目修到最近合法上游锚点。e2 后返回 409
+remind_parent_rule (提醒家长) = 教师只可对本班该 d2 栏目尚未交齐的幼儿点击提醒；服务端以内联 child_id＋class_id 及 section→compilation.class_id predicate 重验范围，按动作当下 caretakers 为每人建立一笔 n4 App 内催办，owner_object=db_growth_book_section、owner_id=section_id，链接该幼儿的栏目提交页。每次明确点击可再次提醒；同一请求用幂等键防重放，不接微信订阅消息
 
 photo_storage_rule (照片储存规则 / W17):
 上传当下统一转 JPEG（MozJPEG 编码，q82-85）、长边 2000px，只存裁切后的成品，不留原图
@@ -795,37 +820,40 @@ unverified_item (待查证) = 微信 chooseMedia 在 iOS 上回 HEIC 还是已�
 成长资料 (Growth Material / db_growth_material)
 
 material_id (成长资料ID), 1:1, integer, ui=growth_material.hidden
-class_id (班级ID), 1:1, integer, ui=growth_material.hidden
+compilation_id (学期编册ID), 1:1, integer, ui=growth_material.hidden
+topic_id (在园主题ID), 0:1, integer, ui=growth_material.topic
 source_type (来源类型), 1:1, r1=moment(在园时光)|r2=community(社区共育), ui=growth_material.hidden
 moment_id (在园时光ID), 0:1, integer, ui=growth_material.hidden
 title (活动名称), 1:1, max_len=50, ui=growth_material.title
 description (活动文字), 0:1, text, ui=growth_material.description
 file_id (收录照片ID), 0:k, integer, ui=growth_material.photo_select
-sort_order (排序), 1:1, integer, ui=growth_material.sort_button
+sort_order (排序), 1:1, integer, ui=growth_material.hidden
 created_at (创建时间), 1:1, datetime, ui=growth_material.hidden
 
-rel_count (关系数量) = 3
-rel_db (关联表) = db_class, db_moment, db_file
-rel_map (关系字段) = db_growth_material{class_id}<->db_class{class_id}; db_growth_material{moment_id}<->db_moment{moment_id}; db_growth_material{file_id}<->db_file{file_id}
+rel_count (关系数量) = 4
+rel_db (关联表) = db_growth_book_compilation, db_growth_book_time_topic, db_moment, db_file
+rel_map (关系字段) = db_growth_material{compilation_id}<->db_growth_book_compilation{compilation_id}; db_growth_material{topic_id}<->db_growth_book_time_topic{topic_id}; db_growth_material{moment_id}<->db_moment{moment_id}; db_growth_material{file_id}<->db_file{file_id}
 rel_note (关系补充) = source_type=r2 时 moment_id 为空，社区来源的外键待 B11 落地后补，见下方 source_change
 
 channel_rule (成长资料通道规则 / E3 第 7 点 + W11 + F17):
-成长资料是班级级素材。在园时光的每则动态可「加入成长册」，教师勾选其中若干张照片（10 张挑 3 张），活动文字全量收录
+成长资料先是本学期活动登记，也可同时承载班级级素材。在园时光的每则动态可「加入成长册」；教师勾选若干照片时（10 张挑 3 张），活动文字全量收录
+若该活动只供家庭 `book_parent` 选片使用，允许零教师照片引用；是否有班级素材由教师 `db_file_ref` 是否非空派生，不另存布尔。目标幼儿既无教师引用也无自己的家庭引用时，该活动不进其正文／TOC
 方向是「从动态里挑出来放进成长册」，不是相反
-收录后全班每本册子的在园时光栏目内容相同，不按 child_id 存
+收录后本班本学期每本册子的教师来源内容相同，不按 child_id 存；锁定前每项必须归入且仅归入一个主题
 加入入口：动态卡片右下角的「+ 加入成长册」按钮，与「涉及 m/n 人 · k 位家长已查看」同一行；已收录的按钮显示「✓ 已加入（N 张）」
-管理入口在 growth-book-edit.html 的「在园时光 · 管理」弹层：可上移、可移除
+管理入口是 growth-book-time-manage.html 二级页：新增／重命名／删除主题，主题新建与重命名都用页面内输入，不调用 prompt；按来源时间排列活动，并以搜索＋多选批量完成分节。成长素材建立后默认入本学期编册，不另设候选区。页面下方只列尚未归类的成长素材，素材行只提供“删除”，二次确认后删除本学期通道关系且不提供即时撤销，不删源动态；主题内素材只提供“撤销”，撤销后清空 topic 并回到下方列表，可重新归类。删除整个主题等同批量清空这些素材的 topic，全部回到下方未归类列表，不删除任何本学期通道关系。不提供行内主题下拉或手动上移／下移
+topic_delete_interaction (主题删除交互) = 删除主题是可恢复的集体撤销归类，点击后直接执行，不调用宿主可能拦截的原生 confirm；未归类素材的“删除”因不可恢复而以同一按钮“删除→确认删除”完成二次确认，不调用原生 confirm
 素材件数不另设硬上限；成长册整本含固定页的硬上限为 200 页，超过时阻止定稿并由教师移出部分进册选择，不删除源动态
-该班首本册 b2 前可加入、调整、排序或移出；首本 b2 后永久唯读。来源撤回／下架／依法删除仍只解除该来源通道与引用，恢复不自动重建
+compilation=e1 时可加入、调整、归类、排序或移出；e2 后永久唯读。来源撤回／下架／依法删除仍只解除该来源通道与引用，恢复不自动重建
 
 
 家长在园时光选片 (Parent Moment Book Selection / db_file_ref)
 
-file_id (家长已选在园时光照片ID), 1:1, integer, ui=moment_book.teacher_exclude
+file_id (家长已选在园时光照片ID), 1:1, integer, ui=moment_book.hidden
 reuse_source (复用来源) = db_file_ref canonical；owner_object 固定 db_moment_upload，owner_id 为经 scope 验证的 moment_upload_id，usage_key 固定 book_parent
 
-parent_moment_rule (家长选片规则 / F17) = 家长只可在 s3 已发布且 db_moment_upload 明确关联当前幼儿的 moment 中勾选既有照片；不得上传、编辑动态或自行声明幼儿参与。勾选至少一图时标题与完整 moment_content 在该册只收一次
-union_rule (联集规则) = 与教师班级级 db_growth_material 按来源／file_id 联集去重；教师在逐册最终预览可删除对应 book_parent 引用，只从该册排除，不删照片或动态、不通知家长
+parent_moment_rule (家长选片规则 / F19 覆写 F17) = 家长只可在本 compilation 已登记并归入主题、同时为 s3 已发布且 db_moment_upload 明确关联当前幼儿的 moment 中勾选既有照片；不得上传、编辑动态或自行声明幼儿参与。勾选至少一图时标题与完整 moment_content 在该册只收一次
+union_rule (联集规则) = db_growth_material 可只登记活动而没有教师选片；渲染时与该幼儿 book_parent 按来源／file_id 联集去重，无该幼儿合法素材则整项活动不进其正文／TOC。逐册预览不提供单独的家长选片面板或排除操作；教师只在在园时光管理页按活动管理本学期关系
 freeze_rule (冻结规则) = 该幼儿 b1 时家长可调整，b2 后永久只读
 
 source_change (来源收敛 / Q62-d):
@@ -842,7 +870,7 @@ task_selection_rule (亲子活动收录筛选 / Q62-d—d4):
 依据 (source) = DECISIONS.md F17（覆盖 E3 第 10/11 点、W20、W21 的 PDF 分支）
 
 architecture (现行渲染架构) = 只在 Teacher／Parent App 内用同一套书页绘图码做样本预览、逐册预览与 b2 查看；不生成 PDF／图片册，不下载、不分享文件，不启用服务器 node-canvas、导出任务、generated file 或 render lease
-page_limit (页数规则) = 没有下限；启用的固定栏目必须有实际素材，自定义 collected 槽仍全满。整本含封面、园所介绍、园长寄语、各栏目与封底硬上限 200 页；超过即阻止定稿
+page_limit (页数规则) = 没有下限；启用的固定栏目必须有实际素材，自定义 collected 槽仍全满。整本含封面、园所介绍、扉页、TOC、各栏目与封底，硬上限 200 页；超过即阻止定稿
 last_page_rule (末页规则) = 实际件数不足版式容量时，未使用槽位隐藏、留白或用版式装饰填充，不要求为每个余数另造版式
 precheck_rule (预检查) = 显示每名幼儿总页数、各栏目页数与缺项；教师移出的只是本册收录选择，绝不删除源记录
 screen_capture_rule (截屏录屏边界) = 产品不提供下载／分享能力；系统级截屏或录屏无法可靠阻止，不加水印，也不承诺控制脱离 App 后的用户行为
@@ -860,9 +888,11 @@ scoped_rule (scoped 列的责任) = child_id / teacher_id 为 scoped，客户端
 | teacher-message.html | 添加到（单选下拉） | teacher_message.child_select | db_teacher_message.child_id |
 | teacher-message.html | 寄语正文 | teacher_message.textarea | db_teacher_message.content |
 | teacher-message-detail.html | 无写入控件（正文只读） | —— | —— |
-| growth-book-edit.html | 成长册内容 6 项勾选 | growth_book_template.section_toggle | db_growth_book_template.enabled_sections |
-| growth-book-edit.html | 亲子活动 · 收录勾选 | growth_book_template.task_select | db_growth_book_template（落列待定，见 task_selection_rule） |
-| growth-book-edit.html | 发布班级模板（d2 后永久只读） | growth_book_template.status | db_growth_book_template.template_status |
+| growth-book-edit.html | 栏目入册勾选 | growth_book_compilation.enabled_sections | db_growth_book_compilation.enabled_sections |
+| growth-book-edit.html | 锁定本学期编册 | growth_book_compilation.status | db_growth_book_compilation.compilation_status |
+| growth-book-time-manage.html | 主题名称 | growth_book_time_topic.title | db_growth_book_time_topic.title |
+| growth-book-time-manage.html | 活动批量归类／删除 | growth_material.topic／photo_select | db_growth_material.topic_id／关系删除 |
+| growth-book-task-manage.html | 按幼儿删除亲子时光入册记录 | growth_book.task.teacher_included | db_parent_task_submission.teacher_book_included |
 | growth-book-edit.html | 新增栏目 · 栏目名称 | growth_book_section.name_input | db_growth_book_section.name |
 | growth-book-edit.html | 新增栏目 · 插入位置 | growth_book_section.anchor_select | db_growth_book_section.anchor_after |
 | growth-book-section-edit.html | 页管理（+ 页 / 删页） | book_widget.page_index | db_book_widget.page_index |
@@ -872,11 +902,9 @@ scoped_rule (scoped 列的责任) = child_id / teacher_id 为 scoped，客户端
 | growth-book-section-edit.html | 内容来源下拉 | book_widget.binding_select | db_book_widget.binding_key |
 | growth-book-section-edit.html | literal 文字输入 | book_widget.text_input | db_book_widget.content |
 | growth-book-section-edit.html | 字级 / 对齐 / 图片显示方式 | book_widget.style_panel | db_book_widget.config |
-| growth-book-edit.html | 在园时光 · 上移 | growth_material.sort_button | db_growth_material.sort_order |
-| growth-book-edit.html | 在园时光 · 移除 | growth_material.photo_select | db_growth_material（删列） |
-| growth-book-edit.html | 提交情况 · 教师代传 | book_material.submission.upload（家长端 canonical，教师端沿用不另立） | db_book_material_submission.file_id |
+| growth-book-section-materials.html | 投稿筛选／提醒家长／删除栏目 | 无 submission 写入控件；提醒建立 db_notification n4，删除作用于 section 聚合 | db_notification／db_growth_book_section |
 | growth-book-sample.html | 无写入控件（只读样本预览） | —— | —— |
-| growth-book-view.html | 排除家长在园时光选片（只删进册引用） | moment_book.teacher_exclude | db_file_ref.file_id |
+| growth-book-view.html | 无写入控件（只读翻页预览） | —— | —— |
 
 not_annotated (刻意不标注的原型控件):
 growth-book-edit.html 的「封面版式 / 封面图片 / 标题文字」 —— 封面归园所、只有 admin 能改（W19），教师端不应有此控件；2026-08-02 前端已按此删除该整块
@@ -932,7 +960,7 @@ IF page=teacher-message.html AND UNIQUE(child_id,term_id) already exists, return
 IF page=teacher-message.html AND child_id NOT_IN current_class_id, return 403
 IF role=parent AND page=growth-book-view.html AND book_status!=b2, return 404
 IF role=teacher AND page=growth-book-view.html AND child_id NOT_IN current_or_original_authorized_class, return 403
-IF page=growth-book-edit.html AND template_status=d2, 模板全部内容永久冻结，任何模板写入／撤回请求 return 409
+IF compilation_status=e2, 主题、排序、入册关系、栏目与 widget 的普通写入 return 409
 IF 写入 db_school.book_cover AND role!=admin, return 403
 
 
@@ -942,11 +970,11 @@ moment_publish = s1 草稿服务端自动保存；标题 1—50 字，至少一�
 moment_edit = F16 覆写：s3 正文、日期、图片与幼儿名单永久唯读；修正须由有权教师撤回后另建 s1。恢复只恢复同一内容；家长 feed 只读 s3
 image_pipeline = 教师／家长统一：输入单档最多 10 MB，只接受 JPEG|PNG|WebP|HEIC，校正方向、移除 metadata、长边超过 2000px 才缩小，统一 MozJPEG q82—85，只存处理后 JPEG
 task_book_branch = 教师只能改 c1 提交的 teacher_book_included 与 book_teacher 引用；与家长分支 OR 合并，照片联集去重。该幼儿 b2 后永久冻结，不能因 template d2 提前冻结
-finalize_transition = 正式请求按当前数据指纹重新验证模板 d2、启用固定栏目素材、collected 全满与总页数不超过 200；通过者各自原子 b1→b2，之后永久锁定。教师可显式跳过问题幼儿，未选者保持 b1
-collection_toggle = 每个新增 section 以 collection_status c1↔c2 独立启停；template d2 只冻结版面。c2 才接受家庭草稿与教师代传；撤回同交易删检查列、全部 submission 与引用。相关幼儿任一 b2 后永久禁撤回
+finalize_transition = 正式请求要求 compilation=e2，并按 v2 manifest 重验固定正文、collected 全满与总页数不超过 200；通过者各自原子 b1→b2
+collection_toggle = section d1→d2 发布时冻结版面并开始征集；撤回征集仍同交易删检查列、全部 submission 与引用
 transfer_history = growth-book.html 另列不混入 active roster 的「历史成册」，按 growth_book.class_id=current teacher class AND b2 查询，包含已转班／e2 幼儿；当前 active 原班教师仍可 App 内查看。列表回 book id、幼儿显示资料、学期、published_at 与只读状态
 notification = 每名幼儿 b2 时在同一事务向每位当前 caretaker 各写一则 n5 db_notification；不接微信订阅消息
 collection_toggle_lock_ui = c1 发布与 c2 撤回按钮在相关幼儿任一 b2 后保留永久禁用并提示已有定稿册；服务端按相同 predicate 重验
-teacher_material = 教师接管家庭草稿并代传前完整预览、点一次确认，作为人工把关；不送微信、不建 review_action。active family batch 期间不得接管；任何来源一旦写 submitted_at 即永久唯读，不再允许教师更正
-permanent_collection = template、section、widget 与 material submission 不带 term_id；同一份 collected 内容永久供往后学期共用
+teacher_material (F19 最新覆写) = 教师端禁止代传、接管或更正家庭栏目素材；未交齐时只能建立 App 内 n4 催办，提交仍由当前 caretaker 在家长端完成
+term_collection = section／widget／material submission 经 compilation 归属一个 term；新学期不自动复用上一学期 collected
 crop_removed = db_book_material_submission.crop 已删除，只存按 widget 比例处理后的 JPEG，服务端复验实际像素宽高

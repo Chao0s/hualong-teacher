@@ -1,54 +1,30 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=390, initial-scale=1, user-scalable=no" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1, user-scalable=no">
 <title>成长册 · 家园共育</title>
-<link rel="stylesheet" href="home-school-common.css" />
-<link rel="stylesheet" href="growth-book-viewer.css" />
+<link rel="stylesheet" href="home-school-common.css">
+<link rel="stylesheet" href="growth-book-viewer.css">
 <style>
-  .child-bar {
-    display: flex; align-items: center; justify-content: space-between; gap: 10px;
-    background: var(--surface); border-radius: 14px; padding: 12px 14px; margin-bottom: 12px;
-  }
-  .child-bar strong { font-size: 15px; }
-  .child-bar .meta { font-size: 11px; color: var(--muted); margin-top: 3px; }
-  .ready-tag {
-    background: var(--green-light); color: var(--green);
-    border-radius: 999px; padding: 4px 9px; font-size: 11px; font-weight: 700; white-space: nowrap;
-  }
+  .child-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--surface);border-radius:14px;padding:12px 14px;margin-bottom:12px}.child-bar strong{font-size:15px}.child-bar .meta{font-size:11px;color:var(--muted);margin-top:3px}.ready-tag{background:var(--green-light);color:var(--green);border-radius:999px;padding:4px 9px;font-size:11px;font-weight:700;white-space:nowrap}
 </style>
-<script src="https://mcp.figma.com/mcp/html-to-design/capture.js" async></script>
 </head>
 <body>
 <div class="phone">
   <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
-  <div class="nav-bar"><a class="back" href="growth-book.html">‹</a><div class="nav-title">成长册</div><span></span></div>
+  <div class="nav-bar"><a class="back" href="growth-book.html">‹</a><div class="nav-title">成长册预览</div><span></span></div>
   <div class="scroll" style="padding-bottom:20px">
     <div class="child-bar">
-      <div>
-        <strong id="childName">—</strong>
-        <div class="meta" id="childMeta">中二班 · 2026 春季学期</div>
-      </div>
-      <span class="ready-tag">准备中 · 可预览</span>
+      <div><strong id="childName">—</strong><div class="meta">中二班 · 2026 春季学期</div></div>
+      <span class="ready-tag" id="bookStatus">可预览</span>
     </div>
-
     <div class="book" id="book"></div>
-
     <div class="controls">
       <button class="nav-btn" id="prev" aria-label="上一页">‹</button>
       <div class="page-indicator" id="indicator">1 / 1</div>
       <button class="nav-btn" id="next" aria-label="下一页">›</button>
     </div>
-
-    <div class="action-row" style="margin-top:12px">
-      <button class="btn" id="reset">回到封面</button>
-    </div>
-    <div class="hint" style="margin-top:10px" id="pageSummary">点击书页或使用左右按钮翻页。</div>
-
-    <div class="sec">家长在园时光选择</div>
-    <div class="chunk" id="parentMomentList"></div>
-    <div class="hint" style="margin-top:8px">可在最终预览中只从本册排除家长选择；不会删除原活动或照片，也不通知家长。</div>
   </div>
 </div>
 <script src="growth-book-render.js"></script>
@@ -56,49 +32,15 @@
 const config = readBookConfig();
 const params = new URLSearchParams(location.search);
 const child = BOOK_CHILDREN.find(item => item.id === params.get('child')) || BOOK_CHILDREN[0];
-const published = bookChildPublished(child, config);
-
 document.getElementById('childName').textContent = child.name;
-document.querySelector('.ready-tag').textContent = published ? '已定稿开放' : '准备中 · 可预览';
-document.getElementById('childMeta').textContent =
-  `中二班 · 2026 春季学期 · 收录 ${bookSections(config).length} 项内容`;
-
+document.getElementById('bookStatus').textContent = bookChildPublished(child, config) ? '已定稿' : '可预览';
 const viewer = initBookViewer({
   book: document.getElementById('book'),
   indicator: document.getElementById('indicator'),
   prev: document.getElementById('prev'),
   next: document.getElementById('next')
 });
-viewer.load(child.name, config);
-const estimate = bookPageEstimate(config, child);
-document.getElementById('pageSummary').textContent =
-  `本册共 ${estimate.pages} 页；${estimate.over ? `超过 ${BOOK_PAGE_LIMIT} 页，必须排除内容后才能定稿。` : '页数符合 200 页上限。'} 点击书页或使用左右按钮翻页。`;
-
-document.getElementById('reset').addEventListener('click', () => viewer.reset());
-
-function renderParentMoments() {
-  const list = (config.momentMaterial || []).filter(item => !item.childId || item.childId === child.id);
-  const root = document.getElementById('parentMomentList');
-  root.innerHTML = list.length ? list.map(item => `
-    <div class="child-bar" style="margin-bottom:8px">
-      <div><strong>${item.title}</strong><div class="meta">家长选择 ${item.photos.length} 张 · 标题与完整评语随附一次</div></div>
-      ${published ? '<span class="ready-tag">已锁定</span>' : `<button class="btn" style="padding:7px 10px" data-exclude-moment="${item.id}" data-ui="moment_book.teacher_exclude">从本册排除</button>`}
-    </div>`).join('') : '<div class="hint">家长尚未从在园时光选择照片。</div>';
-}
-document.getElementById('parentMomentList').addEventListener('click', event => {
-  const button = event.target.closest('[data-exclude-moment]');
-  if (!button) return;
-  if (published) return;
-  if (!window.confirm('只从本成长册排除此项？原在园时光与照片不会删除。')) return;
-  const index = config.momentMaterial.findIndex(item =>
-    item.id === button.dataset.excludeMoment && (!item.childId || item.childId === child.id));
-  if (index < 0) return;
-  config.momentMaterial.splice(index, 1);
-  writeBookConfig(config);
-  viewer.load(child.name, config);
-  renderParentMoments();
-});
-renderParentMoments();
+viewer.load(child.name, config, false, child);
 </script>
 </body>
 </html>

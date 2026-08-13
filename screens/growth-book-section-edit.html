@@ -35,7 +35,9 @@
     position: absolute; box-sizing: border-box;
     border: 1px solid var(--accent); border-radius: 6px;
     background: rgba(24,155,145,.10); overflow: hidden;
-    font-size: 9px; color: var(--accent-dark); padding: 3px 4px; cursor: grab;
+    display: flex; align-items: center; justify-content: center; text-align: center;
+    font-size: 12px; line-height: 1.3; font-weight: 700;
+    color: var(--accent-dark); padding: 6px; cursor: grab;
   }
   .wg.text { background: rgba(51,136,252,.08); border-color: var(--blue); color: #1f4e8c; }
   .wg.sel { box-shadow: 0 0 0 2px var(--accent); z-index: 5; }
@@ -83,6 +85,12 @@
   }
   .cap { font-size: 11px; color: var(--muted); margin-top: 5px; line-height: 1.5; }
   .cap.bad { color: var(--danger); font-weight: 600; }
+  .state-actions { display: grid; gap: 10px; margin-top: 12px; }
+  .state-actions.draft { grid-template-columns: 1fr 1fr; }
+  .state-actions.draft #publish { grid-column: 1 / -1; }
+  .state-actions .btn { width: 100%; }
+  .btn.danger { background:#fff; border:1px solid #f0c8c8; color:var(--danger); }
+  [hidden] { display: none !important; }
   .toast {
     position: absolute; left: 50%; bottom: 34px; transform: translateX(-50%) translateY(20px);
     background: rgba(31,41,55,.9); color: #fff; border-radius: 999px;
@@ -97,14 +105,19 @@
   <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
   <div class="nav-bar"><a class="back" href="growth-book-edit.html">‹</a><div class="nav-title" id="navTitle">栏目版面</div><span></span></div>
   <div class="scroll">
+    <div id="editorPanel">
+    <div class="field-label">栏目名称（同时作为活动标题）</div>
+    <input class="input" id="sectionName" maxlength="10" placeholder="如：入学第一天、园长寄语" data-ui="growth_book_section.name_input">
+    <div class="field-label">插入位置</div>
+    <select class="select" id="sectionAfter" data-ui="growth_book_section.anchor_select"></select>
     <div class="tool-row">
       <div class="page-tabs" id="pageTabs"></div>
-      <button class="tool-btn" id="addPage">+ 页</button>
+      <button class="tool-btn" id="addPage" data-ui="book_widget.page_index">+ 页</button>
       <button class="tool-btn" id="delPage">删页</button>
     </div>
     <div class="tool-row">
-      <button class="tool-btn" id="addImage">+ 图片</button>
-      <button class="tool-btn" id="addText">+ 文字</button>
+      <button class="tool-btn" id="addImage" data-ui="book_widget.type_select">+ 图片</button>
+      <button class="tool-btn" id="addText" data-ui="book_widget.type_select">+ 文字</button>
       <span style="flex:1"></span>
       <button class="tool-btn" id="zoomOut">−</button>
       <span style="font-size:11px;color:var(--muted);min-width:46px;text-align:center" id="zoomLabel">1.0×</span>
@@ -123,18 +136,37 @@
     <div class="meta-row" id="metaRow"></div>
 
     <div class="drawer" id="drawer"></div>
-
-    <button class="btn primary" style="width:100%" id="save">保存版面</button>
     <div class="hint" style="padding:8px 2px 10px">拖动组件移动，拖右下角把手缩放，最小 2 × 2 格。网格 15 × 24 格，一格 10mm；组件占几格就是几公分，长宽比即占格之比。边距 30mm / 28.5mm 留给美术边框，组件不能放进去。</div>
+    </div>
+
+    <div class="state-actions draft" id="draftActions">
+      <button class="btn" id="save">保存手稿</button>
+      <button class="btn danger" id="deleteSection">删除栏目</button>
+      <button class="btn primary" id="publish" data-ui="growth_book_section.section_status">发布征集</button>
+    </div>
   </div>
   <div class="toast" id="toast">已保存</div>
 </div>
 <script src="growth-book-render.js"></script>
 <script>
 let config = readBookConfig();
-const sectionId = new URLSearchParams(location.search).get('id');
-const section = (config.custom || []).find(item => item.id === sectionId) || (config.custom || [])[0];
-const locked = bookPublished(config);
+const params = new URLSearchParams(location.search);
+const sectionId = params.get('id');
+let section = (config.custom || []).find(item => item.id === sectionId);
+if (!section && params.get('new') === '1') {
+  const id = 'cs' + Date.now();
+  section = {
+    id, name:'', after:'time', pages:1, submitted:{}, enabled:true, sectionStatus:'d1', collectionStatus:'c1',
+    widgets:[
+      { id:id+'-w1', page:0, x:0, y:0, w:7, h:9, type:'image', binding:'collected', content:'', config:{fit:'cover'} },
+      { id:id+'-w2', page:0, x:8, y:0, w:7, h:9, type:'image', binding:'collected', content:'', config:{fit:'cover'} },
+      { id:id+'-w3', page:0, x:0, y:11, w:15, h:8, type:'text', binding:'collected', content:'', config:{size:14,align:'left'} }
+    ]
+  };
+  config.custom = (config.custom || []).concat(section);
+}
+section = section || (config.custom || [])[0];
+const locked = !section || section.sectionStatus === 'd2' || config.compilationStatus === 'e2';
 
 /* 征集比例的快捷值：都是整数格数，比例逐像素成立（W1a / W9） */
 const IMAGE_RATIOS = [{ w:1, h:1 }, { w:4, h:3 }, { w:3, h:4 }, { w:3, h:2 }, { w:2, h:3 }];
@@ -144,6 +176,10 @@ let pageCount = Math.max(1, section.pages || 1, ...widgets.map(w => w.page + 1))
 let page = 0, selected = null, zoom = 1, seq = widgets.length;
 
 document.getElementById('navTitle').textContent = section ? section.name : '栏目版面';
+document.getElementById('sectionName').value = section ? section.name : '';
+document.getElementById('sectionAfter').innerHTML = bookAnchors(config, section && section.id).filter(x => x.id !== 'cover')
+  .map(x => `<option value="${x.id}"${section && section.after === x.id ? ' selected' : ''}>${x.name}</option>`).join('');
+if (locked) document.querySelectorAll('#sectionName,#sectionAfter').forEach(el => el.disabled = true);
 
 /* ---------- 画布几何：先算格子边长，两轴共用同一个整数像素（W1a） ---------- */
 const BASE_W = 340;   // best-fit 时的页宽
@@ -246,6 +282,7 @@ function renderWarn(bad) {
   warn.innerHTML = msgs.join('<br>');
   document.getElementById('save').disabled = locked || !!msgs.length;
   document.getElementById('save').style.opacity = (locked || msgs.length) ? '.45' : '';
+  document.getElementById('publish').disabled = locked || !!msgs.length;
 }
 
 /* ---------- 属性抽屉 ---------- */
@@ -253,9 +290,11 @@ function renderDrawer() {
   const widget = widgets.find(w => w.id === selected);
   const box = document.getElementById('drawer');
   if (!widget) {
-    box.innerHTML = '<h3>组件属性</h3><div class="cap">点选画布上的组件后，在这里设定内容来源与呈现方式。</div>';
+    box.hidden = true;
+    box.innerHTML = '';
     return;
   }
+  box.hidden = false;
   const bind = bindingOf(widget.binding) || {};
   const cfg = widget.config || {};
   const options = BINDING_KEYS.filter(item => item.types.includes(widget.type));
@@ -263,7 +302,7 @@ function renderDrawer() {
   box.innerHTML = `
     <h3>${widget.type === 'image' ? '图片组件' : '文字组件'} · ${widget.w} × ${widget.h} 格（${widget.w * 10} × ${widget.h * 10}mm，比例 ${ratioText(widget)}）</h3>
     <div class="field-label">内容来源</div>
-    <select class="select" id="bindSel">
+    <select class="select" id="bindSel" data-ui="book_widget.binding_select">
       ${options.map(item => `<option value="${item.key}"${item.key === widget.binding ? ' selected' : ''}>${item.name}</option>`).join('')}
     </select>
     ${widget.binding === 'literal' ? `
@@ -526,12 +565,51 @@ document.getElementById('drawer').addEventListener('click', event => {
   renderCanvas();
 });
 
-document.getElementById('save').addEventListener('click', () => {
-  const target = (config.custom || []).find(item => item.id === section.id);
+function persistSection(status) {
+  let target = (config.custom || []).find(item => item.id === section.id);
+  if (!target) {
+    target = section;
+    config.custom = (config.custom || []).concat(target);
+  }
+  const name = document.getElementById('sectionName').value.trim();
+  if (!name) { showToast('请先填写栏目名称'); return null; }
+  target.name = name;
+  target.after = document.getElementById('sectionAfter').value || 'time';
+  target.sectionStatus = status || target.sectionStatus || 'd1';
+  target.collectionStatus = status === 'd2' ? 'c2' : (target.collectionStatus || 'c1');
   target.widgets = widgets;
   target.pages = pageCount;
+  target.enabled = target.enabled !== false;
+  section = target;
   writeBookConfig(config);
-  showToast(`已保存 · ${pageCount} 页 · ${widgets.filter(w => w.binding === 'collected').length} 个征集槽位`);
+  document.getElementById('navTitle').textContent = name;
+  return target;
+}
+
+document.getElementById('save').addEventListener('click', () => {
+  if (!persistSection('d1')) return;
+  showToast('手稿已保存');
+});
+
+document.getElementById('deleteSection').addEventListener('click', () => {
+  if (config.compilationStatus === 'e2') return showToast('编册已经锁定');
+  const target = (config.custom || []).find(item => item.id === section.id) || section;
+  (config.custom || []).forEach(item => {
+    if (item.id !== target.id && item.after === target.id) item.after = target.after || 'time';
+  });
+  config.custom = (config.custom || []).filter(item => item.id !== target.id);
+  writeBookConfig(config);
+  location.href = 'growth-book-edit.html';
+});
+
+document.getElementById('publish').addEventListener('click', () => {
+  if (locked) return showToast('栏目已经发布或编册已经锁定');
+  const name = document.getElementById('sectionName').value.trim();
+  if (!name) return showToast('请先填写栏目名称');
+  if (!widgets.some(w => w.binding === 'collected')) return showToast('至少放置一个家长征集槽位');
+  if (overlapIds(widgets).size || widgets.some(widgetTooSmall)) return showToast('请先修正版面问题');
+  if (!persistSection('d2')) return;
+  location.href = `growth-book-section-materials.html?id=${section.id}`;
 });
 
 function showToast(text) {
@@ -546,6 +624,13 @@ if (locked) {
   document.getElementById('addText').disabled = true;
   document.getElementById('addPage').disabled = true;
 }
+function applyMode() {
+  const published = section && section.sectionStatus === 'd2';
+  if (published) location.replace(`growth-book-section-materials.html?id=${section.id}`);
+}
+applyMode();
+document.getElementById('save').disabled = locked;
+document.getElementById('deleteSection').disabled = config.compilationStatus === 'e2';
 renderCanvas();
 </script>
 </body>
