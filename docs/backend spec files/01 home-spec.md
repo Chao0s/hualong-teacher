@@ -115,9 +115,9 @@ rel_map (关系字段) = db_teacher{school_id}<->db_school{school_id}
 
 班级 (Class / db_class)
 
-class_id (班级ID), 1:1, integer, ui=context.hidden|class.selector
+class_id (班级ID), 1:1, integer, ui=context.hidden
 school_id (园所ID), 1:1, integer, ui=context.hidden
-class_name (班级名称), 1:1, max_len=50, ui=class.name|class.selector
+class_name (班级名称), 1:1, max_len=50, ui=class.name
 grade (年级), 1:1, k1=small(小班)|k2=middle(中班)|k3=large(大班), ui=class.grade
 class_status (班级状态), 1:1, s1=active(启用)|s2=archived(归档), ui=class.hidden
 
@@ -152,8 +152,8 @@ current_class_id MUST IN allowed_class_id
 
 upload_id (上传记录ID), 1:1, integer, ui=upload.hidden
 upload_target (上传目标), 1:1, u1=resource(课程资源库)|u2=case(课程案例库), ui=upload.target_button
-teacher_id (上传教师ID), 1:1, integer, ui=upload.teacher_select
-class_id (上传班级ID), 1:1, integer, ui=upload.class_select
+teacher_id (上传教师ID), 1:1, integer, ui=context.hidden
+class_id (上传班级ID), 1:1, integer, ui=context.hidden
 target_id (目标对象ID), 0:1, integer, ui=upload.hidden
 upload_status (上传状态), 1:1, s1=draft(草稿)|s2=pending(待审核)|s3=approved(已通过)|s4=rejected(已驳回), ui=home.todo.upload.badge|upload.status
 created_at (创建时间), 1:1, datetime, ui=upload.hidden
@@ -366,7 +366,7 @@ resource_type (资源文件类型), 1:1, r1=docx|r2=xlsx|r3=jpg|r4=html|r5=pdf|r
 resource_name (资源名称), 1:1, max_len=20, ui=resource.card.title|resource_detail.title|upload.resource_name
 resource_tag (资源标签), 1:1, g1=clothing(衣)|g2=food(食)|g3=housing(住)|g4=mobility(行)|g5=art(艺), ui=resource.card.tag|resource_detail.tag|upload.resource_tag
 school_id (园所ID), 1:1, integer, ui=resource.hidden
-class_id (班级ID), 0:1, integer, ui=upload.class_select
+class_id (班级ID), 0:1, integer, ui=context.hidden
 grade (适用年级), 0:k, k1=small(小班)|k2=middle(中班)|k3=large(大班), ui=resource.card.grade|resource_detail.grade
 resource_explain (资源解读), 1:1, max_len=200, ui=resource_detail.explain|upload.resource_explain
 resource_access (资源获取), 1:1, max_len=300, ui=resource_detail.access|upload.resource_access
@@ -403,7 +403,7 @@ case_intro (活动简介), 1:1, max_len=100, ui=case_detail.intro|upload.case_in
 case_trans (活动转化), 1:1, max_len=100, ui=case_detail.trans|upload.case_trans
 card_tag (卡片资源标签), 0:1, derived(db_resource.resource_tag), ui=home.case_card.tag
 school_id (园所ID), 1:1, integer, ui=case.hidden
-class_id (班级ID), 0:1, integer, ui=upload.class_select
+class_id (班级ID), 0:1, integer, ui=context.hidden
 cover_file_id (案例封面ID), 1:1, integer, ui=case_card.cover|upload.cover
 word_file_id (Word详案ID), 0:1, integer, ui=case_detail.word|upload.word
 resource_id (关联资源ID), 0:k, integer, ui=case_detail.related_resource|upload.related_resource
