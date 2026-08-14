@@ -18,7 +18,7 @@ demo_content_scope (演示内容适用环境) = demo|test
 demo_content_names (演示案例名称) = 祠堂里的故事|龙舟竞渡|醒狮从哪里来
 static_ui_content (保留的静态界面内容) = 页面标题、功能入口、栏目标题和空状态文案
 production_seed (生产环境业务种子数据) = NONE
-production_initial_db_upload (上传记录初始状态) = EMPTY
+production_initial_db_resource (课程资源初始状态) = EMPTY
 production_initial_db_task (待办任务初始状态) = EMPTY
 production_initial_db_assessment (质量评估初始状态) = EMPTY
 production_initial_db_training (培训初始状态) = EMPTY
@@ -28,7 +28,7 @@ production_initial_db_case (生产环境案例初始状态) = EMPTY
 production_initial_db_home_case (生产环境首页推荐初始状态) = EMPTY
 production_initial_db_resource (生产环境资源初始状态) = EMPTY
 production_empty_response (生产环境无首页推荐时返回) = []
-base_identity_data (基础身份数据) = db_school|db_teacher|db_class|db_teacher_class|db_child 由部署或园所管理员初始化，不属于 Mock 业务内容
+base_identity_data (基础身份数据) = db_school|db_teacher|db_class|db_child 由部署或园所管理员初始化，不属于 Mock 业务内容
 mock_metric_rule (模拟统计规则) = HTML 中的数量、比例、徽标和完成状态不得写入 production
 case_id_generation (案例ID生成规则) = database_auto_generated
 hardcoded_case_id (固定案例ID) = FORBIDDEN
@@ -39,7 +39,7 @@ environment_isolation (环境隔离) = demo|test 数据不得复制到 productio
 
 | n | button_name_cn | button_name_en | node_key | object | input | jump |
 |---:|---|---|---|---|---|---|
-| 1 | 上传资源 | Upload Resource | btn_upload | db_upload | teacher_id, class_id | home.html > upload-resource.html |
+| 1 | 上传资源 | Upload Resource | btn_upload | db_resource / db_case | teacher_id, class_id | home.html > upload-resource.html |
 | 2 | 待办任务 | Pending Tasks | btn_task | db_task | teacher_id | home.html > teacher-tasks.html > teacher-task-detail.html?task_id={task_id} |
 | 3 | 质量评估 | Quality Assessment | btn_assessment | db_assessment | teacher_id, class_id, assessment_id | home.html > assessment-tool.html?assessment_id={assessment_id} |
 | 4 | 教研培训 | Teaching Research and Training | btn_training | db_training | school_id, teacher_id | home.html > training-list.html > training-detail.html?training_id={training_id} |
@@ -82,7 +82,7 @@ resource_id (资源ID), 0:k, integer, ui=home.quick.resource
 home_case_id (首页推荐案例ID), 0:k, integer, ui=home.case.list
 
 rel_count (关系数量) = 12
-rel_db (关联表) = db_teacher, db_school, db_class, db_upload, db_task, db_task_assign, db_assessment, db_training, db_moment, db_month_eval, db_resource, db_home_case
+rel_db (关联表) = db_teacher, db_school, db_class, db_task, db_task_assign, db_assessment, db_training, db_moment, db_month_eval, db_resource, db_case, db_home_case
 rel_map (关系字段) = db_home{teacher_id}<->db_teacher{teacher_id}; db_home{school_id}<->db_school{school_id}; db_home{class_id}<->db_class{class_id}; db_home{task_id}<->db_task{task_id}; db_task{task_id}<->db_task_assign{task_id}; db_home{*_id}<->rel_db{*_id}
 persist (是否持久化) = 0
 object_type (对象类型) = aggregate
@@ -106,11 +106,13 @@ rel_count (关系数量) = 0
 teacher_id (教师ID), 1:1, integer, ui=context.hidden
 school_id (园所ID), 1:1, integer, ui=context.hidden
 teacher_name (教师姓名), 1:1, max_len=50, ui=teacher.name
+class_id (所属班级ID), 0:1, integer, ui=context.hidden
+assignment_role (班级角色), 0:1, r1=lead(主班)|r2=assistant(配班), ui=teacher_class.role
 teacher_status (教师状态), 1:1, s1=active(在职)|s2=leave(离职)|s3=suspended(暂停), ui=teacher.hidden
 
-rel_count (关系数量) = 1
-rel_db (关联表) = db_school
-rel_map (关系字段) = db_teacher{school_id}<->db_school{school_id}
+rel_count (关系数量) = 2
+rel_db (关联表) = db_school, db_class
+rel_map (关系字段) = db_teacher{school_id}<->db_school{school_id}; db_teacher{class_id}<->db_class{class_id}
 
 
 班级 (Class / db_class)
@@ -126,48 +128,44 @@ rel_db (关联表) = db_school
 rel_map (关系字段) = db_class{school_id}<->db_school{school_id}
 
 
-教师班级关系 (Teacher-Class Relation / db_teacher_class)
-
-teacher_class_id (教师班级关系ID), 1:1, integer, ui=context.hidden
-teacher_id (教师ID), 1:1, integer, ui=context.hidden
-class_id (班级ID), 1:1, integer, ui=context.hidden
-assignment_role (班级角色), 1:1, r1=lead(主班)|r2=assistant(配班)|r3=support(支援), ui=teacher_class.role
-is_active (是否有效), 1:1, boolean, ui=teacher_class.hidden
-
-rel_count (关系数量) = 2
-rel_db (关联表) = db_teacher, db_class
-rel_map (关系字段) = db_teacher_class{teacher_id}<->db_teacher{teacher_id}; db_teacher_class{class_id}<->db_class{class_id}
-unique (唯一键) = teacher_id + class_id
+[db_teacher_class 已删除 —— DECISIONS.md B5：一位教师只属一个班，N:1 不是 N:M，
+ 关系塌回 db_teacher.class_id + assignment_role 两个纯量列（见上方 db_teacher）。
+ 不改成 JSON 数组是因为数组会表达一个永远只有一个元素的东西，且没有约束挡住长度 2，
+ 一旦出现就静默取第一个 = 授权边界静默错误。r3=support 一并砍掉。]
 
 context_method (上下文方法):
 teacher_id = auth_session.teacher_id
 school_id = db_teacher.school_id
-allowed_class_id = db_teacher_class.class_id WHERE teacher_id=current_teacher_id AND is_active=1
-current_class_id MUST IN allowed_class_id
+allowed_class_id = db_teacher.class_id WHERE teacher_id=current_teacher_id
+current_class_id MUST = allowed_class_id
 
 
 [BUTTON_OBJECTS]
 
-上传资源 (Upload Resource / db_upload)
+上传资源 (Upload Resource / db_upload_action)
 
-upload_id (上传记录ID), 1:1, integer, ui=upload.hidden
+[原 db_upload 表已删除 —— DECISIONS.md B10：逐栏比对后整张表只贡献一个别处没有的信息
+ （submitted_at），其余列全部可从目标对象派生，而 upload_status 与 resource_status
+ 编码完全相同。submitted_at 已移到 db_resource / db_case 各自身上。
+ 顺手消掉三个问题：多态无外键 JOIN 从 3 处减到 2 处、四态重复、s5 不对称。
+ 本块因此降为不落库的动作聚合，比照 db_home 的写法。]
+
 upload_target (上传目标), 1:1, u1=resource(课程资源库)|u2=case(课程案例库), ui=upload.target_button
-teacher_id (上传教师ID), 1:1, integer, ui=context.hidden
-class_id (上传班级ID), 1:1, integer, ui=context.hidden
-target_id (目标对象ID), 0:1, integer, ui=upload.hidden
 upload_status (上传状态), 1:1, s1=draft(草稿)|s2=pending(待审核)|s3=approved(已通过)|s4=rejected(已驳回), ui=home.todo.upload.badge|upload.status
-created_at (创建时间), 1:1, datetime, ui=upload.hidden
-submitted_at (提交时间), 0:1, datetime, ui=upload.hidden
 
-rel_count (关系数量) = 4
-rel_db (关联表) = db_teacher, db_class, db_resource, db_case
-rel_map (关系字段) = db_upload{teacher_id}<->db_teacher{teacher_id}; db_upload{class_id}<->db_class{class_id}; IF upload_target=u1, db_upload{target_id}<->db_resource{resource_id}; IF upload_target=u2, db_upload{target_id}<->db_case{case_id}
+rel_count (关系数量) = 2
+rel_db (关联表) = db_resource, db_case
+rel_map (关系字段) = db_upload_action{upload_status}<->db_resource{resource_status}; db_upload_action{upload_status}<->db_case{case_status}
+persist (是否持久化) = 0
+object_type (对象类型) = aggregate
 
 method (方法):
 IF upload_target=u1, create db_resource, return resource_id
 IF upload_target=u2, create db_case, return case_id
-IF submit=0, upload_status=s1
-IF submit=1, upload_status=s2
+IF submit=0, resource_status/case_status = s1
+IF submit=1, resource_status/case_status = s2, submitted_at = now()
+upload.target_button 只是客户端分支，决定往哪张表写，不落列（persist=0）
+upload.status 读目标对象自己的 db_resource.resource_status / db_case.case_status
 
 
 待办任务 (Pending Tasks / db_task)
@@ -375,14 +373,15 @@ cover_file_id (封面图片ID), 1:1, integer, ui=resource.card.cover|upload.cove
 word_file_id (Word附件ID), 0:1, integer, ui=resource_detail.word|upload.word
 created_by (创建教师ID), 1:1, integer, ui=resource_detail.creator
 created_at (创建时间), 1:1, datetime, ui=resource_detail.created_at
-resource_status (资源状态), 1:1, s1=draft(草稿)|s2=pending(待审核)|s3=approved(已通过)|s4=rejected(已驳回), ui=resource.status
+resource_status (资源状态), 1:1, s1=draft(草稿)|s2=pending(待审核)|s3=approved(已通过)|s4=rejected(已驳回)|s5=withdrawn(已下架), ui=resource.status
+submitted_at (提交审核时间), 0:1, datetime, ui=resource.hidden
 required_count (必填项数量), 1:1, integer, ui=resource.hidden
 completed_count (已完成项数量), 1:1, integer, ui=resource.progress
 complete (完成状态), 1:1, c1=complete(完成)|c2=partial(待完善)|c3=incomplete(未完成), ui=resource.progress.status
 
 rel_count (关系数量) = 5
-rel_db (关联表) = db_school, db_class, db_teacher, db_resource_case, db_file
-rel_map (关系字段) = db_resource{school_id}<->db_school{school_id}; db_resource{class_id}<->db_class{class_id}; db_resource{created_by}<->db_teacher{teacher_id}; db_resource{resource_id}<->db_resource_case{resource_id}; db_resource{*_file_id}<->db_file{file_id}
+rel_db (关联表) = db_school, db_class, db_teacher, db_file
+rel_map (关系字段) = db_resource{school_id}<->db_school{school_id}; db_resource{class_id}<->db_class{class_id}; db_resource{created_by}<->db_teacher{teacher_id}; db_resource{resource_id}<->db_case{resource_ids[]}; db_resource{*_file_id}<->db_file{file_id}
 
 method (方法):
 IF completed_count=required_count, complete=c1
@@ -409,11 +408,13 @@ word_file_id (Word详案ID), 0:1, integer, ui=case_detail.word|upload.word
 resource_id (关联资源ID), 0:k, integer, ui=case_detail.related_resource|upload.related_resource
 created_by (创建教师ID), 1:1, integer, ui=case_detail.creator
 created_at (创建时间), 1:1, datetime, ui=case_detail.created_at
-case_status (案例状态), 1:1, s1=draft(草稿)|s2=pending(待审核)|s3=approved(已通过)|s4=rejected(已驳回), ui=case.status
+case_status (案例状态), 1:1, s1=draft(草稿)|s2=pending(待审核)|s3=approved(已通过)|s4=rejected(已驳回)|s5=withdrawn(已下架), ui=case.status
+submitted_at (提交审核时间), 0:1, datetime, ui=case.hidden
+resource_ids (引用的资源ID数组), 0:k, integer[], ui=case.related_resource
 
 rel_count (关系数量) = 6
-rel_db (关联表) = db_school, db_class, db_teacher, db_resource_case, db_home_case, db_file
-rel_map (关系字段) = db_case{school_id}<->db_school{school_id}; db_case{class_id}<->db_class{class_id}; db_case{created_by}<->db_teacher{teacher_id}; db_case{case_id}<->db_resource_case{case_id}; db_case{case_id}<->db_home_case{case_id}; db_case{*_file_id}<->db_file{file_id}
+rel_db (关联表) = db_school, db_class, db_teacher, db_home_case, db_file
+rel_map (关系字段) = db_case{school_id}<->db_school{school_id}; db_case{class_id}<->db_class{class_id}; db_case{created_by}<->db_teacher{teacher_id}; db_case{resource_ids[]}<->db_resource{resource_id}; db_case{case_id}<->db_home_case{case_id}; db_case{*_file_id}<->db_file{file_id}
 
 filter (筛选):
 list = FILTER(case_status=s3, school_id=current_school_id)
@@ -469,16 +470,15 @@ empty_action_node = btn_case_all
 
 [SUPPORT_OBJECTS]
 
-资源案例关系 (Resource-Case Relation / db_resource_case)
+资源案例关系 (Resource-Case Relation / 无独立表)
 
-resource_case_id (资源案例关系ID), 1:1, integer, ui=hidden
-resource_id (资源ID), 1:1, integer, ui=resource.related_case
-case_id (案例ID), 1:1, integer, ui=case.related_resource
+[db_resource_case 已删除 —— DECISIONS.md B3：零属性纯链接表改 JSON 数组，
+ 放在拥有者身上。拥有者取 case（教师写案例时引用资源，是撰写方向），
+ 落 db_case.resource_ids（见上方 db_case）。
+ 反向的 resource.related_case 由 db_case.resource_ids 反查，不落列。
+ 代价（无 FK、无唯一键、无并发保护）已登记为 GAPS.md G22，由应用层补。]
 
-rel_count (关系数量) = 2
-rel_db (关联表) = db_resource, db_case
-rel_map (关系字段) = db_resource_case{resource_id}<->db_resource{resource_id}; db_resource_case{case_id}<->db_case{case_id}
-unique (唯一键) = resource_id + case_id
+反向查询 (Reverse lookup), 0:k, computed, ui=resource.related_case
 
 
 文件 (File / db_file)
@@ -486,7 +486,8 @@ unique (唯一键) = resource_id + case_id
 file_id (文件ID), 1:1, integer, ui=file.hidden
 file_type (文件类型), 1:1, f1=image(图像)|f2=docx|f3=xlsx|f4=pdf|f5=video(视频)|f6=other(其他), ui=file.type
 file_name (文件名称), 1:1, text, ui=file.name
-file_url (文件地址), 1:1, url, ui=file.preview|file.download
+bucket (存储桶), 1:1, text, ui=file.hidden
+object_key (对象键), 1:1, text, ui=file.preview|file.download
 file_size (文件大小), 1:1, integer, ui=file.size
 file_hash (文件哈希), 1:1, text, ui=file.hidden
 uploaded_by (上传教师ID), 1:1, integer, ui=file.uploader
