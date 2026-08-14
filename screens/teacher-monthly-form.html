@@ -131,7 +131,7 @@
   <div class="scroll">
     <div class="chunk form-card">
       <label>评价月份</label>
-      <select class="select" id="monthSelect">
+      <select class="select" id="monthSelect" data-ui="month_eval.month_select">
         <option value="3">3月</option>
         <option value="4">4月</option>
         <option value="5">5月</option>
@@ -139,9 +139,9 @@
         <option value="7">7月</option>
       </select>
       <label>评价幼儿</label>
-      <select class="select" id="childSelect"><option>陈小明</option><option>李雨萱</option><option>张力轩</option></select>
+      <select class="select" id="childSelect" data-ui="month_eval.child_select"><option>陈小明</option><option>李雨萱</option><option>张力轩</option></select>
       <label>评价内容</label>
-      <textarea class="textarea">本月在集体活动中愿意主动表达，能与同伴协商材料使用，整理习惯有明显进步。</textarea>
+      <textarea class="textarea" maxlength="500" data-ui="month_eval.textarea">本月在集体活动中愿意主动表达，能与同伴协商材料使用，整理习惯有明显进步。</textarea>
       <label>关联在园时光照片</label>
       <div class="photo-row" id="importedRow"></div>
       <div class="empty-hint" id="emptyHint">尚未导入照片，点击下方按钮从该幼儿的相册中选择。</div>

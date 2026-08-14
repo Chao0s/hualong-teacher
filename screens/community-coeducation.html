@@ -163,7 +163,11 @@
     <div class="filter-panel" aria-label="社区共育筛选">
       <div class="field">
         <label for="timeFilter">时间</label>
-        <select id="timeFilter">
+        <!-- 两个筛选都是查询参数，不是列；「全部」表示不加该条 predicate，不是列值。窗口边界由
+             服务端按园所时区算（05 home-school-spec.md 社区共育 Feed 的 filter_binding）。
+             本页读的是**已发布的全部亲子任务**（t1|t2）+ db_parent_task_submission 的 feed，
+             按 parent_task_type 筛选 —— DECISIONS.md B11／E5；B11 同时拔掉了 db_community_submission。 -->
+        <select id="timeFilter" data-ui="community.time_filter">
           <option value="all">全部时间</option>
           <option value="week">本周</option>
           <option value="month">本月</option>
@@ -171,8 +175,8 @@
         </select>
       </div>
       <div class="field">
-        <label for="taskFilter">任务类型</label>
-        <select id="taskFilter">
+        <label for="taskFilter">任务类别</label>
+        <select id="taskFilter" data-ui="community.type_filter">
           <option value="all">全部任务</option>
           <option value="daily">日常任务</option>
           <option value="community">社区任务</option>

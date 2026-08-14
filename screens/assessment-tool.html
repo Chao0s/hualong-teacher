@@ -232,10 +232,10 @@
       +'</div>';
     var evi='<div class="field-lbl">佐证图片</div>'
       +'<label class="evi-add"><b>＋</b> 添加佐证'
-      +'<input type="file" accept="image/*" multiple hidden data-evi></label>'
+      +'<input type="file" accept="image/*" multiple hidden data-evi data-ui="assessment.item.evidence"></label>'
       +'<span class="evi-count" data-evicount></span>';
     var note='<div class="field-lbl">评价记录</div>'
-      +'<textarea class="note" data-note placeholder="记录观察到的现象、特例或改进建议…">'+(NOTES[ind.id]||'')+'</textarea>';
+      +'<textarea class="note" data-note data-ui="assessment.item.note" maxlength="300" placeholder="记录观察到的现象、特例或改进建议…">'+(NOTES[ind.id]||'')+'</textarea>';
     b.innerHTML=legend+btns+eviHint+rub+evi+note;
     el.appendChild(b);
 

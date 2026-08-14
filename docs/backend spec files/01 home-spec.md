@@ -312,7 +312,7 @@ image_rule (图片规则) = 每则经 db_file_ref 最多关联 9 张 distinct �
 
 moment_upload_id (在园时光上传ID), 1:1, integer, ui=moment.progress.hidden
 moment_id (在园时光ID), 1:1, integer, ui=moment.progress.hidden
-child_id (幼儿ID), 1:1, integer, ui=moment.progress.child_name
+child_id (幼儿ID), 1:1, integer, ui=moment.progress.child_name|moment_publish.child_select
 file_id (上传图片ID), 0:k, integer, ui=moment.progress.image
 uploaded_at (上传时间), 0:1, datetime, ui=moment.hidden
 
@@ -321,6 +321,7 @@ rel_db (关联表) = db_moment, db_child, db_file
 rel_map (关系字段) = db_moment_upload{moment_id}<->db_moment{moment_id}; db_moment_upload{child_id}<->db_child{child_id}; db_moment_upload{file_id}<->db_file{file_id}
 unique (唯一键) = moment_id + child_id
 nesting_rule (嵌套规则) = db_moment_upload 表示"该次 moment 嵌套了该幼儿"；周次(week_key)和场次(moment_seq)不落在本表，一律经 moment_id JOIN db_moment 取得
+child_select_rule (幼儿名单勾选规则) = home-school-moment-publish.html 的「本次涉及幼儿」勾选格即 moment_publish.child_select；一次发布把勾中的每名幼儿建一行本表，取消勾选删该行。child_id 在教师端属 scoped（scope-rules.json），服务端必须把 class_id=$ctx_class 内联进同一条 predicate 重验，不可先查名冊再写
 
 method (方法):
 weekly_complete_count = COUNT(DISTINCT db_moment.moment_seq FROM db_moment_upload JOIN db_moment ON moment_id WHERE child_id=current_child_id AND db_moment.week_key=current_week_key AND db_moment.publish_status=s2 AND evaluation_status=c1)

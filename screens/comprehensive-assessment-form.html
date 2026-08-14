@@ -68,7 +68,7 @@
     <section class="chunk">
       <div class="field" style="margin-bottom:0">
         <div class="label">评估对象</div>
-        <select class="select" id="child"></select>
+        <select class="select" id="child" data-ui="child_assessment.child_select"></select>
       </div>
     </section>
 
@@ -170,7 +170,7 @@ function render() {
           ${item.ref ? refTable(item) : ''}
           <div class="scale">
             ${[1,2,3,4,5].map(num => `
-              <input type="radio" name="s-${item.id}" id="s-${item.id}-${num}" value="${num}" ${scores[item.id] === num ? 'checked' : ''}>
+              <input type="radio" name="s-${item.id}" id="s-${item.id}-${num}" value="${num}" data-ui="child_assessment.item.score_button" ${scores[item.id] === num ? 'checked' : ''}>
               <label for="s-${item.id}-${num}">${num}</label>
             `).join('')}
           </div>

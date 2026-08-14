@@ -78,9 +78,9 @@
   <div class="scroll">
     <div class="chunk form-card">
       <label>活动名称</label>
-      <input class="input" id="momentTitle" maxlength="50" value="端午手作：艾草香囊">
+      <input class="input" id="momentTitle" maxlength="50" data-ui="moment_publish.title" value="端午手作：艾草香囊">
       <label>活动评语</label>
-      <textarea class="textarea" id="momentContent" maxlength="600">孩子们能主动选择材料，尝试闻一闻、摸一摸艾草，并在穿绳和装袋环节互相提醒，整体参与度较高。</textarea>
+      <textarea class="textarea" id="momentContent" maxlength="600" data-ui="moment_publish.content">孩子们能主动选择材料，尝试闻一闻、摸一摸艾草，并在穿绳和装袋环节互相提醒，整体参与度较高。</textarea>
       <label>添加照片（最多 9 张）</label>
       <div class="photo-row moment-upload-row">
         <div class="photo add-photo"><span class="plus">+</span><span>添加</span></div>
@@ -109,15 +109,17 @@
 
     <div class="sec">幼儿名单</div>
     <div class="chunk">
+      <!-- 每个勾选格 = 一行 db_moment_upload（01 home-spec.md child_select_rule）。
+           child_id 在教师端属 scoped，服务端须把 class_id=$ctx_class 内联进同一条 predicate 重验。 -->
       <div class="check-grid compact-checks" id="childChecks">
-        <label class="check-card"><input type="checkbox" checked>陈小明</label>
-        <label class="check-card"><input type="checkbox" checked>李雨萱</label>
-        <label class="check-card"><input type="checkbox" checked>张力轩</label>
-        <label class="check-card"><input type="checkbox" checked>王子涵</label>
-        <label class="check-card"><input type="checkbox" checked>赵佳怡</label>
-        <label class="check-card"><input type="checkbox" checked>刘浩然</label>
-        <label class="check-card"><input type="checkbox">周睿阳</label>
-        <label class="check-card"><input type="checkbox" checked>何思琪</label>
+        <label class="check-card"><input type="checkbox" data-ui="moment_publish.child_select" checked>陈小明</label>
+        <label class="check-card"><input type="checkbox" data-ui="moment_publish.child_select" checked>李雨萱</label>
+        <label class="check-card"><input type="checkbox" data-ui="moment_publish.child_select" checked>张力轩</label>
+        <label class="check-card"><input type="checkbox" data-ui="moment_publish.child_select" checked>王子涵</label>
+        <label class="check-card"><input type="checkbox" data-ui="moment_publish.child_select" checked>赵佳怡</label>
+        <label class="check-card"><input type="checkbox" data-ui="moment_publish.child_select" checked>刘浩然</label>
+        <label class="check-card"><input type="checkbox" data-ui="moment_publish.child_select">周睿阳</label>
+        <label class="check-card"><input type="checkbox" data-ui="moment_publish.child_select" checked>何思琪</label>
       </div>
     </div>
 

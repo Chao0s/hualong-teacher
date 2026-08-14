@@ -313,7 +313,7 @@ function renderDrawer() {
         <span class="sep"></span>
         ${TEXT_COLORS.map(c => `<button class="sw" data-color="${c}" style="background:${c}" title="${c}"></button>`).join('')}
         <span class="sep"></span>
-        <select data-size title="字级（整个组件）">
+        <select data-size data-ui="book_widget.style_panel" title="字级（整个组件）">
           ${[10,12,14,18,24].map(n => `<option value="${n}"${(cfg.size || 14) === n ? ' selected' : ''}>${n}pt</option>`).join('')}
         </select>
         <span class="sep"></span>
@@ -331,7 +331,7 @@ function renderDrawer() {
     ${widget.type === 'text' ? `
       ${widget.binding === 'literal' ? '' : `
         <div class="rt-bar" style="margin-top:10px">
-          <select data-size title="字级">
+          <select data-size data-ui="book_widget.style_panel" title="字级">
             ${[10,12,14,18,24].map(n => `<option value="${n}"${(cfg.size || 14) === n ? ' selected' : ''}>${n}pt</option>`).join('')}
           </select>
           <span class="sep"></span>

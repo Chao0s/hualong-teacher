@@ -242,6 +242,23 @@ status 由题数派生，不手工维护
 导出报告允许导出草稿态的部分数据，并在报告中标注未完成
 
 
+评价报告导出选择 (Eval Report Export Selection / db_eval_export_action)
+
+child_id (勾选幼儿ID), 0:k, integer, ui=eval_export.child_select
+report_scope (报告类型), 1:1, term_eval|child_assessment, ui=context.hidden
+
+rel_count (关系数量) = 3
+rel_db (关联表) = db_child, db_term_eval, db_child_assessment
+rel_map (关系字段) = db_eval_export_action{child_id}<->db_child{child_id}; db_eval_export_action{child_id}<->db_term_eval{child_id}; db_eval_export_action{child_id}<->db_child_assessment{child_id}
+persist (是否持久化) = 0
+object_type (对象类型) = aggregate
+
+source_page (参考页面) = teacher-term-evaluation.html 与 growth-comprehensive-assessment.html 的「导出报告」底部弹层
+model (为什么是不落库的动作聚合) = 勾选集合是一次请求的入参，不是任何一张表的列；比照 01 home-spec.md 的 db_upload_action 写法。child_id 在教师端属 scoped，服务端必须把 class_id=$ctx_class 内联进同一条 predicate 重验每一个勾中的幼儿
+select_all (全选控件) = 全选框自己不提交任何值，它只替其余勾选框代打，因此在原型里标 data-ui=context.local
+open_question (未决) = **本对象只登记了「使用者勾了哪些幼儿」，没有登记导出物怎么产生、存哪、怎么取。** 没有导出任务表、没有产物落点、没有端点契约，而 F17 已经取消了当初这套底部弹层所参照的异步导出任务机制（那是成长册的，见 Teacher/decision.md 第 279 条）。成长册导出已由 F17 明确取消，评价报告导出没有被任何决议取消也没有被落地 —— 缺口登记在 hualong-backend/db/GAPS.md G36，不要在这里替它选一种读法
+
+
 [BUSINESS_OBJECTS]
 
 亲子任务 (Parent-Child Task / db_parent_task)
@@ -250,7 +267,7 @@ parent_task_id (亲子任务ID), 1:1, integer, ui=parent_task.card.hidden|parent
 school_id (园所ID), 1:1, integer, ui=parent_task.hidden
 class_id (班级ID), 1:1, integer, ui=parent_task.class
 teacher_id (发布教师ID), 1:1, integer, ui=parent_task.publisher
-parent_task_type (任务类型), 1:1, t1=daily(日常任务)|t2=community(社区任务), ui=parent_task.type
+parent_task_type (任务类型), 1:1, t1=daily(日常任务)|t2=community(社区任务), ui=parent_task.type|community.type_filter
 parent_task_title (任务标题), 1:1, max_len=100, ui=parent_task.card.title|parent_task_detail.title
 task_background (任务背景), 0:1, max_len=500, ui=parent_task_detail.background
 task_detail (任务详情), 1:1, max_len=1000, ui=parent_task_detail.content
@@ -272,7 +289,7 @@ child_id (幼儿ID), 1:1, integer, ui=parent_task.submission.child
 submission_text (提交文字), 0:1, max_len=1000, ui=parent_task.submission.text
 file_id (提交图片ID), 0:k, integer, ui=parent_task.submission.media
 submission_status (提交状态), 1:1, c1=complete(已完成)|c2=incomplete(未完成), ui=parent_task.submission.status
-submitted_at (提交时间), 0:1, datetime, ui=parent_task.submission.time
+submitted_at (提交时间), 0:1, datetime, ui=parent_task.submission.time|community.time_filter
 active_check_batch_key (家庭内容检查批次), 0:1, batch_key, ui=parent_task.submission.review_status
 parent_book_included (家长分支进册), 1:1, boolean, ui=context.hidden
 teacher_book_included (教师分支进册), 1:1, boolean, ui=growth_book.task.teacher_included
@@ -306,7 +323,7 @@ completion_map (完成状态映射) = evaluation_status=p2 -> c1(已完成); p0|
 term_eval_id (教师学期评估ID), 1:1, integer, ui=term_eval.hidden
 school_id (园所ID), 1:1, integer, ui=term_eval.hidden
 class_id (班级ID), 1:1, integer, ui=term_eval.class
-child_id (幼儿ID), 1:1, integer, ui=term_eval.child
+child_id (幼儿ID), 1:1, integer, ui=term_eval.child|term_eval.child_select
 teacher_id (评价教师ID), 1:1, integer, ui=context.hidden
 term_id (学期ID), 1:1, school_term, ui=term_eval.period
 eval_text (学期综合评语), 1:1, max_len=500, ui=term_eval.textarea
@@ -351,7 +368,7 @@ upstream_sync (上游同步状态) = 已同步。01 home-spec.md 的 db_month_ev
 child_assessment_id (幼儿综合评估ID), 1:1, integer, ui=child_assessment.hidden
 school_id (园所ID), 1:1, integer, ui=child_assessment.hidden
 class_id (班级ID), 1:1, integer, ui=child_assessment.class
-child_id (幼儿ID), 1:1, integer, ui=child_assessment.child
+child_id (幼儿ID), 1:1, integer, ui=child_assessment.child|child_assessment.child_select
 teacher_id (评价教师ID), 1:1, integer, ui=context.hidden
 term_id (学期ID), 1:1, school_term, ui=child_assessment.period
 scale_code (量表编码), 1:1, max_len=20, ui=child_assessment.hidden
@@ -547,8 +564,10 @@ completion_rule (完成规则):
 
 社区共育 Feed (Community Coeducation Feed / derived)
 
-source_rule = db_parent_task.parent_task_type=t2 JOIN db_parent_task_submission；`db_community_submission` 已由 B11 删除，不得恢复或复制
-visibility_rule = 教师只读本人班级 c1 完成提交；c2 家庭草稿与进行中的微信检查不得返回
+source_rule = 已发布的 db_parent_task（publish_status=s2|s3，parent_task_type 不限）JOIN db_parent_task_submission；`db_community_submission` 已由 B11 删除，不得恢复或复制
+source_rule_correction (2026-08-14 更正) = 本行此前写「db_parent_task.parent_task_type=t2 JOIN …」，与 DECISIONS.md B11 直接冲突：B11 明写「community-coeducation.html feed —— **已发布任务都出现在这，按 parent_task_type 筛选**」，E5 同批把筛选器定为 全部／日常(t1)／社区(t2) 三值。权威顺序里 DECISIONS.md 高于本文件，故按 B11 改。照旧口径实作会让「全部任务」与「日常任务」两个筛选值永远返回空列表，而原型 feed 里就摆着一张 daily 卡片 —— 是静默错误结果，不是报错
+visibility_rule = 教师只读本人班级 c1 完成提交；c2 家庭草稿与进行中的微信检查不得返回。可见性只看 class_id 与 submission_status，不看 parent_task_type —— 放开 t1 不扩大可见范围，教师本来就能读本班全部亲子任务提交（见上方 db_parent_task_submission）
+filter_binding (筛选控件绑定) = community-coeducation.html 两个下拉都是查询参数，不新增列：任务类别走 community.type_filter -> db_parent_task.parent_task_type（B11 定的标签是「任务类别」，不是任务名），时间走 community.time_filter -> db_parent_task_submission.submitted_at 的相对窗口（全部／本周／本月／更早），窗口边界由服务端按园所时区算，前端不得自行推日期。两个下拉的「全部」都表示**不加这一条 predicate**，不是列值 —— t1／t2 是 parent_task_type 的全部编码，没有 all；时间窗口同理
 
 
 [GROWTH_BOOK]
@@ -824,11 +843,13 @@ compilation_id (学期编册ID), 1:1, integer, ui=growth_material.hidden
 time_topic_id (在园主题ID), 0:1, integer, ui=growth_material.topic
 source_type (来源类型), 1:1, r1=moment(在园时光)|r2=community(社区共育), ui=growth_material.hidden
 moment_id (在园时光ID), 0:1, integer, ui=growth_material.hidden
-title (活动名称), 1:1, max_len=50, ui=growth_material.title
+title (活动名称), 1:1, max_len=50, ui=growth_material.title|growth_material.name_query
 body_text (活动文字), 0:1, text, ui=growth_material.description
 file_id (收录照片ID), 0:k, integer, ui=growth_material.photo_select
 display_order (排序), 1:1, integer, ui=growth_material.hidden
 created_at (创建时间), 1:1, datetime, ui=growth_material.hidden
+
+name_query_binding (搜索控件绑定) = growth-book-time-manage.html 的搜索框筛的是本列 title（见本节上方管理入口那段「按来源时间排列活动，并以搜索＋多选批量完成分节」）。它是查询参数不是第二列，因此与 growth_material.title 并列在同一行 ui= 上。教师端另有两个 type="search" 框（resource-center.html、resource-library.html）没有任何 spec 支持，见 GAPS.md G39，不要照这一条给它们补标注
 
 rel_count (关系数量) = 4
 rel_db (关联表) = db_growth_book_compilation, db_growth_book_time_topic, db_moment, db_file

@@ -1042,7 +1042,9 @@ body { display: block; padding: 0; }
   <section class="comp-section">
     <div class="comp-label">Form Row 表单行</div>
     <div class="comp-body">
-      <div class="form-row"><label for="teacherName">姓名</label><input id="teacherName" value="林晓敏"/></div>
+      <!-- 样式样本，不是业务控件。本页只做设计评审、不进小程序导航、不绑定业务对象
+           （hualong-backend/db/spec/screens.tsv 第 57 行），故标 context.local。 -->
+      <div class="form-row"><label for="teacherName">姓名</label><input id="teacherName" value="林晓敏" data-ui="context.local"/></div>
     </div>
   </section>
 
