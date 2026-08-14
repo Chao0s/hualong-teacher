@@ -458,14 +458,14 @@ pk_note (主键说明) = DECISIONS.md E2 的 DDL 草图只列了 child_assessmen
 
 source_page (参考页面) = teacher-message.html, teacher-message-detail.html
 
-message_id (教师寄语ID), 1:1, integer, ui=teacher_message.hidden
+teacher_message_id (教师寄语ID), 1:1, integer, ui=teacher_message.hidden
 school_id (园所ID), 1:1, integer, ui=teacher_message.hidden
 class_id (班级ID), 1:1, integer, ui=teacher_message.hidden
 child_id (幼儿ID), 1:1, integer, ui=teacher_message.child_select
 teacher_id (撰写教师ID), 1:1, integer, ui=context.hidden
 term_id (学期ID), 1:1, school_term, ui=teacher_message.period
 content (寄语内容), 1:1, max_len=300, ui=teacher_message.textarea|teacher_message_detail.textarea
-published_at (提交时间), 0:1, datetime, ui=teacher_message_detail.time
+created_at (提交时间), 1:1, datetime, ui=teacher_message_detail.time
 created_at (创建时间), 1:1, datetime, ui=teacher_message.hidden
 updated_at (更新时间), 0:1, datetime, ui=teacher_message.hidden
 
@@ -647,10 +647,10 @@ lock_rule (F19) = e1 可管理主题、活动、栏目与排序；教师显式�
 
 在园时光主题 (Growth Book Time Topic / db_growth_book_time_topic)
 
-topic_id (主题ID), 1:1, integer, ui=growth_book_time_topic.hidden
+time_topic_id (主题ID), 1:1, integer, ui=growth_book_time_topic.hidden
 compilation_id (学期编册ID), 1:1, integer, ui=growth_book_time_topic.hidden
 title (主题标题), 1:1, max_len=50, ui=growth_book_time_topic.title
-sort_order (主题排序), 1:1, integer, ui=growth_book_time_topic.hidden
+created_seq (创建顺序), 1:1, integer, ui=growth_book_time_topic.hidden
 created_by (创建教师ID), 1:1, integer, ui=growth_book_time_topic.hidden
 created_at (创建时间), 1:1, datetime, ui=growth_book_time_topic.hidden
 
@@ -663,7 +663,7 @@ topic_order_rule (F19 第六轮评审) = 主题按其中全部活动的最早来
 task_item_id (入册关系ID), 1:1, integer, ui=growth_book_task_item.hidden
 compilation_id (学期编册ID), 1:1, integer, ui=growth_book_task_item.hidden
 parent_task_id (亲子任务ID), 1:1, integer, ui=growth_book_task_item.hidden
-sort_order (活动排序), 1:1, integer, ui=growth_book_task_item.hidden
+display_order (活动排序), 1:1, integer, ui=growth_book_task_item.hidden
 created_at (创建时间), 1:1, datetime, ui=growth_book_task_item.hidden
 
 unique (唯一键) = compilation_id + parent_task_id
@@ -819,15 +819,15 @@ unverified_item (待查证) = 微信 chooseMedia 在 iOS 上回 HEIC 还是已�
 
 成长资料 (Growth Material / db_growth_material)
 
-material_id (成长资料ID), 1:1, integer, ui=growth_material.hidden
+growth_material_id (成长资料ID), 1:1, integer, ui=growth_material.hidden
 compilation_id (学期编册ID), 1:1, integer, ui=growth_material.hidden
-topic_id (在园主题ID), 0:1, integer, ui=growth_material.topic
+time_topic_id (在园主题ID), 0:1, integer, ui=growth_material.topic
 source_type (来源类型), 1:1, r1=moment(在园时光)|r2=community(社区共育), ui=growth_material.hidden
 moment_id (在园时光ID), 0:1, integer, ui=growth_material.hidden
 title (活动名称), 1:1, max_len=50, ui=growth_material.title
-description (活动文字), 0:1, text, ui=growth_material.description
+body_text (活动文字), 0:1, text, ui=growth_material.description
 file_id (收录照片ID), 0:k, integer, ui=growth_material.photo_select
-sort_order (排序), 1:1, integer, ui=growth_material.hidden
+display_order (排序), 1:1, integer, ui=growth_material.hidden
 created_at (创建时间), 1:1, datetime, ui=growth_material.hidden
 
 rel_count (关系数量) = 4

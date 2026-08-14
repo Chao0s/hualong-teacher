@@ -296,18 +296,16 @@ teacher_id (发布教师ID), 1:1, integer, ui=moment.publisher
 moment_title (活动名称), 1:1, max_len=50, ui=moment.card.title|moment_publish.title
 moment_date (活动日期), 1:1, date, ui=moment.card.date|moment_publish.date
 week_key (评估周), 1:1, ISO-YYYY-Www, derived(moment_date), ui=moment.hidden
-moment_seq (每周评价次序), 1:1, q1=first(第1次)|q2=second(第2次), ui=moment.progress.first|moment.progress.second
-moment_location (活动地点), 0:1, max_len=100, ui=moment_publish.location
-moment_observe (观察实录), 0:1, max_len=300, ui=moment_publish.observe|moment_detail.observe
-moment_analysis (活动分析), 0:1, max_len=300, ui=moment_publish.analysis|moment_detail.analysis
+moment_content (活动正文), 0:1, max_len=600, ui=moment_publish.content|moment_detail.content
 file_id (活动图片ID), 0:k, integer, ui=moment.card.image|moment_publish.image
-publish_status (发布状态), 1:1, s1=draft(草稿)|s2=published(已发布), ui=moment.status
+publish_status (发布状态), 1:1, s1=draft(草稿)|s3=published(已发布)|s5=withdrawn(已撤回), ui=moment.status
+published_at (发布时间), 0:1, datetime, ui=moment.hidden
 
 rel_count (关系数量) = 5
 rel_db (关联表) = db_school, db_class, db_teacher, db_moment_upload, db_file
 rel_map (关系字段) = db_moment{school_id}<->db_school{school_id}; db_moment{class_id}<->db_class{class_id}; db_moment{teacher_id}<->db_teacher{teacher_id}; db_moment{moment_id}<->db_moment_upload{moment_id}; db_moment{file_id}<->db_file{file_id}
-unique (唯一键) = class_id + week_key + moment_seq WHERE publish_status=s2
-weekly_rule (每周场次规则) = 每班每周最多发布 2 次 moment（moment_seq=q1|q2）；每次 moment 通过 db_moment_upload 嵌套本次参与评价的部分幼儿，未参与的幼儿不产生 db_moment_upload 行
+weekly_rule (每周场次规则) = 每班每周发布数无上限（Q59-m2a 取消原「最多 2 次」，连带取消 moment_seq、生成列与唯一键）；每次 moment 通过 db_moment_upload 嵌套本次参与的幼儿，未参与的幼儿不产生 db_moment_upload 行
+image_rule (图片规则) = 每则经 db_file_ref 最多关联 9 张 distinct 图片，草稿保存与发布均复验，超限 422
 
 
 在园时光上传 (Moment Upload / db_moment_upload)
@@ -315,7 +313,6 @@ weekly_rule (每周场次规则) = 每班每周最多发布 2 次 moment（momen
 moment_upload_id (在园时光上传ID), 1:1, integer, ui=moment.progress.hidden
 moment_id (在园时光ID), 1:1, integer, ui=moment.progress.hidden
 child_id (幼儿ID), 1:1, integer, ui=moment.progress.child_name
-evaluation_status (单次评估状态), 1:1, c1=complete(已完成)|c2=incomplete(未完成), ui=moment.progress.status
 file_id (上传图片ID), 0:k, integer, ui=moment.progress.image
 uploaded_at (上传时间), 0:1, datetime, ui=moment.hidden
 
