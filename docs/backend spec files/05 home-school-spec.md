@@ -931,7 +931,7 @@ not_annotated (刻意不标注的原型控件):
 growth-book-edit.html 的「封面版式 / 封面图片 / 标题文字」 —— 封面归园所、只有 admin 能改（W19），教师端不应有此控件；2026-08-02 前端已按此删除该整块
 growth-book-edit.html 的「栏目说明」 —— note_text 已由 W11 砍掉，改用 literal 文字 widget；2026-08-02 前端已删除该 textarea
 slot_count_derived = 「征集槽位数」不是可写控件，也不落列：它等于该栏目 binding_key=collected 的 widget 数，由 db_book_widget 即时算。2026-08-02 曾在 growth-book-edit.html 放过一个「素材槽位数」下拉当占位，已随版面编辑器落地删除
-growth-book.html 全班定稿弹层的幼儿勾选 —— 选的是本次 b1→b2 的范围，不单独写业务列；跳过的异常幼儿保持 b1
+growth-book.html 全班定稿弹层的幼儿勾选 —— 选的是本次 b1→b2 的范围，不单独写业务列；跳过的异常幼儿保持 b1。定稿端点是逐册的 `POST /teacher/growth-book/books/{growth_book_id}/publication`，请求体只有 `content_fingerprint`，勾选值本身从不提交：它决定客户端发哪几笔请求，不是任何一笔请求的字段。因此该勾选框与「全选」框都标 `data-ui="context.local"`（scope-rules.json `_client_local_doc` 的第二类：本身没有列可绑），不是「还没去 spec 补 ui= 标注」。2026-08-14 起未标记的写入控件是硬错误，所以「刻意不标注」在 markup 上必须写成显式的 context.local
 widget 网格编辑器的 ui=book_widget.* 标注已于 2026-08-02 在 growth-book-section-edit.html 落地，不再是 PENDING（原记「界面尚未出现（W4 未排期）」是把范本编辑器与教师端栏目编辑器混为一谈，见 editor_scope_note）
 原型未做的三件（W1c 的连带互动规格，前端待定但必须有答案）：缩放后的单指平移目前交给容器原生卷动、拖曳到视窗外的边缘自动卷动未做、双指缩放手势以 +/− 按钮代替
 字体选型不出控件：教师只配字级与对齐（W8）。F17 取消跨环境 PDF 像素一致度要求，字体授权不再卡住 App 内成长册

@@ -108,7 +108,7 @@
     </div>
     <label class="check-row">
       <div>全选</div>
-      <input type="checkbox" id="selectAll" data-ui="growth_book.book_status">
+      <input type="checkbox" id="selectAll" data-ui="context.local">
     </label>
     <div class="sheet-list" id="finalizeList"></div>
     <div class="hint" id="sheetPageNote" style="margin-top:10px">问题幼儿默认跳过并保留草稿；请先处理问题，或明确跳过后定稿其余幼儿。</div>
@@ -207,7 +207,7 @@ function renderSheet() {
     const issues = childIssues(child);
     return `<label class="check-row${ok ? '' : ' blocked'}">
       <div>${child.name}<div style="font-size:11px;font-weight:400;color:var(--muted);margin-top:3px">${estimateText(child)} · ${published ? '已定稿开放' : (issues.join('；') || '内容齐备')}</div></div>
-      <input type="checkbox" class="child-check" data-ui="growth_book.book_status" data-child="${child.id}" ${ok ? 'checked' : 'disabled'}>
+      <input type="checkbox" class="child-check" data-ui="context.local" data-child="${child.id}" ${ok ? 'checked' : 'disabled'}>
     </label>`;
   }).join('');
   finalizeList.querySelectorAll('.child-check').forEach(item => item.addEventListener('change', syncSelectAll));
