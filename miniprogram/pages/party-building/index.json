@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "党建管理",
+  "usingComponents": {
+    "hl-entry-sections": "/components/hl-entry-sections/index"
+  }
+}

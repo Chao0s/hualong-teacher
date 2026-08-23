@@ -2,6 +2,10 @@
   "pages": [
     "pages/login/index",
     "pages/home/index",
+    "pages/party-building/index",
+    "pages/coordination/index",
+    "pages/training/index",
+    "pages/co-education/index",
     "pages/notice/list",
     "pages/notice/detail"
   ],
@@ -11,6 +15,44 @@
     "navigationBarTitleText": "化龙幼儿园",
     "navigationBarTextStyle": "black",
     "backgroundColor": "#f0f5f5"
+  },
+  "tabBar": {
+    "color": "#868686",
+    "selectedColor": "#189b91",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/home/index",
+        "text": "首页",
+        "iconPath": "assets/icons/tab/home-normal.png",
+        "selectedIconPath": "assets/icons/tab/home-selected.png"
+      },
+      {
+        "pagePath": "pages/party-building/index",
+        "text": "党建管理",
+        "iconPath": "assets/icons/tab/party-building-normal.png",
+        "selectedIconPath": "assets/icons/tab/party-building-selected.png"
+      },
+      {
+        "pagePath": "pages/coordination/index",
+        "text": "综合协调",
+        "iconPath": "assets/icons/tab/coordination-normal.png",
+        "selectedIconPath": "assets/icons/tab/coordination-selected.png"
+      },
+      {
+        "pagePath": "pages/training/index",
+        "text": "教研培训",
+        "iconPath": "assets/icons/tab/teaching-research-normal.png",
+        "selectedIconPath": "assets/icons/tab/teaching-research-selected.png"
+      },
+      {
+        "pagePath": "pages/co-education/index",
+        "text": "家园社共育",
+        "iconPath": "assets/icons/tab/co-education-normal.png",
+        "selectedIconPath": "assets/icons/tab/co-education-selected.png"
+      }
+    ]
   },
   "style": "v2",
   "lazyCodeLoading": "requiredComponents",

@@ -2,14 +2,14 @@
  * A fake `wx` runtime for the test seam.
  *
  * It replaces the platform entry points only — never any code under test. The
- * surface is exactly the eight APIs the utils layer calls; anything else is
- * deliberately absent, so a new platform call fails loudly in tests instead of
- * silently returning undefined.
+ * surface is exactly the APIs the client calls; anything else is deliberately
+ * absent, so a new platform call fails loudly in tests instead of silently
+ * returning undefined.
  *
  *   wx.request           -> Node fetch against the real URL the client built
  *   storage (get/set/remove Sync) -> an in-memory Map, recorded for assertions
  *   wx.login             -> a controllable stub (js_code value, or a failure)
- *   wx.navigateTo / wx.reLaunch / wx.showToast -> recorded, not executed
+ *   wx.navigateTo / wx.switchTab / wx.reLaunch / wx.showToast -> recorded, not executed
  */
 
 export function createFakeWx({ loginCode = 'JS_CODE_OK', loginFails = false } = {}) {
@@ -61,6 +61,10 @@ export function createFakeWx({ loginCode = 'JS_CODE_OK', loginFails = false } = 
     },
 
     navigateTo({ url }) { record.navigations.push({ api: 'navigateTo', url }) },
+    // A tabBar page needs switchTab. Recorded separately so a test can prove the
+    // client picked the right API — navigateTo on a tab page fails silently on
+    // the real platform, which no assertion would otherwise catch.
+    switchTab({ url }) { record.navigations.push({ api: 'switchTab', url }) },
     reLaunch({ url }) { record.navigations.push({ api: 'reLaunch', url }) },
     showToast(opts) { record.toasts.push(opts) },
     setNavigationBarTitle({ title }) { record.navTitles.push(title) },

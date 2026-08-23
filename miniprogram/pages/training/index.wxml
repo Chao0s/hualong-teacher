@@ -1,0 +1,3 @@
+<view class="hl-page" wx:if="{{{{ready}}}}">
+  <hl-entry-sections sections="{{{{sections}}}}" bindtapentry="onEntryTap" />
+</view>

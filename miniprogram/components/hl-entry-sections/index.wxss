@@ -1,0 +1,28 @@
+.entry {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.entry + .entry {
+  margin-top: var(--space-2);
+}
+
+.entry__badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: var(--radius-sm);
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  font-size: 30rpx;
+  font-weight: 600;
+  flex: none;
+}
+
+.entry__text {
+  flex: 1;
+  min-width: 0;
+}

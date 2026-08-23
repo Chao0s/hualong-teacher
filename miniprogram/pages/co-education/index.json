@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "家园社共育",
+  "usingComponents": {
+    "hl-entry-sections": "/components/hl-entry-sections/index"
+  }
+}

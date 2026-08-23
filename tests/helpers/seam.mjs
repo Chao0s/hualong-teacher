@@ -54,6 +54,27 @@ export function loadClient({ baseUrl, wxOptions } = {}) {
 }
 
 /**
+ * Load a Component() file and return the raw definition.
+ *
+ * Components are not driven here the way pages are — the seam tests behaviour,
+ * never rendering. What this gives a test is the definition object, so an
+ * observer or a method can be called against a hand-made `this`.
+ */
+export function loadComponent(client, componentRelPath) {
+  let captured = null
+  const full = path.join(MP, componentRelPath)
+  delete require.cache[require.resolve(full)]
+  globalThis.Component = (config) => { captured = config }
+  try {
+    require(full)
+  } finally {
+    delete globalThis.Component
+  }
+  if (!captured) throw new Error(`${componentRelPath} never called Component()`)
+  return captured
+}
+
+/**
  * Load a Page() file through the seam and return a drivable instance.
  *
  * The stub captures the config object Page() receives and binds it to a

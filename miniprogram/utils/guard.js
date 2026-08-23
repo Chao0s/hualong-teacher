@@ -40,6 +40,19 @@ const FORBIDDEN_MODULES = Object.freeze([
   'parent-client', // the parent surface is a different AppID entirely
 ]);
 
+// The five bottom-bar destinations (ticket 09). They must be opened with
+// wx.switchTab; wx.navigateTo refuses a tabBar page, and it refuses it QUIETLY —
+// the tap simply does nothing. Keeping the list here means no caller has to
+// remember which pages are tabs. Five is the platform ceiling, so this list
+// cannot grow (DO-NOT-BUILD 14).
+const TAB_PAGES = Object.freeze([
+  '/pages/home/index',
+  '/pages/party-building/index',
+  '/pages/coordination/index',
+  '/pages/training/index',
+  '/pages/co-education/index',
+]);
+
 class RoleResolutionError extends Error {
   constructor(message) {
     super(message);
@@ -96,7 +109,8 @@ function navigateTo(url, moduleId) {
     }
     throw err;
   }
-  wx.navigateTo({ url });
+  if (TAB_PAGES.indexOf(url) !== -1) wx.switchTab({ url });
+  else wx.navigateTo({ url });
   return true;
 }
 
@@ -155,6 +169,7 @@ module.exports = {
   TEACHER_MODULES,
   PARTNER_MODULES,
   FORBIDDEN_MODULES,
+  TAB_PAGES,
   RoleResolutionError,
   requireRole,
   canReachModule,

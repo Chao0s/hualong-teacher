@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "教研培训",
+  "usingComponents": {
+    "hl-entry-sections": "/components/hl-entry-sections/index"
+  }
+}

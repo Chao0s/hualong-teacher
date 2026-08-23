@@ -130,7 +130,9 @@ test('a quick entry with no screen yet is stopped before the jump', async () => 
     assert.equal(entry.disabled, false, 'nothing is term-blocked during the term')
   }
 
-  page.onQuickTap({ currentTarget: { dataset: { key: 'moment' } } })
+  // 课程资源 belongs to 资源库, the sixth module — the bar holds five, so it has
+  // no tab and no page yet (ticket 13).
+  page.onQuickTap({ currentTarget: { dataset: { key: 'resource' } } })
   assert.equal(c.record.navigations.length, 0, 'no navigation happened')
   assert.match(c.record.toasts.pop().title, /尚未上线/, 'and it said why')
 })

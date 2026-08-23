@@ -50,12 +50,20 @@ const TODO_LABEL = {
  * navigation; `page` stays null until that screen exists, and a tap on a null
  * page is refused out loud rather than dead-ending. `needsTerm` marks the write
  * entries the holiday disables.
+ *
+ * `icon` and `color` name the drawing and its tint (ticket 09). No path here or
+ * in the markup — hl-icon resolves it.
+ *
+ * Three entries gained a destination when the bottom bar landed: they reach
+ * their module's entry page, which then lists the screen itself. Two hops, both
+ * honest. 课程资源 has no tab of its own — 资源库 is the sixth module and the bar
+ * holds five (DO-NOT-BUILD 14) — so it waits for ticket 13.
  */
 const QUICK_ENTRIES = [
-  { key: 'training', label: '教研培训', module: 'teaching-research', page: null, needsTerm: false },
-  { key: 'moment', label: '在园时光', module: 'co-education', page: null, needsTerm: true },
-  { key: 'month-eval', label: '月度评价', module: 'co-education', page: null, needsTerm: true },
-  { key: 'resource', label: '课程资源', module: 'resource-library', page: null, needsTerm: false },
+  { key: 'training', label: '教研培训', module: 'teaching-research', page: '/pages/training/index', needsTerm: false, icon: 'icon-16', color: 'accent' },
+  { key: 'moment', label: '在园时光', module: 'co-education', page: '/pages/co-education/index', needsTerm: true, icon: 'icon-17', color: 'green' },
+  { key: 'month-eval', label: '月度评价', module: 'co-education', page: '/pages/co-education/index', needsTerm: true, icon: 'icon-18', color: 'amber' },
+  { key: 'resource', label: '课程资源', module: 'resource-library', page: null, needsTerm: false, icon: 'icon-19', color: 'blue' },
 ];
 
 /**
@@ -100,6 +108,8 @@ function quickEntries(canWrite) {
   return QUICK_ENTRIES.map((entry) => ({
     key: entry.key,
     label: entry.label,
+    icon: entry.icon,
+    color: entry.color,
     disabled: Boolean(entry.needsTerm && !canWrite),
   }));
 }

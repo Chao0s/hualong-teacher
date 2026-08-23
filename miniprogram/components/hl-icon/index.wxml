@@ -1,0 +1,1 @@
+<image wx:if="{{src}}" class="hl-icon" src="{{src}}" mode="aspectFit" style="width:{{size}};height:{{size}}" />

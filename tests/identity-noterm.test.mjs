@@ -77,8 +77,14 @@ test('a write entry during the holiday explains itself instead of failing silent
   assert.match(c.record.toasts.pop().title, /假期/, 'the reason is on the spot')
 
   // A read entry is NOT term-gated: it falls through to the ordinary path.
+  // Since ticket 09 that path reaches the 教研培训 tab, so the proof is a
+  // navigation rather than a toast — reading still works during the holiday.
   page.onQuickTap({ currentTarget: { dataset: { key: 'training' } } })
-  assert.match(c.record.toasts.pop().title, /尚未上线/, 'gated by page-missing, not by the term')
+  assert.deepEqual(
+    c.record.navigations.pop(),
+    { api: 'switchTab', url: '/pages/training/index' },
+    'gated by neither the term nor a missing page',
+  )
 })
 
 // LAST: flips the server's term back on for the rest of the process.

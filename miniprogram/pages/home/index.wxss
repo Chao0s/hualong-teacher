@@ -57,6 +57,10 @@
 }
 
 .quick__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
   flex: 1 1 46%;
   padding: var(--space-4) var(--space-3);
   border-radius: var(--radius);
@@ -65,6 +69,22 @@
   text-align: center;
   font-size: 30rpx;
   color: var(--fg);
+}
+
+.quick__label {
+  font-size: 30rpx;
+}
+
+/* A notice row keeps its chevron at the trailing edge. */
+.notice-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.notice-row__text {
+  flex: 1;
+  min-width: 0;
 }
 
 /* A write entry during the holiday: visibly off, and the tap explains why. */

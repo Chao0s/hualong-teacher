@@ -41,11 +41,14 @@
     <view
       wx:for="{{notices}}"
       wx:key="notice_id"
-      class="hl-card"
+      class="hl-card notice-row"
       data-id="{{item.notice_id}}"
       bindtap="onNoticeTap">
-      <text class="hl-card__title">{{item.notice_title}}</text>
-      <view class="hl-card__meta">{{item.published_label}}</view>
+      <view class="notice-row__text">
+        <text class="hl-card__title">{{item.notice_title}}</text>
+        <view class="hl-card__meta">{{item.published_label}}</view>
+      </view>
+      <hl-icon name="icon-10" color="muted" size="32rpx" />
     </view>
 
     <view class="hl-section-title">常用入口</view>
@@ -56,7 +59,8 @@
         class="quick__item {{item.disabled ? 'quick__item--off' : ''}}"
         data-key="{{item.key}}"
         bindtap="onQuickTap">
-        {{item.label}}
+        <hl-icon name="{{item.icon}}" color="{{item.color}}" size="52rpx" />
+        <text class="quick__label">{{item.label}}</text>
       </view>
     </view>
 
