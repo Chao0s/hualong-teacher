@@ -8,29 +8,38 @@
 
 const api = require('../../utils/request');
 const guard = require('../../utils/guard');
-const session = require('../../utils/session');
 const time = require('../../utils/time');
-const { ApiError } = require('../../utils/errors');
+const identity = require('../../services/identity');
+const { present } = require('../../utils/present');
 
 Page({
   data: {
     ready: false,
     loading: true,
     notice: null,
+    noticeId: 0,
     publishedLabel: '',
     errorText: '',
     errorRequestId: '',
+    errorCanRetry: false,
   },
 
   onLoad(query) {
     if (!guard.requireSession()) return;
     const noticeId = Number(query.notice_id);
     if (!noticeId) {
-      this.setData({ ready: true, loading: false, errorText: '缺少通知编号' });
+      // A missing id is the caller's bug; retrying the same URL changes nothing.
+      this.setData({ ready: true, loading: false, errorText: '缺少通知编号', errorCanRetry: false });
       return;
     }
-    this.setData({ ready: true });
+    this.setData({ ready: true, noticeId });
     this.load(noticeId);
+  },
+
+  onRetryLoad() {
+    if (!this.data.noticeId) return;
+    this.setData({ loading: true, errorText: '', errorRequestId: '', errorCanRetry: false });
+    this.load(this.data.noticeId);
   },
 
   async load(noticeId) {
@@ -47,15 +56,13 @@ Page({
         wx.setNavigationBarTitle({ title: notice.notice_title });
       }
     } catch (err) {
-      if (err instanceof ApiError && err.isAuthFailure) {
-        session.clear();
-        guard.redirectToLogin();
-        return;
-      }
+      if (identity.handleAuthFailure(err)) return;
+      const failure = present(err);
       this.setData({
         loading: false,
-        errorText: err instanceof ApiError ? err.userMessage : '加载失败',
-        errorRequestId: err instanceof ApiError ? (err.requestId || '') : '',
+        errorText: failure.message,
+        errorRequestId: failure.requestId,
+        errorCanRetry: failure.canRetry,
       });
     }
   },

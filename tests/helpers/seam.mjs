@@ -43,6 +43,7 @@ export function loadClient({ baseUrl, wxOptions } = {}) {
     time: require(path.join(MP, 'utils', 'time.js')),
     derived: require(path.join(MP, 'utils', 'derived.js')),
     errors: require(path.join(MP, 'utils', 'errors.js')),
+    present: require(path.join(MP, 'utils', 'present.js')).present,
     identity: require(path.join(MP, 'services', 'identity.js')),
   }
 }
@@ -57,9 +58,13 @@ export function loadClient({ baseUrl, wxOptions } = {}) {
  */
 export function loadPage(client, pageRelPath) {
   let captured = null
+  const full = path.join(MP, pageRelPath)
+  // Loading the same page twice must yield two independent instances: drop
+  // its cache entry so the module body (and its Page() call) re-executes.
+  delete require.cache[require.resolve(full)]
   globalThis.Page = (config) => { captured = config }
   try {
-    require(path.join(MP, pageRelPath))
+    require(full)
   } finally {
     delete globalThis.Page
   }

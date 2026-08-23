@@ -1,6 +1,7 @@
 <view class="hl-page" wx:if="{{ready}}">
   <view wx:if="{{errorText}}" class="hl-error">
     {{errorText}}
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryList">重试</text>
     <text wx:if="{{errorRequestId}}" class="hl-error__id">故障码 {{errorRequestId}}</text>
   </view>
 

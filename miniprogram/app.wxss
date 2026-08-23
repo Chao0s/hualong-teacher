@@ -131,6 +131,16 @@ view, text, button, input, textarea, scroll-view {
   font-size: 22rpx;
 }
 
+/* The retry entry inside an error banner. Rendered only when retrying can
+ * change anything — a fatal failure offers no retry (ticket 07). */
+.hl-error__retry {
+  display: inline-block;
+  margin-left: var(--space-2);
+  color: var(--accent-dark);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
 .hl-loading {
   padding: var(--space-4);
   text-align: center;
