@@ -1,0 +1,868 @@
+{
+ "note": "Icon manifest for the teacher client. Generated from the HTML prototypes. Do not edit by hand.",
+ "generated": "2026-08-22",
+ "source": "Teacher/screens/*.html — 94 inline svg elements, 43 distinct drawings.",
+ "status": "PLACEHOLDER artwork. Every PNG is a hollow frame with a diagonal, never a final icon. Overwrite in place: the filenames are fixed here and no code change is needed when real artwork arrives.",
+ "unverified": [
+  "The bottom-bar icon pixel size and file-size ceiling could not be retrieved from the official configuration reference through the docs tool. 81x81 is the conventional figure and is what these placeholders use. Confirm it against the official app.json tabBar reference before the designer cuts finals."
+ ],
+ "knownPrototypeBug": "The prototype bottom bar labels the module 家园共育. The glossary forbids that variant; the canonical name is 家园社共育. Ten prototype files carry the wrong label. Fix the text during migration. The icon slug already follows the canonical name.",
+ "colourTokens": {
+  "accent": "#189b91",
+  "green": "#4b9a5a",
+  "amber": "#c47900",
+  "blue": "#3388fc",
+  "muted": "#868686"
+ },
+ "bottomBar": {
+  "note": "Keyed by module, not by drawing, because app.json needs exactly five pairs and one drawing is reused across several modules in the prototypes.",
+  "files": [
+   "tab/home-normal.png",
+   "tab/home-selected.png",
+   "tab/party-building-normal.png",
+   "tab/party-building-selected.png",
+   "tab/coordination-normal.png",
+   "tab/coordination-selected.png",
+   "tab/teaching-research-normal.png",
+   "tab/teaching-research-selected.png",
+   "tab/co-education-normal.png",
+   "tab/co-education-selected.png"
+  ]
+ },
+ "inlineIcons": [
+  {
+   "key": "<svgviewBox=\"002424\"fill=\"none\"stroke=CC",
+   "uses": 9,
+   "labels": [
+    "首页"
+   ],
+   "colours": [
+    "accent"
+   ],
+   "files": [
+    "case-library.html",
+    "comprehensive-coordination.html",
+    "coordination-file-list.html",
+    "home-school.html",
+    "home.html",
+    "resource-center.html",
+    "resource-library.html",
+    "school-affairs.html",
+    "training-center.html"
+   ],
+   "servesModuleTab": true,
+   "slug": "icon-01"
+  },
+  {
+   "key": "<svgviewBox=\"002424\"fill=\"none\"stroke=CC",
+   "uses": 9,
+   "labels": [
+    "党建管理"
+   ],
+   "colours": [
+    "accent"
+   ],
+   "files": [
+    "case-library.html",
+    "comprehensive-coordination.html",
+    "coordination-file-list.html",
+    "home-school.html",
+    "home.html",
+    "resource-center.html",
+    "resource-library.html",
+    "school-affairs.html",
+    "training-center.html"
+   ],
+   "servesModuleTab": true,
+   "slug": "icon-02"
+  },
+  {
+   "key": "<svgviewBox=\"002424\"fill=\"none\"stroke=CC",
+   "uses": 9,
+   "labels": [
+    "综合协调"
+   ],
+   "colours": [
+    "accent"
+   ],
+   "files": [
+    "case-library.html",
+    "comprehensive-coordination.html",
+    "coordination-file-list.html",
+    "home-school.html",
+    "home.html",
+    "resource-center.html",
+    "resource-library.html",
+    "school-affairs.html",
+    "training-center.html"
+   ],
+   "servesModuleTab": true,
+   "slug": "icon-03"
+  },
+  {
+   "key": "<svgviewBox=\"002424\"fill=\"none\"stroke=CC",
+   "uses": 9,
+   "labels": [
+    "教研培训"
+   ],
+   "colours": [
+    "accent"
+   ],
+   "files": [
+    "case-library.html",
+    "comprehensive-coordination.html",
+    "coordination-file-list.html",
+    "home-school.html",
+    "home.html",
+    "resource-center.html",
+    "resource-library.html",
+    "school-affairs.html",
+    "training-center.html"
+   ],
+   "servesModuleTab": true,
+   "slug": "icon-04"
+  },
+  {
+   "key": "<svgviewBox=\"002424\"fill=\"none\"stroke=CC",
+   "uses": 9,
+   "labels": [
+    "家园共育"
+   ],
+   "colours": [
+    "accent"
+   ],
+   "files": [
+    "case-library.html",
+    "comprehensive-coordination.html",
+    "coordination-file-list.html",
+    "home-school.html",
+    "home.html",
+    "resource-center.html",
+    "resource-library.html",
+    "school-affairs.html",
+    "training-center.html"
+   ],
+   "servesModuleTab": true,
+   "slug": "icon-05"
+  },
+  {
+   "key": "<svgviewBox=\"002424\"fill=\"none\"stroke=CC",
+   "uses": 9,
+   "labels": [
+    "班级评估报告",
+    "开始综合评估",
+    "综合评估结果",
+    "课程建设",
+    "我的研修",
+    "资源库",
+    "个人档案",
+    "研修活动",
+    "教研培训"
+   ],
+   "colours": [
+    "muted"
+   ],
+   "files": [
+    "comprehensive-assessment-class-report.html",
+    "comprehensive-assessment-form.html",
+    "comprehensive-assessment-report.html",
+    "course-building.html",
+    "my-training.html",
+    "resource-library.html",
+    "teacher-profile.html",
+    "training-detail.html",
+    "training-list.html"
+   ],
+   "servesModuleTab": true,
+   "slug": "icon-06"
+  },
+  {
+   "key": "<svgviewBox=\"002424\"fill=\"none\"stroke=CC",
+   "uses": 2,
+   "labels": [
+    "案例库",
+    "课程资源"
+   ],
+   "colours": [
+    "muted"
+   ],
+   "files": [
+    "case-library.html",
+    "resource-center.html"
+   ],
+   "servesModuleTab": false,
+   "slug": "icon-07"
+  },
+  {
+   "key": "<svgfill=\"none\"stroke=CCviewbox=\"002424\"",
+   "uses": 2,
+   "labels": [
+    "教研培训"
+   ],
+   "colours": [
+    "accent"
+   ],
+   "files": [
+    "component-showcase.html"
+   ],
+   "servesModuleTab": true,
+   "slug": "icon-08"
+  },
+  {
+   "key": "<svgviewBox=\"00200200\"><gid=\"grid\"></g><",
+   "uses": 2,
+   "labels": [
+    "继续评估",
+    "评估明细"
+   ],
+   "colours": [
+    "muted"
+   ],
+   "files": [
+    "comprehensive-assessment-class-report.html",
+    "comprehensive-assessment-report.html"
+   ],
+   "servesModuleTab": false,
+   "slug": "icon-09"
+  },
+  {
+   "key": "<svgfill=\"none\"stroke=CCviewbox=\"002424\"",
+   "uses": 1,
+   "labels": [
+    "›"
+   ],
+   "colours": [
+    "muted"
+   ],
+   "files": [
+    "component-showcase.html"
+   ],
+   "servesModuleTab": false,
+   "slug": "icon-10"
+  },
+  {
+   "key": "<svgfill=\"none\"stroke=CCviewbox=\"002424\"",
+   "uses": 1,
+   "labels": [
+    "首页"
+   ],
+   "colours": [
+    "muted"
+   ],
+   "files": [
+    "component-showcase.html"
+   ],
+   "servesModuleTab": true,
+   "slug": "icon-11"
+  },
+  {
+   "key": "<svgfill=\"none\"stroke=CCviewbox=\"002424\"",
+   "uses": 1,
+   "labels": [
+    "党建管理"
+   ],
+   "colours": [
+    "muted"
+   ],
+   "files": [
+    "component-showcase.html"
+   ],
+   "servesModuleTab": true,
+   "slug": "icon-12"
+  },
+  {
+   "key": "<svgfill=\"none\"stroke=CCviewbox=\"002424\"",
+   "uses": 1,
+   "labels": [
+    "综合协调"
+   ],
+   "colours": [
+    "muted"
+   ],
+   "files": [
+    "component-showcase.html"
+   ],
+   "servesModuleTab": true,
+   "slug": "icon-13"
+  },
+  {
+   "key": "<svgfill=\"none\"stroke=CCviewbox=\"002424\"",
+   "uses": 1,
+   "labels": [
+    "家园共育"
+   ],
+   "colours": [
+    "muted"
+   ],
+   "files": [
+    "component-showcase.html"
+   ],
+   "servesModuleTab": true,
+   "slug": "icon-14"
+  },
+  {
+   "key": "<svgviewBox=\"002512\"><rectx=\"0\"y=\"0\"rx=\"",
+   "uses": 1,
+   "labels": [
+    "上传资源、处理待办任务"
+   ],
+   "colours": [
+    "muted"
+   ],
+   "files": [
+    "home.html"
+   ],
+   "servesModuleTab": false,
+   "slug": "icon-15"
+  },
+  {
+   "key": "<svgviewBox=\"002424\"fill=\"none\"stroke=CC",
+   "uses": 1,
+   "labels": [
+    "教研培训"
+   ],
+   "colours": [
+    "accent"
+   ],
+   "files": [
+    "home.html"
+   ],
+   "servesModuleTab": true,
+   "slug": "icon-16"
+  },
+  {
+   "key": "<svgviewBox=\"002424\"fill=\"none\"stroke=CC",
+   "uses": 1,
+   "labels": [
+    "在园时光"
+   ],
+   "colours": [
+    "green"
+   ],
+   "files": [
+    "home.html"
+   ],
+   "servesModuleTab": false,
+   "slug": "icon-17"
+  },
+  {
+   "key": "<svgviewBox=\"002424\"fill=\"none\"stroke=CC",
+   "uses": 1,
+   "labels": [
+    "月度评价"
+   ],
+   "colours": [
+    "amber"
+   ],
+   "files": [
+    "home.html"
+   ],
+   "servesModuleTab": false,
+   "slug": "icon-18"
+  },
+  {
+   "key": "<svgviewBox=\"002424\"fill=\"none\"stroke=CC",
+   "uses": 1,
+   "labels": [
+    "课程资源"
+   ],
+   "colours": [
+    "blue"
+   ],
+   "files": [
+    "home.html"
+   ],
+   "servesModuleTab": false,
+   "slug": "icon-19"
+  },
+  {
+   "key": "<svgviewBox=\"002424\"fill=\"none\"stroke=\"v",
+   "uses": 1,
+   "labels": [
+    "搜索"
+   ],
+   "colours": [
+    "muted"
+   ],
+   "files": [
+    "resource-center.html"
+   ],
+   "servesModuleTab": false,
+   "slug": "icon-20"
+  },
+  {
+   "key": "<svgviewBox=\"002424\"fill=\"none\"stroke=CC",
+   "uses": 1,
+   "labels": [
+    "›"
+   ],
+   "colours": [
+    "muted"
+   ],
+   "files": [
+    "resource-center.html"
+   ],
+   "servesModuleTab": false,
+   "slug": "icon-21"
+  },
+  {
+   "key": "<svgviewBox=\"002424\"fill=\"none\"stroke=CC",
+   "uses": 1,
+   "labels": [
+    "›"
+   ],
+   "colours": [
+    "muted"
+   ],
+   "files": [
+    "resource-center.html"
+   ],
+   "servesModuleTab": false,
+   "slug": "icon-22"
+  },
+  {
+   "key": "<svgviewBox=\"002424\"fill=\"none\"stroke=CC",
+   "uses": 1,
+   "labels": [
+    "住"
+   ],
+   "colours": [
+    "muted"
+   ],
+   "files": [
+    "resource-center.html"
+   ],
+   "servesModuleTab": false,
+   "slug": "icon-23"
+  },
+  {
+   "key": "<svgviewBox=\"002424\"fill=\"none\"stroke=CC",
+   "uses": 1,
+   "labels": [
+    "艺"
+   ],
+   "colours": [
+    "green"
+   ],
+   "files": [
+    "resource-center.html"
+   ],
+   "servesModuleTab": false,
+   "slug": "icon-24"
+  },
+  {
+   "key": "<svgviewBox=\"002424\"fill=\"none\"stroke=CC",
+   "uses": 1,
+   "labels": [
+    "大班"
+   ],
+   "colours": [
+    "muted"
+   ],
+   "files": [
+    "resource-center.html"
+   ],
+   "servesModuleTab": false,
+   "slug": "icon-25"
+  },
+  {
+   "key": "<svgviewBox=\"002424\"fill=\"none\"stroke=CC",
+   "uses": 1,
+   "labels": [
+    "大班"
+   ],
+   "colours": [
+    "amber"
+   ],
+   "files": [
+    "resource-center.html"
+   ],
+   "servesModuleTab": false,
+   "slug": "icon-26"
+  },
+  {
+   "key": "<svgviewBox=\"002424\"fill=\"none\"stroke=\"v",
+   "uses": 1,
+   "labels": [
+    "全部资源"
+   ],
+   "colours": [
+    "muted"
+   ],
+   "files": [
+    "resource-library.html"
+   ],
+   "servesModuleTab": false,
+   "slug": "icon-27"
+  },
+  {
+   "key": "<svgviewBox=\"002424\"fill=\"none\"stroke=CC",
+   "uses": 1,
+   "labels": [
+    "香云纱纹样"
+   ],
+   "colours": [
+    "green"
+   ],
+   "files": [
+    "resource-library.html"
+   ],
+   "servesModuleTab": false,
+   "slug": "icon-28"
+  },
+  {
+   "key": "<svgviewBox=\"002424\"fill=\"none\"stroke=CC",
+   "uses": 1,
+   "labels": [
+    "广绣小包"
+   ],
+   "colours": [
+    "green"
+   ],
+   "files": [
+    "resource-library.html"
+   ],
+   "servesModuleTab": false,
+   "slug": "icon-29"
+  },
+  {
+   "key": "<svgviewBox=\"002424\"fill=\"none\"stroke=CC",
+   "uses": 1,
+   "labels": [
+    "双皮奶"
+   ],
+   "colours": [
+    "amber"
+   ],
+   "files": [
+    "resource-library.html"
+   ],
+   "servesModuleTab": false,
+   "slug": "icon-30"
+  },
+  {
+   "key": "<svgviewBox=\"002424\"fill=\"none\"stroke=CC",
+   "uses": 1,
+   "labels": [
+    "荔枝蜜"
+   ],
+   "colours": [
+    "amber"
+   ],
+   "files": [
+    "resource-library.html"
+   ],
+   "servesModuleTab": false,
+   "slug": "icon-31"
+  },
+  {
+   "key": "<svgviewBox=\"002424\"fill=\"none\"stroke=CC",
+   "uses": 1,
+   "labels": [
+    "留耕堂"
+   ],
+   "colours": [
+    "muted"
+   ],
+   "files": [
+    "resource-library.html"
+   ],
+   "servesModuleTab": false,
+   "slug": "icon-32"
+  },
+  {
+   "key": "<svgviewBox=\"002424\"fill=\"none\"stroke=CC",
+   "uses": 1,
+   "labels": [
+    "沙湾古镇"
+   ],
+   "colours": [
+    "green"
+   ],
+   "files": [
+    "resource-library.html"
+   ],
+   "servesModuleTab": false,
+   "slug": "icon-33"
+  },
+  {
+   "key": "<svgviewBox=\"002424\"fill=\"none\"stroke=CC",
+   "uses": 1,
+   "labels": [
+    "龙舟竞渡"
+   ],
+   "colours": [
+    "amber"
+   ],
+   "files": [
+    "resource-library.html"
+   ],
+   "servesModuleTab": false,
+   "slug": "icon-34"
+  },
+  {
+   "key": "<svgviewBox=\"002424\"fill=\"none\"stroke=CC",
+   "uses": 1,
+   "labels": [
+    "安全过街"
+   ],
+   "colours": [
+    "blue"
+   ],
+   "files": [
+    "resource-library.html"
+   ],
+   "servesModuleTab": false,
+   "slug": "icon-35"
+  },
+  {
+   "key": "<svgviewBox=\"002424\"fill=\"none\"stroke=CC",
+   "uses": 1,
+   "labels": [
+    "粤语童谣"
+   ],
+   "colours": [
+    "blue"
+   ],
+   "files": [
+    "resource-library.html"
+   ],
+   "servesModuleTab": false,
+   "slug": "icon-36"
+  },
+  {
+   "key": "<svgviewBox=\"002424\"fill=\"none\"stroke=CC",
+   "uses": 1,
+   "labels": [
+    "醒狮纹样"
+   ],
+   "colours": [
+    "green"
+   ],
+   "files": [
+    "resource-library.html"
+   ],
+   "servesModuleTab": false,
+   "slug": "icon-37"
+  },
+  {
+   "key": "<svgviewBox=\"002424\"fill=\"none\"stroke=CC",
+   "uses": 1,
+   "labels": [
+    "粤剧身段"
+   ],
+   "colours": [
+    "blue"
+   ],
+   "files": [
+    "resource-library.html"
+   ],
+   "servesModuleTab": false,
+   "slug": "icon-38"
+  },
+  {
+   "key": "<svgviewBox=\"002424\"fill=\"none\"stroke=CC",
+   "uses": 1,
+   "labels": [
+    "陶艺纹饰"
+   ],
+   "colours": [
+    "muted"
+   ],
+   "files": [
+    "resource-library.html"
+   ],
+   "servesModuleTab": false,
+   "slug": "icon-39"
+  },
+  {
+   "key": "<svgviewBox=\"002424\"fill=\"none\"stroke=CC",
+   "uses": 1,
+   "labels": [
+    "个人档案"
+   ],
+   "colours": [
+    "muted"
+   ],
+   "files": [
+    "training-list.html"
+   ],
+   "servesModuleTab": false,
+   "slug": "icon-40"
+  },
+  {
+   "key": "<svgviewBox=\"002424\"fill=\"none\"stroke=CC",
+   "uses": 1,
+   "labels": [
+    "最新研修"
+   ],
+   "colours": [
+    "muted"
+   ],
+   "files": [
+    "training-list.html"
+   ],
+   "servesModuleTab": false,
+   "slug": "icon-41"
+  }
+ ],
+ "labelIndex": {
+  "首页": [
+   "icon-01",
+   "icon-11"
+  ],
+  "党建管理": [
+   "icon-02",
+   "icon-12"
+  ],
+  "综合协调": [
+   "icon-03",
+   "icon-13"
+  ],
+  "教研培训": [
+   "icon-04",
+   "icon-06",
+   "icon-08",
+   "icon-16"
+  ],
+  "家园共育": [
+   "icon-05",
+   "icon-14"
+  ],
+  "班级评估报告": [
+   "icon-06"
+  ],
+  "开始综合评估": [
+   "icon-06"
+  ],
+  "综合评估结果": [
+   "icon-06"
+  ],
+  "课程建设": [
+   "icon-06"
+  ],
+  "我的研修": [
+   "icon-06"
+  ],
+  "资源库": [
+   "icon-06"
+  ],
+  "个人档案": [
+   "icon-06",
+   "icon-40"
+  ],
+  "研修活动": [
+   "icon-06"
+  ],
+  "案例库": [
+   "icon-07"
+  ],
+  "课程资源": [
+   "icon-07",
+   "icon-19"
+  ],
+  "继续评估": [
+   "icon-09"
+  ],
+  "评估明细": [
+   "icon-09"
+  ],
+  "›": [
+   "icon-10",
+   "icon-21",
+   "icon-22"
+  ],
+  "上传资源、处理待办任务": [
+   "icon-15"
+  ],
+  "在园时光": [
+   "icon-17"
+  ],
+  "月度评价": [
+   "icon-18"
+  ],
+  "搜索": [
+   "icon-20"
+  ],
+  "住": [
+   "icon-23"
+  ],
+  "艺": [
+   "icon-24"
+  ],
+  "大班": [
+   "icon-25",
+   "icon-26"
+  ],
+  "全部资源": [
+   "icon-27"
+  ],
+  "香云纱纹样": [
+   "icon-28"
+  ],
+  "广绣小包": [
+   "icon-29"
+  ],
+  "双皮奶": [
+   "icon-30"
+  ],
+  "荔枝蜜": [
+   "icon-31"
+  ],
+  "留耕堂": [
+   "icon-32"
+  ],
+  "沙湾古镇": [
+   "icon-33"
+  ],
+  "龙舟竞渡": [
+   "icon-34"
+  ],
+  "安全过街": [
+   "icon-35"
+  ],
+  "粤语童谣": [
+   "icon-36"
+  ],
+  "醒狮纹样": [
+   "icon-37"
+  ],
+  "粤剧身段": [
+   "icon-38"
+  ],
+  "陶艺纹饰": [
+   "icon-39"
+  ],
+  "最新研修": [
+   "icon-41"
+  ]
+ },
+ "droppedAsPhoneChrome": [
+  {
+   "key": "<svgid=\"gridLines\"preserveAspectRatio=\"n",
+   "uses": 1,
+   "labels": [],
+   "colours": [
+    "muted"
+   ],
+   "files": [
+    "growth-book-section-edit.html"
+   ],
+   "servesModuleTab": false
+  },
+  {
+   "key": "<svgviewBox=\"001611\"><rectx=\"0\"y=\"6\"rx=\"",
+   "uses": 1,
+   "labels": [
+    "WiFi"
+   ],
+   "colours": [
+    "muted"
+   ],
+   "files": [
+    "home.html"
+   ],
+   "servesModuleTab": false
+  }
+ ]
+}
