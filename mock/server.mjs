@@ -107,7 +107,19 @@ const state = {
   sessions: new Map(),          // token -> { claim_id, issued_at }
   revoked: new Set(),
   idempotency: new Map(),       // key -> { status, body, bodyHash }
+  nextTaskId: 900,              // POST /parent-tasks assigns from here
 };
+
+// §3.5 — a roster-shaped collection: one row per child, whole, child_id ASC.
+// Deliberately NOT paginated; "is anyone incomplete?" must be one read.
+const ROSTER = Object.freeze([
+  { child_id: 101, child_name: '陈一诺', submission_status: 'p2' },
+  { child_id: 102, child_name: '黄铭轩', submission_status: 'p1' },
+  { child_id: 103, child_name: '梁子墨', submission_status: 'p2' },
+  { child_id: 104, child_name: '罗芷晴', submission_status: 'p1' },
+  { child_id: 105, child_name: '吴悦然', submission_status: 'p2' },
+  { child_id: 106, child_name: '郑皓宇', submission_status: 'p1' },
+]);
 
 // ── Contract helpers ───────────────────────────────────────────────────────
 
@@ -387,6 +399,10 @@ const server = createServer(async (req, res) => {
       getNotice(req, res, path.split('/')[2]);
     } else if (req.method === 'GET' && path === '/home/todos') {
       getTodos(req, res);
+    } else if (req.method === 'POST' && path === '/parent-tasks') {
+      postParentTask(req, res, body);
+    } else if (req.method === 'GET' && /^\/parent-tasks\/\d+\/progress$/.test(path)) {
+      getParentTaskProgress(req, res);
     } else {
       fail(res, 404, 'not_found', `未实现的端点：${req.method} ${path}`);
     }
@@ -430,6 +446,47 @@ export function start({ port = 0, unbound = false, noTerm = false, quiet = true 
       });
     });
   });
+}
+
+// §1.2 — the exact wire format for a client-submitted scheduled time. The
+// offset is a LITERAL: `Z` or any other offset is a 422 with no conversion.
+const WIRE_AT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+08:00$/;
+
+/**
+ * POST /parent-tasks — the write endpoint the contract-regression tests need:
+ * a scheduled-time whitelist member (db_parent_task.start_at / due_at) plus
+ * the derived-tier rule made observable.
+ */
+function postParentTask(req, res, body) {
+  if (!requireSession(req, res)) return;
+  if (!body.task_title) {
+    return fail(res, 422, 'validation_failed', '填写内容不符合要求',
+      { field: 'task_title', rule: 'required' });
+  }
+  // §1.2: whitelisted scheduled times must carry +08:00 exactly.
+  for (const field of ['start_at', 'due_at']) {
+    if (body[field] !== undefined && !WIRE_AT.test(body[field])) {
+      return fail(res, 422, 'timestamp_not_accepted', '时间格式不被接受',
+        { field, rule: 'offset_must_be_plus0800_literal' });
+    }
+  }
+  // §7.3: derived columns are server-set; a submitted value is silently
+  // ignored, never echoed. The response proves the server's own value won.
+  const task = {
+    parent_task_id: state.nextTaskId++,
+    task_title: body.task_title,
+    start_at: body.start_at || null,
+    due_at: body.due_at || null,
+    teacher_id: TEACHER.teacher_id,   // always the session's teacher, never the body's
+    class_id: SCOPE.class_id,
+  };
+  return sendJson(res, 201, task);
+}
+
+/** GET /parent-tasks/:id/progress — §3.5 roster shape: whole, child_id ASC. */
+function getParentTaskProgress(req, res) {
+  if (!requireSession(req, res)) return;
+  return sendJson(res, 200, { items: ROSTER });
 }
 
 // CLI behaviour, unchanged: `node mock/server.mjs [--unbound] [--no-term]`.

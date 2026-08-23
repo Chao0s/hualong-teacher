@@ -43,5 +43,30 @@ export function loadClient({ baseUrl, wxOptions } = {}) {
     time: require(path.join(MP, 'utils', 'time.js')),
     derived: require(path.join(MP, 'utils', 'derived.js')),
     errors: require(path.join(MP, 'utils', 'errors.js')),
+    identity: require(path.join(MP, 'services', 'identity.js')),
   }
+}
+
+/**
+ * Load a Page() file through the seam and return a drivable instance.
+ *
+ * The stub captures the config object Page() receives and binds it to a
+ * minimal `this`: `data` plus a merging `setData`, which is all the page code
+ * under test uses. Rendering is out of scope by design — the seam tests
+ * behaviour, never WXML.
+ */
+export function loadPage(client, pageRelPath) {
+  let captured = null
+  globalThis.Page = (config) => { captured = config }
+  try {
+    require(path.join(MP, pageRelPath))
+  } finally {
+    delete globalThis.Page
+  }
+  if (!captured) throw new Error(`${pageRelPath} never called Page()`)
+
+  const instance = Object.create(captured)
+  instance.data = JSON.parse(JSON.stringify(captured.data || {}))
+  instance.setData = function setData(patch) { Object.assign(this.data, patch) }
+  return instance
 }

@@ -19,12 +19,12 @@ export function createFakeWx({ loginCode = 'JS_CODE_OK', loginFails = false } = 
     storageRemoves: [],  // key
     navigations: [],     // { api: 'navigateTo'|'reLaunch', url }
     toasts: [],          // the options object passed in
-    requests: [],        // { method, url }
+    requests: [],        // { method, url, header, data } — the wire payload as built
   }
 
   const wx = {
     request({ url, method = 'GET', header = {}, data, success, fail }) {
-      record.requests.push({ method, url })
+      record.requests.push({ method, url, header, data })
       const init = { method, headers: header }
       if (data !== undefined && method !== 'GET' && method !== 'HEAD') {
         init.body = typeof data === 'string' ? data : JSON.stringify(data)
