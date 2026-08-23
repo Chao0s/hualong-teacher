@@ -1,0 +1,145 @@
+@import 'styles/tokens.wxss';
+
+page {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font);
+  font-size: 30rpx;
+  line-height: var(--line-cjk);
+  -webkit-font-smoothing: antialiased;
+}
+
+view, text, button, input, textarea, scroll-view {
+  box-sizing: border-box;
+}
+
+/* ── Layout ─────────────────────────────────────────────────────────────── */
+
+.hl-page {
+  min-height: 100vh;
+  padding: var(--space-3);
+}
+
+.hl-stack > view + view {
+  margin-top: var(--space-3);
+}
+
+/* ── Card ───────────────────────────────────────────────────────────────── */
+
+.hl-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: var(--space-3);
+  box-shadow: var(--shadow-soft);
+}
+
+.hl-card__title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.hl-card__meta {
+  margin-top: var(--space-1);
+  font-size: 26rpx;
+  color: var(--muted);
+}
+
+/* ── Section heading ────────────────────────────────────────────────────── */
+
+.hl-section-title {
+  padding: var(--space-2) var(--space-1);
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+/* ── Buttons ────────────────────────────────────────────────────────────── */
+
+.hl-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 88rpx;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: #fff;
+  font-size: 32rpx;
+  font-weight: 500;
+  border: none;
+}
+
+.hl-btn::after {
+  border: none;
+}
+
+.hl-btn--hollow {
+  background: var(--accent-light);
+  color: var(--accent-dark);
+}
+
+.hl-btn--block {
+  width: 100%;
+}
+
+.hl-btn[disabled] {
+  background: var(--border);
+  color: var(--muted);
+}
+
+/* ── Status pill ────────────────────────────────────────────────────────── */
+
+.hl-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4rpx 18rpx;
+  border-radius: var(--radius-pill);
+  font-size: 24rpx;
+  line-height: 1.6;
+}
+
+.hl-pill--pending { background: var(--amber-light); color: #8a5c00; }
+.hl-pill--ok      { background: var(--green-light); color: var(--green); }
+.hl-pill--danger  { background: var(--danger-light); color: var(--danger); }
+.hl-pill--info    { background: var(--blue-light); color: var(--blue); }
+/* Unknown enum codes must degrade, not crash (§1.1). This is what they wear. */
+.hl-pill--unknown { background: #eee; color: var(--muted); }
+
+/* ── Empty / error / loading states ─────────────────────────────────────── */
+
+.hl-empty {
+  padding: var(--space-6) var(--space-3);
+  text-align: center;
+  color: var(--muted);
+  font-size: 28rpx;
+}
+
+.hl-error {
+  margin: var(--space-2) 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--danger-light);
+  color: var(--danger);
+  font-size: 28rpx;
+}
+
+.hl-error__id {
+  display: block;
+  margin-top: var(--space-1);
+  color: var(--muted);
+  font-size: 22rpx;
+}
+
+.hl-loading {
+  padding: var(--space-4);
+  text-align: center;
+  color: var(--muted);
+  font-size: 26rpx;
+}
+
+/* Hairline separators stay in px so they do not thicken on large screens. */
+.hl-hairline {
+  height: 1px;
+  background: var(--border);
+}

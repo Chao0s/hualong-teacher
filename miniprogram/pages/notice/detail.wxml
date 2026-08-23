@@ -1,0 +1,15 @@
+<view class="hl-page" wx:if="{{ready}}">
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障码 {{errorRequestId}}</text>
+  </view>
+
+  <view wx:if="{{loading}}" class="hl-loading">加载中…</view>
+
+  <view wx:if="{{notice}}" class="hl-card detail">
+    <view class="detail__title">{{notice.notice_title}}</view>
+    <view class="hl-card__meta">{{publishedLabel}}</view>
+    <view class="hl-hairline detail__rule"></view>
+    <view class="detail__body">{{notice.notice_body}}</view>
+  </view>
+</view>

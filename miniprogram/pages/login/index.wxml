@@ -1,0 +1,44 @@
+<view class="login">
+  <view class="login__brand">
+    <view class="login__mark">化龙</view>
+    <view class="login__name">化龙镇中心幼儿园</view>
+    <view class="login__sub">电子资源平台 · 教师端</view>
+  </view>
+
+  <view class="login__body">
+    <block wx:if="{{phase === 'checking' || phase === 'signing'}}">
+      <view class="hl-loading">正在登录…</view>
+    </block>
+
+    <block wx:if="{{phase === 'needs_phone'}}">
+      <view wx:if="{{errorText}}" class="hl-error">
+        {{errorText}}
+        <text wx:if="{{errorRequestId}}" class="hl-error__id">故障码 {{errorRequestId}}</text>
+      </view>
+
+      <view class="login__hint">
+        首次登录需验证手机号，用于与园所名册核对身份。手机号由微信直接提供，不需要你手动填写。
+      </view>
+
+      <button
+        class="hl-btn hl-btn--block"
+        open-type="getRealtimePhoneNumber"
+        bindgetrealtimephonenumber="onPhone">
+        微信验证手机号登录
+      </button>
+    </block>
+
+    <block wx:if="{{phase === 'blocked'}}">
+      <view class="hl-error">
+        {{errorText}}
+        <text wx:if="{{errorRequestId}}" class="hl-error__id">故障码 {{errorRequestId}}</text>
+      </view>
+      <view class="login__hint">
+        请稍后重试，或联系园方信息员核对名册。为保护师生信息，平台不提供短信、邀请码或人工绑定等其他登录方式。
+      </view>
+      <button class="hl-btn hl-btn--hollow hl-btn--block" bindtap="onRetry">重试</button>
+    </block>
+  </view>
+
+  <view class="login__foot">仅限园内在册教职工使用</view>
+</view>

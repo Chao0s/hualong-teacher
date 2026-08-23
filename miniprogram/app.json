@@ -1,0 +1,20 @@
+{
+  "pages": [
+    "pages/login/index",
+    "pages/home/index",
+    "pages/notice/list",
+    "pages/notice/detail"
+  ],
+  "window": {
+    "backgroundTextStyle": "dark",
+    "navigationBarBackgroundColor": "#f0f5f5",
+    "navigationBarTitleText": "化龙幼儿园",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f0f5f5"
+  },
+  "style": "v2",
+  "lazyCodeLoading": "requiredComponents",
+  "sitemapLocation": "sitemap.json",
+  "permission": {},
+  "requiredPrivateInfos": []
+}

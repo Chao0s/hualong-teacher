@@ -1,0 +1,25 @@
+<view class="hl-page" wx:if="{{ready}}">
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障码 {{errorRequestId}}</text>
+  </view>
+
+  <view wx:if="{{loadingFirst}}" class="hl-loading">加载中…</view>
+
+  <block wx:if="{{!loadingFirst}}">
+    <view wx:if="{{items.length === 0}}" class="hl-card hl-empty">暂无通知</view>
+
+    <view
+      wx:for="{{items}}"
+      wx:key="notice_id"
+      class="hl-card notice"
+      data-id="{{item.notice_id}}"
+      bindtap="onTap">
+      <text class="hl-card__title">{{item.notice_title}}</text>
+      <view class="hl-card__meta">{{item.published_label}}</view>
+    </view>
+
+    <view wx:if="{{loadingMore}}" class="hl-loading">加载更多…</view>
+    <view wx:if="{{exhausted && items.length > 0}}" class="hl-loading">没有更多了</view>
+  </block>
+</view>

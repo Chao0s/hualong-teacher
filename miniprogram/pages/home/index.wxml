@@ -1,0 +1,59 @@
+<view class="hl-page" wx:if="{{ready}}">
+
+  <view class="head">
+    <view class="head__hello">{{teacherName || '老师'}}，你好</view>
+    <view class="head__meta">
+      <text wx:if="{{className}}">{{className}}</text>
+      <text wx:if="{{termName}}" class="head__term">{{termName}}</text>
+    </view>
+    <view wx:if="{{noTerm}}" class="head__noterm">当前不在学期内，评价与编册暂不可提交</view>
+  </view>
+
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障码 {{errorRequestId}}</text>
+  </view>
+
+  <view class="hl-loading" wx:if="{{loading}}">加载中…</view>
+
+  <block wx:if="{{!loading}}">
+
+    <view class="hl-section-title">待办事项</view>
+    <view wx:if="{{todos.length === 0}}" class="hl-card hl-empty">暂无待办</view>
+    <view wx:for="{{todos}}" wx:key="todo_id" class="hl-card todo">
+      <view class="todo__row">
+        <text class="hl-card__title">{{item.todo_title}}</text>
+        <text class="hl-pill {{item.pill_class}}">{{item.kind_label}}</text>
+      </view>
+      <view wx:if="{{item.due_label}}" class="hl-card__meta">截止 {{item.due_label}}</view>
+    </view>
+
+    <view class="hl-section-title">
+      资源中心通知
+      <text class="more" bindtap="onNoticeMore">全部</text>
+    </view>
+    <view wx:if="{{notices.length === 0}}" class="hl-card hl-empty">暂无通知</view>
+    <view
+      wx:for="{{notices}}"
+      wx:key="notice_id"
+      class="hl-card"
+      data-id="{{item.notice_id}}"
+      bindtap="onNoticeTap">
+      <text class="hl-card__title">{{item.notice_title}}</text>
+      <view class="hl-card__meta">{{item.published_label}}</view>
+    </view>
+
+    <view class="hl-section-title">常用入口</view>
+    <view class="quick">
+      <view
+        wx:for="{{quickEntries}}"
+        wx:key="key"
+        class="quick__item"
+        data-key="{{item.key}}"
+        bindtap="onQuickTap">
+        {{item.label}}
+      </view>
+    </view>
+
+  </block>
+</view>

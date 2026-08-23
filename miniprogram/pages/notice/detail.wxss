@@ -1,0 +1,17 @@
+.detail__title {
+  font-size: 38rpx;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--fg);
+}
+
+.detail__rule {
+  margin: var(--space-3) 0;
+}
+
+.detail__body {
+  font-size: 30rpx;
+  line-height: var(--line-cjk);
+  color: var(--fg);
+  white-space: pre-wrap;
+}
