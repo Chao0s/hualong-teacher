@@ -4,10 +4,13 @@
  * The first cursor-paginated list, and since ticket 07 a thin consumer of the
  * shared list conventions in utils/list-page.js — pagination, the three list
  * states, self-heal and failure presentation all live there, once.
+ *
+ * Since ticket 08 the rows themselves come from services/notice.js, so this
+ * file names no endpoint and formats nothing.
  */
 
-const time = require('../../utils/time');
 const guard = require('../../utils/guard');
+const notice = require('../../services/notice');
 const { createListMethods } = require('../../utils/list-page');
 
 Page({
@@ -38,13 +41,9 @@ Page({
     this.loadMore();
   },
 
-  ...createListMethods({
-    path: '/notices',
-    decorate: (notice) => ({
-      ...notice,
-      published_label: time.formatShort(notice.published_at),
-    }),
-  }),
+  // The rows come from the notice service — the same call 首页's notice region
+  // makes, so the two cannot disagree about shape or ordering (ticket 08).
+  ...createListMethods({ fetchPage: notice.listPage }),
 
   onTap(e) {
     const { id } = e.currentTarget.dataset;

@@ -17,8 +17,8 @@
 
 const auth = require('../utils/auth');
 const session = require('../utils/session');
-const guard = require('../utils/guard');
 const { ApiError } = require('../utils/errors');
+const { endSessionOnAuthFailure } = require('../utils/present');
 
 /** The three F17 hard stops: nothing the user does in-app can fix these. */
 const HARD_STOPS = [
@@ -105,13 +105,11 @@ async function bindPhone(jsCode, phoneCode) {
  * session and go back to login. Returns true when it consumed the error, so
  * a caller can `if (handleAuthFailure(err)) return;` and treat the rest as
  * ordinary failures.
+ *
+ * The behaviour lives in utils/present beside reportFailure, which needs the
+ * same branch; this is the identity module's name for it.
  */
-function handleAuthFailure(err) {
-  if (!(err instanceof ApiError) || !err.isAuthFailure) return false;
-  session.clear();
-  guard.redirectToLogin();
-  return true;
-}
+const handleAuthFailure = endSessionOnAuthFailure;
 
 /** Re-read the context on app resume; terms and suspension can move under us. */
 async function refreshContext() {

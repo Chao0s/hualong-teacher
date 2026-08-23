@@ -87,6 +87,18 @@ const NOTICES = Array.from({ length: 26 }, (_, i) => {
   };
 });
 
+// db_home_case — 教师端首页推荐案例. Curated by an administrator in the PC
+// backend (APP-STRUCTURE 首页推荐课程案例管理),同年级按 updated_at DESC 取前三.
+// It is a curated shelf, not a per-teacher recommendation: no profile, no
+// ranking signal, nothing derived from what this teacher read (ADR-0011).
+const HOME_CASES = [
+  { case_id: 71, case_name: '祠堂里的故事', case_field: 'f3', case_grade: 'k2' },
+  { case_id: 68, case_name: '龙舟竞渡', case_field: 'f1', case_grade: 'k2' },
+  // A field code this client build does not know, same purpose as the todo
+  // below: the shelf must still render (§1.1).
+  { case_id: 64, case_name: '醒狮从哪里来', case_field: 'f9_future_field', case_grade: 'k2' },
+];
+
 const TODOS = [
   { todo_id: 1, todo_kind: 'upload', todo_title: '上传「祠堂里的故事」课程案例', due_at: '2026-08-25T18:00:00+08:00' },
   { todo_id: 2, todo_kind: 'task', todo_title: '完成共建任务：秋季主题墙素材征集', due_at: '2026-08-28T18:00:00+08:00' },
@@ -329,6 +341,12 @@ function getTodos(req, res) {
   sendJson(res, 200, { items: TODOS });
 }
 
+/** §3.5 — the curated shelf is three rows by definition; it never pages. */
+function getHomeCases(req, res) {
+  if (!requireSession(req, res)) return;
+  sendJson(res, 200, { items: HOME_CASES });
+}
+
 // ── Dispatch ───────────────────────────────────────────────────────────────
 
 const server = createServer(async (req, res) => {
@@ -399,6 +417,8 @@ const server = createServer(async (req, res) => {
       getNotice(req, res, path.split('/')[2]);
     } else if (req.method === 'GET' && path === '/home/todos') {
       getTodos(req, res);
+    } else if (req.method === 'GET' && path === '/home/cases') {
+      getHomeCases(req, res);
     } else if (req.method === 'POST' && path === '/parent-tasks') {
       postParentTask(req, res, body);
     } else if (req.method === 'GET' && /^\/parent-tasks\/\d+\/progress$/.test(path)) {

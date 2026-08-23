@@ -3,6 +3,11 @@
  * notice list page — the first list set the pattern, this makes it the ONLY
  * implementation. Every cursor-paginated list page spreads these methods in.
  *
+ * It knows about pagination, not about the wire (ticket 08): the caller injects
+ * `fetchPage({ cursor })` from a service module, which returns view-ready
+ * `{ items, nextCursor }`. No page passes an endpoint path through here, so a
+ * list page and the service that owns its collection cannot drift apart.
+ *
  * Data contract the page must declare:
  *   items []  cursor null  loadingFirst true  loadingMore false
  *   exhausted false  errorText ''  errorRequestId ''  errorCanRetry false
@@ -19,13 +24,10 @@
  *     retry entry only when retrying can change anything
  */
 
-const api = require('./request');
-const session = require('./session');
-const guard = require('./guard');
 const { ApiError } = require('./errors');
-const { present } = require('./present');
+const { reportFailure } = require('./present');
 
-function createListMethods({ path, decorate = (x) => x, pageSize } = {}) {
+function createListMethods({ fetchPage } = {}) {
   return {
     async loadFirst() {
       this.setData({
@@ -38,9 +40,9 @@ function createListMethods({ path, decorate = (x) => x, pageSize } = {}) {
         exhausted: false,
       });
       try {
-        const { items, nextCursor } = await api.getPage(path, pageSize ? { limit: pageSize } : {});
+        const { items, nextCursor } = await fetchPage({});
         this.setData({
-          items: items.map(decorate),
+          items,
           cursor: nextCursor,
           exhausted: nextCursor === null,
           loadingFirst: false,
@@ -58,12 +60,9 @@ function createListMethods({ path, decorate = (x) => x, pageSize } = {}) {
       }
       this.setData({ loadingMore: true, errorText: '' });
       try {
-        const { items, nextCursor } = await api.getPage(path, {
-          cursor: this.data.cursor,
-          ...(pageSize ? { limit: pageSize } : {}),
-        });
+        const { items, nextCursor } = await fetchPage({ cursor: this.data.cursor });
         this.setData({
-          items: this.data.items.concat(items.map(decorate)),
+          items: this.data.items.concat(items),
           cursor: nextCursor,
           exhausted: nextCursor === null,
           loadingMore: false,
@@ -81,18 +80,7 @@ function createListMethods({ path, decorate = (x) => x, pageSize } = {}) {
     },
 
     reportListError(err, extra = {}) {
-      if (err instanceof ApiError && err.isAuthFailure) {
-        session.clear();
-        guard.redirectToLogin();
-        return;
-      }
-      const failure = present(err);
-      this.setData({
-        ...extra,
-        errorText: failure.message,
-        errorRequestId: failure.requestId,
-        errorCanRetry: failure.canRetry,
-      });
+      reportFailure(this, err, extra);
     },
 
     onRetryList() {

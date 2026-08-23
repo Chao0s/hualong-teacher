@@ -3,14 +3,13 @@
  *
  * Read-only. §2.3: a notice outside the caller's scope comes back as 404, not
  * 403 — scope is hidden rather than confirmed, so this page treats "gone" and
- * "not yours" identically and says neither.
+ * "not yours" identically and says neither. That single wording comes from the
+ * error registry through reportFailure; nothing here composes it.
  */
 
-const api = require('../../utils/request');
 const guard = require('../../utils/guard');
-const time = require('../../utils/time');
-const identity = require('../../services/identity');
-const { present } = require('../../utils/present');
+const notice = require('../../services/notice');
+const { reportFailure } = require('../../utils/present');
 
 Page({
   data: {
@@ -18,7 +17,6 @@ Page({
     loading: true,
     notice: null,
     noticeId: 0,
-    publishedLabel: '',
     errorText: '',
     errorRequestId: '',
     errorCanRetry: false,
@@ -44,26 +42,13 @@ Page({
 
   async load(noticeId) {
     try {
-      // §2.1: a single resource sits at the top level. No {code, data} wrapper
-      // to unpick.
-      const notice = await api.get(`/notices/${noticeId}`);
-      this.setData({
-        notice,
-        publishedLabel: time.formatLong(notice.published_at),
-        loading: false,
-      });
-      if (notice.notice_title) {
-        wx.setNavigationBarTitle({ title: notice.notice_title });
+      const row = await notice.detail(noticeId);
+      this.setData({ notice: row, loading: false });
+      if (row.notice_title) {
+        wx.setNavigationBarTitle({ title: row.notice_title });
       }
     } catch (err) {
-      if (identity.handleAuthFailure(err)) return;
-      const failure = present(err);
-      this.setData({
-        loading: false,
-        errorText: failure.message,
-        errorRequestId: failure.requestId,
-        errorCanRetry: failure.canRetry,
-      });
+      reportFailure(this, err, { loading: false });
     }
   },
 });

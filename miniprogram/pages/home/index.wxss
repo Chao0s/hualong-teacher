@@ -73,3 +73,34 @@
   background: var(--bg);
   box-shadow: none;
 }
+
+/* 推荐课程案例: three curated cards, one row, per the prototype. */
+.cases {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.case {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: var(--space-2);
+}
+
+.case__thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 96rpx;
+  border-radius: var(--radius-sm);
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  font-size: 36rpx;
+  font-weight: 600;
+}
+
+.case__name {
+  margin-top: var(--space-2);
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--fg);
+}

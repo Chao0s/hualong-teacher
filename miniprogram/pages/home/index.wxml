@@ -19,9 +19,12 @@
 
   <block wx:if="{{!loading}}">
 
-    <view class="hl-section-title">待办事项</view>
+    <view class="hl-section-title">
+      待办事项
+      <text wx:if="{{todoCount > 0}}" class="hl-pill hl-pill--pending">待处理 {{todoCount}}</text>
+    </view>
     <view wx:if="{{todos.length === 0}}" class="hl-card hl-empty">暂无待办</view>
-    <view wx:for="{{todos}}" wx:key="todo_id" class="hl-card todo">
+    <view wx:for="{{todos}}" wx:key="todo_id" class="hl-card todo" bindtap="onTodoTap">
       <view class="todo__row">
         <text class="hl-card__title">{{item.todo_title}}</text>
         <text class="hl-pill {{item.pill_class}}">{{item.kind_label}}</text>
@@ -49,10 +52,27 @@
       <view
         wx:for="{{quickEntries}}"
         wx:key="key"
-        class="quick__item {{item.needsTerm && !canWrite ? 'quick__item--off' : ''}}"
+        class="quick__item {{item.disabled ? 'quick__item--off' : ''}}"
         data-key="{{item.key}}"
         bindtap="onQuickTap">
         {{item.label}}
+      </view>
+    </view>
+
+    <view class="hl-section-title">
+      推荐课程案例
+      <text class="more" bindtap="onCaseTap">全部案例</text>
+    </view>
+    <view wx:if="{{cases.length === 0}}" class="hl-card hl-empty">暂无推荐</view>
+    <view class="cases">
+      <view
+        wx:for="{{cases}}"
+        wx:key="case_id"
+        class="hl-card case"
+        bindtap="onCaseTap">
+        <view class="case__thumb">{{item.thumb_label}}</view>
+        <view class="case__name">{{item.case_name}}</view>
+        <view wx:if="{{item.tag_label}}" class="hl-card__meta">{{item.tag_label}}</view>
       </view>
     </view>
 

@@ -9,7 +9,7 @@
 
   <view wx:if="{{notice}}" class="hl-card detail">
     <view class="detail__title">{{notice.notice_title}}</view>
-    <view class="hl-card__meta">{{publishedLabel}}</view>
+    <view class="hl-card__meta">{{notice.published_label}}</view>
     <view class="hl-hairline detail__rule"></view>
     <view class="detail__body">{{notice.notice_body}}</view>
   </view>

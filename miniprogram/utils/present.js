@@ -15,6 +15,8 @@
  */
 
 const { ApiError } = require('./errors');
+const session = require('./session');
+const guard = require('./guard');
 
 function present(err) {
   if (err instanceof ApiError) {
@@ -35,4 +37,37 @@ function present(err) {
   return { message: '操作未能完成，请稍后再试', requestId: '', kind: 'retry', canRetry: true };
 }
 
-module.exports = { present };
+/**
+ * The one answer to a dead session, anywhere: drop the local session and go
+ * back to login. Returns true when it consumed the error, so a caller can
+ * `if (endSessionOnAuthFailure(err)) return;` and treat the rest as ordinary
+ * failures. Re-login needs a real user tap (§6.2 stage two), so nothing here
+ * tries to recover silently.
+ */
+function endSessionOnAuthFailure(err) {
+  if (!(err instanceof ApiError) || !err.isAuthFailure) return false;
+  session.clear();
+  guard.redirectToLogin();
+  return true;
+}
+
+/**
+ * The one landing for a failed read on a page (ticket 08). Every page declares
+ * `errorText` / `errorRequestId` / `errorCanRetry`; this fills them, and `extra`
+ * carries whatever loading flag the page must also clear.
+ *
+ * Pages call this instead of present() directly, so no page ever holds a copy
+ * of the auth-failure branch.
+ */
+function reportFailure(page, err, extra = {}) {
+  if (endSessionOnAuthFailure(err)) return;
+  const failure = present(err);
+  page.setData({
+    ...extra,
+    errorText: failure.message,
+    errorRequestId: failure.requestId,
+    errorCanRetry: failure.canRetry,
+  });
+}
+
+module.exports = { present, endSessionOnAuthFailure, reportFailure };

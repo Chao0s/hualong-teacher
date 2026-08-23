@@ -45,6 +45,8 @@ export function loadClient({ baseUrl, wxOptions } = {}) {
     errors: require(path.join(MP, 'utils', 'errors.js')),
     present: require(path.join(MP, 'utils', 'present.js')).present,
     identity: require(path.join(MP, 'services', 'identity.js')),
+    notice: require(path.join(MP, 'services', 'notice.js')),
+    home: require(path.join(MP, 'services', 'home.js')),
   }
 }
 
