@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=390, initial-scale=1, user-scalable=no" />
-<title>成长册 · 家园共育</title>
+<title>成长册 · 家园社共育</title>
 <link rel="stylesheet" href="home-school-common.css" />
 <style>
   .summary-card {
@@ -52,7 +52,6 @@
   }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 </style>
-<script src="https://mcp.figma.com/mcp/html-to-design/capture.js" async></script>
 </head>
 <body>
 <div class="phone">
@@ -123,7 +122,7 @@
 <script>
 let config = readBookConfig();
 const canFinalize = child => bookCanFinalize(child, config);
-/* 主页只显示教师在编册管理面上勾选的栏目。 */
+/* 入口页只显示教师在编册管理面上勾选的栏目。 */
 const childColumns = () => bookSections(config)
   .filter(section => section.custom || section.key === 'time' || section.key === 'task');
 

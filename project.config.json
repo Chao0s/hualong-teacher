@@ -1,0 +1,30 @@
+{
+  "appid": "touristappid",
+  "projectname": "hualong-teacher",
+  "miniprogramRoot": "miniprogram/",
+  "compileType": "miniprogram",
+  "libVersion": "3.5.5",
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "enhance": true,
+    "postcss": true,
+    "minified": true,
+    "packNpmManually": false,
+    "ignoreDevUnusedFiles": false,
+    "checkInvalidKey": true,
+    "coverView": false,
+    "lazyloadPlaceholderEnable": false,
+    "skylineRenderEnable": false
+  },
+  "packOptions": {
+    "ignore": [
+      { "type": "folder", "value": "../screens" },
+      { "type": "folder", "value": "../docs" },
+      { "type": "folder", "value": "../mock" },
+      { "type": "folder", "value": "../Archive" },
+      { "type": "folder", "value": "../data" }
+    ]
+  },
+  "condition": {}
+}

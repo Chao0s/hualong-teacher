@@ -6,7 +6,7 @@
  "unverified": [
   "The bottom-bar icon pixel size and file-size ceiling could not be retrieved from the official configuration reference through the docs tool. 81x81 is the conventional figure and is what these placeholders use. Confirm it against the official app.json tabBar reference before the designer cuts finals."
  ],
- "knownPrototypeBug": "The prototype bottom bar labels the module 家园共育. The glossary forbids that variant; the canonical name is 家园社共育. Ten prototype files carry the wrong label. Fix the text during migration. The icon slug already follows the canonical name.",
+ "knownPrototypeBug": "The prototype bottom bar labels the module 家园社共育. The glossary forbids that variant; the canonical name is 家园社共育. Ten prototype files carry the wrong label. Fix the text during migration. The icon slug already follows the canonical name.",
  "colourTokens": {
   "accent": "#189b91",
   "green": "#4b9a5a",
@@ -126,7 +126,7 @@
    "key": "<svgviewBox=\"002424\"fill=\"none\"stroke=CC",
    "uses": 9,
    "labels": [
-    "家园共育"
+    "家园社共育"
    ],
    "colours": [
     "accent"
@@ -289,7 +289,7 @@
    "key": "<svgfill=\"none\"stroke=CCviewbox=\"002424\"",
    "uses": 1,
    "labels": [
-    "家园共育"
+    "家园社共育"
    ],
    "colours": [
     "muted"
@@ -725,7 +725,7 @@
    "icon-08",
    "icon-16"
   ],
-  "家园共育": [
+  "家园社共育": [
    "icon-05",
    "icon-14"
   ],

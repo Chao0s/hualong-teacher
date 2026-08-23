@@ -1,0 +1,79 @@
+/**
+ * Design tokens.
+ *
+ * SOURCE OF TRUTH: the 56 HTML prototypes in ../../screens/. The Platform repo's
+ * docs/DESIGN.md is still an unfilled template (every value reads `<#______>`),
+ * so the prototypes are the only place the design system actually exists. These
+ * values are transcribed from screens/component-showcase.html, which carries the
+ * fullest palette.
+ *
+ * Where the prototypes disagreed, component-showcase.html wins:
+ *   --amber-light   #fff6df (showcase) vs #fff7e3 (most others)
+ *   --blue-light    #e8f2fe (showcase) vs #eaf2ff (some)
+ *   --radius        14px    (showcase) vs 12px    (most others)
+ * That drift is worth reconciling in the prototypes; it is recorded here rather
+ * than averaged away.
+ *
+ * Units — CORRECTED 2026-08-23. An earlier revision of this comment claimed the
+ * prototypes are px at a 375pt viewport with an exact 1px = 2rpx conversion.
+ * That premise was wrong: all 54 prototype pages declare width=390, so the true
+ * factor is 750/390 ≈ 1.923 rpx per px. The values below were converted with
+ * the ROUNDED factor of 2 and are therefore ~3.8% larger than the prototypes.
+ *
+ * DECISION (ticket 01): keep the 2rpx values, do NOT recalculate. The 3.8%
+ * oversize is imperceptible on radii and spacing, and integer rpx on the 8pt
+ * scale is easier to maintain. The deviation is recorded here as known and
+ * deliberate so no later batch "fixes" values against the wrong baseline.
+ * Anything that must not scale with screen width (hairlines) stays in px.
+ */
+
+page,
+.hl-root {
+  /* Surfaces */
+  --bg: #f0f5f5;
+  --surface: #ffffff;
+  --border: #e0e8e8;
+
+  /* Text */
+  --fg: #1a1916;
+  --muted: #868686;
+
+  /* Brand — a calm teal. The kindergarten's mark, used for primary actions. */
+  --accent: #189b91;
+  --accent-dark: #067e76;
+  --accent-light: #e8f5f4;
+
+  /* Semantic states. Each pairs a saturated tone with a tinted background. */
+  --green: #4b9a5a;
+  --green-light: #eaf5ed;
+  --amber: #feaf06;
+  --amber-light: #fff6df;
+  --orange: #f6762f;
+  --orange-light: #fff0e8;
+  --blue: #3388fc;
+  --blue-light: #e8f2fe;
+  --danger: #dc2626;
+  --danger-light: #feecec;
+  --purple: #7c5cff;
+  --purple-light: #f0edff;
+
+  /* Geometry */
+  --radius: 28rpx;
+  --radius-sm: 18rpx;
+  --radius-pill: 999rpx;
+
+  /* 8pt spacing scale, doubled into rpx */
+  --space-1: 8rpx;
+  --space-2: 16rpx;
+  --space-3: 24rpx;
+  --space-4: 32rpx;
+  --space-5: 48rpx;
+  --space-6: 64rpx;
+
+  --shadow-soft: 0 2rpx 16rpx rgba(26, 25, 22, 0.06);
+
+  /* Type. PingFang SC is the system Chinese face on iOS; Android falls through
+   * to its own sans. CJK line-height stays >= 1.7 per the design brief. */
+  --font: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', system-ui, sans-serif;
+  --line-cjk: 1.75;
+}

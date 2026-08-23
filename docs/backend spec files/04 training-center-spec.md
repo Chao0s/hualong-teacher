@@ -65,7 +65,7 @@ environment_isolation (环境隔离) = demo|test 数据不得复制到 productio
 | 7 | 党建管理 | Party Affairs | nav_party | nav_party | NULL | school-affairs.html |
 | 8 | 综合协调 | Comprehensive Coordination | nav_coord | nav_coord | NULL | comprehensive-coordination.html |
 | 9 | 教研培训 | Training Center | nav_training | nav_training | NULL | training-center.html |
-| 10 | 家园共育 | Home-School Coeducation | nav_home_school | nav_home_school | NULL | home-school.html |
+| 10 | 家园社共育 | Home-School Coeducation | nav_home_school | nav_home_school | NULL | home-school.html |
 
 
 [DYNAMIC_CONTENT_NODE]

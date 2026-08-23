@@ -2,7 +2,7 @@ HOME_SCHOOL_BACKEND_OBJECT_SPEC
 
 scope (范围) = screens/home-school.html
 source_page (参考页面) = home-school.html
-source_page_correction (原型纠正规则) = home-school.html 当前示例中的“缺第2次|进行中|可生成|缺评语|待补图|不可生成”等主页状态标注已失效；后台与后续前端实现以本 specification 的主页二元状态为准
+source_page_correction (原型纠正规则) = home-school.html 当前示例中的“缺第2次|进行中|可生成|缺评语|待补图|不可生成”等入口页状态标注已失效；后台与后续前端实现以本 specification 的入口页二元状态为准
 revision_source (本次改版依据) = DECISIONS.md E1-E7 及其下 W1-W21（来源为 hualong-teacher decision.md 10 条 + commit e524e75 的前端改版回冲，2026-08-01）
 authority_order (权威顺序) = DECISIONS.md > db/01_schema.sql > db/DATABASE_SPEC.md > 本 specification；本文与 DECISIONS.md 冲突处一律以 DECISIONS.md 为准
 ddl_lag_notice (DDL 滞后说明) = 已定新表与新增列均尚未落到 db/01_schema.sql；本 specification 先行记录，已登记项由 db/tools/extract-ui-binding.mjs 标为 PENDING DDL，不算无法解释的缺列
@@ -43,13 +43,13 @@ ui_context_rule (上下文字段界面规则) = context.hidden 表示不显示�
 [DATA_INITIALIZATION_RULE]
 
 prototype_content (原型内容) = HTML 中的“大一班”、六名幼儿、28人、84%、6人待提醒及全部完成状态均为 demo|test Mock
-static_ui_content (保留的静态界面内容) = 页面标题、说明文案、四个快捷入口、完成度表头和主页二元状态图例(已完成|未完成)
+static_ui_content (保留的静态界面内容) = 页面标题、说明文案、四个快捷入口、完成度表头和入口页二元状态图例(已完成|未完成)
 production_seed (生产环境业务种子数据) = NONE
 production_initial_db_moment (在园时光初始状态) = EMPTY
 production_initial_db_moment_upload (在园时光单次评估初始状态) = EMPTY
 production_initial_db_parent_task (亲子任务初始状态) = EMPTY
 production_initial_db_parent_task_submission (亲子任务提交初始状态) = EMPTY
-production_initial_db_month_eval (教师月评初始状态) = EMPTY
+production_initial_db_month_eval (教师月度评价初始状态) = EMPTY
 production_initial_db_parent_evaluation (家长评价初始状态) = EMPTY
 production_initial_db_term_eval (教师学期评估初始状态) = EMPTY
 production_initial_db_child_assessment (幼儿综合评估初始状态) = EMPTY
@@ -67,7 +67,7 @@ production_initial_db_growth_material (成长资料初始状态) = EMPTY
 production_initial_db_scale_item (量表题库初始状态) = 非空；按量表版本导入(scale_code=guide, scale_version=1.0, 124 题项)，属参考数据不属业务种子数据，来源 hualong-teacher/data/guide-scale.json
 page_layout_library (页版式库) = 不入库；预设 6 个栏目的页面版式为仓库内的版本化 JSON，地位比照 db/rubric/，随代码部署（W13）
 base_identity_data (基础身份数据) = db_school|db_teacher|db_class|db_teacher_class|db_child 由部署或园所管理员导入，不属于 Mock 业务内容
-initial_progress_rule (初始进度规则) = 有真实幼儿名册但无业务记录时，主页四项状态统一为 incomplete(未完成)，不得显示已完成或虚构百分比
+initial_progress_rule (初始进度规则) = 有真实幼儿名册但无业务记录时，入口页四项状态统一为 incomplete(未完成)，不得显示已完成或虚构百分比
 no_child_rule (无幼儿名册规则) = return [] and child_count=0
 hardcoded_child_or_metric (固定幼儿或统计值) = FORBIDDEN
 environment_isolation (环境隔离) = demo|test 数据不得复制到 production
@@ -85,14 +85,14 @@ environment_isolation (环境隔离) = demo|test 数据不得复制到 productio
 | 6 | 党建管理 | Party Affairs | nav_party | nav_party | NULL | school-affairs.html |
 | 7 | 综合协调 | Comprehensive Coordination | nav_coord | nav_coord | NULL | comprehensive-coordination.html |
 | 8 | 教研培训 | Training Center | nav_training | nav_training | NULL | training-center.html |
-| 9 | 家园共育 | Home-School Coeducation | nav_home_school | nav_home_school | NULL | home-school.html |
+| 9 | 家园社共育 | Home-School Coeducation | nav_home_school | nav_home_school | NULL | home-school.html |
 
 
 [PAGE_OBJECT]
 
-家园共育首页 (Home-School Coeducation Home / db_home_school)
+家园社共育首页 (Home-School Coeducation Home / db_home_school)
 
-home_school_id (家园共育首页ID), 1:1, integer, ui=home_school.page
+home_school_id (家园社共育首页ID), 1:1, integer, ui=home_school.page
 teacher_id (当前教师ID), 1:1, integer, ui=context.hidden
 school_id (当前园所ID), 1:1, integer, ui=context.hidden
 class_id (当前班级ID), 1:1, integer, ui=context.hidden
@@ -138,7 +138,7 @@ rel_map (关系字段) = db_child{school_id}<->db_school{school_id}; db_child{cl
 
 [PROGRESS_AGGREGATE]
 
-家园共育进度 (Home-School Progress / db_home_school_progress)
+家园社共育进度 (Home-School Progress / db_home_school_progress)
 
 home_school_progress_id (进度汇总ID), 1:1, integer, ui=home_school.progress.hidden
 class_id (班级ID), 1:1, integer, ui=home_school.progress.hidden
@@ -148,11 +148,11 @@ month_key (当前统计月), 1:1, YYYY-MM, ui=home_school.progress.hidden
 term_id (当前学期ID), 1:1, school_term, ui=home_school.progress.hidden
 moment_weekly_complete_count (本周在园时光完成次数), 1:1, integer(0:2), ui=moment.detail.weekly_count
 moment_detail_week_status (在园时光详细页周状态), 1:1, d1=complete(已完成)|d2=missing_second(缺第2次)|d3=incomplete(未完成), ui=moment.detail.weekly_status
-moment_status (主页在园时光状态), 1:1, h1=complete(已完成)|h2=incomplete(未完成), ui=home_school.progress.moment
+moment_status (入口页在园时光状态), 1:1, h1=complete(已完成)|h2=incomplete(未完成), ui=home_school.progress.moment
 latest_parent_task_id (最新一期亲子任务ID), 0:1, integer, ui=home_school.progress.hidden
-parent_task_status (主页亲子任务状态), 1:1, h1=complete(已完成)|h2=incomplete(未完成), ui=home_school.progress.parent_task
-growth_record_status (主页成长档案状态), 1:1, h1=complete(已完成)|h2=incomplete(未完成), ui=home_school.progress.growth_record
-growth_book_status (主页成长册状态), 1:1, h1=complete(已完成)|h2=incomplete(未完成), ui=home_school.progress.growth_book
+parent_task_status (入口页亲子任务状态), 1:1, h1=complete(已完成)|h2=incomplete(未完成), ui=home_school.progress.parent_task
+growth_record_status (入口页成长档案状态), 1:1, h1=complete(已完成)|h2=incomplete(未完成), ui=home_school.progress.growth_record
+growth_book_status (入口页成长册状态), 1:1, h1=complete(已完成)|h2=incomplete(未完成), ui=home_school.progress.growth_book
 required_count (应完成项目数), 1:1, integer, ui=home_school.progress.hidden
 completed_count (已完成项目数), 1:1, integer, ui=home_school.progress.hidden
 row_completion_rate (幼儿完成率), 1:1, percent, ui=home_school.progress.hidden
@@ -181,10 +181,10 @@ completed_count = COUNT(moment_status=h1, parent_task_status=h1, growth_record_s
 row_completion_rate = completed_count/4*100
 reminder_required = 1 IF ANY(moment_status,parent_task_status,growth_record_status,growth_book_status)=h2 ELSE 0
 
-summary_rule (主页简化规则):
-主页四项只允许 h1=已完成 或 h2=未完成，不显示“缺第2次”“进行中”“可生成”“待补图”等详细状态
-任何一项所需内容未全部完成时，该项主页状态必须为 h2
-在园时光只完成第1次时，详细页显示 d2=缺第2次，主页仍显示 h2=未完成
+summary_rule (入口页简化规则):
+入口页四项只允许 h1=已完成 或 h2=未完成，不显示“缺第2次”“进行中”“可生成”“待补图”等详细状态
+任何一项所需内容未全部完成时，该项入口页状态必须为 h2
+在园时光只完成第1次时，详细页显示 d2=缺第2次，入口页仍显示 h2=未完成
 
 
 [TEACHER_EVALUATION_AGGREGATE]
@@ -301,7 +301,7 @@ unique (唯一键) = parent_task_id + child_id
 
 method (方法):
 最新一期任务只从 publish_status=s2|s3 且 published_at<=NOW 的记录中按 published_at DESC 选取
-草稿任务不得成为最新一期任务，也不得影响主页亲子任务状态
+草稿任务不得成为最新一期任务，也不得影响入口页亲子任务状态
 IF latest_parent_task has child submission_status=c1, homepage parent_task_status=h1
 ELSE homepage parent_task_status=h2
 
@@ -359,7 +359,7 @@ album_grouping (相册分组) = 按 db_moment.week_key 分周次
 reference_granularity (引用粒度) = file 级；db_file_ref(owner_object='db_month_eval') 与 db_file_ref(owner_object='db_term_eval')
 moment_ids_removed (moment 级关联作废) = DECISIONS.md B3 原定 db_month_eval_moment -> db_month_eval.moment_ids JSON，E7 之后连 moment_ids 都不需要；周次仍可经 file_id -> db_file_ref(owner_object='db_moment') -> db_moment.week_key 反查
 import_semantics (导入语意) = 引用复制。复制的是 file_id 关联，不产生新文件、不复制文件本体
-portrait_exposure (肖像曝光) = 无新增曝光。B6 已定在园时光可见性归班级，全班家长本来就看得到所有动态照片；合照进入某幼儿的月评不构成新的曝光。本条与 GAPS.md G4 无关
+portrait_exposure (肖像曝光) = 无新增曝光。B6 已定在园时光可见性归班级，全班家长本来就看得到所有动态照片；合照进入某幼儿的月度评价不构成新的曝光。本条与 GAPS.md G4 无关
 upstream_sync (上游同步状态) = 已同步。01 home-spec.md 的 db_month_eval.moment_id (0:k) 已改为 file_id (0:k, ui=month_eval.photo_list)，rel_db 的 db_moment 换成 db_file，并就地补了同一条 photo_rule
 
 
@@ -414,7 +414,7 @@ incremental_save_rule (逐题增量保存规则):
 表单默认值由 4 改为“未评”。原型每题预设 4 分会让完成度失去意义
 
 report_rule (报告页规则):
-个人与班级报告都删掉文字分析（强弱项描述、综合评语），只保留五领域雷达图 + 逐题明细 tab
+个人与班级报告都删掉文字分析（强弱项描述、综合评语），只保留五维雷达图 + 逐题明细 tab
 接口不再需要 analysis_text / assessment_summary 之类字段
 班级报告只统计已完成的评估，草稿不计入；无已完成评估时回明确空结果，供前端区分“均分 0”与“尚无数据”
 
@@ -530,8 +530,8 @@ class_id (班级ID), 1:1, integer, ui=growth_record.class
 child_id (幼儿ID), 1:1, integer, ui=growth_record.child
 term_id (档案学期ID), 1:1, school_term, ui=growth_record.period
 required_month_count (本学期截至当前应完成月数), 1:1, integer, ui=growth_record.hidden
-teacher_month_complete_count (教师月评已完成月数), 1:1, integer, ui=growth_record.progress.teacher_month
-parent_month_complete_count (家长月评已完成月数), 1:1, integer, ui=growth_record.progress.parent_month
+teacher_month_complete_count (教师月度评价已完成月数), 1:1, integer, ui=growth_record.progress.teacher_month
+parent_month_complete_count (家长月度评价已完成月数), 1:1, integer, ui=growth_record.progress.parent_month
 teacher_term_status (教师学期评估状态), 1:1, c1=complete(已完成)|c2=incomplete(未完成), ui=growth_record.progress.teacher_term
 parent_term_status (家长学期评估状态), 1:1, c1=complete(已完成)|c2=incomplete(未完成), ui=growth_record.progress.parent_term
 comprehensive_assessment_status (幼儿综合评估状态), 1:1, c1=complete(已完成)|c2=incomplete(未完成), ui=growth_record.progress.comprehensive
@@ -557,9 +557,9 @@ IF is_term_end=1, record_status = c1 ONLY IF monthly_complete AND teacher_term_s
 
 completion_rule (完成规则):
 成长档案每名幼儿每学期只有一份
-平时必须完成本学期截至当前月份的全部教师月评和家长月评
+平时必须完成本学期截至当前月份的全部教师月度评价和家长月度评价
 进入学期末后，还必须同时完成教师学期评估、家长学期评估和幼儿综合评估
-任一必需评估缺失或未完成，主页成长档案状态均为 h2=未完成
+任一必需评估缺失或未完成，入口页成长档案状态均为 h2=未完成
 
 
 社区共育 Feed (Community Coeducation Feed / derived)
@@ -621,13 +621,13 @@ method (方法):
 book_eval_status 已拔掉不落列，改为实时派生的布尔 can_finalize（DECISIONS.md F17）
 IF book_status=b2, homepage growth_book_status=h1
 IF book_status=b1 OR record NOT_FOUND, homepage growth_book_status=h2
-主页不得显示逐项缺失、页数或问题列；只以「幼儿 × 已勾选栏目」矩阵显示完成／未完成。正式定稿的服务端完整重验仍保留
+入口页不得显示逐项缺失、页数或问题列；只以「幼儿 × 已勾选栏目」矩阵显示完成／未完成。正式定稿的服务端完整重验仍保留
 school_id 为本次补列，见 GAPS.md G14
 
 included_sections_removed (F19 第三轮覆写) = db_growth_book.included_sections 与旧 template.enabled_sections 仍作废；改由本学期 compilation.enabled_sections 保存教师管理面上勾选的 time、task 与自定义 section_id。term、comp、message 不进入开关且固定启用
 
 layout_seed_rule (版式种子规则 / W14):
-不定长内容（task 亲子活动、time 在园时光）用「重复页样板池 + 随机挑选」：我们为该栏目设计 3-4 个页版式（各自宣告容量），渲染时挑版式、重复铺，直到盖完实际件数
+不定长内容（task `亲子活动`、time 在园时光）用「重复页样板池 + 随机挑选」：我们为该栏目设计 3-4 个页版式（各自宣告容量），渲染时挑版式、重复铺，直到盖完实际件数
 随机必须可重现，保证 App 内预览与 b2 定稿后查看的页序一致
 挑选序列 = PRNG(layout_seed, section_key, page_index)
 layout_seed 首次渲染时产生，之后永不变；同一本册子重复渲染多少次都是同一个版面，不同幼儿因种子不同而版面不同
@@ -677,7 +677,7 @@ topic_rule (F19) = 每项入册 db_growth_material 在锁定时必须且只能�
 topic_order_rule (F19 第六轮评审) = 主题按其中全部活动的最早来源日期升序派生，最早活动越久远越靠前；空主题在有活动主题之后，同一最早日期再以 sort_order、topic_id 稳定打破平手。管理页、resolved manifest、正文与 TOC 必须使用同一派生顺序，不提供教师手动排序
 
 
-亲子活动入册关系 (Growth Book Task Item / db_growth_book_task_item)
+`亲子活动`入册关系 (Growth Book Task Item / db_growth_book_task_item)
 
 task_item_id (入册关系ID), 1:1, integer, ui=growth_book_task_item.hidden
 compilation_id (学期编册ID), 1:1, integer, ui=growth_book_task_item.hidden
@@ -796,7 +796,7 @@ registry_rule (登记表规则) = 只用一栏 binding_key，不开 content_sour
 literal_rule = literal 是唯一内容真的存在 widget 列上的一种；其余都是指标
 collected_text_rule = collected 也吃文字，不只照片。家长打的字是 UGC，必须与照片走同一条内容把关（CLAUDE.md 红线 3、GAPS.md G2）
 dropped_bindings (砍掉的两个绑定目标) = section.note（db_growth_book_section.note_text，widget 化后多余）与 class.intro（B12 加的 db_class.class_intro，无使用场景，B12 该项作废；db_school.school_intro 保留）
-radar_rule (雷达图 / W12 + F17) = 不存任何文件、不存 base64、不落任何字段。五领域均分完全由 db_child_assessment_item 的题项分推导，App 内 canvas 即时画。同一条逻辑适用所有 bound widget：它们在 db_book_widget 上什么都不存，一律即时读
+radar_rule (雷达图 / W12 + F17) = 不存任何文件、不存 base64、不落任何字段。五大领域均分完全由 db_child_assessment_item 的题项分推导，App 内 canvas 即时画。同一条逻辑适用所有 bound widget：它们在 db_book_widget 上什么都不存，一律即时读
 
 
 成长册素材提交 (Growth Book Material Submission / db_book_material_submission) [REUSE]
@@ -881,7 +881,7 @@ source_change (来源收敛 / Q62-d):
 db_growth_material 只承载教师发布的班级级在园时光素材。任何家庭的日常／社区亲子任务提交都保持幼儿级，不能塞进本通道后扩散到全班
 社区任务同样是 db_parent_task(parent_task_type=t2) + db_parent_task_submission，教师在对应幼儿提交上操作 teacher 分支
 
-task_selection_rule (亲子活动收录筛选 / Q62-d—d4):
+task_selection_rule (`亲子活动`收录筛选 / Q62-d—d4):
 收录粒度是一笔 c1 db_parent_task_submission，不是班级任务。家长与教师分别写 parent_book_included／teacher_book_included，任一为真即入册；两分支照片用 db_file_ref usage_key=book_parent|book_teacher，取 file_id 联集并去重
 教师只能操作本人班级幼儿的 teacher 分支，不能覆盖家长分支；家长端不显示教师选择。选择不随 template d2 冻结，而在该幼儿 b2 时冻结
 
@@ -946,8 +946,8 @@ widget 网格编辑器的 ui=book_widget.* 标注已于 2026-08-02 在 growth-bo
 | 本周在园时光完成0次 | 未完成 | 在园时光=未完成 |
 | 有较新的亲子任务草稿，但最近已发布任务已完成 | 草稿不参与“最新一期”判断 | 亲子任务=已完成 |
 | 最新已发布亲子任务没有完成提交 | 未完成 | 亲子任务=未完成 |
-| 截至当前月份有任一教师月评或家长月评未完成 | 对应月评=未完成 | 成长档案=未完成 |
-| 学期末月评全部完成，但任一教师/家长学期评估或综合评估未完成 | 对应评估=未完成 | 成长档案=未完成 |
+| 截至当前月份有任一教师月度评价或家长月度评价未完成 | 对应月度评价=未完成 | 成长档案=未完成 |
+| 学期末月度评价全部完成，但任一教师/家长学期评估或综合评估未完成 | 对应评估=未完成 | 成长档案=未完成 |
 | 学期末成长册 book_status=b1 | 准备中；定稿前检查回缺项与页数 | 成长册=未完成 |
 | 学期末成长册 book_status=b2 | 已定稿并在 App 内开放 | 成长册=已完成 |
 | 综合评估已评 60 / 124 题 | 综合评估自己的页显示草稿 | 教师评价聚合页 / 成长档案 / 生成检查表一律显示未完成 |
@@ -962,7 +962,7 @@ widget 网格编辑器的 ui=book_widget.* 标注已于 2026-08-02 在 growth-bo
 
 IF child_count=0, show_empty_state=1, empty_title=暂无幼儿信息, empty_description=班级幼儿名册导入后将在这里显示
 IF child_count>0 AND no business record exists, render each real child with four h2=incomplete statuses, average_completion=0, reminder_count=child_count
-homepage_status_enum (主页状态枚举) = h1=complete(已完成)|h2=incomplete(未完成)
+homepage_status_enum (入口页状态枚举) = h1=complete(已完成)|h2=incomplete(未完成)
 Mock child_name|child_count|percentage|status MUST NOT be returned in production
 
 

@@ -1,0 +1,6 @@
+#!/bin/sh
+# Pre-commit: block remote <script src="http..."> from ever re-entering the
+# repo. A Mini Program cannot load remote scripts — a reference that slips in
+# is a compile failure discovered at package time; this hook fails it at
+# commit time instead. Install with: npm run hooks:install
+node scripts/check-remote-scripts.mjs --staged

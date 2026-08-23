@@ -51,7 +51,7 @@ environment_isolation (环境隔离) = demo|test 数据不得复制到 productio
 | 10 | 党建管理 | Party Affairs | nav_party | nav_party | NULL | school-affairs.html |
 | 11 | 综合协调 | Comprehensive Coordination | nav_coord | nav_coord | NULL | comprehensive-coordination.html |
 | 12 | 教研培训 | Training Center | nav_training | nav_training | NULL | training-center.html |
-| 13 | 家园共育 | Home-School Coeducation | nav_home_school | nav_home_school | NULL | home-school.html |
+| 13 | 家园社共育 | Home-School Coeducation | nav_home_school | nav_home_school | NULL | home-school.html |
 
 
 [DYNAMIC_HOME_CASE_NODE]
@@ -326,7 +326,7 @@ child_select_rule (幼儿名单勾选规则) = home-school-moment-publish.html �
 method (方法):
 weekly_complete_count = COUNT(DISTINCT db_moment.moment_seq FROM db_moment_upload JOIN db_moment ON moment_id WHERE child_id=current_child_id AND db_moment.week_key=current_week_key AND db_moment.publish_status=s2 AND evaluation_status=c1)
 weekly_incomplete_count = 2 - weekly_complete_count
-单次详情只返回 evaluation_status=c1|c2；周汇总和主页状态由 db_home_school_progress 计算
+单次详情只返回 evaluation_status=c1|c2；周汇总和入口页状态由 db_home_school_progress 计算
 
 
 月度评价 (Monthly Evaluation / db_month_eval)
@@ -395,7 +395,7 @@ case_name (案例名称), 1:1, max_len=20, ui=home.case_card.title|case_list.car
 case_type (案例类型), 1:1, composite(case_grade,case_field,case_area), ui=case_list.filter|case_detail.type
 case_grade (案例年级), 1:1, k1=small(小班)|k2=middle(中班)|k3=large(大班), ui=case_card.grade|case_list.grade_filter|upload.case_grade
 case_field (案例领域), 1:1, f1=health(健康)|f2=language(语言)|f3=social(社会)|f4=science(科学)|f5=art(艺术), ui=home.case_card.field|case_list.field_filter|upload.case_field
-case_area (案例区域), 1:k, a1=group_teaching(集体教学)|a2=learning_area(区域)|a3=theme_inquiry(主题探究)|a4=home_school(家园共育)|a5=digital(数字化), ui=case_list.area_filter|case_detail.area
+case_area (案例区域), 1:k, a1=group_teaching(集体教学)|a2=learning_area(区域)|a3=theme_inquiry(主题探究)|a4=home_school(家园社共育)|a5=digital(数字化), ui=case_list.area_filter|case_detail.area
 case_intro (活动简介), 1:1, max_len=100, ui=case_detail.intro|upload.case_intro
 case_trans (活动转化), 1:1, max_len=100, ui=case_detail.trans|upload.case_trans
 card_tag (卡片资源标签), 0:1, derived(db_resource.resource_tag), ui=home.case_card.tag
@@ -530,9 +530,9 @@ object_ref (对象引用) = db_training_home
 route (跳转地址) = training-center.html
 rel_count (关系数量) = 0
 
-家园共育 (Home-School Coeducation / nav_home_school)
+家园社共育 (Home-School Coeducation / nav_home_school)
 node_key (节点键) = nav_home_school
-button_name_cn (按键中文名) = 家园共育
+button_name_cn (按键中文名) = 家园社共育
 button_name_en (按键英文名) = Home-School Coeducation
 object_ref (对象引用) = db_home_school
 route (跳转地址) = home-school.html

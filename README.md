@@ -1,6 +1,6 @@
 # 化龙幼儿园 · 教师端小程序原型
 
-> 面向幼儿园教师的一体化工作平台交互原型（High-fidelity Prototype），涵盖党建管理、综合协调、教研培训与家园共育四大业务板块，并配套「幼儿保育教育质量综合评估」工具。
+> 面向幼儿园教师的一体化工作平台交互原型（High-fidelity Prototype），涵盖党建管理、综合协调、教研培训与家园社共育四大业务板块，并配套「幼儿保育教育质量综合评估」工具。
 
 本仓库为**纯静态 HTML/CSS/JS 原型**，用于产品设计评审与交互演示，暂不包含后端服务。
 
@@ -41,7 +41,7 @@ python -m http.server 8000
 | 党建管理 | `screens/school-affairs.html` | 党建学习、党建活动、品牌建设 |
 | 综合协调 | `screens/comprehensive-coordination.html` | 行政统筹、通勤保障、人事管理 |
 | 教研培训部 | `screens/training-center.html` | 课程建设、课程资源、教研培训、个人档案 |
-| 家园共育 | `screens/home-school.html` | 在园时光、亲子任务、儿童成长档案、成长册、社区共育 |
+| 家园社共育 | `screens/home-school.html` | 在园时光、亲子任务、儿童成长档案、成长册、社区共育 |
 
 ### 两套评估工具，不要混为一谈
 
@@ -67,13 +67,13 @@ python -m http.server 8000
 │   ├── school-affairs.html    # 党建管理
 │   ├── comprehensive-coordination.html  # 综合协调
 │   ├── training-center.html   # 教研培训部
-│   ├── home-school.html       # 家园共育
+│   ├── home-school.html       # 家园社共育
 │   ├── assessment-tool.html   # 办园质量评估工具
 │   ├── assessment-manifest.js # 办园质量评估 tool_code / tool_version / 固定题数
 │   ├── assessment-data.js     # 办园质量评估量表数据
 │   ├── comprehensive-assessment-form.html  # 幼儿综合评估（124 题）
 │   ├── assessment-store.js    # 综合评估的题库 / 草稿 / 状态单一数据源
-│   ├── growth-book*.html      # 成长册：主页 / 编辑样板 / 样本 / 单本查看
+│   ├── growth-book*.html      # 成长册：入口页 / 编辑样板 / 样本 / 单本查看
 │   ├── growth-book-section-edit.html  # 新增栏目的 15×24 网格版面编辑器
 │   ├── growth-book-render.js  # 成长册数据模型 + 翻页渲染（成长册各页共用）
 │   └── ...                    # 其余详情页 / 表单页
@@ -89,7 +89,9 @@ python -m http.server 8000
 
 ## 文档
 
-- **决策记录**：`decision.md` —— **改任何页面前先读**。第 1—10 条是前端评审决定，「后端答复」一节含推翻项与仍然开放的项目，第 19—26 条是 2026-08-02 的成长册改版，其中 4 条反过来推翻了后端已定规则（亲子活动一律进册、成长资料只收在园时光、`anchor_after` 取值范围、W9 的显示方式适用范围），均已同步改写 `docs/backend spec files/05 home-school-spec.md`。
+- **不得建造清单**：`docs/DO-NOT-BUILD.md` —— **每张施工票据开工前逐条核对**，核对结论写进票据。每条都带禁止它的权威；与之冲突的提议直接拒收。清单只增不删。
+- **迁移清单**：`docs/frontend spec files/migration-checklist.md` —— 结构契约认定的教师端 45 个页面与原型的对照。**按它施工，不按 `screens/` 目录施工**：目录里混有家长端页面与画廊入口。
+- **决策记录**：`decision.md` —— **改任何页面前先读**。第 1—10 条是前端评审决定，「后端答复」一节含推翻项与仍然开放的项目，第 19—26 条是 2026-08-02 的成长册改版，其中 4 条反过来推翻了后端已定规则（`亲子活动`一律进册、成长资料只收在园时光、`anchor_after` 取值范围、W9 的显示方式适用范围），均已同步改写 `docs/backend spec files/05 home-school-spec.md`。
 - **字段契约**：`docs/backend spec files/` —— 命名权威是这些文件里的 `ui=` 标注，本仓库不另立名字。前端可自由更换文案、样式、图片、位置，但控件上的 `data-ui` 属性必须原样保留、且必须对得上某条 `ui=` 标注。新页面的写入控件须**先在 spec 补 `ui=` 标注**，再由后端重跑抽取。
 - **版式契约**：`docs/frontend spec files/growth-book-layout-spec.md` —— 成长册 widget 网格的几何、像素取整、交互与渲染要求。backend spec 管**存什么**，它管**画在哪、多大、怎么点**。改成长册页面前先读。
 - **信息架构**：`docs/Archive/20260627/信息架构_20260626.md`（含各模块 Mermaid 流程图）

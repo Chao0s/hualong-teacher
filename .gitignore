@@ -5,3 +5,7 @@
 # Local design-tool workspaces
 lanhu-mcp/
 *.pen
+
+# Per-developer devtools config: carries the real AppID, never shared.
+# The tracked project.config.json keeps the official tourist placeholder.
+project.private.config.json

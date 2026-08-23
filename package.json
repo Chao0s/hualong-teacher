@@ -1,0 +1,17 @@
+{
+  "name": "hualong-teacher",
+  "version": "0.1.0",
+  "private": true,
+  "description": "化龙镇中心幼儿园电子资源平台 · 教师端小程序（原生）与本地契约 mock",
+  "type": "module",
+  "scripts": {
+    "mock": "node mock/server.mjs",
+    "mock:unbound": "node mock/server.mjs --unbound",
+    "mock:no-term": "node mock/server.mjs --no-term",
+    "check:remote-scripts": "node scripts/check-remote-scripts.mjs",
+    "hooks:install": "git config core.hooksPath .githooks"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

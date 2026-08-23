@@ -1,0 +1,8 @@
+{
+  "description": "Copy to project.private.config.json (git-ignored) and fill in your own AppID. This file overrides project.config.json per developer: the sandbox 测试号 and the real per-client AppID differ, and the two developers' AppIDs differ, so the value never belongs in the shared config. urlCheck stays off while the API domain filing is pending — that debt clears when the domain is filed and whitelisted.",
+  "projectname": "hualong-teacher",
+  "appid": "wxYOUR-APPID-HERE",
+  "setting": {
+    "urlCheck": false
+  }
+}
