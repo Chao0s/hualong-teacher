@@ -1,23 +1,35 @@
 /**
  * 首页服务 — the four regions of flowchart 01, assembled once (ticket 08).
  *
- * Boundary: the home aggregate reads (待办事项, 推荐课程案例) plus the 常用入口
- * map. 资源中心通知 is NOT re-read here — it belongs to the notice module and is
- * delegated to it, so 首页 and 通知列表页 share one implementation.
+ * PROVISIONAL, and named for a page rather than a contract module — which
+ * 实现决定 6 forbids, for the good reason that pages get reorganised by design
+ * review and contract modules do not. It is here because there is nothing to
+ * align to yet: `API-MODULES.md` enumerates 身份与组织 / 在园时光 / 家园社共育 /
+ * 成长册 and no 首页, and `openapi.yaml` has no `/home/*` path at all (tracker
+ * DECISIONS item 9). When the read surface is registered, 待办事项 belongs to
+ * whichever module owns db_task, and this file should shrink to the 常用入口 map
+ * or disappear. **Do not read this file as a licence to write one service per
+ * page.**
  *
- * Everything returned is view-ready (spec 实现决定 7). Every enum below is
- * mapped with a fallback: §1.1 lets the server add a code before this client
- * knows it, and an unknown code must degrade to something neutral rather than
- * blank the region or throw.
+ * What it does own today: the 待办事项 read and the 常用入口 map. 资源中心通知 and
+ * 推荐课程案例 are NOT re-read here — they belong to the notice and case modules
+ * and are delegated, so 首页 can never disagree with 通知列表页 or 案例库.
+ *
+ * Everything returned is view-ready (实现决定 7). Every enum below is mapped
+ * with a fallback: §1.1 lets the server add a code before this client knows it,
+ * and an unknown code must degrade to something neutral rather than blank the
+ * region or throw.
  */
 
 const api = require('../utils/request');
 const guard = require('../utils/guard');
 const time = require('../utils/time');
 const notice = require('./notice');
+// `case` is a reserved word; the module is named for what it holds, the binding
+// for what JavaScript allows.
+const kase = require('./case');
 
 const TODOS_PATH = '/home/todos';
-const CASES_PATH = '/home/cases';
 
 const TODO_PILL = {
   upload: 'hl-pill--info',
@@ -32,10 +44,6 @@ const TODO_LABEL = {
   audit: '待审核',
   evaluation: '待填写',
 };
-
-// db_case.case_field / case_grade.
-const CASE_FIELD = { f1: '健康', f2: '语言', f3: '社会', f4: '科学', f5: '艺术' };
-const CASE_GRADE = { k1: '小班', k2: '中班', k3: '大班' };
 
 /**
  * 常用入口 (flowchart 01). `module` is checked against the role allowlist before
@@ -65,36 +73,22 @@ async function loadTodos() {
 }
 
 /**
- * 推荐课程案例 (§3.5): db_home_case, the shelf an administrator curates in the
- * PC backend. Three rows by definition, so no pagination. Scoping it to 化龙
- * teachers is the server's job — filtering an authorization rule a second time
- * here would only hide a server bug (§6.4).
- */
-async function loadCases() {
-  const rows = await api.getRoster(CASES_PATH);
-  return rows.map((row) => {
-    const field = CASE_FIELD[row.case_field] || '';
-    const grade = CASE_GRADE[row.case_grade] || '';
-    return {
-      case_id: row.case_id,
-      case_name: row.case_name,
-      // An unknown field code loses its initial, not its card.
-      thumb_label: field ? field.charAt(0) : '案',
-      tag_label: [field, grade].filter(Boolean).join(' · '),
-    };
-  });
-}
-
-/**
  * The whole screen in one call. Three independent reads, settled together so a
- * slow region does not hold the others back; any one failing fails the load,
- * because a 首页 missing a region silently is worse than a 首页 that says so.
+ * slow region does not hold the others back.
+ *
+ * Any one failing fails the load, deliberately: a 首页 quietly missing a region
+ * is worse than a 首页 that says it could not read. The markup holds up its end
+ * — while `errorText` is set no region claims 暂无, so a failure never reads as
+ * "nothing to do today".
+ *
+ * Only two of the three reads are ours. 通知 belongs to the notice module and
+ * 案例 to the case module; this function composes them, it does not re-read them.
  */
 async function load() {
   const [todos, notices, cases] = await Promise.all([
     loadTodos(),
     notice.summary(),
-    loadCases(),
+    kase.recommendedForHome(),
   ]);
   // Story 11: the count is the point — a teacher must see the backlog without
   // opening it.

@@ -12,6 +12,7 @@
  */
 
 const session = require('./session');
+const { ApiError } = require('./errors');
 
 // APP-STRUCTURE.md: the teacher client carries the staff modules; the PC backend
 // is admin-only and unreachable from any Mini Program.
@@ -124,6 +125,23 @@ function redirectToLogin() {
 }
 
 /**
+ * The one answer to a dead session, anywhere: drop the local session and go
+ * back to login. Returns true when it consumed the error, so a caller can
+ * `if (endSessionOnAuthFailure(err)) return;` and treat the rest as ordinary
+ * failures.
+ *
+ * It lives here rather than beside the error presenter because ending a session
+ * is a gate decision, not a way of showing something. §6.2's second stage needs
+ * a real user tap, so nothing here tries to recover silently.
+ */
+function endSessionOnAuthFailure(err) {
+  if (!(err instanceof ApiError) || !err.isAuthFailure) return false;
+  session.clear();
+  redirectToLogin();
+  return true;
+}
+
+/**
  * Guard a write that needs an active term.
  *
  * §5.4 / §6.4: the client may pre-disable, but the server independently returns
@@ -143,5 +161,6 @@ module.exports = {
   navigateTo,
   requireSession,
   redirectToLogin,
+  endSessionOnAuthFailure,
   canWriteThisTerm,
 };

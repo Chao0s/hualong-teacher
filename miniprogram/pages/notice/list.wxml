@@ -8,7 +8,8 @@
   <view wx:if="{{loadingFirst}}" class="hl-loading">加载中…</view>
 
   <block wx:if="{{!loadingFirst}}">
-    <view wx:if="{{items.length === 0}}" class="hl-card hl-empty">暂无通知</view>
+    <!-- 空与失败是两种状态：读失败时不说「暂无」，那是在替服务器撒谎。 -->
+    <view wx:if="{{items.length === 0 && !errorText}}" class="hl-card hl-empty">暂无通知</view>
 
     <view
       wx:for="{{items}}"

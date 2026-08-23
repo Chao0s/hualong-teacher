@@ -4,13 +4,19 @@
  * implementation. Every cursor-paginated list page spreads these methods in.
  *
  * It knows about pagination, not about the wire (ticket 08): the caller injects
- * `fetchPage({ cursor })` from a service module, which returns view-ready
- * `{ items, nextCursor }`. No page passes an endpoint path through here, so a
- * list page and the service that owns its collection cannot drift apart.
+ * `fetchPage({ cursor, ...filters })` from a service module, which returns
+ * view-ready `{ items, nextCursor }`. No page passes an endpoint path through
+ * here, so a list page and the service that owns its collection cannot drift
+ * apart.
  *
  * Data contract the page must declare:
  *   items []  cursor null  loadingFirst true  loadingMore false
  *   exhausted false  errorText ''  errorRequestId ''  errorCanRetry false
+ *
+ * Optional: `filters {}`. Whatever it holds is spread into every fetchPage call,
+ * which is how a filtered list reaches its service. Changing a filter means
+ * setData on `filters` and then loadFirst() — §3.3 requires the reload, because
+ * a cursor belongs to the filter set it was issued under.
  *
  * Guarantees:
  *   - loading / empty / failed are three distinct states; an empty page is
@@ -28,8 +34,21 @@ const { ApiError } = require('./errors');
 const { reportFailure } = require('./present');
 
 function createListMethods({ fetchPage } = {}) {
+  // Fail at construction, not at first load. A forgotten fetchPage would
+  // otherwise throw inside loadFirst's try, be caught, and reach the teacher as
+  // 操作未能完成 with a retry button — a wiring slip wearing a server error's
+  // clothes.
+  if (typeof fetchPage !== 'function') {
+    throw new TypeError('createListMethods 需要 fetchPage：服务层的取页函数');
+  }
   return {
     async loadFirst() {
+      // A refresh that fails must leave the list exactly as it was. Dropping
+      // the cursor and never restoring it strands a loaded list: the rows stay,
+      // but the next 上滑 finds no cursor, calls itself exhausted and never asks
+      // the server again.
+      const priorCursor = this.data.cursor;
+      const priorExhausted = this.data.exhausted;
       this.setData({
         loadingFirst: true,
         errorText: '',
@@ -40,7 +59,7 @@ function createListMethods({ fetchPage } = {}) {
         exhausted: false,
       });
       try {
-        const { items, nextCursor } = await fetchPage({});
+        const { items, nextCursor } = await fetchPage({ ...this.data.filters });
         this.setData({
           items,
           cursor: nextCursor,
@@ -48,7 +67,11 @@ function createListMethods({ fetchPage } = {}) {
           loadingFirst: false,
         });
       } catch (err) {
-        this.reportListError(err, { loadingFirst: false });
+        this.reportListError(err, {
+          loadingFirst: false,
+          cursor: priorCursor,
+          exhausted: priorExhausted,
+        });
       }
     },
 
@@ -60,7 +83,10 @@ function createListMethods({ fetchPage } = {}) {
       }
       this.setData({ loadingMore: true, errorText: '' });
       try {
-        const { items, nextCursor } = await fetchPage({ cursor: this.data.cursor });
+        const { items, nextCursor } = await fetchPage({
+          ...this.data.filters,
+          cursor: this.data.cursor,
+        });
         this.setData({
           items: this.data.items.concat(items),
           cursor: nextCursor,

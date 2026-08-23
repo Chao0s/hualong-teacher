@@ -190,6 +190,69 @@ test('a failed 首页 load reports through the one presenter, and retry recovers
   assert.ok(page.data.cases.length > 0)
 })
 
+/**
+ * The four below come from the ticket-08 review. Each one is a bug the suite
+ * did NOT catch when it was 59 tests green, which is the only reason they are
+ * worth their lines.
+ */
+
+test('no region claims 暂无 while an error is on screen', () => {
+  for (const file of ['pages/home/index.wxml', 'pages/notice/list.wxml']) {
+    const empties = read(file).split('\n').filter((line) => line.includes('hl-empty'))
+    assert.ok(empties.length > 0, `${file} has empty states to check`)
+    for (const line of empties) {
+      // loading / empty / failed are three states. A read that failed leaves the
+      // arrays empty too, so an ungated 暂无 turns "we could not read" into
+      // "there is nothing to do" — the one lie this screen must not tell.
+      assert.match(line, /!errorText/, `${file}: 空态必须与失败态互斥 — ${line.trim()}`)
+    }
+  }
+})
+
+test('a failed refresh leaves the list able to grow again', async () => {
+  const c = await signedIn()
+  const page = loadPage(c, 'pages/notice/list.js')
+  await page.loadFirst()
+  const cursorBefore = page.data.cursor
+  assert.ok(cursorBefore, 'the fixture is longer than one page')
+
+  const realRequest = globalThis.wx.request
+  globalThis.wx.request = (opts) => {
+    globalThis.wx.request = realRequest
+    opts.success({ statusCode: 500, data: { code: 'internal_error', message: '服务出错' }, header: {} })
+  }
+  await page.loadFirst()
+
+  assert.ok(page.data.errorText, 'the refresh failed')
+  assert.equal(page.data.cursor, cursorBefore, 'the cursor survived — it was not silently dropped')
+  assert.equal(page.data.exhausted, false, 'a failed refresh is not the end of the list')
+
+  const sent = c.record.requests.length
+  await page.loadMore()
+  assert.ok(c.record.requests.length > sent, 'the next 上滑 still reaches the server')
+})
+
+test('a list wired without fetchPage fails at construction, not as a fake server error', async () => {
+  const c = await signedIn()
+  assert.throws(
+    () => c.listPage.createListMethods({}),
+    /fetchPage/,
+    'a wiring slip must not reach a teacher dressed as 操作未能完成',
+  )
+})
+
+test('reportFailure clears the loading flag even when the session is dead', async () => {
+  const c = await signedIn()
+  const page = { data: {}, setData(patch) { Object.assign(this.data, patch) } }
+  const err = new c.errors.ApiError({ statusCode: 401, code: 'session_revoked', message: '登录状态已失效' })
+
+  c.reportFailure(page, err, { loading: false })
+
+  assert.equal(page.data.loading, false, 'the flag the caller handed over was honoured')
+  assert.equal(page.data.errorText, undefined, 'and nothing was rendered — the session ended instead')
+  assert.equal(c.session.getToken(), null)
+})
+
 test('an expired session on 首页 ends the session instead of rendering an error', async () => {
   const c = await signedIn()
   const page = loadPage(c, 'pages/home/index.js')

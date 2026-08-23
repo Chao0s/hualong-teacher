@@ -10,12 +10,11 @@
  *                   already says 刷新后重试, and retrying re-reads state
  *   kind 'fatal'    the request itself is wrong; retrying changes nothing,
  *                   so NO retry entry is offered
- *   kind 'auth'     the session is gone; the caller routes it to
- *                   identity.handleAuthFailure instead of rendering it
+ *   kind 'auth'     the session is gone; reportFailure hands it to the guard
+ *                   instead of rendering it, so no page shows this one
  */
 
 const { ApiError } = require('./errors');
-const session = require('./session');
 const guard = require('./guard');
 
 function present(err) {
@@ -38,36 +37,27 @@ function present(err) {
 }
 
 /**
- * The one answer to a dead session, anywhere: drop the local session and go
- * back to login. Returns true when it consumed the error, so a caller can
- * `if (endSessionOnAuthFailure(err)) return;` and treat the rest as ordinary
- * failures. Re-login needs a real user tap (§6.2 stage two), so nothing here
- * tries to recover silently.
- */
-function endSessionOnAuthFailure(err) {
-  if (!(err instanceof ApiError) || !err.isAuthFailure) return false;
-  session.clear();
-  guard.redirectToLogin();
-  return true;
-}
-
-/**
  * The one landing for a failed read on a page (ticket 08). Every page declares
  * `errorText` / `errorRequestId` / `errorCanRetry`; this fills them, and `extra`
  * carries whatever loading flag the page must also clear.
  *
  * Pages call this instead of present() directly, so no page ever holds a copy
  * of the auth-failure branch.
+ *
+ * `extra` is applied FIRST and on every path. A dead session normally tears the
+ * page stack down, so the flag would not matter — but a template that says
+ * "hand me your loading flag" must honour it on all branches, or the one time
+ * the teardown does not happen the teacher sits on 加载中… forever.
  */
 function reportFailure(page, err, extra = {}) {
-  if (endSessionOnAuthFailure(err)) return;
+  page.setData(extra);
+  if (guard.endSessionOnAuthFailure(err)) return;
   const failure = present(err);
   page.setData({
-    ...extra,
     errorText: failure.message,
     errorRequestId: failure.requestId,
     errorCanRetry: failure.canRetry,
   });
 }
 
-module.exports = { present, endSessionOnAuthFailure, reportFailure };
+module.exports = { present, reportFailure };
