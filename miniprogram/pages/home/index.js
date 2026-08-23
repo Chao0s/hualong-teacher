@@ -11,18 +11,19 @@
  */
 
 const api = require('../../utils/request');
-const session = require('../../utils/session');
 const guard = require('../../utils/guard');
 const time = require('../../utils/time');
-const { ApiError } = require('../../utils/errors');
+const identity = require('../../services/identity');
+const { present } = require('../../utils/present');
 
 // Flowchart 01's 常用入口. `module` is checked against the role allowlist before
 // navigation; `page` is null until that screen exists in this slice.
+// `needsTerm` marks the write entries the holiday read-only state disables.
 const QUICK_ENTRIES = [
-  { key: 'training', label: '教研培训', module: 'teaching-research', page: null },
-  { key: 'moment', label: '在园时光', module: 'co-education', page: null },
-  { key: 'month-eval', label: '月度评价', module: 'co-education', page: null },
-  { key: 'resource', label: '课程资源', module: 'resource-library', page: null },
+  { key: 'training', label: '教研培训', module: 'teaching-research', page: null, needsTerm: false },
+  { key: 'moment', label: '在园时光', module: 'co-education', page: null, needsTerm: true },
+  { key: 'month-eval', label: '月度评价', module: 'co-education', page: null, needsTerm: true },
+  { key: 'resource', label: '课程资源', module: 'resource-library', page: null, needsTerm: false },
 ];
 
 Page({
@@ -31,11 +32,14 @@ Page({
     loading: true,
     errorText: '',
     errorRequestId: '',
+    errorCanRetry: false,
 
     teacherName: '',
     className: '',
     termName: '',
     noTerm: false,
+    termNotice: '',
+    canWrite: false,
 
     todos: [],
     notices: [],
@@ -49,25 +53,45 @@ Page({
     this.load();
   },
 
+  /**
+   * The term can roll over while the app sits in the background: the holiday
+   * ends and the same page's write entries must come back WITHOUT a re-login
+   * (ticket 06). Re-read the context on every show; cheap, and the answer is
+   * always current.
+   */
+  async onShow() {
+    if (!this.data.ready || !identity.isLoggedIn()) return;
+    try {
+      await identity.refreshContext();
+      this.hydrateFromSession();
+    } catch (err) {
+      if (identity.handleAuthFailure(err)) return;
+      // A failed refresh keeps the last known state; the next show retries.
+    }
+  },
+
   onPullDownRefresh() {
     this.load().then(() => wx.stopPullDownRefresh());
   },
 
   /**
-   * Fill the header from the cached session context.
+   * Fill the header from the cached session context, through the service.
    *
    * §6.4: `scope` is for display only. Showing the class name is exactly the
-   * sanctioned use; writing it back into a request body is not.
+   * sanctioned use; writing it back into a request body is not. The term state
+   * is first-class (ticket 06): the page renders `termName` / `termNotice` /
+   * `canWrite` and never inspects the term enum itself.
    */
   hydrateFromSession() {
-    const subject = session.getSubject() || {};
-    const scope = session.getScope() || {};
-    const term = session.getCurrentTerm();
+    const home = identity.homeIdentity();
+    const term = identity.termState();
     this.setData({
-      teacherName: subject.teacher_name || '',
-      className: scope.class_name || '',
-      termName: term ? term.term_name : '',
-      noTerm: !term,
+      teacherName: home.teacherName,
+      className: home.className,
+      termName: term.termName,
+      noTerm: home.noTerm,
+      termNotice: term.notice,
+      canWrite: term.canWrite,
     });
   },
 
@@ -112,16 +136,18 @@ Page({
   },
 
   reportError(err) {
-    if (err instanceof ApiError && err.isAuthFailure) {
-      session.clear();
-      guard.redirectToLogin();
-      return;
-    }
+    if (identity.handleAuthFailure(err)) return;
+    const failure = present(err);
     this.setData({
       loading: false,
-      errorText: err instanceof ApiError ? err.userMessage : '加载失败，请下拉重试',
-      errorRequestId: err instanceof ApiError ? (err.requestId || '') : '',
+      errorText: failure.message,
+      errorRequestId: failure.requestId,
+      errorCanRetry: failure.canRetry,
     });
+  },
+
+  onRetryLoad() {
+    this.load();
   },
 
   onNoticeTap(e) {
@@ -137,6 +163,12 @@ Page({
     const { key } = e.currentTarget.dataset;
     const entry = QUICK_ENTRIES.find((q) => q.key === key);
     if (!entry) return;
+    // Ticket 06: a write entry during the holiday is disabled WITH its reason
+    // on the spot — never a tap that silently does nothing.
+    if (entry.needsTerm && !this.data.canWrite) {
+      wx.showToast({ title: '假期中暂不可发布，新学期开始后恢复', icon: 'none' });
+      return;
+    }
     if (!entry.page) {
       wx.showToast({ title: '该模块尚未上线', icon: 'none' });
       return;

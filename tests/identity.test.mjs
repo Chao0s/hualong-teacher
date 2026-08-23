@@ -40,7 +40,7 @@ test('the service exposes no side door — the export list is closed', async () 
   const c = loadClient({ baseUrl: mock.baseUrl })
   assert.deepEqual(Object.keys(c.identity).sort(), [
     'bindPhone', 'classifyFailure', 'handleAuthFailure', 'homeIdentity',
-    'isLoggedIn', 'refreshContext', 'signIn', 'signOut',
+    'isLoggedIn', 'refreshContext', 'signIn', 'signOut', 'termState',
   ].sort())
   // By name: nothing SMS-, invite-, password- or role-switch-shaped.
   for (const k of Object.keys(c.identity)) {

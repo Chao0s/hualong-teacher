@@ -6,8 +6,8 @@
 
 import { test, before, after } from 'node:test'
 import assert from 'node:assert/strict'
-import { start } from '../mock/server.mjs'
-import { loadClient } from './helpers/seam.mjs'
+import { start, setNoTerm } from '../mock/server.mjs'
+import { loadClient, loadPage } from './helpers/seam.mjs'
 
 let mock
 
@@ -37,4 +37,66 @@ test('term-gated writes answer no while reads keep working', async () => {
   assert.equal(c.guard.canWriteThisTerm(), false, 'the pre-disable answers no')
   const page = await c.api.getPage('/notices')
   assert.ok(page.items.length > 0, 'reading is unaffected')
+})
+
+// ── Ticket 06: the term state is first-class ─────────────────────────────────
+
+test('termState carries the writability AND the reason — pages never inspect the enum', async () => {
+  const c = loadClient({ baseUrl: mock.baseUrl })
+  await c.identity.signIn()
+  const t = c.identity.termState()
+  assert.equal(t.canWrite, false)
+  assert.equal(t.termName, '假期中', 'always displayable, never an empty string')
+  assert.match(t.notice, /假期/, 'the on-the-spot reason is ready-made')
+  assert.match(t.notice, /可以查看/, 'and it says reading still works')
+})
+
+test('首页 during the holiday: read-only and explanatory, not an error', async () => {
+  const c = loadClient({ baseUrl: mock.baseUrl })
+  await c.identity.signIn()
+  const page = loadPage(c, 'pages/home/index.js')
+  page.hydrateFromSession()
+  await page.load()
+
+  assert.equal(page.data.errorText, '', 'no error banner — the holiday is normal')
+  assert.equal(page.data.termName, '假期中')
+  assert.ok(page.data.termNotice, 'the banner explains instead of a blank')
+  assert.equal(page.data.canWrite, false)
+  assert.ok(page.data.todos.length > 0, 'existing content still reads')
+  assert.ok(page.data.notices.length > 0, 'existing content still reads')
+})
+
+test('a write entry during the holiday explains itself instead of failing silently', async () => {
+  const c = loadClient({ baseUrl: mock.baseUrl })
+  await c.identity.signIn()
+  const page = loadPage(c, 'pages/home/index.js')
+  page.hydrateFromSession()
+
+  page.onQuickTap({ currentTarget: { dataset: { key: 'month-eval' } } })
+  assert.equal(c.record.navigations.length, 0, 'no navigation happened')
+  assert.match(c.record.toasts.pop().title, /假期/, 'the reason is on the spot')
+
+  // A read entry is NOT term-gated: it falls through to the ordinary path.
+  page.onQuickTap({ currentTarget: { dataset: { key: 'training' } } })
+  assert.match(c.record.toasts.pop().title, /尚未上线/, 'gated by page-missing, not by the term')
+})
+
+// LAST: flips the server's term back on for the rest of the process.
+test('the term resumes and the SAME page can write again — no re-login', async () => {
+  const c = loadClient({ baseUrl: mock.baseUrl })
+  await c.identity.signIn()
+  const tokenBefore = c.session.getToken()
+
+  const page = loadPage(c, 'pages/home/index.js')
+  page.setData({ ready: true })
+  page.hydrateFromSession()
+  assert.equal(page.data.canWrite, false)
+
+  setNoTerm(false) // the new term starts while the app sits in the background
+  await page.onShow()
+
+  assert.equal(page.data.canWrite, true, 'the write entries came back')
+  assert.equal(page.data.termName, '2026学年第一学期')
+  assert.equal(page.data.termNotice, '')
+  assert.equal(c.session.getToken(), tokenBefore, 'the same session — nobody logged in again')
 })

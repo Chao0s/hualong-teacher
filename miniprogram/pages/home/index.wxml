@@ -6,11 +6,12 @@
       <text wx:if="{{className}}">{{className}}</text>
       <text wx:if="{{termName}}" class="head__term">{{termName}}</text>
     </view>
-    <view wx:if="{{noTerm}}" class="head__noterm">当前不在学期内，评价与编册暂不可提交</view>
+    <view wx:if="{{noTerm}}" class="head__noterm">{{termNotice}}</view>
   </view>
 
   <view wx:if="{{errorText}}" class="hl-error">
     {{errorText}}
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryLoad">重试</text>
     <text wx:if="{{errorRequestId}}" class="hl-error__id">故障码 {{errorRequestId}}</text>
   </view>
 
@@ -48,7 +49,7 @@
       <view
         wx:for="{{quickEntries}}"
         wx:key="key"
-        class="quick__item"
+        class="quick__item {{item.needsTerm && !canWrite ? 'quick__item--off' : ''}}"
         data-key="{{item.key}}"
         bindtap="onQuickTap">
         {{item.label}}

@@ -27,6 +27,27 @@ const HARD_STOPS = [
   'identity_binding_conflict',
 ];
 
+/**
+ * The term state, first-class (ticket 06). Every write page reads THIS —
+ * no page ever inspects the term enum itself.
+ *
+ * The holiday is a normal state, not an error: `canWrite` gates the write
+ * entries, `notice` is the on-the-spot reason a page shows, and `termName`
+ * is always displayable — during the holiday it says so instead of being
+ * an empty string.
+ */
+function termState() {
+  const term = session.getCurrentTerm();
+  if (term) {
+    return { canWrite: true, termName: term.term_name, notice: '' };
+  }
+  return {
+    canWrite: false,
+    termName: '假期中',
+    notice: '现在是假期，没有进行中的学期。已有内容可以查看；发布与填写会在新学期开始后自动恢复。',
+  };
+}
+
 /** Shape the cached session context for direct binding on 首页. */
 function homeIdentity() {
   const subject = session.getSubject() || {};
@@ -113,6 +134,7 @@ module.exports = {
   handleAuthFailure,
   refreshContext,
   homeIdentity,
+  termState,
   isLoggedIn,
   signOut,
 };

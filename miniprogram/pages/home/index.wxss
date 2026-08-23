@@ -66,3 +66,10 @@
   font-size: 30rpx;
   color: var(--fg);
 }
+
+/* A write entry during the holiday: visibly off, and the tap explains why. */
+.quick__item--off {
+  color: var(--muted);
+  background: var(--bg);
+  box-shadow: none;
+}

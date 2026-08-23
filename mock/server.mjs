@@ -489,6 +489,15 @@ function getParentTaskProgress(req, res) {
   return sendJson(res, 200, { items: ROSTER });
 }
 
+/**
+ * Test hook: flip the term live, so "the term resumes and the same page's
+ * write entries come back WITHOUT a re-login" is testable against the real
+ * service instead of hand-assembled state.
+ */
+export function setNoTerm(value) {
+  OPTS.noTerm = Boolean(value);
+}
+
 // CLI behaviour, unchanged: `node mock/server.mjs [--unbound] [--no-term]`.
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   start({

@@ -19,6 +19,7 @@ export function createFakeWx({ loginCode = 'JS_CODE_OK', loginFails = false } = 
     storageRemoves: [],  // key
     navigations: [],     // { api: 'navigateTo'|'reLaunch', url }
     toasts: [],          // the options object passed in
+    navTitles: [],       // titles passed to setNavigationBarTitle
     requests: [],        // { method, url, header, data } — the wire payload as built
   }
 
@@ -62,6 +63,8 @@ export function createFakeWx({ loginCode = 'JS_CODE_OK', loginFails = false } = 
     navigateTo({ url }) { record.navigations.push({ api: 'navigateTo', url }) },
     reLaunch({ url }) { record.navigations.push({ api: 'reLaunch', url }) },
     showToast(opts) { record.toasts.push(opts) },
+    setNavigationBarTitle({ title }) { record.navTitles.push(title) },
+    stopPullDownRefresh() { /* nothing to stop in a test */ },
   }
 
   return { wx, storage, record }
