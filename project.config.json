@@ -1,5 +1,5 @@
 {
-  "appid": "wxbda23b3884ae4d69",
+  "appid": "touristappid",
   "projectname": "hualong-teacher",
   "miniprogramRoot": "miniprogram/",
   "compileType": "miniprogram",
@@ -15,49 +15,16 @@
     "checkInvalidKey": true,
     "coverView": false,
     "lazyloadPlaceholderEnable": false,
-    "skylineRenderEnable": false,
-    "compileWorklet": false,
-    "uglifyFileName": false,
-    "uploadWithSourceMap": true,
-    "packNpmRelationList": [],
-    "minifyWXSS": true,
-    "minifyWXML": true,
-    "localPlugins": false,
-    "disableUseStrict": false,
-    "useCompilerPlugins": false,
-    "condition": false,
-    "babelSetting": {
-      "ignore": [],
-      "disablePlugins": [],
-      "outputPath": ""
-    }
+    "skylineRenderEnable": false
   },
   "packOptions": {
     "ignore": [
-      {
-        "value": "../screens",
-        "type": "folder"
-      },
-      {
-        "value": "../docs",
-        "type": "folder"
-      },
-      {
-        "value": "../mock",
-        "type": "folder"
-      },
-      {
-        "value": "../Archive",
-        "type": "folder"
-      },
-      {
-        "value": "../data",
-        "type": "folder"
-      }
-    ],
-    "include": []
+      { "type": "folder", "value": "../screens" },
+      { "type": "folder", "value": "../docs" },
+      { "type": "folder", "value": "../mock" },
+      { "type": "folder", "value": "../Archive" },
+      { "type": "folder", "value": "../data" }
+    ]
   },
-  "condition": {},
-  "simulatorPluginLibVersion": {},
-  "editorSetting": {}
+  "condition": {}
 }
