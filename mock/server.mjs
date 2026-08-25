@@ -144,6 +144,71 @@ const TASKS = Array.from({ length: 15 }, (_, i) => {
   };
 });
 
+// db_party_study —— 党建学习资料。契约 §4 规则 19：按 published_at DESC, study_id
+// DESC 作游标分页，**不搜索、不筛选** —— `study_type` 只显示，不做成筛选项（F7），
+// 所以本端点除分页对之外不收任何参数。
+// 23 条，够翻页（limit 缺省 20）；第 7 条带一个本客户端不认识的类型码，用来验证枚举
+// 降级（§1.1）；第 4 条没有发布部门，用来验证可空列不把界面撑塌。
+const STUDY_TITLES = [
+  '新时代幼儿园党建工作要点',
+  '师德师风专题学习材料',
+  '校园安全责任清单学习',
+  '支部会议记录规范',
+  '党员学习档案整理要求',
+];
+
+const STUDY_DEPARTMENTS = ['办公室', '党支部', '综合组'];
+
+const STUDY_CONTENT = [
+  '一、指导思想',
+  '',
+  '围绕党建引领幼儿园高质量发展，明确支部学习、党员示范岗、课程建设协同和家园社共育服务四项重点，把学习成果落到班级一日生活里。',
+  '',
+  '二、学习要求',
+  '',
+  '各年级组每月组织一次集中学习，教师在平台内读完全文并完成学习记录。本文件同时用于园内归档。',
+].join('\n');
+
+const PARTY_STUDIES = Array.from({ length: 23 }, (_, i) => {
+  const id = 23 - i;
+  const day = String(20 - (i % 20)).padStart(2, '0');
+  return {
+    study_id: id,
+    study_title: STUDY_TITLES[i % STUDY_TITLES.length],
+    study_type: id === 7 ? 'z9_future_type' : ['t1', 't2', 't3'][i % 3],
+    study_content: STUDY_CONTENT,
+    publisher_department: id === 4 ? null : STUDY_DEPARTMENTS[i % 3],
+    published_at: `2026-06-${day}T09:${String(10 + (i % 45)).padStart(2, '0')}:00+08:00`,
+    // 本模块只产生 s3（直发）与 s5（下线）；列表与详情的可见范围都是 s3。
+    study_status: 's3',
+    // 外部影片，不上传到本后端、不由小程序内嵌播放（F7）。第 4 条为 null，因为契约
+    // 允许该列为空，客户端不得把 null 当成数组。
+    video_links: id === 4 ? null : [
+      { title: '党建引领教育高质量发展', url: 'https://www.12371.cn/special/xxzd/' },
+      { title: '师德师风专题学习', url: 'https://www.xuexi.cn/' },
+    ],
+    // 契约要求至少一份 usage_key='main_file'（F7），所以每条都有；配图只有部分条目有。
+    file_refs: [
+      { file_id: 7000 + id, usage_key: 'main_file', file_name: `${STUDY_TITLES[i % STUDY_TITLES.length]}.pdf`, file_size: 2483712 },
+      ...(id % 4 === 0 ? [] : [
+        { file_id: 7500 + id, usage_key: 'inline_media', file_name: '学习现场照片.jpg', file_size: 384210 },
+      ]),
+    ],
+  };
+});
+
+/** 列表卡片：`excerpt` 由 `study_content` 前 100 字派生，**不落摘要列**（F7）。 */
+function toStudyCard(study) {
+  return {
+    study_id: study.study_id,
+    study_title: study.study_title,
+    study_type: study.study_type,
+    publisher_department: study.publisher_department,
+    published_at: study.published_at,
+    excerpt: study.study_content.slice(0, 100),
+  };
+}
+
 const TODOS = [
   { todo_id: 1, todo_kind: 'upload', todo_title: '上传「祠堂里的故事」课程案例', due_at: '2026-08-25T18:00:00+08:00' },
   { todo_id: 2, todo_kind: 'task', todo_title: '完成共建任务：秋季主题墙素材征集', due_at: '2026-08-28T18:00:00+08:00' },
@@ -400,6 +465,53 @@ function getNotice(req, res, id) {
   sendJson(res, 200, notice);
 }
 
+/**
+ * §3.1 — 党建学习列表。
+ *
+ * 契约 §4 规则 19 说这个集合**不搜索、不筛选**，所以筛选集恒为空，端点不收
+ * `study_type`。指纹仍然算在这个空集合上：将来真加了筛选，在飞的旧游标会当场失效，
+ * 而不是悄悄给出错答案（§3.3）。
+ */
+function getPartyStudies(req, res, url) {
+  if (!requireSession(req, res)) return;
+
+  const limitRaw = url.searchParams.get('limit');
+  const limit = limitRaw === null ? 20 : Number(limitRaw);
+  if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+    return fail(res, 422, 'validation_failed', '分页参数不合法',
+      { field: 'limit', rule: 'between_1_and_100' });
+  }
+
+  const filters = {};
+  let startIndex = 0;
+  const cursor = url.searchParams.get('cursor');
+  if (cursor) {
+    const decoded = decodeCursor(cursor, filters);
+    if (decoded.error) {
+      return fail(res, 400, decoded.error,
+        decoded.error === 'cursor_invalid' ? '翻页游标不可解' : '筛选条件已变，游标失效');
+    }
+    startIndex = PARTY_STUDIES.findIndex((s) => s.study_id === decoded.key) + 1;
+    if (startIndex <= 0) return fail(res, 400, 'cursor_invalid', '翻页游标不可解');
+  }
+
+  const slice = PARTY_STUDIES.slice(startIndex, startIndex + limit);
+  const last = slice[slice.length - 1];
+  const hasMore = startIndex + limit < PARTY_STUDIES.length;
+  sendJson(res, 200, {
+    items: slice.map(toStudyCard),
+    next_cursor: hasMore && last ? encodeCursor(last.study_id, filters) : null,
+  });
+}
+
+function getPartyStudy(req, res, id) {
+  if (!requireSession(req, res)) return;
+  const study = PARTY_STUDIES.find((s) => s.study_id === Number(id));
+  // §2.3: 不存在与不在可见范围内是同一个 404。回 403 会确认这个 id 存在。
+  if (!study) return fail(res, 404, 'not_found', '学习资料不存在或不在可见范围内');
+  sendJson(res, 200, study);
+}
+
 /** §3.5 — roster-shaped: whole, unpaginated. */
 function getTodos(req, res) {
   if (!requireSession(req, res)) return;
@@ -520,6 +632,8 @@ const HAND_WRITTEN_ROLES = [
   [/^\/parent-tasks\/\d+\/progress$/, ['teacher']],
   // Declared by the contract; repeated here because the handler is hand-written.
   [/^\/tasks\/\d+$/, ['teacher']],
+  [/^\/party\/studies$/, ['teacher']],
+  [/^\/party\/studies\/\d+$/, ['teacher']],
   [/^\/auth\/session$/, ['teacher', 'parent', 'admin-pc', 'partner-account']],
 ];
 
@@ -678,6 +792,10 @@ const server = createServer(async (req, res) => {
       getTasks(req, res, url);
     } else if (req.method === 'GET' && /^\/tasks\/\d+$/.test(path)) {
       getTask(req, res, path.split('/')[2]);
+    } else if (req.method === 'GET' && path === '/party/studies') {
+      getPartyStudies(req, res, url);
+    } else if (req.method === 'GET' && /^\/party\/studies\/\d+$/.test(path)) {
+      getPartyStudy(req, res, path.split('/')[3]);
     } else if (req.method === 'POST' && path === '/parent-tasks') {
       postParentTask(req, res, body);
     } else if (req.method === 'GET' && /^\/parent-tasks\/\d+\/progress$/.test(path)) {

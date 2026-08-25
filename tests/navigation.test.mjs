@@ -88,9 +88,19 @@ test('every registered page has all three of its files', () => {
 })
 
 test('tabBar pages sit in the main package', () => {
-  // 官方分包规则：tabBar 页面必须位于主包内。There are no subpackages yet; this
-  // test is the tripwire for ticket 12, which introduces them.
-  assert.equal(appJson.subPackages, undefined, '出现分包后，这条断言要改为逐个核对 tab 页不在分包里')
+  // 官方分包规则：tabBar 页面必须位于主包内。分包自票据 12 起存在，所以这条不再
+  // 断言「没有分包」，而是逐个核对每个 tab 页都不在任何分包的 root 底下。
+  const roots = (appJson.subPackages || []).map((s) => s.root.replace(/\/$/, ''))
+  assert.ok(roots.length > 0, '分包已在票据 12 引入；这条断言失效说明分包声明被删了')
+  for (const tab of appJson.tabBar.list) {
+    for (const root of roots) {
+      assert.ok(
+        !tab.pagePath.startsWith(`${root}/`),
+        `${tab.pagePath} 落在分包 ${root} 里 —— tabBar 页面必须在主包`,
+      )
+    }
+    assert.ok(appJson.pages.includes(tab.pagePath), `${tab.pagePath} 不在主包 pages 里`)
+  }
 })
 
 // ── The four entry pages ─────────────────────────────────────────────────────
@@ -118,11 +128,12 @@ test('an entry whose screen is not built yet is refused by name, not in silence'
   const page = loadPage(c, 'pages/party-building/index.js')
   page.onLoad()
 
-  const first = page.data.sections[0].entries[0]
-  page.onEntryTap({ detail: { key: first.key } })
+  // 学习资料自票据 12 起已落地并会真的跳转，所以这条改用仍未落地的「活动」。
+  const pending = page.data.sections[0].entries.find((e) => e.key === 'activity')
+  page.onEntryTap({ detail: { key: pending.key } })
 
   assert.equal(c.record.navigations.length, 0, '没有跳转')
-  assert.match(c.record.toasts.pop().title, new RegExp(`${first.label}尚未上线`), '说出了是哪一条')
+  assert.match(c.record.toasts.pop().title, new RegExp(`${pending.label}尚未上线`), '说出了是哪一条')
 })
 
 test('the parent-only screens the prototype offered are absent', () => {

@@ -20,6 +20,7 @@ export function createFakeWx({ loginCode = 'JS_CODE_OK', loginFails = false } = 
     navigations: [],     // { api: 'navigateTo'|'reLaunch', url }
     toasts: [],          // the options object passed in
     navTitles: [],       // titles passed to setNavigationBarTitle
+    clipboard: [],       // strings passed to setClipboardData
     requests: [],        // { method, url, header, data } — the wire payload as built
   }
 
@@ -68,6 +69,10 @@ export function createFakeWx({ loginCode = 'JS_CODE_OK', loginFails = false } = 
     reLaunch({ url }) { record.navigations.push({ api: 'reLaunch', url }) },
     showToast(opts) { record.toasts.push(opts) },
     setNavigationBarTitle({ title }) { record.navTitles.push(title) },
+    setClipboardData({ data, success }) {
+      record.clipboard.push(data)
+      if (success) success({ errMsg: 'setClipboardData:ok' })
+    },
     stopPullDownRefresh() { /* nothing to stop in a test */ },
   }
 

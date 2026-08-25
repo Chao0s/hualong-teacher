@@ -51,6 +51,7 @@ export function loadClient({ baseUrl, wxOptions } = {}) {
     kase: require(path.join(MP, 'services', 'case.js')),
     home: require(path.join(MP, 'services', 'home.js')),
     task: require(path.join(MP, 'services', 'task.js')),
+    party: require(path.join(MP, 'services', 'party.js')),
   }
 }
 

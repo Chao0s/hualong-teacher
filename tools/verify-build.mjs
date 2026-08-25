@@ -31,6 +31,12 @@ const TOTAL_LIMIT = 20 * 1024 * 1024;
 // tabBar 上限即五（DO-NOT-BUILD 14）。第六个模块入口走页面内入口。
 const TAB_CEILING = 5;
 
+// 分包与服务模块一一对应（票据 12）：一个分包只对应一个服务模块，不跨模块。
+// 这是本文件里唯一的一处声明 —— 新增一个分包只改这里，检查逻辑不动。
+const SUBPACKAGE_SERVICES = {
+  'packages/party': 'party',
+};
+
 const findings = [];
 const note = (file, message) => findings.push({ file, message });
 
@@ -132,6 +138,30 @@ for (const file of files) {
   else if (ext === '.wxss') checkWxssFile(file);
 }
 
+// ── 分包边界：一个分包只对应一个服务模块 ────────────────────────────────────
+//
+// 分包切错了不会报错，只会在真机上多下一个包、并且把两个模块的代码绑在一起下发。
+// 服务层是模块边界（票据 08 定型），所以这里按 require 的服务模块判定归属。
+
+for (const root of subRoots) {
+  const allowed = SUBPACKAGE_SERVICES[root];
+  if (!allowed) {
+    note('tools/verify-build.mjs', `分包 ${root} 未声明它对应哪个服务模块，请加进 SUBPACKAGE_SERVICES`);
+    continue;
+  }
+  for (const file of files) {
+    const r = relative(ROOT, file).replace(/\\/g, '/');
+    if (!r.startsWith(`${root}/`) || extname(file) !== '.js') continue;
+    const src = readFileSync(file, 'utf8');
+    for (const m of src.matchAll(/require\(['"][^'"]*services\/([\w-]+)['"]\)/g)) {
+      if (m[1] !== allowed) {
+        note(r, `引用了 services/${m[1]}，但分包 ${root} 只对应 services/${allowed}。`
+          + `把这个页面挪到 services/${m[1]} 所属的分包，或把它留在主包。`);
+      }
+    }
+  }
+}
+
 /** Component references must resolve, or the page renders an empty box silently. */
 function checkJsonFile(file) {
   const json = readJson(file, rel(file));
@@ -214,11 +244,14 @@ function checkWxssFile(file) {
 
 let mainBytes = 0;
 let totalBytes = 0;
+const subBytes = new Map(subRoots.map((sub) => [sub, 0]));
 for (const file of files) {
   const size = statSync(file).size;
   totalBytes += size;
   const r = relative(ROOT, file).replace(/\\/g, '/');
-  if (!subRoots.some((sub) => r.startsWith(`${sub}/`))) mainBytes += size;
+  const owner = subRoots.find((sub) => r.startsWith(`${sub}/`));
+  if (owner) subBytes.set(owner, subBytes.get(owner) + size);
+  else mainBytes += size;
 }
 if (mainBytes > MAIN_PACKAGE_LIMIT) {
   note('miniprogram/', `主包 ${kb(mainBytes)}，超过 2 MB 上限。把阅读类页面搬进分包。`);
@@ -238,8 +271,9 @@ console.log(`| 注册页面 | ${pageCount} 个（主包 ${(app.pages || []).leng
 console.log(`| 分包 | ${subPackages.length} 个 |`);
 console.log(`| tabBar | ${tabs.length} / ${TAB_CEILING} |`);
 console.log(`| 源文件 | ${files.length} 个 |`);
-console.log(`| 主包体积 | ${kb(mainBytes)} / 2048.0 KB |`);
-console.log(`| 整包体积 | ${kb(totalBytes)} / 20480.0 KB |`);
+console.log(`| 主包体积 | ${kb(mainBytes)} / 2048.0 KB，余 ${kb(MAIN_PACKAGE_LIMIT - mainBytes)} |`);
+for (const [sub, bytes] of subBytes) console.log(`| 分包 ${sub} | ${kb(bytes)} |`);
+console.log(`| 整包体积 | ${kb(totalBytes)} / 20480.0 KB，余 ${kb(TOTAL_LIMIT - totalBytes)} |`);
 console.log(`| 发现问题 | ${findings.length} 个 |`);
 
 if (findings.length) {

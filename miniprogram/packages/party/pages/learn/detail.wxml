@@ -1,0 +1,45 @@
+<view class="hl-page" wx:if="{{ready}}">
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryLoad">重试</text>
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障码 {{errorRequestId}}</text>
+  </view>
+
+  <view wx:if="{{loading}}" class="hl-loading">加载中…</view>
+
+  <block wx:if="{{study && !loading}}">
+    <view class="hl-card detail">
+      <text class="hl-pill detail__type">{{study.type_label}}</text>
+      <view class="detail__title">{{study.study_title}}</view>
+      <view class="hl-card__meta detail__meta">
+        <text>{{study.published_label}}</text>
+        <text wx:if="{{study.department_label}}">{{study.department_label}}</text>
+      </view>
+      <view class="hl-hairline detail__rule"></view>
+      <view class="detail__body">{{study.study_content}}</view>
+    </view>
+
+    <block wx:if="{{study.video_links.length > 0}}">
+      <view class="hl-section-title">相关视频学习</view>
+      <view class="hl-card">
+        <!-- 外部网站影片，小程序不内嵌播放，只提供复制（F7）。 -->
+        <view class="video__hint">外部网站影片，请复制链接到浏览器打开。</view>
+        <view
+          wx:for="{{study.video_links}}"
+          wx:key="url"
+          class="video__row"
+          data-url="{{item.url}}"
+          bindtap="onCopyLink">
+          <text class="video__title">{{item.title}}</text>
+          <text class="video__copy">复制链接</text>
+        </view>
+      </view>
+    </block>
+
+    <view class="hl-section-title">附件</view>
+    <view wx:for="{{study.files}}" wx:key="file_id" class="hl-card detail__file">
+      <text class="hl-card__title">{{item.file_name}}</text>
+      <view class="hl-card__meta">{{item.usage_label}}</view>
+    </view>
+  </block>
+</view>

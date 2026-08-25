@@ -11,6 +11,22 @@
     "pages/task/board",
     "pages/task/detail"
   ],
+  "subPackages": [
+    {
+      "root": "packages/party",
+      "name": "party",
+      "pages": [
+        "pages/learn/list",
+        "pages/learn/detail"
+      ]
+    }
+  ],
+  "preloadRule": {
+    "pages/party-building/index": {
+      "network": "all",
+      "packages": ["party"]
+    }
+  },
   "window": {
     "backgroundTextStyle": "dark",
     "navigationBarBackgroundColor": "#f0f5f5",
