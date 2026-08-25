@@ -1,0 +1,62 @@
+.hl-card + .hl-card {
+  margin-top: var(--space-2);
+}
+
+.detail__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.detail__title {
+  font-size: 38rpx;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.detail__status {
+  margin-top: var(--space-2);
+}
+
+.detail__notice {
+  background: var(--danger-light);
+  color: var(--danger);
+  font-size: 28rpx;
+}
+
+.detail__body {
+  font-size: 30rpx;
+  line-height: var(--line-cjk);
+  white-space: pre-wrap;
+}
+
+.detail__file {
+  color: var(--accent-dark);
+}
+
+.meeting__hint {
+  font-size: 26rpx;
+  color: var(--muted);
+}
+
+.meeting__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.meeting__title {
+  flex: 1;
+  min-width: 0;
+  font-size: 30rpx;
+  color: var(--fg);
+}
+
+.meeting__copy {
+  color: var(--accent-dark);
+  font-size: 26rpx;
+  font-weight: 600;
+}

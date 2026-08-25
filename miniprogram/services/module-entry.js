@@ -20,7 +20,8 @@
  * A `page` of null means the screen is not built yet, and the tap is refused out
  * loud exactly as 首页 does (ticket 08). Tickets 12 to 21 fill them in — set
  * `page`, and the refusal disappears on its own. 党建管理's three entries and
- * 综合协调's three entries are all set (ticket 12); the rest are still null.
+ * 综合协调's three entries are all set (ticket 12); 教研培训's 办园理念与课程体系 and
+ * 研修 are set (ticket 14); the rest are still null.
  */
 
 const guard = require('../utils/guard');
@@ -60,12 +61,12 @@ const MODULES = {
       {
         title: '课程与研修',
         entries: [
-          { key: 'course', badge: '课', label: '办园理念与课程体系', desc: '课程建设的来龙去脉', screen: 'CourseIntroDetail', page: null },
+          { key: 'course', badge: '课', label: '办园理念与课程体系', desc: '课程建设的来龙去脉', screen: 'CourseIntroDetail', page: '/packages/training/pages/course/detail' },
           // 资源库是第六个模块，导航栏放不下（DO-NOT-BUILD 14），所以它借 教研培训
           // 的入口页落一条门。`module` 因此与本模块不同：门要按目的地的模块查，不是
           // 按出发地的（合作园只准进 resource-library／case-library）。
           { key: 'resource', badge: '资', label: '课程资源', desc: '课程资源库与课程案例库', screen: 'CourseResourceHome', module: 'resource-library', page: '/packages/library/pages/home/index' },
-          { key: 'train', badge: '研', label: '研修', desc: '研修安排、详情与反馈', screen: 'TrainList', page: null },
+          { key: 'train', badge: '研', label: '研修', desc: '研修安排与详情', screen: 'TrainList', page: '/packages/training/pages/train/list' },
         ],
       },
       {

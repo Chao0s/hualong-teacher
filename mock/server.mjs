@@ -542,6 +542,164 @@ function relatedResourcesFor(kase) {
     }));
 }
 
+// db_training —— 研修活动。契约 §4 规则 21 / F9：全部 active 正式教师可读本园
+// `training_status='s1'` 的研修，合作园不得进入；按 `start_at DESC, training_id DESC`
+// 作游标分页，**不搜索、不筛选**。`phase` 只是「最新／历史」两区的切分，不是自由筛选。
+//
+// `training_phase` 契约说是**按园所时区派生、不落列**的值：真服务按 NOW 现算。本 mock
+// 把它写死在夹具里，因为一个跟着时钟漂的夹具会让「翻到底就停」这类断言在某个月的某一天
+// 忽然换答案。派生的一方仍是服务端，客户端照收照显 —— 这一点两边一致。
+//
+// 46 条，**两区各多于一页**（默认 limit=20）：最新 23 条、历史 21 条。少于这个数，
+// 「换分区丢弃旧游标、新分区自己签一枚」就验证不了。
+// 第 6 条带一个本客户端不认识的阶段码（§1.1 枚举降级）；第 20 条已撤回（s5：列表读不到、
+// 详情读得到一个壳）；第 44 条没有地点（纯线上）；第 40 条没有主讲；第 38 条没有结束
+// 时间（`effective_end_at` 要退回当日结束）；第 34 条一份材料也没有（F9：研修材料全部
+// 可选，不强制 main_file）。
+const TRAINING_TITLES = [
+  '幼儿园课程游戏化的理论与实践',
+  '岭南文化融入幼儿园课程专题研修',
+  '幼儿行为观察与记录方法',
+  '家园沟通技巧与案例分享',
+  '衣食住行艺课程资源开发工作坊',
+  '幼儿园一日生活流程优化研讨',
+];
+
+const TRAINING_LOCATIONS = ['多功能厅', '会议室二', '区教师发展中心', '党建室', '中三班'];
+const TRAINING_SPEAKERS = ['陈园长', '李老师', '王主任', '外聘专家'];
+
+const TRAINING_CONTENT = [
+  '一、研修目标',
+  '',
+  '围绕课程实施中的真实问题展开研讨，形成可以直接带回班级的观察工具与活动设计思路。',
+  '',
+  '二、参与要求',
+  '',
+  '请参训教师提前阅读研修材料，带上本班近两周的活动照片与教师转化说明，现场按年级组分组研讨。',
+].join('\n');
+
+const TRAINING_START_HOURS = ['09:30', '10:00', '14:00', '15:00', '16:20'];
+const TRAINING_END_HOURS = ['11:30', '12:00', '16:00', '17:00', '18:20'];
+
+const TRAININGS = Array.from({ length: 46 }, (_, i) => {
+  const id = 46 - i;
+  // 日期严格递减，`start_at DESC, training_id DESC` 的排序才真的成立：十月排 23 天，
+  // 六月再排 23 天，一天一场，开场钟点在五个值里轮转。
+  const month = i < 23 ? '10' : '06';
+  const day = String(23 - (i % 23)).padStart(2, '0');
+  const title = TRAINING_TITLES[i % TRAINING_TITLES.length];
+  // 前 21 条即将开始、随后 2 条进行中、其余历史。两区因此各多于一页。
+  const phase = i < 21 ? 'upcoming' : i < 23 ? 'ongoing' : 'history';
+  // 纯线上的那一场没有地点，只有会议入口；混合活动两者都有（F9）。
+  const online = id === 46 || id === 44;
+  return {
+    training_id: id,
+    training_title: title,
+    training_content: TRAINING_CONTENT,
+    // §1.2：偏移量是字面量，服务端写什么客户端就显示什么。
+    start_at: `2026-${month}-${day}T${TRAINING_START_HOURS[i % 5]}:00+08:00`,
+    end_at: id === 38 ? null : `2026-${month}-${day}T${TRAINING_END_HOURS[i % 5]}:00+08:00`,
+    location: id === 44 ? null : TRAINING_LOCATIONS[i % 5],
+    speaker: id === 40 ? null : TRAINING_SPEAKERS[i % 4],
+    training_status: id === 20 ? 's5' : 's1',
+    // 一个未来版本才有的派生阶段码：客户端必须照常显示，不得崩、不得留空。
+    training_phase: id === 6 ? 'z9_future_phase' : phase,
+    meeting_link_title: online ? `腾讯会议：${title}` : null,
+    meeting_url: online ? 'https://meeting.tencent.com/dm/hualong-example' : null,
+    // 契约声明了这两列，所以夹具照给。票据 14 只做浏览，客户端本轮不读它们；
+    // 省掉它们会让下一张票以为服务端从来不回这两个字段。
+    my_participation_status: id % 4 === 0 ? 's1' : null,
+    feedback_count: phase === 'history' ? 3 + (i % 7) : 0,
+    // usage_key 只有 main_file／inline_media／download 三个值（契约 ContentFileRef）。
+    // 三类材料：PDF 讲义、演示文稿、以及一份微信打不开的录像包。
+    file_refs: id === 34 ? [] : [
+      { file_id: 7100 + id, usage_key: 'main_file', file_name: `${title}讲义.pdf`, file_size: 1843200 },
+      ...(id % 2 === 0 ? [
+        { file_id: 7300 + id, usage_key: 'download', file_name: `${title}演示文稿.pptx`, file_size: 3145728 },
+      ] : []),
+      ...(id === 46 ? [
+        { file_id: 7500 + id, usage_key: 'download', file_name: '研修现场录像包.zip', file_size: 20971520 },
+      ] : []),
+    ],
+  };
+});
+
+/** 列表卡片：`excerpt` 由 `training_content` 前 100 字派生，**不落摘要列**（F9）。 */
+function toTrainingCard(training) {
+  return {
+    training_id: training.training_id,
+    training_title: training.training_title,
+    start_at: training.start_at,
+    end_at: training.end_at,
+    location: training.location,
+    speaker: training.speaker,
+    training_status: training.training_status,
+    training_phase: training.training_phase,
+    excerpt: training.training_content.slice(0, 100),
+    my_participation_status: training.my_participation_status,
+  };
+}
+
+/**
+ * 办园理念与课程体系的图文。
+ *
+ * **契约里没有这条路径，`db/01_schema.sql` 里也没有对应的表。** 与 `/notices`、
+ * `/home/todos` 那几条不同——那几条至少有 `db_notification`／`db_home_case` 撑着，只是
+ * 没有登记操作；这一页连表都没有。教师端 spec 的第 36 条用户故事要它，`openapi.yaml`
+ * 的 126 条路径里搜不到 course／curriculum／理念／课程体系任何一个词。
+ *
+ * 这是一个**契约缺口**，只在本地契约服务上成立，接真服务时必须重对。夹具的图文抄自
+ * 原型 `screens/course-building.html`。
+ *
+ * 原型那一页底部还有三份附件（课程体系总图等）。**这里不给附件**：取档要走
+ * `GET /media/files/{file_id}/url`，而它的第一个参数是 `owner_object`（`db_file_ref`
+ * 挂在哪张业务表上）——没有表就填不出这个参数，凭空编一个表名等于把缺口藏起来。
+ */
+const COURSE_INTRO = {
+  intro_title: '课程体系建设',
+  intro_summary: '以幼儿真实生活经验为起点，围绕衣、食、住、行、艺五个范畴组织园本课程。',
+  intro_lead: '课程建设从「儿童在本地如何生活」出发，把社区资源、家庭经验和幼儿园活动整合为连续的'
+    + '学习线索。教师围绕五类主题组织观察、探究、表达和创作，让儿童在真实情境中发展健康、语言、社会、'
+    + '科学与艺术经验。',
+  sections: [
+    {
+      section_key: 'philosophy',
+      section_title: '办园理念',
+      section_body: '图文内容用于呈现幼儿园课程从生活情境进入活动设计的路径。',
+      items: [
+        { item_title: '真实生活', item_body: '课程的起点是幼儿此刻正在过的日子，不是成人预设的主题。' },
+        { item_title: '本土资源', item_body: '祠堂、街巷、市集与非遗技艺都是可进入课程的材料。' },
+        { item_title: '儿童经验', item_body: '看得见、摸得着、说得出，经验才算真的发生。' },
+        { item_title: '课程转化', item_body: '资源要落成活动，活动要落回幼儿的下一次生活。' },
+      ],
+    },
+    {
+      section_key: 'framework',
+      section_title: '课程体系架构',
+      section_body: '课程体系采用「生活范畴 → 主题资源 → 活动案例 → 儿童经验」的组织方式，'
+        + '避免把资源停留在展示层面。',
+      items: [
+        { item_title: '生活范畴', item_body: '衣、食、住、行、艺五类。' },
+        { item_title: '主题资源', item_body: '社区建筑、地方饮食、非遗技艺、出行经验。' },
+        { item_title: '活动案例', item_body: '小中大班分层活动与五大领域转化。' },
+        { item_title: '儿童经验', item_body: '观察、表达、探究、合作、审美与创造。' },
+      ],
+    },
+    {
+      section_key: 'domains',
+      section_title: '五个课程范畴',
+      section_body: '',
+      items: [
+        { item_title: '衣：材料、纹样与审美表达', item_body: '从香云纱、广绣纹样、服饰材料出发，连接审美表达与材料探究。' },
+        { item_title: '食：地方饮食与家庭经验', item_body: '围绕双皮奶、节气饮食、厨房工具，生成测量、记录和家庭访谈活动。' },
+        { item_title: '住：建筑空间与社区关系', item_body: '以留耕堂、宗祠、街巷空间为线索，引导幼儿观察建筑和社区关系。' },
+        { item_title: '行：出行规则与空间经验', item_body: '从龙舟、步行路线、安全过街切入，发展规则意识和空间经验。' },
+        { item_title: '艺：表演、节奏与创作', item_body: '结合醒狮、粤语童谣、民间工艺，支持儿童表演、节奏和创作表达。' },
+      ],
+    },
+  ],
+};
+
 // POST /library/resources/{id}/download-link 签发的短链。link_id -> { resource_id }。
 // §8.4：短链指向**我们的** /dl/{link_id}，不是对象存储；在那里逐次复核内容状态后
 // 才 302 到真正的地址。所以这张表存的是内容归属，不是一个已经签好的对象存储地址。
@@ -1149,6 +1307,113 @@ function getCase(req, res, id) {
   sendJson(res, 200, { ...kase, related_resources: relatedResourcesFor(kase) });
 }
 
+/** `2026-10-23T09:30:00+08:00` -> `2026-10-23T23:59:59+08:00`。字符串上做，不建 Date。 */
+function endOfDay(startAt) {
+  return `${String(startAt).slice(0, 10)}T23:59:59+08:00`;
+}
+
+/**
+ * §3.1 — 研修列表。
+ *
+ * `phase` 是**两区切分**，不是自由筛选：契约只认 `latest` 与 `history` 两个值，
+ * 未知值回 400。生成路由不校验查询参数，所以这一条只有手写处理器拦得住。
+ *
+ * 分区进指纹（§3.3）：换了分区还拿着旧游标，回 `cursor_filter_mismatch`，不是悄悄
+ * 给出错答案。
+ *
+ * 可见范围 `training_status = 's1'`：已撤回的 s5 读不到列表，只在详情读得到一个壳。
+ */
+function getTrainings(req, res, url) {
+  if (!requireSession(req, res)) return;
+
+  const limitRaw = url.searchParams.get('limit');
+  const limit = limitRaw === null ? 20 : Number(limitRaw);
+  if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+    return fail(res, 422, 'validation_failed', '分页参数不合法',
+      { field: 'limit', rule: 'between_1_and_100' });
+  }
+
+  const phase = url.searchParams.get('phase');
+  if (phase !== null && phase !== 'latest' && phase !== 'history') {
+    return fail(res, 400, 'malformed_request', '研修分区不在可选范围内',
+      { field: 'phase', rule: 'latest_or_history' });
+  }
+
+  const filters = {};
+  if (phase !== null) filters.phase = phase;
+
+  const pool = TRAININGS.filter((t) => {
+    if (t.training_status !== 's1') return false;
+    if (phase === 'latest') return t.training_phase === 'upcoming' || t.training_phase === 'ongoing';
+    // 未知的派生阶段码两区都不落：`history` 的定义是「已过有效结束时间」，把一个读不懂
+    // 的码塞进历史区就是替服务端猜。不筛时它照常出现，客户端因此仍要能显示它。
+    if (phase === 'history') return t.training_phase === 'history';
+    return true;
+  });
+
+  let startIndex = 0;
+  const cursor = url.searchParams.get('cursor');
+  if (cursor) {
+    const decoded = decodeCursor(cursor, filters);
+    if (decoded.error) {
+      return fail(res, 400, decoded.error,
+        decoded.error === 'cursor_invalid' ? '翻页游标不可解' : '筛选条件已变，游标失效');
+    }
+    startIndex = pool.findIndex((t) => t.training_id === decoded.key) + 1;
+    if (startIndex <= 0) return fail(res, 400, 'cursor_invalid', '翻页游标不可解');
+  }
+
+  const slice = pool.slice(startIndex, startIndex + limit);
+  const last = slice[slice.length - 1];
+  const hasMore = startIndex + limit < pool.length;
+  sendJson(res, 200, {
+    items: slice.map(toTrainingCard),
+    next_cursor: hasMore && last ? encodeCursor(last.training_id, filters) : null,
+  });
+}
+
+/**
+ * 研修详情。可见范围 `training_status IN ('s1','s5')`。
+ *
+ * **s5 已撤回的活动仍打得开，但只是壳**：回原标题与时间，`file_refs`／
+ * `meeting_link_title`／`meeting_url`／公开回馈一律不返回（F9）。壳不写 viewed 事件，
+ * 因为它不是内容供给。
+ */
+function getTraining(req, res, id) {
+  if (!requireSession(req, res)) return;
+  const training = TRAININGS.find((t) => t.training_id === Number(id));
+  // §2.3: 不存在与不在可见范围内是同一个 404。
+  if (!training) return fail(res, 404, 'not_found', '研修不存在或不在可见范围内');
+
+  const effective_end_at = training.end_at || endOfDay(training.start_at);
+  if (training.training_status === 's5') {
+    return sendJson(res, 200, {
+      training_id: training.training_id,
+      training_title: training.training_title,
+      training_content: training.training_content,
+      start_at: training.start_at,
+      end_at: training.end_at,
+      effective_end_at,
+      location: training.location,
+      speaker: training.speaker,
+      training_status: 's5',
+      training_phase: training.training_phase,
+      meeting_link_title: null,
+      meeting_url: null,
+      my_participation_status: training.my_participation_status,
+      feedback_count: 0,
+      file_refs: [],
+    });
+  }
+  sendJson(res, 200, { ...training, effective_end_at });
+}
+
+/** 办园理念与课程体系的图文。契约里没有这条路径，见 COURSE_INTRO 的头注。 */
+function getCourseIntro(req, res) {
+  if (!requireSession(req, res)) return;
+  sendJson(res, 200, COURSE_INTRO);
+}
+
 /**
  * §8.4 / F5 — 签发 30 分钟 bearer 下载短链。
  *
@@ -1369,6 +1634,12 @@ const HAND_WRITTEN_ROLES = [
   [/^\/library\/cases$/, ['teacher']],
   [/^\/library\/cases\/\d+$/, ['teacher']],
   [/^\/library\/cases\/\d+\/download-link$/, ['teacher']],
+  // §4 规则 21：合作园不得进入教研培训，所以 partner-account 在这里就被 403 挡下。
+  [/^\/trainings$/, ['teacher']],
+  [/^\/trainings\/\d+$/, ['teacher']],
+  // 契约**没有**这条路径，连表都没有（见 COURSE_INTRO 的头注）。登记在这里是为了让门
+  // 不至于悄悄缺席 —— 缺口本身是另一个问题，记在交接里。
+  [/^\/training\/course-intro$/, ['teacher']],
   [/^\/auth\/session$/, ['teacher', 'parent', 'admin-pc', 'partner-account']],
 ];
 
@@ -1562,6 +1833,12 @@ const server = createServer(async (req, res) => {
       getCase(req, res, path.split('/')[3]);
     } else if (req.method === 'POST' && /^\/library\/cases\/\d+\/download-link$/.test(path)) {
       postCaseDownloadLink(req, res, path.split('/')[3]);
+    } else if (req.method === 'GET' && path === '/trainings') {
+      getTrainings(req, res, url);
+    } else if (req.method === 'GET' && /^\/trainings\/\d+$/.test(path)) {
+      getTraining(req, res, path.split('/')[2]);
+    } else if (req.method === 'GET' && path === '/training/course-intro') {
+      getCourseIntro(req, res);
     } else if (req.method === 'GET' && path === '/coordination/documents') {
       getCoordDocuments(req, res, url);
     } else if (req.method === 'GET' && /^\/coordination\/documents\/\d+$/.test(path)) {

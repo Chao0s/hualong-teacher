@@ -1,0 +1,58 @@
+<view class="hl-page" wx:if="{{ready}}">
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryLoad">重试</text>
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障码 {{errorRequestId}}</text>
+  </view>
+
+  <view wx:if="{{loading}}" class="hl-loading">加载中…</view>
+
+  <block wx:if="{{train && !loading}}">
+    <view class="hl-card detail">
+      <view class="detail__top">
+        <text class="detail__title">{{train.training_title}}</text>
+        <text class="hl-pill {{train.phase_pill}}">{{train.phase_label}}</text>
+      </view>
+      <!-- 已发布是常态，不挂徽章；已撤回才挂，因为它改变了这一页有什么。 -->
+      <view wx:if="{{train.status_label}}" class="detail__status">
+        <text class="hl-pill {{train.status_pill}}">{{train.status_label}}</text>
+      </view>
+      <!-- 研修时间：服务端给什么钟点就是什么钟点，客户端不换算（§1.2）。 -->
+      <view class="hl-card__meta">开始 {{train.start_label}}</view>
+      <view wx:if="{{train.end_label}}" class="hl-card__meta">结束 {{train.end_label}}</view>
+      <view wx:if="{{train.location_label}}" class="hl-card__meta">{{train.location_label}}</view>
+      <view wx:if="{{train.speaker_label}}" class="hl-card__meta">{{train.speaker_label}}</view>
+    </view>
+
+    <view wx:if="{{train.withdrawn_notice}}" class="hl-card detail__notice">{{train.withdrawn_notice}}</view>
+
+    <view class="hl-section-title">研修通知</view>
+    <view class="hl-card detail__body">{{train.training_content}}</view>
+
+    <block wx:if="{{train.meeting}}">
+      <view class="hl-section-title">线上会议</view>
+      <view class="hl-card">
+        <!-- 外部会议，小程序不内嵌打开，只提供复制（F9）。 -->
+        <view class="meeting__hint">外部会议链接，请复制到浏览器或会议 App 打开。</view>
+        <view class="meeting__row" bindtap="onCopyMeeting">
+          <text class="meeting__title">{{train.meeting.title}}</text>
+          <text class="meeting__copy">复制链接</text>
+        </view>
+      </view>
+    </block>
+
+    <view class="hl-section-title">研修材料</view>
+    <!-- 研修材料全部可选，不强制主文件（F9）：一份也没有的研修照常显示。 -->
+    <view wx:if="{{train.materials.length === 0}}" class="hl-card hl-empty">暂无研修材料</view>
+    <view
+      wx:for="{{train.materials}}"
+      wx:key="file_id"
+      class="hl-card detail__file"
+      data-id="{{item.file_id}}"
+      data-name="{{item.file_name}}"
+      bindtap="onOpenMaterial">
+      <text class="hl-card__title">{{item.file_name}}</text>
+      <view class="hl-card__meta">{{item.usage_label}}</view>
+    </view>
+  </block>
+</view>

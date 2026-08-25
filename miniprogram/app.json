@@ -46,6 +46,15 @@
         "pages/case/list",
         "pages/case/detail"
       ]
+    },
+    {
+      "root": "packages/training",
+      "name": "training",
+      "pages": [
+        "pages/course/detail",
+        "pages/train/list",
+        "pages/train/detail"
+      ]
     }
   ],
   "preloadRule": {
@@ -59,7 +68,7 @@
     },
     "pages/training/index": {
       "network": "all",
-      "packages": ["library"]
+      "packages": ["library", "training"]
     }
   },
   "window": {

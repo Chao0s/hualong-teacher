@@ -37,6 +37,7 @@ const SUBPACKAGE_SERVICES = {
   'packages/party': 'party',
   'packages/coordination': 'coordination',
   'packages/library': 'library',
+  'packages/training': 'training',
 };
 
 const findings = [];

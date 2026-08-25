@@ -54,6 +54,7 @@ export function loadClient({ baseUrl, wxOptions } = {}) {
     party: require(path.join(MP, 'services', 'party.js')),
     coordination: require(path.join(MP, 'services', 'coordination.js')),
     library: require(path.join(MP, 'services', 'library.js')),
+    training: require(path.join(MP, 'services', 'training.js')),
   }
 }
 

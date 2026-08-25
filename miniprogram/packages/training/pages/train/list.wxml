@@ -1,0 +1,48 @@
+<view class="hl-page" wx:if="{{ready}}">
+  <!-- 最新／历史是两区切分，不是自由筛选。横排标签（form-control-spec.md §2.1）。 -->
+  <view class="hl-chips">
+    <view class="hl-chips__label">研修</view>
+    <view
+      wx:for="{{phaseOptions}}"
+      wx:key="key"
+      class="hl-chips__item {{item.key === filters.phase ? 'hl-chips__item--on' : ''}}"
+      data-key="{{item.key}}"
+      bindtap="onPhaseTap">{{item.label}}</view>
+  </view>
+
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryList">重试</text>
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障码 {{errorRequestId}}</text>
+  </view>
+
+  <view wx:if="{{loadingFirst}}" class="hl-loading">加载中…</view>
+
+  <block wx:if="{{!loadingFirst}}">
+    <!-- 空与失败是两种状态：读失败时不说「暂无」，那是把读不到说成没有东西可读。 -->
+    <view wx:if="{{items.length === 0 && !errorText}}" class="hl-card hl-empty">
+      这个分区暂无研修，换一个分区再看
+    </view>
+
+    <view
+      wx:for="{{items}}"
+      wx:key="training_id"
+      class="hl-card train"
+      data-id="{{item.training_id}}"
+      bindtap="onTap">
+      <view class="train__top">
+        <text class="hl-card__title">{{item.training_title}}</text>
+        <text class="hl-pill {{item.phase_pill}}">{{item.phase_label}}</text>
+      </view>
+      <!-- 研修时间：服务端给什么钟点就是什么钟点，客户端不换算（§1.2）。 -->
+      <view class="hl-card__meta">
+        <text class="train__time">{{item.time_label}}</text>
+        <text wx:if="{{item.meta_label}}">{{item.meta_label}}</text>
+      </view>
+      <view wx:if="{{item.excerpt}}" class="train__excerpt">{{item.excerpt}}</view>
+    </view>
+
+    <view wx:if="{{loadingMore}}" class="hl-loading">加载更多…</view>
+    <view wx:if="{{exhausted && items.length > 0}}" class="hl-loading">没有更多了</view>
+  </block>
+</view>
