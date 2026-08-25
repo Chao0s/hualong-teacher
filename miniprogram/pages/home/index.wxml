@@ -25,7 +25,7 @@
       <text wx:if="{{todoCount > 0}}" class="hl-pill hl-pill--pending">待处理 {{todoCount}}</text>
     </view>
     <view wx:if="{{todos.length === 0 && !errorText}}" class="hl-card hl-empty">暂无待办</view>
-    <view wx:for="{{todos}}" wx:key="todo_id" class="hl-card todo" bindtap="onTodoTap">
+    <view wx:for="{{todos}}" wx:key="todo_id" class="hl-card todo" data-kind="{{item.todo_kind}}" bindtap="onTodoTap">
       <view class="todo__row">
         <text class="hl-card__title">{{item.todo_title}}</text>
         <text class="hl-pill {{item.pill_class}}">{{item.kind_label}}</text>

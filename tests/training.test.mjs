@@ -608,11 +608,14 @@ describe('三个页面只读，且不通往 PC后台', () => {
     'packages/training/pages/train/detail',
   ]
 
-  test('三个页面都没有任何写入控件', () => {
-    for (const base of BASES) {
+  // 票据 16 把研修反馈落在**研修详情**上，所以那一页从此有一个写入控件，而且只有一个。
+  // 另外两页仍然一个也不该有 —— 报名与评分属于票据 18，「多了一个入口」不会报错，
+  // 只会悄悄提前上线。
+  const READ_ONLY_BASES = BASES.filter((b) => b !== 'packages/training/pages/train/detail')
+
+  test('办园理念与研修列表两页都没有任何写入控件', () => {
+    for (const base of READ_ONLY_BASES) {
       const wxml = read(`${base}.wxml`)
-      // 报名、反馈、评论与评分都是票据 16 与 18 的事。票据 14 正文点名不要顺手补上，
-      // 而「多了一个入口」不会报错，只会悄悄提前上线。
       for (const word of ['提交', '反馈', '评论', '评分', '报名', '上传', '新建', '编辑', '删除']) {
         assert.ok(!wxml.includes(word), `${base}.wxml 出现了写入入口「${word}」`)
       }
@@ -620,6 +623,18 @@ describe('三个页面只读，且不通往 PC后台', () => {
       for (const tag of ['<input', '<textarea', '<form', '<button', '<checkbox', '<radio', '<switch', '<slider']) {
         assert.ok(!wxml.includes(tag), `${base}.wxml 出现了写入控件 ${tag}`)
       }
+    }
+  })
+
+  test('研修详情的写入控件只有反馈那一个 —— 报名与评分仍属票据 18', () => {
+    const wxml = read('packages/training/pages/train/detail.wxml')
+    for (const word of ['评分', '报名', '上传', '新建', '删除']) {
+      assert.ok(!wxml.includes(word), `研修详情出现了本轮不该有的写入入口「${word}」`)
+    }
+    // 一个输入框，不是两个。反馈是纯文字，附件一概不接（F9）。
+    assert.equal((wxml.match(/<textarea/g) || []).length, 1, '反馈只有一个输入框')
+    for (const tag of ['<input', '<form', '<checkbox', '<radio', '<switch', '<slider']) {
+      assert.ok(!wxml.includes(tag), `研修详情出现了写入控件 ${tag}`)
     }
   })
 
@@ -653,13 +668,21 @@ describe('三个页面只读，且不通往 PC后台', () => {
     }
   })
 
-  test('服务层不读参与状态与反馈计数 —— 本票没有报名与反馈', () => {
-    const src = codeOnly(read('services/training.js'))
-    for (const field of ['my_participation_status', 'feedback_count']) {
-      assert.ok(!src.includes(field),
-        `services/training.js 读了 ${field}：一个没有报名入口的页面上显示「已报名」，`
-        + '教师看得到却改不了，比不显示更糟')
+  test('列表卡片不带参与状态与反馈计数 —— 报名仍属票据 18', async () => {
+    const c = await signedIn()
+    const { items } = await c.training.listTrainings({})
+    // 票据 16 之后，详情**要**读参与状态：反馈入口按它开合。列表不同 —— 列表上没有
+    // 报名入口，显示「已报名」教师看得到却改不了，比不显示更糟。所以断言按行为下，
+    // 不按源码里有没有那个字符串下：源码里现在必然有它。
+    for (const row of items) {
+      assert.equal(row.my_participation_status, undefined, '列表卡片不带参与状态')
+      assert.equal(row.feedback_count, undefined, '列表卡片不带反馈计数')
     }
+    // 夹具第 16 条既参加过又已结束，服务端确实回了这两列 —— 上面那条断言因此不是
+    // 因为服务端根本没给才通过的。
+    const raw = await c.api.get('/trainings/16')
+    assert.equal(raw.my_participation_status, 's3')
+    assert.ok(raw.feedback_count > 0)
   })
 })
 

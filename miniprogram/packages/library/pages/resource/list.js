@@ -75,8 +75,18 @@ Page({
     return this.loadFirst();
   },
 
+  /**
+   * 一行资源的去向有两个，按它的状态分（票据 15）：草稿（s1）与已驳回（s4）进上传表单，
+   * 其余进资源详情。这两态只可能出现在教师自己写的行上（可见范围
+   * `resource_status='s3' OR created_by=$ctx_teacher`），所以这条分支不会把别人的资源
+   * 带进编辑器。案例列表是同一条规则。
+   */
   onTap(e) {
-    const { id } = e.currentTarget.dataset;
+    const { id, status } = e.currentTarget.dataset;
+    if (status === 's1' || status === 's4') {
+      library.openUpload('resource', id);
+      return;
+    }
     wx.navigateTo({ url: `/packages/library/pages/resource/detail?resource_id=${id}` });
   },
 });

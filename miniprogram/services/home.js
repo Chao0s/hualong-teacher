@@ -154,8 +154,19 @@ function openCaseList() {
   library.open('case');
 }
 
-/** A 待办事项 card leads to 任务进度看板 (ticket 10). */
-function openTodo() {
+/**
+ * A 待办事项 card leads to 任务进度看板 (ticket 10) —— 除了「待上传」那一类。
+ *
+ * 待上传是票据 15 的入口之一：它进上传表单，与案例库那个入口进的是同一张表、同一条
+ * 服务层写入路径。**不带目标类型**：`db_home_todo` 没有一列说得出这条待办是资源还是
+ * 案例，替它猜一个，教师十次里有五次要改回来。去向由 services/library.js 说，本文件
+ * 只知道「点的是待上传」。
+ */
+function openTodo(kind) {
+  if (kind === 'upload') {
+    library.openUpload();
+    return;
+  }
   guard.navigateTo('/pages/task/board', 'home');
 }
 

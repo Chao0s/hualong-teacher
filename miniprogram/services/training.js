@@ -41,9 +41,10 @@
  * 按本地契约服务实现 `GET /training/course-intro`，与 `related_cases`、`/home/cases`
  * 同类：**只在本地契约服务上成立，接真服务时必须重对**，已记进交接。
  *
- * Read-only. 报名、取消报名与研修反馈是票据 16 与 18 的事，本文件不写任何东西，
- * 也不读 `my_participation_status` 与 `feedback_count` —— 一个没有报名入口的页面上显示
- * 「已报名」，教师看得到却改不了，比不显示更糟。
+ * **研修反馈（票据 16）也在本文件**，与资源库那边同一条理由：`packages/training` 这个分包
+ * 只对应一个服务模块，`npm run verify:build` 会拦下第二个。报名与取消报名仍不在本轮范围内，
+ * 所以 `my_participation_status` 只被反馈入口的判定读，**列表卡片仍然不带它** —— 一个没有
+ * 报名入口的列表上显示「已报名」，教师看得到却改不了，比不显示更糟。
  *
  * Everything returned is view-ready (spec 实现决定 7): a page binds it and
  * formats nothing.
@@ -52,6 +53,7 @@
 const api = require('../utils/request');
 const time = require('../utils/time');
 const guard = require('../utils/guard');
+const moderation = require('../utils/moderation');
 const { present } = require('../utils/present');
 
 const TRAINING_PATH = '/trainings';
@@ -182,6 +184,11 @@ async function trainingDetail(trainingId) {
     meeting,
     // 研修材料全部可选，不强制 main_file（F9）：一份也没有的研修照常显示。
     materials: (row.file_refs || []).map(toFileRow),
+    // 反馈入口的判定要的三样，原样带出去（票据 16）。判定本身在 feedbackEntry()。
+    training_status: row.training_status,
+    training_phase: row.training_phase,
+    my_participation_status: row.my_participation_status || null,
+    feedback_count: row.feedback_count || 0,
   };
 }
 
@@ -296,13 +303,158 @@ async function courseIntro() {
   };
 }
 
+// ══════════════════════════════════════════════════════════════════════════
+// 研修反馈（票据 16）
+// ══════════════════════════════════════════════════════════════════════════
+//
+// 契约的 `submitTrainingFeedback` scope 逐字：
+//   `WHERE training_id=$1 AND teacher_id=$ctx_teacher
+//    AND participation_status='s3' AND $now > effective_end_at`
+//
+// 也就是**参加过、且研修已经结束**才能提交。票据正文那句「研修已结束时反馈入口渲染为只读」
+// 与契约刚好相反 —— 已结束是提交的前置条件，不是阻断条件。按契约实现，这条冲突记进交接。
+//
+// F9（Q58-ap1）：**不保存服务端草稿**（已删 s1=draft），按提交直接建 s2 待审核；
+// `UNIQUE(training_id, teacher_id)` 一人一场一份；提交后正文永久冻结，**作者不可撤回、
+// 不可查询状态、不可查看驳回理由**。所以：
+//   - 本模块没有撤回端点。教师端 `04 training-center-spec.md` 的 `feedback_withdraw`
+//     已过期（契约 §14 冲突 1），不要照它建一个。
+//   - 提交回执 `TrainingFeedbackOwn` 只有三个字段，**刻意不含 `feedback_status`**，
+//     也没有对应的 GET。「已提交」这个状态因此只在提交成功的那一次会话里成立；
+//     教师退出再进来，客户端无从知道自己交过 —— 这是契约缺口，记进交接。
+//   - 附件一概不接（`db_file_ref` 不收），所以这条写入只携带教职工文字一类内容。
+
+const FEEDBACK_TEXT_MAX = 1000;
+
+// api/action-registry.tsv 的 action_key。
+const ACTION_FEEDBACK_SUBMIT = 'training_feedback.submit';
+
+/**
+ * 反馈入口该是什么样子，以及为什么。
+ *
+ * **返回一个理由，不返回真假。** 五种关闭情形各有各的话要说，教师要知道自己为什么不能
+ * 提交，而不只是不能。渲染成一行说明，不做成一个会当面拒绝他的按钮（票据 16 验收项 6）。
+ *
+ * 顺序是有意的：先答「还没结束」再答「你没参加」。`participation_status` 只在到达有效结束
+ * 时间时才由 s1 自动转 s3，所以一场没结束的研修上，报了名的教师也还是 s1；反过来问，他会
+ * 被告知「你没参加」——那句话是错的，他明明报了名。
+ *
+ * 「已结束」读的是服务端派生的 `training_phase`，不是自己拿时间去比 —— 客户端不做时间
+ * 算术（§1.2 / DO-NOT-BUILD 9）。
+ */
+function feedbackEntry({ train, canWrite, submitted }) {
+  if (submitted) {
+    return { open: false, submitted: true, reason: '反馈已提交，内容已锁定，不能再修改。' };
+  }
+  if (!train) return { open: false, submitted: false, reason: '' };
+  if (train.training_status === 's5') {
+    return { open: false, submitted: false, reason: '这场研修已撤回，不再接收反馈。' };
+  }
+  if (train.training_phase !== 'history') {
+    return { open: false, submitted: false, reason: '研修还没有结束，结束后可以在这里提交反馈。' };
+  }
+  if (train.my_participation_status !== 's3') {
+    return { open: false, submitted: false, reason: '只有参加过这场研修的教师可以提交反馈。' };
+  }
+  if (!canWrite) {
+    return { open: false, submitted: false, reason: '假期中暂不可提交，新学期开始后恢复。' };
+  }
+  return { open: true, submitted: false, reason: '' };
+}
+
+/** 反馈是否超长。页面用它就地拦，服务端仍会独立复验（§6.4）。 */
+function feedbackTooLong(text) {
+  return typeof text === 'string' && text.trim().length > FEEDBACK_TEXT_MAX;
+}
+
+/**
+ * 按契约的 `TrainingFeedbackWrite` 重建请求体。
+ *
+ * 白名单而非黑名单：schema 是 `additionalProperties: false` 且只有 `feedback_text`，
+ * 所以「只有这一个键」是契约形状本身，不是防御性代码。顺带的效果是
+ * `teacher_id`／`school_id`／`training_id` 与 `submitted_at`／`published_at` 在客户端就
+ * 不存在于请求体里，而不是靠 `utils/derived` 事后剥（DO-NOT-BUILD 8／9，§7.3.1／§1.2）。
+ * 两道都在，先后不重要，缺一才重要。
+ */
+function buildFeedbackBody(draft) {
+  const text = (draft && typeof draft.feedback_text === 'string') ? draft.feedback_text.trim() : '';
+  return { feedback_text: text };
+}
+
+/**
+ * 一次逻辑提交的幂等键。教师确认发布的那一刻生成一次，之后每次重发复用它（§4.2）。
+ * 每次重发换新键，重复点击就会变成两条反馈 —— 而 `UNIQUE(training_id, teacher_id)`
+ * 会把第二条挡成 409，教师看到的是一句莫名其妙的「你已经提交过」。
+ */
+function newAttemptKey() {
+  return api.uuid();
+}
+
+/**
+ * 提交研修反馈（NONE -> s2 待审核）。
+ *
+ * @param {object}   o
+ * @param {number}   o.trainingId
+ * @param {string[]} o.gates            把关路径，**必填、无默认值**。页面显式声明。
+ * @param {object}   o.draft            教师填的草稿；只有白名单内的字段会被发出
+ * @param {boolean}  o.previewedInFull  教师读完了最终内容（不是打开过预览）
+ * @param {boolean}  o.confirmed        另一次独立的确认发布动作
+ * @param {string}   o.idempotencyKey   一次逻辑提交一个，重发复用
+ */
+async function submitFeedback({ trainingId, gates, draft, previewedInFull, confirmed, idempotencyKey }) {
+  // 闸门在这里，不在页面里，也不在服务端之后：拒绝必须发生在网络出口之前。
+  moderation.assertGate(gates, {
+    previewedInFull,
+    confirmed,
+    what: '研修反馈',
+    // F9：附件一概不接，所以这次写入不携带图片。写成常量而不是省略，是为了让将来
+    // 想加图片的那个人改这一行时看得见 assertGate 的另一半。
+    imageCount: 0,
+  });
+
+  return api.post(`${TRAINING_PATH}/${trainingId}/feedback`, {
+    action: ACTION_FEEDBACK_SUBMIT,
+    idempotencyKey,
+    body: buildFeedbackBody(draft),
+  });
+}
+
+/**
+ * 公开回馈流：只有 `feedback_status='s3'`，且活动仍 `training_status='s1'`。
+ *
+ * 「回馈就是评论」—— 契约不建第二套评论／回覆实体。真名公开，姓名由服务端从 `teacher_id`
+ * 即时读，不另存快照（F9），所以这里照收照显。
+ *
+ * 教师自己刚提交的那一条是 s2 待审核，**按契约不在这个流里**，也没有任何端点查得到它。
+ */
+async function listFeedback(trainingId, { cursor, limit } = {}) {
+  const page = await api.getPage(`${TRAINING_PATH}/${trainingId}/feedback`, { cursor, limit });
+  return {
+    items: page.items.map((row) => ({
+      feedback_id: row.feedback_id,
+      teacher_name: row.teacher_name,
+      feedback_text: row.feedback_text,
+      // §1.2：偏移量是字面量。formatShort 只读写好的部分，不做算术。
+      time_label: row.published_at ? time.formatShort(row.published_at) : '',
+    })),
+    nextCursor: page.nextCursor,
+  };
+}
+
 module.exports = {
   TRAINING_STATUS,
   TRAINING_PHASE,
+  FEEDBACK_TEXT_MAX,
   phaseFilters,
   listTrainings,
   trainingDetail,
   openMaterial,
   copyMeetingLink,
   courseIntro,
+  feedbackEntry,
+  feedbackTooLong,
+  buildFeedbackBody,
+  newAttemptKey,
+  submitFeedback,
+  listFeedback,
 };

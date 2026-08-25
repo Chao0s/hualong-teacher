@@ -485,12 +485,26 @@ describe('教师端只读，且不通往 PC后台', () => {
     'miniprogram/packages/library/pages/case/detail',
   ]
 
-  test('两个页面都没有上传、创建或编辑入口', () => {
-    for (const base of FILES) {
-      const wxml = readFileSync(`${base}.wxml`, 'utf8')
-      for (const word of ['上传', '新建', '编辑', '删除', '提交审核']) {
-        assert.ok(!wxml.includes(word), `${base}.wxml 出现了写入入口「${word}」`)
-      }
+  // 票据 15 把案例库定成上传表单的两个入口之一，所以案例**列表**从此有一个上传按钮，
+  // 而且只有一个。案例详情仍然一个写入入口也没有 —— 内容的建立与修改都在上传表单里，
+  // 详情页是读的地方。
+  test('案例详情没有上传、创建或编辑入口', () => {
+    const wxml = readFileSync(`${FILES[1]}.wxml`, 'utf8')
+    for (const word of ['上传', '新建', '编辑', '删除', '提交审核']) {
+      assert.ok(!wxml.includes(word), `${FILES[1]}.wxml 出现了写入入口「${word}」`)
+    }
+  })
+
+  test('案例列表的写入入口只有「上传课程案例」一个', () => {
+    const wxml = readFileSync(`${FILES[0]}.wxml`, 'utf8')
+    // 数控件，不数字面量：注释里也说得起「上传」，只有 bindtap 才**是**一个入口。
+    assert.equal((wxml.match(/bindtap="onUploadTap"/g) || []).length, 1, '只有那一个上传入口')
+    for (const word of ['新建', '编辑', '删除', '提交审核']) {
+      assert.ok(!wxml.includes(word), `${FILES[0]}.wxml 出现了写入入口「${word}」`)
+    }
+    // 列表页自己不写内容：表单在另一页，这里只有一次跳转。
+    for (const tag of ['<input', '<textarea', '<form', '<checkbox', '<radio', '<switch']) {
+      assert.ok(!wxml.includes(tag), `${FILES[0]}.wxml 出现了写入控件 ${tag}`)
     }
   })
 

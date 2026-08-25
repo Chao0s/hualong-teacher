@@ -1,0 +1,98 @@
+/* 上传表单（票据 15）。选择行与横排标签的尺寸在 styles/form-rows.wxss，本页不重写。 */
+
+.hl-card + .hl-card {
+  margin-top: var(--space-2);
+}
+
+.up__state {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* 驳回原因是这一页最该被读到的一句话，所以它有自己的底色，不混在正文里。 */
+.up__reason {
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--danger-light);
+  color: var(--danger);
+  font-size: 26rpx;
+  line-height: 1.6;
+}
+
+.up__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.up__label {
+  font-size: 28rpx;
+  color: var(--fg);
+}
+
+/* 必填星号跟在标签之后，与选择行同一条规则（form-control-spec.md §3）。 */
+.up__req {
+  color: var(--danger);
+}
+
+.up__limit {
+  margin-left: var(--space-2);
+  font-size: 24rpx;
+  color: var(--muted);
+}
+
+.up__input {
+  min-height: 72rpx;
+  font-size: 30rpx;
+  color: var(--fg);
+}
+
+.up__area {
+  width: 100%;
+  min-height: 160rpx;
+  font-size: 28rpx;
+  line-height: 1.7;
+  color: var(--fg);
+}
+
+.up__file {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.up__file-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 30rpx;
+  color: var(--fg);
+}
+
+.up__file-note {
+  font-size: 26rpx;
+  color: var(--muted);
+}
+
+.up__file-btn {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  font-size: 26rpx;
+}
+
+/* 缺项、超长与文件说明共用一种形态：它们都是「你现在还不能提交，原因是这个」。 */
+.up__notice {
+  padding: var(--space-2) 0;
+  font-size: 26rpx;
+  line-height: 1.6;
+  color: var(--danger);
+}
+
+.up__hint {
+  padding: var(--space-2) 0;
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: var(--muted);
+}

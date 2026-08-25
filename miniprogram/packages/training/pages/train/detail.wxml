@@ -54,5 +54,70 @@
       <text class="hl-card__title">{{item.file_name}}</text>
       <view class="hl-card__meta">{{item.usage_label}}</view>
     </view>
+
+    <!-- ── 我的反馈（票据 16）─────────────────────────────────────────────
+         整个教研培训模块唯一的写入点。入口关着的时候是一行说明，不是一个会当面
+         拒绝人的按钮。 -->
+    <view class="hl-section-title">我的反馈</view>
+
+    <view wx:if="{{entry.reason}}" class="hl-card hl-empty">{{entry.reason}}</view>
+
+    <block wx:if="{{entry.open}}">
+      <!-- 第一阶段：写。 -->
+      <block wx:if="{{stage === 'edit'}}">
+        <view class="hl-card">
+          <textarea
+            class="fb__input"
+            value="{{feedbackText}}"
+            placeholder="写下这次研修带给你的收获或建议"
+            maxlength="-1"
+            bindinput="onFeedbackInput" />
+          <view class="fb__count {{feedbackTooLong ? 'fb__count--over' : ''}}">
+            {{feedbackText.length}} / 1000
+          </view>
+        </view>
+        <view wx:if="{{feedbackTooLong}}" class="fb__reason">超过 1000 字，请精简后再预览。</view>
+        <view
+          class="hl-btn hl-btn--block {{feedbackTooLong ? 'fb__btn--off' : ''}}"
+          bindtap="onPreviewTap">预览</view>
+        <view class="fb__reason">提交前必须完整预览。预览里的内容就是提交的内容，确认后不能修改。</view>
+      </block>
+
+      <!-- 第二阶段：读完最终内容。读到底才解锁确认。 -->
+      <block wx:if="{{stage === 'preview'}}">
+        <scroll-view class="fb__preview" scroll-y="true" bindscrolltolower="onPreviewEnd">
+          <view class="fb__preview-text">{{preview.body.feedback_text}}</view>
+          <view class="fb__preview-end">—— 以上是全部内容 ——</view>
+        </scroll-view>
+        <view wx:if="{{!previewedInFull}}" class="fb__reason">请读到最后一行，再确认提交。</view>
+        <view wx:if="{{gateError}}" class="fb__reason">{{gateError}}</view>
+        <view
+          class="hl-btn hl-btn--block {{previewedInFull ? '' : 'fb__btn--off'}}"
+          bindtap="onConfirmTap">
+          {{submitting ? '提交中…' : '确认提交'}}
+        </view>
+        <view class="hl-btn hl-btn--hollow hl-btn--block" bindtap="onBackToEdit">返回修改</view>
+      </block>
+    </block>
+
+    <!-- 第三阶段：已提交，内容锁定。 -->
+    <view wx:if="{{stage === 'done'}}" class="hl-card">
+      <view class="fb__preview-text">{{preview.body.feedback_text}}</view>
+      <view class="fb__reason">已提交，等待审核通过后会出现在下面的公开反馈里。</view>
+    </view>
+
+    <!-- 公开回馈流：只有已公开的那些，且活动仍在（F9）。 -->
+    <view class="hl-section-title">公开反馈</view>
+    <view wx:if="{{feedbacks.length === 0 && !loadingFeedback}}" class="hl-card hl-empty">暂无公开反馈</view>
+    <view wx:for="{{feedbacks}}" wx:key="feedback_id" class="hl-card">
+      <view class="fb__who">
+        <text class="hl-card__title">{{item.teacher_name}}</text>
+        <text class="hl-card__meta">{{item.time_label}}</text>
+      </view>
+      <view class="fb__said">{{item.feedback_text}}</view>
+    </view>
+    <view wx:if="{{feedbackCursor}}" class="hl-btn hl-btn--hollow hl-btn--block" bindtap="onMoreFeedback">
+      {{loadingFeedback ? '加载中…' : '加载更多'}}
+    </view>
   </block>
 </view>

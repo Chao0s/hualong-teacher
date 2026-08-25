@@ -60,3 +60,73 @@
   font-size: 26rpx;
   font-weight: 600;
 }
+
+/* ── 我的反馈与公开反馈（票据 16）─────────────────────────────────────────── */
+
+.fb__input {
+  width: 100%;
+  min-height: 200rpx;
+  font-size: 28rpx;
+  line-height: 1.7;
+  color: var(--fg);
+}
+
+.fb__count {
+  margin-top: var(--space-2);
+  text-align: right;
+  font-size: 24rpx;
+  color: var(--muted);
+}
+
+.fb__count--over {
+  color: var(--danger);
+}
+
+/* 预览是把关本身，不是一个提示，所以它比正文更像一张纸：定高、可滚、有结尾。
+   读到结尾才解锁确认，短到不需要滚动时平台在渲染后立即触发同一个事件。 */
+.fb__preview {
+  max-height: 420rpx;
+  padding: var(--space-3);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.fb__preview-text {
+  font-size: 28rpx;
+  line-height: 1.8;
+  color: var(--fg);
+  white-space: pre-wrap;
+}
+
+.fb__preview-end {
+  margin-top: var(--space-3);
+  text-align: center;
+  font-size: 24rpx;
+  color: var(--muted);
+}
+
+.fb__reason {
+  padding: var(--space-2) 0;
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+/* 条件没满足时按钮仍在原地，只是读起来是灰的：挪走它会让教师找不到刚才那个按钮。 */
+.fb__btn--off {
+  opacity: 0.5;
+}
+
+.fb__who {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.fb__said {
+  margin-top: var(--space-2);
+  font-size: 28rpx;
+  line-height: 1.7;
+  color: var(--fg);
+}

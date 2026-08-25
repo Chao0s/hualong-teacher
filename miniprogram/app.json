@@ -45,7 +45,8 @@
         "pages/resource/list",
         "pages/resource/detail",
         "pages/case/list",
-        "pages/case/detail"
+        "pages/case/detail",
+        "pages/upload/form"
       ]
     },
     {

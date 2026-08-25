@@ -41,6 +41,7 @@
       wx:key="resource_id"
       class="hl-card res"
       data-id="{{item.resource_id}}"
+      data-status="{{item.resource_status}}"
       bindtap="onTap">
       <view class="res__thumb">{{item.thumb_label}}</view>
       <view class="res__body">

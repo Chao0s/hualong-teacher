@@ -230,7 +230,9 @@ test('neither task screen carries a submit, edit or delete control', () => {
 test('the board is reachable from 首页 待办事项, and it is a real navigation', async () => {
   const c = await signedIn()
   const home = loadPage(c, 'pages/home/index.js')
-  home.onTodoTap()
+  // 票据 15 起，待办卡片带上自己的类型：只有「待上传」那一类进上传表单，其余照旧
+  // 进任务看板。这里测的是「其余」。
+  home.onTodoTap({ currentTarget: { dataset: { kind: 'task' } } })
 
   assert.deepEqual(
     c.record.navigations.pop(),

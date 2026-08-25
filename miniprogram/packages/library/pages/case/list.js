@@ -83,8 +83,27 @@ Page({
     return this.loadFirst();
   },
 
+  /**
+   * 一行案例的去向有两个，按它的状态分（票据 15）：
+   *
+   *   草稿（s1）与已驳回（s4）  -> 上传表单，继续改自己的那一条
+   *   其余                      -> 案例详情
+   *
+   * 这两态只可能出现在教师自己写的行上（可见范围 `case_status='s3' OR
+   * created_by=$ctx_teacher`），所以这条分支不会把别人的案例带进编辑器。一条还没写完的
+   * 草稿的「详情」是一页几乎空白的东西 —— 教师点它是想接着写，不是想读它。
+   */
   onTap(e) {
-    const { id } = e.currentTarget.dataset;
+    const { id, status } = e.currentTarget.dataset;
+    if (status === 's1' || status === 's4') {
+      library.openUpload('case', id);
+      return;
+    }
     wx.navigateTo({ url: `/packages/library/pages/case/detail?case_id=${id}` });
+  },
+
+  /** 上传案例。与首页「待上传」那条待办进的是同一张表单、同一条服务层写入路径。 */
+  onUploadTap() {
+    library.openUpload('case');
   },
 });

@@ -163,9 +163,16 @@ test('every tappable region on 首页 either navigates or gives a reason', async
     { api: 'navigateTo', url: '/packages/library/pages/case/list' })
 
   // 待办事项 gained its destination in ticket 10, so the honest answer is now
-  // the navigation itself.
-  page.onTodoTap()
+  // the navigation itself. 票据 15 added a second destination: 待上传 is the
+  // upload form's first entry, everything else is still the task board. The
+  // card therefore carries its kind, the way the case card carries its id.
+  page.onTodoTap({ currentTarget: { dataset: { kind: 'task' } } })
   assert.deepEqual(c.record.navigations.pop(), { api: 'navigateTo', url: '/pages/task/board' })
+
+  page.onTodoTap({ currentTarget: { dataset: { kind: 'upload' } } })
+  assert.deepEqual(c.record.navigations.pop(),
+    { api: 'navigateTo', url: '/packages/library/pages/upload/form' },
+    '待上传进上传表单，且不带目标类型 —— 待办行上没有一列说得出是资源还是案例')
 })
 
 // ── Structure: what must not be here ─────────────────────────────────────────

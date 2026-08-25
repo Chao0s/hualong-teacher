@@ -1,0 +1,264 @@
+<view class="hl-page" wx:if="{{ready}}">
+
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryLoad">重试</text>
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障码 {{errorRequestId}}</text>
+  </view>
+
+  <view wx:if="{{loading}}" class="hl-loading">加载中…</view>
+
+  <block wx:if="{{!loading}}">
+
+    <!-- 状态与驳回原因。已发布的常态不挂徽章，与阅读页同一条规则。 -->
+    <view wx:if="{{statusLabel}}" class="hl-card up__state">
+      <text class="hl-pill {{statusPill}}">{{statusLabel}}</text>
+      <view wx:if="{{decisionReason}}" class="up__reason">{{decisionReason}}</view>
+    </view>
+
+    <!-- 只读态：假期，或这一条不在草稿里。理由就地写出，不做成会拒绝人的按钮。 -->
+    <view wx:if="{{readonly}}" class="hl-card hl-empty">{{readonlyReason}}</view>
+
+    <!-- 上传目标：二选一。横排标签，2 项且取值固定（form-control-spec.md §1 第 2 问）。
+         已经建过的那一条不让换表，理由写在 form.js 的 onTargetTap 里。 -->
+    <view wx:if="{{!contentId}}" class="hl-section-title">上传目标</view>
+    <view wx:if="{{!contentId}}" class="hl-chips">
+      <view
+        wx:for="{{targets}}"
+        wx:key="key"
+        class="hl-chips__item {{item.key === target ? 'hl-chips__item--on' : ''}}"
+        data-key="{{item.key}}"
+        bindtap="onTargetTap">{{item.label}}</view>
+    </view>
+
+    <!-- 上传人信息由会话派生，不做成两个可填的框（GAPS.md G24：那是死控件，
+         而且等于让客户端供一个服务端必须自己拥有的值）。 -->
+
+    <block wx:if="{{target === 'resource'}}">
+      <view class="hl-section-title">资源库材料</view>
+
+      <view class="hl-chips">
+        <view class="hl-chips__label">资源格式 <text class="up__req">*</text></view>
+        <view
+          wx:for="{{options.resource_type}}"
+          wx:key="key"
+          class="hl-chips__item {{item.key === draft.resource_type ? 'hl-chips__item--on' : ''}}"
+          data-field="resource_type"
+          data-key="{{item.key}}"
+          bindtap="onChipTap">{{item.label}}</view>
+      </view>
+
+      <view class="hl-card up__field">
+        <view class="up__label">资源名称 <text class="up__req">*</text><text class="up__limit">≤{{limits.resource_name}}字</text></view>
+        <input
+          class="up__input"
+          value="{{draft.resource_name}}"
+          maxlength="{{limits.resource_name}}"
+          disabled="{{readonly}}"
+          placeholder="例如：沙湾留耕堂 · 何氏宗祠"
+          data-field="resource_name"
+          bindinput="onTextInput" />
+      </view>
+
+      <view class="hl-chips">
+        <view class="hl-chips__label">资源分类 <text class="up__req">*</text></view>
+        <view
+          wx:for="{{options.resource_tag}}"
+          wx:key="key"
+          class="hl-chips__item {{item.key === draft.resource_tag ? 'hl-chips__item--on' : ''}}"
+          data-field="resource_tag"
+          data-key="{{item.key}}"
+          bindtap="onChipTap">{{item.label}}</view>
+      </view>
+
+      <view class="hl-chips">
+        <view class="hl-chips__label">适用年级</view>
+        <view
+          wx:for="{{options.grade}}"
+          wx:key="key"
+          class="hl-chips__item {{draft.grade.indexOf(item.key) > -1 ? 'hl-chips__item--on' : ''}}"
+          data-field="grade"
+          data-key="{{item.key}}"
+          bindtap="onChipMultiTap">{{item.label}}</view>
+      </view>
+
+      <view class="hl-card up__field">
+        <view class="up__label">资源解读 <text class="up__req">*</text><text class="up__limit">≤{{limits.resource_explain}}字</text></view>
+        <textarea
+          class="up__area"
+          value="{{draft.resource_explain}}"
+          maxlength="{{limits.resource_explain}}"
+          disabled="{{readonly}}"
+          placeholder="这条资源能帮助幼儿理解什么"
+          data-field="resource_explain"
+          bindinput="onTextInput" />
+      </view>
+
+      <view class="hl-card up__field">
+        <view class="up__label">资源获取 <text class="up__req">*</text><text class="up__limit">≤{{limits.resource_access}}字</text></view>
+        <textarea
+          class="up__area"
+          value="{{draft.resource_access}}"
+          maxlength="{{limits.resource_access}}"
+          disabled="{{readonly}}"
+          placeholder="教师与家长可以怎样拿到这份材料"
+          data-field="resource_access"
+          bindinput="onTextInput" />
+      </view>
+
+      <view class="hl-card up__field">
+        <view class="up__label">资源转化 <text class="up__req">*</text><text class="up__limit">≤{{limits.resource_trans}}字</text></view>
+        <textarea
+          class="up__area"
+          value="{{draft.resource_trans}}"
+          maxlength="{{limits.resource_trans}}"
+          disabled="{{readonly}}"
+          placeholder="可以转化成哪些活动"
+          data-field="resource_trans"
+          bindinput="onTextInput" />
+      </view>
+    </block>
+
+    <block wx:if="{{target === 'case'}}">
+      <view class="hl-section-title">案例库材料</view>
+
+      <view class="hl-card up__field">
+        <view class="up__label">案例名称 <text class="up__req">*</text><text class="up__limit">≤{{limits.case_name}}字</text></view>
+        <input
+          class="up__input"
+          value="{{draft.case_name}}"
+          maxlength="{{limits.case_name}}"
+          disabled="{{readonly}}"
+          placeholder="例如：祠堂里的故事"
+          data-field="case_name"
+          bindinput="onTextInput" />
+      </view>
+
+      <view class="hl-chips">
+        <view class="hl-chips__label">年级 <text class="up__req">*</text></view>
+        <view
+          wx:for="{{options.case_grade}}"
+          wx:key="key"
+          class="hl-chips__item {{item.key === draft.case_grade ? 'hl-chips__item--on' : ''}}"
+          data-field="case_grade"
+          data-key="{{item.key}}"
+          bindtap="onChipTap">{{item.label}}</view>
+      </view>
+
+      <view class="hl-chips">
+        <view class="hl-chips__label">五大领域 <text class="up__req">*</text></view>
+        <view
+          wx:for="{{options.case_field}}"
+          wx:key="key"
+          class="hl-chips__item {{item.key === draft.case_field ? 'hl-chips__item--on' : ''}}"
+          data-field="case_field"
+          data-key="{{item.key}}"
+          bindtap="onChipTap">{{item.label}}</view>
+      </view>
+
+      <view class="hl-chips">
+        <view class="hl-chips__label">活动形式 <text class="up__req">*</text></view>
+        <view
+          wx:for="{{options.case_area}}"
+          wx:key="key"
+          class="hl-chips__item {{draft.case_area.indexOf(item.key) > -1 ? 'hl-chips__item--on' : ''}}"
+          data-field="case_area"
+          data-key="{{item.key}}"
+          bindtap="onChipMultiTap">{{item.label}}</view>
+      </view>
+
+      <view class="hl-card up__field">
+        <view class="up__label">活动简介 <text class="up__req">*</text><text class="up__limit">≤{{limits.case_intro}}字</text></view>
+        <textarea
+          class="up__area"
+          value="{{draft.case_intro}}"
+          maxlength="{{limits.case_intro}}"
+          disabled="{{readonly}}"
+          placeholder="幼儿在这次活动里做了什么"
+          data-field="case_intro"
+          bindinput="onTextInput" />
+      </view>
+
+      <view class="hl-card up__field">
+        <view class="up__label">活动转化 <text class="up__req">*</text><text class="up__limit">≤{{limits.case_trans}}字</text></view>
+        <textarea
+          class="up__area"
+          value="{{draft.case_trans}}"
+          maxlength="{{limits.case_trans}}"
+          disabled="{{readonly}}"
+          placeholder="这次经验接回幼儿的下一次生活"
+          data-field="case_trans"
+          bindinput="onTextInput" />
+      </view>
+
+      <!-- 本表单里唯一的滚轮：取值来自服务端数据、条数不定（form-control-spec.md §1
+           第 3 问）。滚轮负责选，下面的标签负责显示已选。 -->
+      <hl-picker-row
+        wx:if="{{!readonly}}"
+        label="关联资源"
+        options="{{resourceOptions}}"
+        value=""
+        bindpick="onResourcePick" />
+      <view wx:if="{{resourcePicked.length > 0}}" class="hl-chips">
+        <view
+          wx:for="{{resourcePicked}}"
+          wx:key="id"
+          class="hl-chips__item hl-chips__item--on"
+          data-id="{{item.id}}"
+          bindtap="onResourceRemove">{{item.label}} ×</view>
+      </view>
+    </block>
+
+    <!-- 封面与 Word 详案。两者都走契约 §8 的媒体流：签凭证、字节直传对象存储、落库拿
+         file_id。大小在选完的那一刻就判，不等上传失败。 -->
+    <view class="hl-section-title">封面与详案</view>
+    <view class="hl-card up__file">
+      <view class="up__file-name">封面图片</view>
+      <view wx:if="{{draft.cover_file_id}}" class="up__file-note">已选择</view>
+      <view wx:if="{{uploading === 'cover_file_id'}}" class="up__file-note">上传中…</view>
+      <view wx:if="{{!readonly && !draft.cover_file_id}}" class="up__file-btn" bindtap="onPickCover">选择图片</view>
+      <view
+        wx:if="{{!readonly && draft.cover_file_id}}"
+        class="up__file-btn"
+        data-field="cover_file_id"
+        bindtap="onClearFile">移除</view>
+    </view>
+    <view class="hl-card up__file">
+      <view class="up__file-name">Word 详案</view>
+      <view wx:if="{{draft.word_file_id}}" class="up__file-note">已选择</view>
+      <view wx:if="{{uploading === 'word_file_id'}}" class="up__file-note">上传中…</view>
+      <view wx:if="{{!readonly && !draft.word_file_id}}" class="up__file-btn" bindtap="onPickWord">选择文件</view>
+      <view
+        wx:if="{{!readonly && draft.word_file_id}}"
+        class="up__file-btn"
+        data-field="word_file_id"
+        bindtap="onClearFile">移除</view>
+    </view>
+    <view wx:if="{{fileNotice}}" class="up__notice">{{fileNotice}}</view>
+
+    <!-- 缺项与超长就地标出。缺项时上面那一次点击一个请求也没发。 -->
+    <view wx:if="{{missing.length > 0}}" class="up__notice">
+      还差这些必填项：<text wx:for="{{missing}}" wx:key="key">{{item.label}} </text>
+    </view>
+    <view wx:if="{{tooLong.length > 0}}" class="up__notice">
+      这些内容超出字数上限：<text wx:for="{{tooLong}}" wx:key="key">{{item.label}}（≤{{item.max}}字） </text>
+    </view>
+
+    <block wx:if="{{!readonly}}">
+      <view class="hl-btn hl-btn--block" bindtap="onSubmitTap">
+        {{submitting ? '提交中…' : '提交审核'}}
+      </view>
+      <view class="up__hint">提交后进入管理端人工审核队列，通过后才会出现在资源库或案例库里。</view>
+    </block>
+
+    <!-- 撤回到草稿。这不是下架：作者撤回的目标是草稿，回到自己手里。 -->
+    <view
+      wx:if="{{status === 's2' || status === 's3' || status === 's4'}}"
+      class="hl-btn hl-btn--hollow hl-btn--block"
+      bindtap="onWithdrawTap">
+      {{withdrawing ? '处理中…' : '撤回到草稿'}}
+    </view>
+
+    <view class="hl-btn hl-btn--hollow hl-btn--block" bindtap="onBackTap">返回</view>
+  </block>
+</view>

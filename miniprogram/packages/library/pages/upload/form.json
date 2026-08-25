@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "上传资源与案例",
+  "usingComponents": {
+    "hl-picker-row": "/components/hl-picker-row/index"
+  }
+}

@@ -112,8 +112,8 @@ Page({
     wx.navigateTo({ url: '/pages/notice/list' });
   },
 
-  onTodoTap() {
-    home.openTodo();
+  onTodoTap(e) {
+    home.openTodo(e.currentTarget.dataset.kind);
   },
 
   onCaseTap(e) {

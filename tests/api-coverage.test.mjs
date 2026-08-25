@@ -102,6 +102,15 @@ const BUSINESS_REFUSAL_EXPECTED = {
   'POST /tasks/1/completion': '同上：转移图上没有 a3 → a3 这条边',
   'POST /media/upload-credentials': '空请求体缺 usage_key／content_type／byte_size',
   'POST /media/files': '空请求体缺 upload_ticket',
+  // 票据 15：资源与案例的写入面。1 号在夹具里都是 s3，状态机因此挡住改与提交。
+  'POST /library/resources': '空请求体缺 resource_type／resource_name／resource_tag 等 NOT NULL 列',
+  'PATCH /library/resources/1': '1 号资源是 s3，改草稿只允许 s1（F6：pending 之后内容冻结）',
+  'POST /library/resources/1/submission': '同上：转移图上没有 s3 → s2 这条边',
+  'POST /library/cases': '空请求体缺 case_name／case_grade／case_field／case_area 等 NOT NULL 列',
+  'PATCH /library/cases/1': '1 号案例是 s3，改草稿只允许 s1',
+  'POST /library/cases/1/submission': '同上',
+  // 票据 16：1 号研修的参与状态是 s2 已取消，只有 s3 已完成才可提交反馈。
+  'POST /trainings/1/feedback': '1 号研修的参与状态是 s2 已取消，只有 s3 已完成才可提交',
 }
 
 // 401／403／404 是门的回答，不是业务的回答。这三个码出现在上表里的路径上，说明门

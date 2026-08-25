@@ -14,6 +14,13 @@
  *                          is switchable through `control`, because "the file
  *                          would not open" is a case the client must answer in
  *                          words and there is no other way to reach it
+ *   wx.chooseImage / wx.chooseMessageFile -> return whatever `control.picked`
+ *                          says, including a file over the 10 MB ceiling and the
+ *                          user cancelling; both are cases the client must
+ *                          answer and neither is reachable any other way
+ *   wx.uploadFile        -> a real multipart-ish POST to the URL the credential
+ *                          named, so "the bytes did not go through the API
+ *                          instance" (§8.1) is assertable
  */
 
 export function createFakeWx({ loginCode = 'JS_CODE_OK', loginFails = false } = {}) {
@@ -29,6 +36,8 @@ export function createFakeWx({ loginCode = 'JS_CODE_OK', loginFails = false } = 
     downloads: [],       // urls passed to downloadFile
     opened: [],          // { filePath, fileType } passed to openDocument
     previews: [],        // urls passed to previewImage
+    picks: [],           // { api, options } passed to chooseImage/chooseMessageFile
+    uploads: [],         // { url, filePath, formData } passed to uploadFile
   }
 
   // Mutable mid-test, so one client can succeed and then fail without a reload.
@@ -37,6 +46,13 @@ export function createFakeWx({ loginCode = 'JS_CODE_OK', loginFails = false } = 
     downloadStatus: 200,
     openFails: false,
     previewFails: false,
+    // What the next chooseImage / chooseMessageFile returns. `null` means the
+    // teacher cancelled — the platform reports that through `fail` with a
+    // cancel errMsg, which is exactly why it needs its own switch.
+    picked: { path: 'wxfile://tmp/cover.jpg', size: 1024 * 1024, name: '封面.jpg' },
+    pickCancels: false,
+    pickFails: false,
+    uploadFails: false,
   }
 
   const wx = {
@@ -105,6 +121,38 @@ export function createFakeWx({ loginCode = 'JS_CODE_OK', loginFails = false } = 
       if (control.previewFails) fail({ errMsg: 'previewImage:fail simulated' })
       else if (success) success({ errMsg: 'previewImage:ok' })
     },
+
+    chooseImage(options) { choose('chooseImage', options) },
+    chooseMessageFile(options) { choose('chooseMessageFile', options) },
+
+    /**
+     * §8.1: the bytes go to the object storage, not to the API instance. The
+     * fake posts the form fields for real, so `POST /media/files` afterwards
+     * finds the object present — a stub that only recorded the call would let a
+     * client that never uploaded anything still get a file_id.
+     */
+    uploadFile({ url, filePath, formData, success, fail }) {
+      record.uploads.push({ url, filePath, formData })
+      if (control.uploadFails) { fail({ errMsg: 'uploadFile:fail simulated' }); return }
+      fetch(url, {
+        method: 'POST',
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams(formData || {}).toString(),
+      }).then((res) => {
+        success({ statusCode: res.status, data: '' })
+      }).catch((err) => {
+        fail({ errMsg: `uploadFile:fail ${err.message}` })
+      })
+    },
+  }
+
+  /** chooseImage and chooseMessageFile differ only in the tempFiles shape. */
+  function choose(api, { success, fail }) {
+    record.picks.push({ api })
+    if (control.pickCancels) { fail({ errMsg: `${api}:fail cancel` }); return }
+    if (control.pickFails) { fail({ errMsg: `${api}:fail simulated` }); return }
+    if (!control.picked) { success({ tempFiles: [] }); return }
+    success({ tempFiles: [{ ...control.picked }] })
   }
 
   return { wx, storage, record, control }

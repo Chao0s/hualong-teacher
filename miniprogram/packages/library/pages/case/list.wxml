@@ -34,6 +34,9 @@
       bindtap="onFilterTap">{{item.label}}</view>
   </view>
 
+  <!-- 上传案例。票据 15 的两个入口之一，另一个是首页的「待上传」待办。 -->
+  <view class="hl-btn hl-btn--block" bindtap="onUploadTap">上传课程案例</view>
+
   <view wx:if="{{errorText}}" class="hl-error">
     {{errorText}}
     <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryList">重试</text>
@@ -53,6 +56,7 @@
       wx:key="case_id"
       class="hl-card kase"
       data-id="{{item.case_id}}"
+      data-status="{{item.case_status}}"
       bindtap="onTap">
       <view class="kase__thumb">{{item.thumb_label}}</view>
       <view class="kase__body">

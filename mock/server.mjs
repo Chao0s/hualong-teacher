@@ -433,6 +433,12 @@ const RESOURCES = Array.from({ length: 32 }, (_, i) => {
     // **自己写的**非 s3（草稿、待审、被驳回）—— 这是资源与党建三类最大的差别，
     // 那三类只看得到 s3，这里看得到自己的全部。
     resource_status: id === 3 ? 's1' : id === 5 ? 's2' : id === 7 ? 's4' : 's3',
+    // 驳回原因。`db_review_action.decision_reason` 是它真正的家（F6：驳回原因可空），
+    // 而契约的 `Resource` schema **没有**这一列，也没有任何端点把它交给作者。
+    // 这是一个契约缺口：票据 15 要求「驳回时看到原因」，契约给不出。这里按缺口实现，
+    // 与 `related_cases`／`/home/cases` 同类 —— **只在本地契约服务上成立，接真服务时
+    // 必须重对**。列名照抄 DDL，好让接线的人一眼看出它该从哪张表来。
+    decision_reason: id === 7 ? '资源解读缺少幼儿经验的落点，请补充一段可观察的活动线索后重新提交。' : null,
     required_count: 5,
     completed_count: 5,
     complete: 'c1',
@@ -518,6 +524,8 @@ const CASES = Array.from({ length: 120 }, (_, i) => {
     // 可见范围的两半都要有夹具：绝大多数是本园已发布的 s3，另有三条是这位教师
     // **自己写的**非 s3（草稿、待审、被驳回）。
     case_status: id === 4 ? 's1' : id === 6 ? 's2' : id === 8 ? 's4' : 's3',
+    // 驳回原因，与资源同一个契约缺口，见 RESOURCES 里那一段。
+    decision_reason: id === 8 ? '活动转化只写了流程，没有写幼儿在其中获得了什么经验，请补充后重新提交。' : null,
     submitted_at: id === 4 ? null : '2026-07-10T09:00:00+08:00',
     // 严格递减，`updated_at DESC, case_id DESC` 的排序才真的成立：一天里八条，
     // 从 20:00 每两小时退一档到 06:00，下一天再从头开始。
@@ -545,6 +553,12 @@ function relatedResourcesFor(kase) {
       grade: r.grade,
     }));
 }
+
+// 票据 15 的写入面会真的改上面这两批行，并且会往后追加新建的草稿，所以开服时要还原
+// —— 与 TASK_ASSIGN_SNAPSHOT 同一个理由：一个测试文件里的提交渗进下一个，两边都是对的
+// 却一起变红。数组是 const，所以还原改的是内容与长度，不是绑定。
+const RESOURCE_SNAPSHOT = RESOURCES.map((r) => ({ ...r }));
+const CASE_SNAPSHOT = CASES.map((c) => ({ ...c }));
 
 // db_training —— 研修活动。契约 §4 规则 21 / F9：全部 active 正式教师可读本园
 // `training_status='s1'` 的研修，合作园不得进入；按 `start_at DESC, training_id DESC`
@@ -610,9 +624,22 @@ const TRAININGS = Array.from({ length: 46 }, (_, i) => {
     training_phase: id === 6 ? 'z9_future_phase' : phase,
     meeting_link_title: online ? `腾讯会议：${title}` : null,
     meeting_url: online ? 'https://meeting.tencent.com/dm/hualong-example' : null,
-    // 契约声明了这两列，所以夹具照给。票据 14 只做浏览，客户端本轮不读它们；
-    // 省掉它们会让下一张票以为服务端从来不回这两个字段。
-    my_participation_status: id % 4 === 0 ? 's1' : null,
+    // `db_training_participation.participation_status`：s1=已报名｜s2=已取消｜
+    // s3=已完成。**提交研修反馈的前置条件是 s3 加上研修已结束**（契约的
+    // `submitTrainingFeedback` scope 逐字：`participation_status='s3' AND
+    // $now > effective_end_at`），所以夹具必须把四种组合都摆出来，否则票据 16 的
+    // 拒绝分支一条也验证不了：
+    //   已结束 ＋ s3   -> 可以提交（偶数号：22／20／18／16／…，其中 20 号另已撤回）
+    //   已结束 ＋ s2   -> 取消过报名，不能提交（21／17／13／9／5）
+    //   未结束 ＋ s1   -> 报了名但还没结束，不能提交（44／40／36／32／28／24）
+    //   其余           -> 没报名，不能提交
+    //
+    // 可提交的那一档给了十条以上，不是三四条：`UNIQUE(training_id, teacher_id)` 是
+    // 一人一场一份，每个会真的提交的测试用例都得占掉一号，共用一号的第二个用例会撞
+    // 409 而不是测到它想测的东西。
+    my_participation_status: phase === 'history'
+      ? (id % 2 === 0 ? 's3' : (id % 4 === 1 ? 's2' : null))
+      : (id % 4 === 0 ? 's1' : null),
     feedback_count: phase === 'history' ? 3 + (i % 7) : 0,
     // usage_key 只有 main_file／inline_media／download 三个值（契约 ContentFileRef）。
     // 三类材料：PDF 讲义、演示文稿、以及一份微信打不开的录像包。
@@ -643,6 +670,34 @@ function toTrainingCard(training) {
     my_participation_status: training.my_participation_status,
   };
 }
+
+// db_training_feedback —— 研修反馈。**公开流只收 `feedback_status='s3'`，且只在活动
+// `training_status='s1'` 时公开**（契约的 `listTrainingFeedback` scope 逐字如此）。
+// 夹具给 16 号与 12 号各挂几条已公开的同事反馈，好让「意见有明确的去处」在页面上看得
+// 见；教师自己新提交的那一条是 s2 待审核，**按契约不进这个流**，也没有任何端点查得到
+// 它的状态（F9 的 Q58-ap1）。
+//
+// 真名公开：`teacher_name` 由服务端从 `teacher_id` 即时读，不另存姓名快照（F9）。
+const FEEDBACK_TEXTS = [
+  '课程游戏化的三个案例都能直接搬回班级，特别是材料投放那一段，回去就试了。',
+  '希望下一次多留一些分组研讨的时间，前面的讲授可以再压缩一点。',
+  '观察记录的表格很好用，但对新教师来说条目还是偏多，建议先给一个简版。',
+  '把本班上周的活动照片带来对照着讨论，收获比单纯听讲大很多。',
+];
+
+const TRAINING_FEEDBACKS = [
+  { feedback_id: 301, training_id: 16, teacher_id: 21, teacher_name: '李慧', feedback_status: 's3', feedback_text: FEEDBACK_TEXTS[0], published_at: '2026-06-18T10:20:00+08:00' },
+  { feedback_id: 302, training_id: 16, teacher_id: 34, teacher_name: '梁美玲', feedback_status: 's3', feedback_text: FEEDBACK_TEXTS[1], published_at: '2026-06-17T16:05:00+08:00' },
+  { feedback_id: 303, training_id: 16, teacher_id: 45, teacher_name: '周敏', feedback_status: 's3', feedback_text: FEEDBACK_TEXTS[2], published_at: '2026-06-17T09:40:00+08:00' },
+  { feedback_id: 304, training_id: 12, teacher_id: 21, teacher_name: '李慧', feedback_status: 's3', feedback_text: FEEDBACK_TEXTS[3], published_at: '2026-06-14T11:00:00+08:00' },
+  // 一条待审核的：它属于另一位教师，**不得**出现在公开流里。少了它，「只收 s3」这条
+  // 断言在一个只回全部行的实现上也会通过。
+  { feedback_id: 305, training_id: 16, teacher_id: 58, teacher_name: '何静怡', feedback_status: 's2', feedback_text: '这一条还在待审核，不该出现在公开流里。', published_at: null },
+  // 20 号研修已撤回：即使回馈列还在，公开流也回 `[]`、计数 0（F9）。
+  { feedback_id: 306, training_id: 20, teacher_id: 21, teacher_name: '李慧', feedback_status: 's3', feedback_text: '这一条挂在已撤回的研修上，公开流必须当它不存在。', published_at: '2026-06-10T15:30:00+08:00' },
+];
+
+const TRAINING_FEEDBACK_SNAPSHOT = TRAINING_FEEDBACKS.map((f) => ({ ...f }));
 
 /**
  * 办园理念与课程体系的图文。
@@ -731,11 +786,20 @@ const state = {
   idempotency: new Map(),       // key -> { status, body, bodyHash }
   nextTaskId: 900,              // POST /parent-tasks assigns from here
   nextFileId: 8800,             // POST /media/files assigns from here
+  nextResourceId: 900,          // POST /library/resources assigns from here
+  nextCaseId: 900,              // POST /library/cases assigns from here
+  nextFeedbackId: 900,          // POST /trainings/{id}/feedback assigns from here
   uploadTickets: new Map(),     // upload_ticket -> { usage_key, content_type, byte_size }
   // 每一次真正执行的 a2 -> a3。幂等重放不进这张表，所以「重复点击只产生一条提交」
   // 数得出来 —— 与 accessEvents 同一个理由：断言要对着服务端自己的记录，不是对着
   // 客户端发了几个请求。
   taskCompletions: [],
+  // 每一次真正执行的 s1 -> s2（资源与案例各记一条）。与 taskCompletions 同一个理由：
+  // 幂等重放在分发层就返回了，处理器根本没跑，所以数客户端发了几个请求答不了
+  // 「重复点击有没有产生两条待审核记录」，数服务端做了几次才行。
+  librarySubmissions: [],
+  // 每一次真正执行的研修反馈提交。同上。
+  trainingFeedbackWrites: [],
   // db_content_access_event —— 服务端在签发短链的同一个事务里写的那一笔。放在这里
   // 是为了让「客户端不自行拼装记录请求」可断言：记录数只随 download-link 增长。
   accessEvents: [],
@@ -1645,15 +1709,22 @@ const HAND_WRITTEN_ROLES = [
   [/^\/library\/resources$/, ['teacher']],
   [/^\/library\/resources\/\d+$/, ['teacher']],
   [/^\/library\/resources\/\d+\/download-link$/, ['teacher']],
+  // 票据 15 的写入面。契约给这四条写的就是 teacher（新建、改草稿、提交审核、撤回）。
+  [/^\/library\/resources\/\d+\/submission$/, ['teacher']],
+  [/^\/library\/resources\/\d+\/withdrawal$/, ['teacher']],
   // 案例三条同理。契约给列表与详情写了 partner-account 与 admin-pc，给 download-link
   // 写了 partner-account —— 本 mock 只服务教师端，宁可比契约严：漏登记才是安全缺陷，
   // 多登记只是这个 mock 覆盖面窄。
   [/^\/library\/cases$/, ['teacher']],
   [/^\/library\/cases\/\d+$/, ['teacher']],
   [/^\/library\/cases\/\d+\/download-link$/, ['teacher']],
+  [/^\/library\/cases\/\d+\/submission$/, ['teacher']],
+  [/^\/library\/cases\/\d+\/withdrawal$/, ['teacher']],
   // §4 规则 21：合作园不得进入教研培训，所以 partner-account 在这里就被 403 挡下。
   [/^\/trainings$/, ['teacher']],
   [/^\/trainings\/\d+$/, ['teacher']],
+  // 票据 16 的写入面与它的公开回馈流。契约给这两条写的都是 teacher。
+  [/^\/trainings\/\d+\/feedback$/, ['teacher']],
   // 契约**没有**这条路径，连表都没有（见 COURSE_INTRO 的头注）。登记在这里是为了让门
   // 不至于悄悄缺席 —— 缺口本身是另一个问题，记在交接里。
   [/^\/training\/course-intro$/, ['teacher']],
@@ -1861,16 +1932,36 @@ const server = createServer(async (req, res) => {
       getResource(req, res, path.split('/')[3]);
     } else if (req.method === 'POST' && /^\/library\/resources\/\d+\/download-link$/.test(path)) {
       postResourceDownloadLink(req, res, path.split('/')[3]);
+    } else if (req.method === 'POST' && path === '/library/resources') {
+      postLibraryDraft(req, res, 'resource', body);
+    } else if (req.method === 'PATCH' && /^\/library\/resources\/\d+$/.test(path)) {
+      patchLibraryDraft(req, res, 'resource', path.split('/')[3], body);
+    } else if (req.method === 'POST' && /^\/library\/resources\/\d+\/submission$/.test(path)) {
+      postLibrarySubmission(req, res, 'resource', path.split('/')[3]);
+    } else if (req.method === 'POST' && /^\/library\/resources\/\d+\/withdrawal$/.test(path)) {
+      postLibraryWithdrawal(req, res, 'resource', path.split('/')[3]);
     } else if (req.method === 'GET' && path === '/library/cases') {
       getCases(req, res, url);
     } else if (req.method === 'GET' && /^\/library\/cases\/\d+$/.test(path)) {
       getCase(req, res, path.split('/')[3]);
     } else if (req.method === 'POST' && /^\/library\/cases\/\d+\/download-link$/.test(path)) {
       postCaseDownloadLink(req, res, path.split('/')[3]);
+    } else if (req.method === 'POST' && path === '/library/cases') {
+      postLibraryDraft(req, res, 'case', body);
+    } else if (req.method === 'PATCH' && /^\/library\/cases\/\d+$/.test(path)) {
+      patchLibraryDraft(req, res, 'case', path.split('/')[3], body);
+    } else if (req.method === 'POST' && /^\/library\/cases\/\d+\/submission$/.test(path)) {
+      postLibrarySubmission(req, res, 'case', path.split('/')[3]);
+    } else if (req.method === 'POST' && /^\/library\/cases\/\d+\/withdrawal$/.test(path)) {
+      postLibraryWithdrawal(req, res, 'case', path.split('/')[3]);
     } else if (req.method === 'GET' && path === '/trainings') {
       getTrainings(req, res, url);
     } else if (req.method === 'GET' && /^\/trainings\/\d+$/.test(path)) {
       getTraining(req, res, path.split('/')[2]);
+    } else if (req.method === 'POST' && /^\/trainings\/\d+\/feedback$/.test(path)) {
+      postTrainingFeedback(req, res, path.split('/')[2], body);
+    } else if (req.method === 'GET' && /^\/trainings\/\d+\/feedback$/.test(path)) {
+      getTrainingFeedback(req, res, path.split('/')[2], url);
     } else if (req.method === 'GET' && path === '/training/course-intro') {
       getCourseIntro(req, res);
     } else if (req.method === 'GET' && path === '/coordination/documents') {
@@ -1915,9 +2006,21 @@ export function start({ port = 0, unbound = false, noTerm = false, quiet = true 
   state.idempotency.clear();
   state.accessEvents.length = 0;
   state.taskCompletions.length = 0;
+  state.librarySubmissions.length = 0;
+  state.trainingFeedbackWrites.length = 0;
   state.uploadTickets.clear();
   state.nextFileId = 8800;
+  state.nextResourceId = 900;
+  state.nextCaseId = 900;
+  state.nextFeedbackId = 900;
   TASKS.forEach((t, i) => { t.assign = { ...TASK_ASSIGN_SNAPSHOT[i] }; });
+  // 长度先收回夹具的条数，再逐条还原内容：票据 15 的写入面既改行也追加行。
+  RESOURCES.length = RESOURCE_SNAPSHOT.length;
+  RESOURCE_SNAPSHOT.forEach((row, i) => { RESOURCES[i] = { ...row }; });
+  CASES.length = CASE_SNAPSHOT.length;
+  CASE_SNAPSHOT.forEach((row, i) => { CASES[i] = { ...row }; });
+  TRAINING_FEEDBACKS.length = TRAINING_FEEDBACK_SNAPSHOT.length;
+  TRAINING_FEEDBACK_SNAPSHOT.forEach((row, i) => { TRAINING_FEEDBACKS[i] = { ...row }; });
   downloadLinks.clear();
   return new Promise((resolve, reject) => {
     server.once('error', reject);
@@ -2057,6 +2160,328 @@ function postTaskCompletion(req, res, id, rawBody) {
   return sendJson(res, 200, task.assign);
 }
 
+// ── 资源与案例的写入面（票据 15） ───────────────────────────────────────────
+//
+// 状态机（`ContentStatus` s1—s5，资源与案例同一个值域）：
+//
+//   NONE --create--> s1 草稿 --submission--> s2 待审核 --管理端--> s3 已发布 / s4 已驳回
+//   s2｜s3｜s4 --withdrawal--> s1 草稿          （F6：作者撤回目标是 s1，不是 s5）
+//   s1 --patch--> s1                            （F6：pending 期间内容冻结）
+//
+// **s4 对资源／案例不是终局**，与 `db_training_feedback` 的 s4 不同 —— 契约的
+// `withdrawResourceToDraft` 特意写了这一句，因为把研修反馈的规则套过来是最容易犯的错。
+// 「已下架」是 s5，只有管理端做得到，本 mock 不提供，教师端也不该有那个按钮。
+//
+// 必填以 `db/01_schema.sql` 的 NOT NULL 为准，**不以 `ResourceWrite` 为准**：契约的写入
+// schema 把 `resource_explain`／`resource_access`／`resource_trans` 标成
+// `[string,'null']`，DDL 三列都是 NOT NULL。AGENTS.md 规则 1 说 DDL 是唯一的字段级权威，
+// 所以这里按 NOT NULL 收，并把这条不一致记进交接。
+
+const RESOURCE_WRITE_FIELDS = [
+  { key: 'resource_type', required: true, kind: 'enum', values: ['r1', 'r2', 'r3', 'r4', 'r5', 'r6'] },
+  { key: 'resource_name', required: true, kind: 'text', max: 20 },
+  { key: 'resource_tag', required: true, kind: 'enum', values: ['g1', 'g2', 'g3', 'g4', 'g5'] },
+  { key: 'grade', required: false, kind: 'enum_array', values: ['k1', 'k2', 'k3'] },
+  { key: 'resource_explain', required: true, kind: 'text', max: 200 },
+  { key: 'resource_access', required: true, kind: 'text', max: 300 },
+  { key: 'resource_trans', required: true, kind: 'text', max: 200 },
+  { key: 'cover_file_id', required: false, kind: 'int' },
+  { key: 'word_file_id', required: false, kind: 'int' },
+];
+
+const CASE_WRITE_FIELDS = [
+  { key: 'case_name', required: true, kind: 'text', max: 20 },
+  { key: 'case_grade', required: true, kind: 'enum', values: ['k1', 'k2', 'k3'] },
+  { key: 'case_field', required: true, kind: 'enum', values: ['f1', 'f2', 'f3', 'f4', 'f5'] },
+  { key: 'case_area', required: true, kind: 'enum_array', values: ['a1', 'a2', 'a3', 'a4', 'a5'], minItems: 1 },
+  { key: 'case_intro', required: true, kind: 'text', max: 100 },
+  { key: 'case_trans', required: true, kind: 'text', max: 100 },
+  { key: 'resource_ids', required: false, kind: 'int_array' },
+  { key: 'cover_file_id', required: false, kind: 'int' },
+  { key: 'word_file_id', required: false, kind: 'int' },
+];
+
+/**
+ * `additionalProperties: false` 加逐字段校验，一处写完两张表共用。
+ *
+ * `partial` 是 PATCH 的语义（§1.1：字段缺席＝不改，显式 `null`＝清空），所以它只关掉
+ * 必填检查，不放松值域检查 —— 一个 PATCH 送来的非法枚举仍然是 422。
+ *
+ * @returns {object|null} 失败时返回 `{ field, rule }`，成功返回 null
+ */
+function validateWrite(body, fields, { partial = false } = {}) {
+  const known = new Set(fields.map((f) => f.key));
+  const extra = Object.keys(body).find((k) => !known.has(k));
+  if (extra) return { field: extra, rule: 'additional_properties_not_allowed' };
+
+  for (const field of fields) {
+    const value = body[field.key];
+    if (value === undefined) {
+      if (field.required && !partial) return { field: field.key, rule: 'required' };
+      continue;
+    }
+    if (value === null) {
+      // NOT NULL 的列不接受显式清空，即使在 PATCH 里。
+      if (field.required) return { field: field.key, rule: 'required' };
+      continue;
+    }
+    if (field.kind === 'text') {
+      if (typeof value !== 'string') return { field: field.key, rule: 'type_string' };
+      if (field.required && value.trim() === '') return { field: field.key, rule: 'required' };
+      if (value.length > field.max) return { field: field.key, rule: `max_length_${field.max}` };
+    } else if (field.kind === 'enum') {
+      if (field.values.indexOf(value) === -1) return { field: field.key, rule: 'enum' };
+    } else if (field.kind === 'enum_array') {
+      if (!Array.isArray(value)) return { field: field.key, rule: 'type_array' };
+      if (field.minItems && value.length < field.minItems) {
+        return { field: field.key, rule: `min_items_${field.minItems}` };
+      }
+      if (value.some((v) => field.values.indexOf(v) === -1)) return { field: field.key, rule: 'enum' };
+      if (new Set(value).size !== value.length) return { field: field.key, rule: 'unique_items' };
+    } else if (field.kind === 'int_array') {
+      if (!Array.isArray(value)) return { field: field.key, rule: 'type_array' };
+      if (value.some((v) => !Number.isInteger(v))) return { field: field.key, rule: 'type_integer' };
+    } else if (field.kind === 'int') {
+      if (!Number.isInteger(value)) return { field: field.key, rule: 'type_integer' };
+    }
+  }
+  return null;
+}
+
+/** 只保留写入白名单里的键，再把它盖到目标行上。缺席＝不改。 */
+function applyWrite(row, body, fields) {
+  fields.forEach((field) => {
+    if (body[field.key] !== undefined) row[field.key] = body[field.key];
+  });
+}
+
+/**
+ * 两张表的差别收敛成一张表，处理器因此只写一遍。
+ *
+ * 抄第二遍的代价不是行数：`withdrawal` 要清 `submitted_at` 与 `decision_reason` 这条
+ * 规则会在两处各记一次，而其中一处迟早会漏。
+ */
+const LIBRARY_KINDS = {
+  resource: {
+    rows: RESOURCES, idKey: 'resource_id', statusKey: 'resource_status',
+    fields: RESOURCE_WRITE_FIELDS, missing: '资源不存在或不在可见范围内',
+    next: () => state.nextResourceId++,
+    decorate: (row) => ({ ...row, related_cases: relatedCasesFor(row.resource_id) }),
+    seed: {
+      resource_type: 'r1', resource_name: '', resource_tag: 'g1', grade: null,
+      resource_explain: '', resource_access: '', resource_trans: '',
+      cover_file_id: null, word_file_id: null, required_count: 0, completed_count: 0,
+      complete: 'c3',
+    },
+  },
+  case: {
+    rows: CASES, idKey: 'case_id', statusKey: 'case_status',
+    fields: CASE_WRITE_FIELDS, missing: '案例不存在或不在可见范围内',
+    next: () => state.nextCaseId++,
+    decorate: (row) => ({ ...row, related_resources: relatedResourcesFor(row) }),
+    seed: {
+      case_name: '', case_grade: 'k1', case_field: 'f1', case_area: ['a1'],
+      case_intro: '', case_trans: '', resource_ids: null,
+      cover_file_id: null, word_file_id: null,
+    },
+  },
+};
+
+/** 新建草稿（NONE -> s1）。`created_by` 由服务端设值，请求体里的同名字段已被剥掉。 */
+function postLibraryDraft(req, res, kindKey, rawBody) {
+  if (refuseWithoutTerm(res)) return;
+  const kind = LIBRARY_KINDS[kindKey];
+  const body = stripDerived(rawBody);
+  const bad = validateWrite(body, kind.fields);
+  if (bad) return fail(res, 422, 'validation_failed', '填写内容不符合要求', bad);
+
+  const row = {
+    [kind.idKey]: kind.next(),
+    ...kind.seed,
+    created_by: TEACHER.teacher_id,
+    [kind.statusKey]: 's1',
+    decision_reason: null,
+    submitted_at: null,
+    updated_at: '2026-08-26T17:00:00+08:00',
+  };
+  applyWrite(row, body, kind.fields);
+  // 最新的排在最前：列表按 `updated_at DESC, id DESC` 分页。
+  kind.rows.unshift(row);
+  return sendJson(res, 201, kind.decorate(row), {
+    Location: `${BASE}/library/${kindKey === 'resource' ? 'resources' : 'cases'}/${row[kind.idKey]}`,
+  });
+}
+
+/** 改草稿（仅 s1）。F6：pending 期间内容冻结，s3 不得直接编辑。 */
+function patchLibraryDraft(req, res, kindKey, id, rawBody) {
+  if (refuseWithoutTerm(res)) return;
+  const kind = LIBRARY_KINDS[kindKey];
+  const row = kind.rows.find((r) => r[kind.idKey] === Number(id));
+  if (!row) return fail(res, 404, 'not_found', kind.missing);
+  if (row[kind.statusKey] !== 's1') {
+    return fail(res, 409, 'state_precondition_failed', '只有草稿可以修改，请先撤回到草稿');
+  }
+  const body = stripDerived(rawBody);
+  const bad = validateWrite(body, kind.fields, { partial: true });
+  if (bad) return fail(res, 422, 'validation_failed', '填写内容不符合要求', bad);
+
+  applyWrite(row, body, kind.fields);
+  row.updated_at = '2026-08-26T17:05:00+08:00';
+  return sendJson(res, 200, kind.decorate(row));
+}
+
+/** 提交审核（s1 -> s2）。`submitted_at` 是服务端设值（B10 / §1.2）。 */
+function postLibrarySubmission(req, res, kindKey, id) {
+  if (refuseWithoutTerm(res)) return;
+  const kind = LIBRARY_KINDS[kindKey];
+  const row = kind.rows.find((r) => r[kind.idKey] === Number(id));
+  if (!row) return fail(res, 404, 'not_found', kind.missing);
+  if (row[kind.statusKey] !== 's1') {
+    return fail(res, 409, 'state_precondition_failed', '只有草稿可以提交审核');
+  }
+  row[kind.statusKey] = 's2';
+  row.submitted_at = '2026-08-26T17:10:00+08:00';
+  row.updated_at = '2026-08-26T17:10:00+08:00';
+  state.librarySubmissions.push({ kind: kindKey, id: row[kind.idKey] });
+  return sendJson(res, 200, kind.decorate(row));
+}
+
+/**
+ * 作者撤回成草稿（s2｜s3｜s4 -> s1）。
+ *
+ * 从 s3 撤回**立刻停止新查看与下载**（F6）：已签发未到期的短链在 `/dl/{link_id}` 那里
+ * 逐次复核内容状态，因此当场失效 —— 那段代码不必改，这里改了状态就是全部。
+ */
+function postLibraryWithdrawal(req, res, kindKey, id) {
+  if (refuseWithoutTerm(res)) return;
+  const kind = LIBRARY_KINDS[kindKey];
+  const row = kind.rows.find((r) => r[kind.idKey] === Number(id));
+  if (!row) return fail(res, 404, 'not_found', kind.missing);
+  if (['s2', 's3', 's4'].indexOf(row[kind.statusKey]) === -1) {
+    return fail(res, 409, 'state_precondition_failed', '这一条已经在草稿里，不需要撤回');
+  }
+  row[kind.statusKey] = 's1';
+  row.submitted_at = null;
+  // 驳回原因属于上一轮审核。回到草稿就是那一轮结束了，留着它会让教师改完仍看见旧理由。
+  row.decision_reason = null;
+  row.updated_at = '2026-08-26T17:15:00+08:00';
+  return sendJson(res, 200, kind.decorate(row));
+}
+
+// ── 研修反馈（票据 16） ─────────────────────────────────────────────────────
+
+/**
+ * POST /trainings/{training_id}/feedback — NONE -> s2 待审核。
+ *
+ * 契约的 scope 逐字：`WHERE training_id=$1 AND teacher_id=$ctx_teacher AND
+ * participation_status='s3' AND $now > effective_end_at`。三个条件各有各的拒绝，
+ * 因为教师要知道**为什么**不能提交，而不只是不能。
+ *
+ * `UNIQUE(training_id, teacher_id)` 禁止另建一列绕过终局：一人一场一份，提交即冻结，
+ * 不可编辑、不可撤回、不可查询状态、不可查看驳回理由（F9 的 Q58-ap1）。
+ */
+function postTrainingFeedback(req, res, id, rawBody) {
+  if (refuseWithoutTerm(res)) return;
+  const training = TRAININGS.find((t) => t.training_id === Number(id));
+  if (!training) return fail(res, 404, 'not_found', '研修不存在或不在可见范围内');
+  if (training.training_status !== 's1') {
+    return fail(res, 409, 'state_precondition_failed', '这场研修已撤回，不再接收反馈');
+  }
+  // 先答「还没结束」再答「你没参加」，顺序是有意的：`participation_status` 只在到达有效
+  // 结束时间时才由 s1 自动转 s3，所以一场没结束的研修上，报了名的教师也还是 s1。
+  // 反过来问，他会被告知「你没参加」——那句话是错的，他明明报了名。
+  // 「已结束」由服务端按园所时区派生成 `training_phase`，客户端与本 mock 都不做时间算术。
+  if (training.training_phase !== 'history') {
+    return fail(res, 409, 'state_precondition_failed', '研修还没有结束，结束后才能提交反馈');
+  }
+  if (training.my_participation_status !== 's3') {
+    return fail(res, 409, 'state_precondition_failed', '只有参加过这场研修的教师可以提交反馈');
+  }
+  if (TRAINING_FEEDBACKS.some((f) => f.training_id === training.training_id
+    && f.teacher_id === TEACHER.teacher_id)) {
+    return fail(res, 409, 'state_precondition_failed', '这场研修你已经提交过反馈了');
+  }
+
+  const body = stripDerived(rawBody);
+  const extra = Object.keys(body).find((k) => k !== 'feedback_text');
+  if (extra) {
+    return fail(res, 422, 'validation_failed', '填写内容不符合要求',
+      { field: extra, rule: 'additional_properties_not_allowed' });
+  }
+  const text = body.feedback_text;
+  if (typeof text !== 'string' || text.length < 1 || text.length > 1000) {
+    return fail(res, 422, 'validation_failed', '填写内容不符合要求',
+      { field: 'feedback_text', rule: 'length_1_to_1000' });
+  }
+
+  const feedbackId = state.nextFeedbackId++;
+  TRAINING_FEEDBACKS.push({
+    feedback_id: feedbackId,
+    training_id: training.training_id,
+    teacher_id: TEACHER.teacher_id,
+    teacher_name: TEACHER.teacher_name,
+    feedback_status: 's2',
+    feedback_text: text,
+    published_at: null,
+  });
+  state.trainingFeedbackWrites.push({ training_id: training.training_id, feedback_id: feedbackId });
+
+  // `TrainingFeedbackOwn` —— **一次性回执，不是可查询的状态**。刻意不回
+  // `feedback_status`，也没有对应的 GET 端点。
+  return sendJson(res, 201, {
+    feedback_id: feedbackId,
+    training_id: training.training_id,
+    submitted_at: '2026-08-26T17:20:00+08:00',
+  }, { Location: `${BASE}/trainings/${training.training_id}/feedback` });
+}
+
+/** GET /trainings/{id}/feedback — 公开回馈流：只有 s3，且活动仍 s1。 */
+function getTrainingFeedback(req, res, id, url) {
+  const training = TRAININGS.find((t) => t.training_id === Number(id));
+  if (!training) return fail(res, 404, 'not_found', '研修不存在或不在可见范围内');
+
+  const limitRaw = url.searchParams.get('limit');
+  const limit = limitRaw === null ? 20 : Number(limitRaw);
+  if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+    return fail(res, 422, 'validation_failed', '分页参数不合法',
+      { field: 'limit', rule: 'between_1_and_100' });
+  }
+
+  // 活动撤回后即使回馈列仍在，公开流也回 `[]`、计数 0（F9）。
+  const pool = training.training_status !== 's1' ? [] : TRAINING_FEEDBACKS
+    .filter((f) => f.training_id === training.training_id && f.feedback_status === 's3')
+    .sort((a, b) => (a.published_at < b.published_at ? 1 : -1));
+
+  const filters = {};
+  let startIndex = 0;
+  const cursor = url.searchParams.get('cursor');
+  if (cursor) {
+    const decoded = decodeCursor(cursor, filters);
+    if (decoded.error) {
+      return fail(res, 400, decoded.error,
+        decoded.error === 'cursor_invalid' ? '翻页游标不可解' : '筛选条件已变，游标失效');
+    }
+    startIndex = pool.findIndex((f) => f.feedback_id === decoded.key) + 1;
+    if (startIndex <= 0) return fail(res, 400, 'cursor_invalid', '翻页游标不可解');
+  }
+
+  const slice = pool.slice(startIndex, startIndex + limit);
+  const last = slice[slice.length - 1];
+  const hasMore = startIndex + limit < pool.length;
+  sendJson(res, 200, {
+    // `TrainingFeedback` 是公开流对象，只在 s3 时出现，因此**不带状态字段**。
+    items: slice.map((f) => ({
+      feedback_id: f.feedback_id,
+      training_id: f.training_id,
+      teacher_id: f.teacher_id,
+      teacher_name: f.teacher_name,
+      feedback_text: f.feedback_text,
+      published_at: f.published_at,
+    })),
+    next_cursor: hasMore && last ? encodeCursor(last.feedback_id, filters) : null,
+  });
+}
+
 // ── 媒体流（契约 §8） ───────────────────────────────────────────────────────
 
 // CONTEXT.md §3：处理前单档上限 10 MB。这是我们的产品限制。
@@ -2193,6 +2618,21 @@ export function accessEvents() {
  */
 export function taskCompletions() {
   return state.taskCompletions.slice();
+}
+
+/**
+ * Test hook: the s1 -> s2 transitions the server actually executed (票据 15).
+ *
+ * 「重复点击不产生两条待审核记录」只有对着这份记录才断言得了。幂等重放在分发层就返回了
+ * 原始状态码与响应体，处理器根本没跑，所以这张表不涨。
+ */
+export function librarySubmissions() {
+  return state.librarySubmissions.slice();
+}
+
+/** Test hook: the training-feedback rows the server actually created (票据 16). */
+export function trainingFeedbackWrites() {
+  return state.trainingFeedbackWrites.slice();
 }
 
 // CLI behaviour, unchanged: `node mock/server.mjs [--unbound] [--no-term]`.
