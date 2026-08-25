@@ -4,15 +4,18 @@
  * The contract's rule is narrow and easy to break by accident, so it is pinned
  * here at full breadth rather than sampled:
  *
- *   §2.3  no identity            -> 401
- *   §2.3  identity, wrong role   -> 404, NOT 403 and NOT 401
- *   §7.2  no resolvable role     -> fatal, never an empty rule set
+ *   §2.3  no identity                    -> 401
+ *   §2.3  role not on the route allowlist -> 403 route_not_allowed_for_role
+ *   §2.3  role allowed, id out of scope   -> 404 not_found
+ *   §7.2  no resolvable role              -> fatal, never an empty rule set
  *
- * Why 404 and not 403 is the whole point. 403 says "this exists but you may not
- * have it", which confirms the id. For a platform holding minors' records that
- * confirmation is itself the leak (Platform SECURITY.md red line 4). The 404 a
- * wrong-role caller gets must therefore be indistinguishable from the 404 an
- * absent id gets — byte for byte, and that is asserted below.
+ * The 403/404 split is the whole point, and it is the thing specs get backwards:
+ * §12 of the contract records six places in one admin spec alone that wrote
+ * scope-miss as 403. The rule is which question is answered. "May this role walk
+ * this road" leaks nothing, so it says 403 honestly. "May you see this row" would
+ * confirm the id exists, and for minors' records that confirmation IS the leak
+ * (Platform SECURITY.md red line 4), so it hides behind a 404 that must be
+ * byte-identical to an id that never existed. Both halves are asserted below.
  *
  * The parent and admin-pc identities used here cannot exist in production: G1
  * blocks them at db_phone_claim.ck_pc2_type. They exist in the mock because
@@ -128,59 +131,68 @@ describe('RBAC · 身份缺失一律 401', () => {
   })
 })
 
-describe('RBAC · 角色不符一律 404，绝不 403', () => {
-  test('家长身份访问教师专属操作 -> 404', async (t) => {
+describe('RBAC · 路由角色不符回 403，范围不符回 404', () => {
+  test('家长身份访问教师专属操作 -> 403 route_not_allowed_for_role', async (t) => {
     const parent = await signIn('parent')
     const targets = teacherOnly()
     const failures = []
     for (const route of targets) {
       const res = await call(route, parent)
-      if (res.status !== 404) {
+      if (res.status !== 403) {
         failures.push(`${route.method} ${route.template} -> ${res.status}`)
+        continue
+      }
+      const body = await res.json()
+      if (body.code !== 'route_not_allowed_for_role') {
+        failures.push(`${route.method} ${route.template} -> 403 但 code=${body.code}`)
       }
     }
     t.diagnostic(`${targets.length - failures.length} / ${targets.length} 个教师专属操作拒绝了家长身份`)
-    assert.deepEqual(failures, [], `未回 404：\n  ${failures.join('\n  ')}`)
+    assert.deepEqual(failures, [], `未回 403 route_not_allowed_for_role：\n  ${failures.join('\n  ')}`)
   })
 
-  test('合作园帐户身份访问教师专属操作 -> 404', async () => {
+  test('合作园帐户身份访问不在其 allowlist 的操作 -> 403', async () => {
     const partner = await signIn('partner')
     const failures = []
     for (const route of teacherOnly()) {
       if (route.roles.includes('partner-account')) continue
       const res = await call(route, partner)
-      if (res.status !== 404) failures.push(`${route.method} ${route.template} -> ${res.status}`)
+      if (res.status !== 403) failures.push(`${route.method} ${route.template} -> ${res.status}`)
     }
     assert.deepEqual(failures, [], failures.join('\n  '))
   })
 
-  test('没有任何操作对角色不符回 403 —— 403 会确认 id 存在', async () => {
-    const parent = await signIn('parent')
-    const leaks = []
-    for (const route of teacherOnly()) {
-      const res = await call(route, parent)
-      if (res.status === 403) leaks.push(`${route.method} ${route.template}`)
-    }
-    assert.deepEqual(leaks, [], `以下操作泄露了资源存在性：\n  ${leaks.join('\n  ')}`)
-  })
-
-  test('越权的 404 与不存在的 404 逐字相同 —— 差异本身就是信道', async () => {
+  test('路由拒绝与范围拒绝是两件事，码不同', async () => {
     const parent = await signIn('parent')
     const teacher = await signIn('teacher')
 
-    // A teacher-only operation refused for the wrong role.
+    // 角色走不了这条路：403，说实话，因为它不泄露任何业务事实。
     const wrongRole = await call({ method: 'GET', template: '/party/studies/{study_id}' }, parent)
-    // The same shape of request from an allowed role, for an id that cannot exist.
-    const absent = await fetch(`${mock.baseUrl}/notices/999999`, {
+    assert.equal(wrongRole.status, 403)
+    assert.equal((await wrongRole.json()).code, 'route_not_allowed_for_role')
+
+    // 角色走得了这条路，但这一行不是你的（这里用一个根本不存在的 id）：404。
+    const absent = await fetch(`${mock.baseUrl}/party/studies/999999`, {
       headers: { authorization: `Bearer ${teacher}` },
     })
-
-    assert.equal(wrongRole.status, 404)
     assert.equal(absent.status, 404)
+    assert.equal((await absent.json()).code, 'not_found')
+  })
 
-    const a = await wrongRole.json()
-    const b = await absent.json()
-    assert.equal(a.code, b.code, 'code 不同就是可区分的信道')
+  test('范围不符与不存在逐字相同 —— 差异本身就是信道', async () => {
+    const teacher = await signIn('teacher')
+    // 两个都由允许的角色发起，都落在同一条路由上，都取不到行。一个是「不存在」，
+    // 一个会是「存在但不是你的」。真服务里两者必须无从分辨；这里能断言的是形状
+    // 与码相同，范围谓词本身要有数据库才谈得上。
+    const a = await (await fetch(`${mock.baseUrl}/party/studies/999999`, {
+      headers: { authorization: `Bearer ${teacher}` },
+    })).json()
+    const b = await (await fetch(`${mock.baseUrl}/notices/999999`, {
+      headers: { authorization: `Bearer ${teacher}` },
+    })).json()
+
+    assert.equal(a.code, 'not_found')
+    assert.equal(b.code, 'not_found')
     // request_id differs by design (§1.4) and carries no information about the
     // resource; everything else must match.
     assert.deepEqual(Object.keys(a).sort(), Object.keys(b).sort())
@@ -213,14 +225,14 @@ describe('RBAC · 契约未枚举但客户端在调的路径也有门', () => {
     assert.deepEqual(failures, [], failures.join('\n  '))
   })
 
-  test('家长身份 -> 404', async () => {
+  test('家长身份 -> 403', async () => {
     const parent = await signIn('parent')
     const failures = []
     for (const [method, path] of CONTRACT_ABSENT) {
       const res = await fetch(mock.baseUrl + path, {
         method, headers: { authorization: `Bearer ${parent}` },
       })
-      if (res.status !== 404) failures.push(`${method} ${path} -> ${res.status}`)
+      if (res.status !== 403) failures.push(`${method} ${path} -> ${res.status}`)
     }
     assert.deepEqual(failures, [], failures.join('\n  '))
   })
@@ -252,8 +264,9 @@ describe('RBAC · 角色解析失败是致命的（§7.2）', () => {
     assert.throws(() => authorizeRole(null, ['teacher']), RoleResolutionError)
     // A role that resolves but is not on the list is a denial, not a throw.
     assert.deepEqual(authorizeRole({ role: 'teacher' }, ['teacher']), null)
-    assert.equal(authorizeRole({ role: 'parent' }, ['teacher']).status, 404)
+    assert.equal(authorizeRole({ role: 'parent' }, ['teacher']).status, 403)
+    assert.equal(authorizeRole({ role: 'parent' }, ['teacher']).code, 'route_not_allowed_for_role')
     // An operation with an empty role list fails closed.
-    assert.equal(authorizeRole({ role: 'teacher' }, []).status, 404)
+    assert.equal(authorizeRole({ role: 'teacher' }, []).status, 403)
   })
 })

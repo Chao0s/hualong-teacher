@@ -7,14 +7,24 @@
  * green while enforcing nothing is the worst failure mode there is. So the
  * decision lives here, alone, and every route calls it.
  *
- * The status split is the part people get wrong:
+ * The status split is the part people get wrong, and it splits THREE ways, not
+ * two (§2.3, and the RoleNotAllowed / NotFound response descriptions):
  *
- *   no token / unknown token / revoked token   -> 401   the caller has no identity
- *   identity resolves, role not allowed        -> 404   NOT 403
- *   identity resolves, id outside scope        -> 404   NOT 403
+ *   no token / unknown token / revoked token  -> 401  the caller has no identity
+ *   role not on this route's allowlist        -> 403  route_not_allowed_for_role
+ *   id exists but is outside the caller scope -> 404  not_found
  *
- * 403 would confirm that the id exists, which is a leak — and for minors' data
- * it is red-line-4 (Platform SECURITY.md). 404 says nothing either way.
+ * The distinction is which question is being answered. "May this role walk this
+ * road" leaks no business fact — 合作园 learning that 化龙 has a review centre
+ * costs nothing — so it answers honestly with 403. "May you see this row" would
+ * confirm the id exists, and for minors' records that confirmation is itself the
+ * leak (Platform SECURITY.md red line 4), so it hides behind a 404 that is
+ * deliberately indistinguishable from an id that never existed.
+ *
+ * Getting this backwards is common enough that the contract calls it out: §12
+ * records six places in one admin spec alone where scope-miss was written as
+ * 403. This module is the one place that decides, so it is the one place to be
+ * right.
  *
  * §7.2's other half: failing to resolve a role is FATAL. It is never an empty
  * rule set, because an empty rule set reads as "no restrictions".
@@ -35,6 +45,31 @@ export const ROLE_BY_SURFACE = Object.freeze({
   parent: 'parent',
   'admin-pc': 'admin-pc',
   partner: 'partner-account',
+});
+
+/**
+ * The route-level refusal. Frozen and shared, because every caller must send the
+ * same words — a message that varied by endpoint would reintroduce the channel
+ * the single code exists to close.
+ */
+const ROUTE_DENIED = Object.freeze({
+  status: 403,
+  code: 'route_not_allowed_for_role',
+  message: '当前身份无法使用此功能',
+});
+
+/**
+ * The scope-level refusal, for a caller whose role IS allowed on the route but
+ * whose scope predicate excludes the row. Byte-identical to an absent id.
+ *
+ * Nothing in this mock evaluates a real scope predicate — that needs the
+ * database. It is exported so the routes that DO know their scope (the
+ * hand-written handlers) refuse in one shape rather than inventing their own.
+ */
+export const SCOPE_DENIED = Object.freeze({
+  status: 404,
+  code: 'not_found',
+  message: '资源不存在或不在可见范围内',
 });
 
 export class RoleResolutionError extends Error {
@@ -79,11 +114,10 @@ export function authorizeRole(session, roles) {
   // spec inventory reports zero such operations today; if one appears, it must
   // fail closed rather than open.
   if (!roles || roles.length === 0) {
-    return { status: 404, code: 'not_found', message: '资源不存在或不在可见范围内' };
+    return ROUTE_DENIED;
   }
   if (!roles.includes(session.role)) {
-    // §2.3 — the same 404 an absent id gets. Deliberately indistinguishable.
-    return { status: 404, code: 'not_found', message: '资源不存在或不在可见范围内' };
+    return ROUTE_DENIED;
   }
   return null;
 }
