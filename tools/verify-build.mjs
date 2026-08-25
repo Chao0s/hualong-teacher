@@ -1,0 +1,251 @@
+/**
+ * Static compile check for the Mini Program.
+ *
+ * A native Mini Program has no build step and produces no dist/, so there is
+ * nothing to run and inspect the way a bundler lets you. The compiler lives
+ * inside WeChat DevTools, and `miniprogram-ci preview` needs an upload key plus
+ * an IP allowlist entry. This stands in for it: it reads what DevTools reads and
+ * fails on what DevTools would reject.
+ *
+ * It exists because of commit 6b24802 — four entry pages shipped `{{{{ready}}}}`
+ * and could not compile, while 76 tests passed, because the tests read the files
+ * and asserted about their contents rather than about their validity. Bindings
+ * are now covered by tests/navigation.test.mjs; everything else is covered here.
+ *
+ * Run:  npm run verify:build
+ * Exit: 0 clean, 1 with findings.
+ */
+
+import { readFileSync, existsSync, statSync, readdirSync } from 'node:fs';
+import { resolve, dirname, join, relative, extname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { Script } from 'node:vm';
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+const REPO = resolve(HERE, '..');
+const ROOT = resolve(REPO, 'miniprogram');
+
+// 微信平台硬上限：主包 2 MB，整包（含分包）20 MB。超过就是上传被拒，不是警告。
+const MAIN_PACKAGE_LIMIT = 2 * 1024 * 1024;
+const TOTAL_LIMIT = 20 * 1024 * 1024;
+// tabBar 上限即五（DO-NOT-BUILD 14）。第六个模块入口走页面内入口。
+const TAB_CEILING = 5;
+
+const findings = [];
+const note = (file, message) => findings.push({ file, message });
+
+function readJson(absPath, label) {
+  try {
+    return JSON.parse(readFileSync(absPath, 'utf8'));
+  } catch (err) {
+    note(rel(absPath), `${label} 不是合法 JSON：${err.message}`);
+    return null;
+  }
+}
+
+const rel = (p) => relative(REPO, p).replace(/\\/g, '/');
+
+// ── app.json：页面注册 ──────────────────────────────────────────────────────
+
+const appJsonPath = join(ROOT, 'app.json');
+if (!existsSync(appJsonPath)) {
+  console.error('找不到 miniprogram/app.json，无法继续。');
+  process.exit(1);
+}
+const app = readJson(appJsonPath, 'app.json') || {};
+
+/** A page needs .js, .json and .wxml. .wxss is optional — a page may inherit. */
+function checkPageFiles(pagePath, origin) {
+  const base = join(ROOT, pagePath);
+  for (const ext of ['.js', '.json', '.wxml']) {
+    if (!existsSync(base + ext)) note(`${pagePath}${ext}`, `${origin} 注册了这个页面，但文件不存在`);
+  }
+}
+
+const registered = new Set(app.pages || []);
+for (const p of app.pages || []) checkPageFiles(p, 'app.json pages');
+
+if (!registered.size) note('miniprogram/app.json', 'pages 为空，小程序没有任何页面');
+
+// ── 分包 ────────────────────────────────────────────────────────────────────
+
+const subPackages = app.subPackages || app.subpackages || [];
+const subRoots = [];
+for (const sub of subPackages) {
+  if (!sub.root) { note('miniprogram/app.json', '分包缺少 root'); continue; }
+  const rootDir = join(ROOT, sub.root);
+  if (!existsSync(rootDir)) { note(`miniprogram/${sub.root}`, '分包 root 目录不存在'); continue; }
+  subRoots.push(sub.root.replace(/\/$/, ''));
+  for (const p of sub.pages || []) {
+    const full = `${sub.root.replace(/\/$/, '')}/${p}`;
+    checkPageFiles(full, `分包 ${sub.root}`);
+    if (registered.has(full)) {
+      note(`${full}`, '同一页面同时登记在主包 pages 与分包 pages —— 编译会拒绝');
+    }
+    registered.add(full);
+  }
+}
+
+// ── tabBar ─────────────────────────────────────────────────────────────────
+
+const tabs = app.tabBar?.list || [];
+if (tabs.length > TAB_CEILING) {
+  note('miniprogram/app.json', `tabBar 有 ${tabs.length} 项，平台上限 ${TAB_CEILING}（DO-NOT-BUILD 14）`);
+}
+for (const tab of tabs) {
+  if (!registered.has(tab.pagePath)) {
+    note('miniprogram/app.json', `tabBar 指向未注册的页面：${tab.pagePath}`);
+  }
+  // A tab page must be in the MAIN package. WeChat refuses a tab in a subpackage.
+  if (subRoots.some((r) => tab.pagePath.startsWith(`${r}/`))) {
+    note('miniprogram/app.json', `tabBar 页面在分包里：${tab.pagePath} —— 必须在主包`);
+  }
+  for (const key of ['iconPath', 'selectedIconPath']) {
+    const icon = tab[key];
+    if (!icon) continue;
+    if (!existsSync(join(ROOT, icon))) note('miniprogram/app.json', `tabBar ${key} 文件不存在：${icon}`);
+  }
+}
+
+if (app.sitemapLocation && !existsSync(join(ROOT, app.sitemapLocation))) {
+  note('miniprogram/app.json', `sitemapLocation 指向不存在的文件：${app.sitemapLocation}`);
+}
+
+// ── 遍历全部源文件 ──────────────────────────────────────────────────────────
+
+function walk(dir, out = []) {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) walk(full, out);
+    else out.push(full);
+  }
+  return out;
+}
+
+const files = walk(ROOT);
+
+for (const file of files) {
+  const ext = extname(file);
+  if (ext === '.json') checkJsonFile(file);
+  else if (ext === '.js') checkJsFile(file);
+  else if (ext === '.wxml') checkWxmlFile(file);
+  else if (ext === '.wxss') checkWxssFile(file);
+}
+
+/** Component references must resolve, or the page renders an empty box silently. */
+function checkJsonFile(file) {
+  const json = readJson(file, rel(file));
+  if (!json) return;
+  const using = json.usingComponents || {};
+  for (const [tag, path] of Object.entries(using)) {
+    // A plugin:// reference is resolved by the platform, not by us.
+    if (path.startsWith('plugin://')) continue;
+    const target = path.startsWith('/')
+      ? join(ROOT, path.slice(1))
+      : resolve(dirname(file), path);
+    if (!existsSync(`${target}.json`)) {
+      note(rel(file), `usingComponents["${tag}"] 指向不存在的组件：${path}`);
+      continue;
+    }
+    const def = readJson(`${target}.json`, rel(`${target}.json`));
+    if (def && def.component !== true) {
+      note(rel(`${target}.json`), '被当作组件引用，但没有声明 "component": true');
+    }
+  }
+}
+
+/**
+ * Syntax only. Mini Program JS is CommonJS, so compiling it as a script is the
+ * same parse the compiler does — no module resolution, no execution.
+ */
+function checkJsFile(file) {
+  const src = readFileSync(file, 'utf8');
+  try {
+    new Script(src, { filename: file });
+  } catch (err) {
+    note(rel(file), `JS 语法错误：${err.message}`);
+  }
+}
+
+function checkWxmlFile(file) {
+  const src = readFileSync(file, 'utf8');
+  // The 6b24802 shape. tests/navigation.test.mjs covers well-formed bindings in
+  // depth; this catches the specific generator artefact at build time too,
+  // because a compile check that misses the one bug that broke the build is not
+  // a compile check.
+  if (/\{\{\{\{/.test(src)) note(rel(file), '出现 {{{{ —— 模板转义未展开，编译会失败');
+  const opens = (src.match(/\{\{/g) || []).length;
+  const closes = (src.match(/\}\}/g) || []).length;
+  if (opens !== closes) note(rel(file), `插值括号不配对：${opens} 个 {{，${closes} 个 }}`);
+
+  // Unclosed custom/native tags. Self-closing and void forms are excluded.
+  const stack = [];
+  const tagRe = /<(\/?)([a-zA-Z][\w-]*)((?:"[^"]*"|'[^']*'|[^>"'])*?)(\/?)>/g;
+  let m;
+  while ((m = tagRe.exec(src)) !== null) {
+    const [, slash, name, , selfClose] = m;
+    if (selfClose) continue;
+    if (slash) {
+      if (stack.pop() !== name) {
+        note(rel(file), `标签闭合不匹配，出现 </${name}>`);
+        return;
+      }
+    } else {
+      stack.push(name);
+    }
+  }
+  if (stack.length) note(rel(file), `标签未闭合：<${stack.join('>, <')}>`);
+}
+
+function checkWxssFile(file) {
+  const src = readFileSync(file, 'utf8');
+  for (const m of src.matchAll(/@import\s+["']([^"']+)["']/g)) {
+    const target = m[1].startsWith('/')
+      ? join(ROOT, m[1].slice(1))
+      : resolve(dirname(file), m[1]);
+    if (!existsSync(target)) note(rel(file), `@import 指向不存在的文件：${m[1]}`);
+  }
+  const open = (src.match(/\{/g) || []).length;
+  const close = (src.match(/\}/g) || []).length;
+  if (open !== close) note(rel(file), `花括号不配对：${open} 个 {，${close} 个 }`);
+}
+
+// ── 包体积 ──────────────────────────────────────────────────────────────────
+
+let mainBytes = 0;
+let totalBytes = 0;
+for (const file of files) {
+  const size = statSync(file).size;
+  totalBytes += size;
+  const r = relative(ROOT, file).replace(/\\/g, '/');
+  if (!subRoots.some((sub) => r.startsWith(`${sub}/`))) mainBytes += size;
+}
+if (mainBytes > MAIN_PACKAGE_LIMIT) {
+  note('miniprogram/', `主包 ${kb(mainBytes)}，超过 2 MB 上限。把阅读类页面搬进分包。`);
+}
+if (totalBytes > TOTAL_LIMIT) {
+  note('miniprogram/', `整包 ${kb(totalBytes)}，超过 20 MB 上限。`);
+}
+
+function kb(n) { return `${(n / 1024).toFixed(1)} KB`; }
+
+// ── 报告 ────────────────────────────────────────────────────────────────────
+
+const pageCount = registered.size;
+console.log('| 检查项 | 结果 |');
+console.log('| --- | --- |');
+console.log(`| 注册页面 | ${pageCount} 个（主包 ${(app.pages || []).length}，分包 ${pageCount - (app.pages || []).length}） |`);
+console.log(`| 分包 | ${subPackages.length} 个 |`);
+console.log(`| tabBar | ${tabs.length} / ${TAB_CEILING} |`);
+console.log(`| 源文件 | ${files.length} 个 |`);
+console.log(`| 主包体积 | ${kb(mainBytes)} / 2048.0 KB |`);
+console.log(`| 整包体积 | ${kb(totalBytes)} / 20480.0 KB |`);
+console.log(`| 发现问题 | ${findings.length} 个 |`);
+
+if (findings.length) {
+  console.log('');
+  for (const f of findings) console.log(`  ${f.file}\n    ${f.message}`);
+  process.exit(1);
+}
+console.log('');
+console.log('静态编译校验通过。真编译仍需 WeChat DevTools 或带上传密钥的 miniprogram-ci preview。');

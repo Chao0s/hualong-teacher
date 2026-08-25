@@ -29,6 +29,8 @@
 import { createServer } from 'node:http';
 import { randomUUID, createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
+import { ROLE_BY_SURFACE, authorizeRole, RoleResolutionError } from './authz.mjs';
+import { loadRoutes } from './spec-routes.mjs';
 
 // 3000 and 3100 are already taken by another local service on this workstation,
 // so the default is moved out of the common range. Override with PORT=.
@@ -278,9 +280,13 @@ function parseJson(raw) {
 
 /** §6.2 — POST /auth/session, both stages. */
 function postAuthSession(res, body) {
-  if (body.surface !== 'teacher') {
+  // §6.1 — the surface IS the role. One client, one role, fixed for the session.
+  // Surfaces other than `teacher` exist here so that RBAC tests have an identity
+  // to be refused with; G1 blocks parent and admin-pc in production.
+  const role = ROLE_BY_SURFACE[body.surface];
+  if (!role) {
     return fail(res, 422, 'validation_failed', '字段校验失败',
-      { field: 'surface', rule: 'must_be_teacher' });
+      { field: 'surface', rule: 'unknown_surface' });
   }
   if (!body.js_code) {
     return fail(res, 400, 'malformed_request', '缺少 js_code');
@@ -309,7 +315,7 @@ function postAuthSession(res, body) {
   }
 
   const token = randomUUID();
-  state.sessions.set(token, { claim_id: 41, issued_at: Date.now() });
+  state.sessions.set(token, { claim_id: 41, issued_at: Date.now(), role, surface: body.surface });
   return sendJson(res, 200, {
     session_token: token,
     expires_at: '2026-08-21T22:00:00+08:00',
@@ -318,16 +324,32 @@ function postAuthSession(res, body) {
 
 /** §6.4 — the whole downstream context in one call. */
 function getAuthSession(req, res) {
-  if (!requireSession(req, res)) return;
+  const session = requireSession(req, res);
+  if (!session) return;
   sendJson(res, 200, {
-    surface: 'teacher',
-    role: 'teacher',
+    surface: session.surface,
+    role: session.role,
     subject: TEACHER,
     scope: SCOPE,
     permissions: [],
     current_term: OPTS.noTerm ? null : TERM,
     expires_at: '2026-08-21T22:00:00+08:00',
   });
+}
+
+/**
+ * §6.3 — logout. Revocation is real here rather than a generated 204, because
+ * "a revoked token still works" is precisely the bug the revocation list exists
+ * to prevent, and a generated route would report green while proving nothing.
+ */
+function deleteAuthSession(req, res) {
+  const auth = req.headers.authorization || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+  if (!token || !state.sessions.has(token)) {
+    return fail(res, 401, 'unauthenticated', '未登录或登录凭证无效');
+  }
+  state.revoked.add(token);
+  return sendJson(res, 204, null);
 }
 
 /** §3.1 — a cursor-paginated time stream. */
@@ -472,6 +494,107 @@ function getTask(req, res, id) {
   });
 }
 
+/**
+ * Roles for the hand-written routes, so the primitive covers them too.
+ *
+ * This table exists because the primitive was NOT covering them: until it was
+ * added, GET /tasks/{task_id} answered 200 to a parent session. The handler
+ * called requireSession and stopped there, which authenticates without
+ * authorizing. That is the §7.2 failure mode written down in HANDOFF.md — a
+ * rule repeated per endpoint until one endpoint forgets — and the answer is the
+ * same one the contract gives: decide in one place, for every route.
+ *
+ * The first six entries are paths the CONTRACT DOES NOT DEFINE. The client
+ * calls them and db_notification / db_home_case / db_task exist to back them,
+ * but no operation was ever enumerated. They are declared teacher-only here so
+ * the gate is not silently absent; the gap itself is a separate problem, filed
+ * in HANDOFF.md → 契约缺口.
+ */
+const HAND_WRITTEN_ROLES = [
+  [/^\/notices$/, ['teacher']],
+  [/^\/notices\/\d+$/, ['teacher']],
+  [/^\/home\/todos$/, ['teacher']],
+  [/^\/home\/cases$/, ['teacher']],
+  [/^\/tasks$/, ['teacher']],
+  [/^\/parent-tasks$/, ['teacher']],
+  [/^\/parent-tasks\/\d+\/progress$/, ['teacher']],
+  // Declared by the contract; repeated here because the handler is hand-written.
+  [/^\/tasks\/\d+$/, ['teacher']],
+  [/^\/auth\/session$/, ['teacher', 'parent', 'admin-pc', 'partner-account']],
+];
+
+/**
+ * The one gate every request passes, before any handler runs.
+ *
+ * POST /auth/session is the single exception, because it is where identity is
+ * created; it is `security: []` in the contract for the same reason.
+ *
+ * @returns {boolean} true when the request was refused and already answered
+ */
+function refuseUnauthorized(req, res, path) {
+  if (req.method === 'POST' && path === '/auth/session') return false;
+
+  const entry = HAND_WRITTEN_ROLES.find(([re]) => re.test(path));
+  if (!entry) return false;          // contract routes gate themselves below
+
+  const session = requireSession(req, res);
+  if (!session) return true;         // 401 already sent
+
+  const denial = authorizeRole(session, entry[1]);
+  if (denial) {
+    fail(res, denial.status, denial.code, denial.message);
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Everything the contract declares and no hand-written handler covers.
+ *
+ * Order matters and is the contract's, not convenience:
+ *   1. no route matches         -> false, the caller answers 404 unknown endpoint
+ *   2. the route is pre-session -> serve it (only POST /auth/session is)
+ *   3. no valid session         -> 401
+ *   4. role not in x-hualong-roles -> 404, never 403 (§2.3)
+ *   5. otherwise                -> the declared success code and a shaped body
+ *
+ * Step 4 must come after step 3, or an anonymous caller would get a 404 that
+ * says "no such endpoint" when the truth is "you are not logged in". Those two
+ * answers must stay distinguishable to the developer even though 404 is
+ * deliberately ambiguous between "absent" and "out of scope".
+ *
+ * @returns {Promise<boolean>} true when this function answered the request
+ */
+async function serveFromContract(req, res, path) {
+  const { routes } = await loadRoutes();
+  const route = routes.find((r) => r.method === req.method && r.regex.test(path));
+  if (!route) return false;
+
+  if (!route.isPublic) {
+    const session = requireSession(req, res);
+    if (!session) return true;                       // 401 already sent
+    let denial;
+    try {
+      denial = authorizeRole(session, route.roles);
+    } catch (err) {
+      if (err instanceof RoleResolutionError) {
+        // §7.2: fatal, never an empty rule set. 500 is honest here — the server
+        // cannot decide, and deciding "allow" would be the bug this prevents.
+        fail(res, 500, 'internal_error', '服务出错');
+        return true;
+      }
+      throw err;
+    }
+    if (denial) {
+      fail(res, denial.status, denial.code, denial.message);
+      return true;
+    }
+  }
+
+  sendJson(res, route.status, route.body);
+  return true;
+}
+
 // ── Dispatch ───────────────────────────────────────────────────────────────
 
 const server = createServer(async (req, res) => {
@@ -532,10 +655,17 @@ const server = createServer(async (req, res) => {
       }
     }
 
+    if (refuseUnauthorized(req, res, path)) {
+      rlog(`  ${req.method} ${url.pathname} -> ${res.statusCode}`);
+      return;
+    }
+
     if (req.method === 'POST' && path === '/auth/session') {
       postAuthSession(res, body);
     } else if (req.method === 'GET' && path === '/auth/session') {
       getAuthSession(req, res);
+    } else if (req.method === 'DELETE' && path === '/auth/session') {
+      deleteAuthSession(req, res);
     } else if (req.method === 'GET' && path === '/notices') {
       getNotices(req, res, url);
     } else if (req.method === 'GET' && /^\/notices\/\d+$/.test(path)) {
@@ -552,7 +682,7 @@ const server = createServer(async (req, res) => {
       postParentTask(req, res, body);
     } else if (req.method === 'GET' && /^\/parent-tasks\/\d+\/progress$/.test(path)) {
       getParentTaskProgress(req, res);
-    } else {
+    } else if (!await serveFromContract(req, res, path)) {
       fail(res, 404, 'not_found', `未实现的端点：${req.method} ${path}`);
     }
   } catch (err) {

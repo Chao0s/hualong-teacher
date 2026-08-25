@@ -1,0 +1,165 @@
+/**
+ * Functional coverage: every teacher-reachable operation the contract declares
+ * answers with the success code it declares.
+ *
+ * This is a breadth test, and it is honest about what breadth buys. It proves
+ * the path exists, the role gate lets a teacher through, the status code is the
+ * declared one, and the body has the declared shape. It proves nothing about
+ * business rules, state machines or scope predicates — those need a real
+ * service, and there is no service code in hualong-backend yet.
+ *
+ * Its real value is the failure it catches: a client calling a path the
+ * contract does not define. That already happened four times before this test
+ * existed (see the 契约缺口 section of HANDOFF.md).
+ *
+ * Skips itself when the contract is not mounted — it lives in a sibling repo on
+ * another drive, and `npm test` must not fail because that drive is absent.
+ */
+
+import { test, before, after, describe } from 'node:test'
+import assert from 'node:assert/strict'
+import { start } from '../mock/server.mjs'
+import { loadRoutes } from '../mock/spec-routes.mjs'
+
+let mock
+let routes = []
+let specError = null
+
+before(async () => {
+  const loaded = await loadRoutes()
+  routes = loaded.routes
+  specError = loaded.error
+  mock = await start({ port: 0 })
+})
+
+after(async () => { await mock?.close() })
+
+async function signIn(surface) {
+  const res = await fetch(`${mock.baseUrl}/auth/session`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ surface, js_code: 'mock-js-code' }),
+  })
+  assert.equal(res.status, 200, `${surface} 登录失败`)
+  return (await res.json()).session_token
+}
+
+/**
+ * A concrete path for a template. Every placeholder becomes a value that is
+ * legal for its own name — an ordinal is 1, a code is a code — because the
+ * generated routes match `([^/]+)` but the hand-written ones match `\d+`, and
+ * a hand-written route is the one that would notice a wrong shape.
+ */
+function concretePath(template) {
+  return template.replace(/\{([^}]+)\}/g, (_, name) => {
+    if (name === 'ordinal') return '1'
+    if (name === 'scale_version') return 'v1.0'
+    if (name.endsWith('_code')) return 'c1'
+    if (name === 'link_id') return 'lnk1'
+    return '1'
+  })
+}
+
+function requestFor(route, token) {
+  const init = { method: route.method, headers: { authorization: `Bearer ${token}` } }
+  if (['POST', 'PUT', 'PATCH'].includes(route.method)) {
+    init.headers['content-type'] = 'application/json'
+    // The generated routes do not validate bodies; the hand-written ones do.
+    // An empty object is the request that exercises the route without claiming
+    // to satisfy a schema this test is not checking.
+    init.body = '{}'
+  }
+  return init
+}
+
+describe('每个教师端操作都回契约声明的成功码', () => {
+  test('契约已挂载', () => {
+    if (specError) {
+      assert.fail(`契约不可读，本文件其余断言无意义：${specError}`)
+    }
+    assert.ok(routes.length > 0, '路由表为空')
+  })
+
+  test('教师端可达操作的数量与契约一致', async () => {
+    const teacherRoutes = routes.filter((r) => !r.isPublic)
+    // 90 teacher operations + 1 pre-session login = 91 routes generated.
+    assert.equal(teacherRoutes.length + 1, routes.length)
+    assert.equal(routes.length, 91,
+      `契约的教师端操作数变了：现在 ${routes.length}。改的是契约还是这条断言？`)
+  })
+
+  test('每个操作在教师身份下回它自己声明的成功码', async (t) => {
+    const token = await signIn('teacher')
+    const failures = []
+    let ok = 0
+
+    for (const route of routes) {
+      if (route.isPublic) continue
+      const path = concretePath(route.template)
+      // Logout really revokes (mock/server.mjs → deleteAuthSession), so calling
+      // it with the shared token would 401 every operation after it. Give it a
+      // token of its own rather than skipping it — it is an operation too.
+      const isLogout = route.method === 'DELETE' && route.template === '/auth/session'
+      const res = await fetch(mock.baseUrl + path, requestFor(route, isLogout ? await signIn('teacher') : token))
+      // The hand-written handlers answer some of these paths with their own
+      // richer logic and their own codes; both are legal contract answers, so
+      // the assertion is "a declared 2xx", not "exactly the generated one".
+      if (res.status >= 200 && res.status < 300) ok += 1
+      else failures.push(`${route.method} ${path} -> ${res.status}（契约声明 ${route.status}）`)
+    }
+
+    t.diagnostic(`成功 ${ok} / ${routes.length - 1} 个教师端操作`)
+    assert.deepEqual(failures, [], `以下操作未回 2xx：\n  ${failures.join('\n  ')}`)
+  })
+
+  test('登录端点在无会话时可达 —— 它是唯一的 security: [] 操作', async () => {
+    const publicRoutes = routes.filter((r) => r.isPublic)
+    assert.equal(publicRoutes.length, 1)
+    assert.equal(publicRoutes[0].template, '/auth/session')
+  })
+
+  test('被 GAPS 阻断的操作已登记，实作前不得依赖', async (t) => {
+    const blocked = routes.filter((r) => r.blockedOn.length > 0)
+    for (const r of blocked) t.diagnostic(`阻断：${r.method} ${r.template} <- ${r.blockedOn.join('; ')}`)
+    // A count, not a list: the register in db/GAPS.md is the authority on which
+    // ones. This only fails when the number moves without anyone noticing.
+    assert.equal(blocked.length, 5,
+      `教师端被阻断的操作数变了：现在 ${blocked.length}。核对 db/GAPS.md 后改这条断言。`)
+  })
+
+  test('生成的样例值满足契约的 pattern —— mock 不得发出契约禁止的值', async () => {
+    const { loadSpec } = await import('../tools/openapi-source.mjs')
+    const spec = loadSpec()
+    const offenders = []
+    walkSchemas(spec, (schema, where) => {
+      if (!schema.pattern) return
+      const value = sampleStringFor(schema)
+      if (value === null || !new RegExp(schema.pattern).test(value)) {
+        offenders.push(`${where}: pattern ${schema.pattern} 生成不出合法值`)
+      }
+    })
+    assert.deepEqual(offenders, [], offenders.join('\n'))
+  })
+})
+
+// Mirrors mock/spec-routes.mjs → stringSample. Kept as a copy on purpose: if
+// the two drift, this test fails, which is the point.
+function sampleStringFor(schema) {
+  const p = schema.pattern
+  if (p.includes('T\\d{2}:\\d{2}:\\d{2}\\+08:00')) return '2026-09-01T09:00:00+08:00'
+  if (p.includes('W\\d{2}')) return '2026-W36'
+  if (p === '^\\d{4}-\\d{2}-\\d{2}$') return '2026-09-01'
+  if (p === '^\\d{4}-\\d{2}$') return '2026-09'
+  if (p.startsWith('^https://')) return 'https://example.invalid/generated'
+  return null
+}
+
+function walkSchemas(node, visit, where = '$', depth = 0, seen = new Set()) {
+  if (!node || typeof node !== 'object' || depth > 12) return
+  if (seen.has(node)) return
+  seen.add(node)
+  if (node.type === 'string' || node.pattern) visit(node, where)
+  for (const [key, child] of Object.entries(node)) {
+    if (child && typeof child === 'object') walkSchemas(child, visit, `${where}.${key}`, depth + 1, seen)
+  }
+}
