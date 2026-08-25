@@ -1,0 +1,17 @@
+.hl-card + .hl-card {
+  margin-top: var(--space-2);
+}
+
+.brand__meta {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.brand__tags {
+  flex: 1;
+  color: var(--accent-dark);
+  /* 标签多的一条不换行撑高卡片；点进去就看得全。 */
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}

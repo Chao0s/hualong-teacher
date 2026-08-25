@@ -1,0 +1,31 @@
+<view class="hl-page" wx:if="{{ready}}">
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryList">重试</text>
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障码 {{errorRequestId}}</text>
+  </view>
+
+  <view wx:if="{{loadingFirst}}" class="hl-loading">加载中…</view>
+
+  <block wx:if="{{!loadingFirst}}">
+    <!-- 空与失败是两种状态：读失败时不说「暂无」，那是把读不到说成没有资料。 -->
+    <view wx:if="{{items.length === 0 && !errorText}}" class="hl-card hl-empty">暂无品牌建设资料</view>
+
+    <view
+      wx:for="{{items}}"
+      wx:key="brand_id"
+      class="hl-card brand"
+      data-id="{{item.brand_id}}"
+      bindtap="onTap">
+      <text class="hl-card__title">{{item.brand_title}}</text>
+      <view class="hl-card__meta brand__meta">
+        <text>{{item.published_label}}</text>
+        <!-- 标签是可空列，服务层拼好一行；没有标签就不渲染这一格。 -->
+        <text wx:if="{{item.tag_label}}" class="brand__tags">{{item.tag_label}}</text>
+      </view>
+    </view>
+
+    <view wx:if="{{loadingMore}}" class="hl-loading">加载更多…</view>
+    <view wx:if="{{exhausted && items.length > 0}}" class="hl-loading">没有更多了</view>
+  </block>
+</view>

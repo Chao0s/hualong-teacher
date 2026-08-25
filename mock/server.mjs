@@ -209,6 +209,98 @@ function toStudyCard(study) {
   };
 }
 
+// db_party_activity —— 党建活动。契约 §4 规则 19 同学习资料：不搜索、不筛选，业务日期
+// 是 `activity_at`（含时刻），按 `activity_at DESC, activity_id DESC` 作游标分页。
+// F7 已移除原型的「主办部门／参与对象」两列，所以这里也没有。
+// 21 条，够翻页；第 9 条带一个本客户端不认识的状态码，第 5 条没有地点，用来验证可空列。
+const ACTIVITY_TITLES = [
+  '“红色故事进课堂”主题党日',
+  '党员教师社区志愿服务',
+  '青年教师理论读书会',
+  '红色教育基地参访',
+  '党员示范课观摩',
+];
+
+const ACTIVITY_LOCATIONS = ['多功能室', '社区广场', '党建室', '区党群中心', '中三班'];
+
+const ACTIVITY_CONTENT = [
+  '一、活动安排',
+  '',
+  '党员教师围绕红色故事资源进行课程转化讨论，形成适合大班幼儿理解的故事讲述、角色扮演和美术表达活动。',
+  '',
+  '二、参与要求',
+  '',
+  '各班派一名教师参加，活动后在本页提交一条教学实践反思，由支部统一归档。',
+].join('\n');
+
+const PARTY_ACTIVITIES = Array.from({ length: 21 }, (_, i) => {
+  const id = 21 - i;
+  // 日期严格递减，`activity_at DESC, activity_id DESC` 的排序才真的成立。
+  const day = String(21 - i).padStart(2, '0');
+  return {
+    activity_id: id,
+    activity_title: ACTIVITY_TITLES[i % ACTIVITY_TITLES.length],
+    activity_content: ACTIVITY_CONTENT,
+    // 一天里的钟点各不相同，好让「字面量原样呈现」这条测试有具体的钟点可断言。
+    activity_at: `2026-06-${day}T${['09:30', '10:00', '14:00', '15:00', '16:20'][i % 5]}:00+08:00`,
+    activity_location: id === 5 ? null : ACTIVITY_LOCATIONS[i % ACTIVITY_LOCATIONS.length],
+    // 本模块只产生 s3（直发）与 s5（下线）；第 9 条是未来版本才有的码。
+    activity_status: id === 9 ? 'z9_future_status' : 's3',
+    // 活动的附件可以全空（F7），所以第 12 条一份都没有。
+    file_refs: id === 12 ? [] : [
+      { file_id: 8000 + id, usage_key: 'main_file', file_name: `${ACTIVITY_TITLES[i % ACTIVITY_TITLES.length]}活动方案.docx`, file_size: 184320 },
+      ...(id % 3 === 0 ? [] : [
+        { file_id: 8500 + id, usage_key: 'inline_media', file_name: '活动现场图.jpg', file_size: 421887 },
+      ]),
+    ],
+  };
+});
+
+// db_party_brand —— 品牌建设。按 `published_at DESC, brand_id DESC` 作游标分页。
+// 22 条；第 6 条 `brand_tag` 为 null（契约允许该列为空），第 13 条带一个未知状态码。
+const BRAND_TITLES = [
+  '科技启蒙：小小工程师项目',
+  '醒狮文化：岭南艺术体验',
+  '自然花园：劳动教育实践',
+  '书香班级：亲子阅读共建',
+];
+
+const BRAND_TAGS = [
+  ['科学', '项目化学习', '党建引领'],
+  ['艺术', '岭南文化', '节庆活动'],
+  ['自然', '劳动', '班级共建'],
+  ['语言', '阅读', '家园社共育'],
+];
+
+const BRAND_CONTENT = [
+  '一、主题由来',
+  '',
+  '围绕幼儿对搭建、测量和机械结构的兴趣，教师设计桥梁、滑道、风车等探究任务，让儿童在操作中形成初步工程思维。',
+  '',
+  '二、课程转化',
+  '',
+  '每学期沉淀一份主题课程包，含环境创设要点、材料清单与幼儿作品记录，供各班取用。',
+].join('\n');
+
+const PARTY_BRANDS = Array.from({ length: 22 }, (_, i) => {
+  const id = 22 - i;
+  const day = String(22 - i).padStart(2, '0');
+  return {
+    brand_id: id,
+    brand_title: BRAND_TITLES[i % BRAND_TITLES.length],
+    brand_content: BRAND_CONTENT,
+    brand_tag: id === 6 ? null : BRAND_TAGS[i % BRAND_TAGS.length],
+    published_at: `2026-05-${day}T${['08:45', '11:15', '13:40', '17:05'][i % 4]}:00+08:00`,
+    brand_status: id === 13 ? 'z9_future_status' : 's3',
+    file_refs: [
+      { file_id: 8800 + id, usage_key: 'main_file', file_name: `${BRAND_TITLES[i % BRAND_TITLES.length]}课程包.pdf`, file_size: 1048576 },
+      ...(id % 2 === 0 ? [] : [
+        { file_id: 8900 + id, usage_key: 'inline_media', file_name: '主题环境图.jpg', file_size: 297431 },
+      ]),
+    ],
+  };
+});
+
 const TODOS = [
   { todo_id: 1, todo_kind: 'upload', todo_title: '上传「祠堂里的故事」课程案例', due_at: '2026-08-25T18:00:00+08:00' },
   { todo_id: 2, todo_kind: 'task', todo_title: '完成共建任务：秋季主题墙素材征集', due_at: '2026-08-28T18:00:00+08:00' },
@@ -512,6 +604,92 @@ function getPartyStudy(req, res, id) {
   sendJson(res, 200, study);
 }
 
+/**
+ * §3.1 — 党建活动列表。
+ *
+ * 与学习资料同型：不搜索、不筛选，筛选集恒为空，指纹仍算在这个空集合上（§3.3）。
+ * 契约的列表回的是完整 `PartyActivity`，没有另立一个卡片形状，所以这里原样回夹具。
+ */
+function getPartyActivities(req, res, url) {
+  if (!requireSession(req, res)) return;
+
+  const limitRaw = url.searchParams.get('limit');
+  const limit = limitRaw === null ? 20 : Number(limitRaw);
+  if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+    return fail(res, 422, 'validation_failed', '分页参数不合法',
+      { field: 'limit', rule: 'between_1_and_100' });
+  }
+
+  const filters = {};
+  let startIndex = 0;
+  const cursor = url.searchParams.get('cursor');
+  if (cursor) {
+    const decoded = decodeCursor(cursor, filters);
+    if (decoded.error) {
+      return fail(res, 400, decoded.error,
+        decoded.error === 'cursor_invalid' ? '翻页游标不可解' : '筛选条件已变，游标失效');
+    }
+    startIndex = PARTY_ACTIVITIES.findIndex((a) => a.activity_id === decoded.key) + 1;
+    if (startIndex <= 0) return fail(res, 400, 'cursor_invalid', '翻页游标不可解');
+  }
+
+  const slice = PARTY_ACTIVITIES.slice(startIndex, startIndex + limit);
+  const last = slice[slice.length - 1];
+  const hasMore = startIndex + limit < PARTY_ACTIVITIES.length;
+  sendJson(res, 200, {
+    items: slice,
+    next_cursor: hasMore && last ? encodeCursor(last.activity_id, filters) : null,
+  });
+}
+
+function getPartyActivity(req, res, id) {
+  if (!requireSession(req, res)) return;
+  const activity = PARTY_ACTIVITIES.find((a) => a.activity_id === Number(id));
+  // §2.3: 不存在与不在可见范围内是同一个 404。
+  if (!activity) return fail(res, 404, 'not_found', '活动不存在或不在可见范围内');
+  sendJson(res, 200, activity);
+}
+
+/** §3.1 — 品牌建设列表。业务日期是 `published_at`。 */
+function getPartyBrands(req, res, url) {
+  if (!requireSession(req, res)) return;
+
+  const limitRaw = url.searchParams.get('limit');
+  const limit = limitRaw === null ? 20 : Number(limitRaw);
+  if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+    return fail(res, 422, 'validation_failed', '分页参数不合法',
+      { field: 'limit', rule: 'between_1_and_100' });
+  }
+
+  const filters = {};
+  let startIndex = 0;
+  const cursor = url.searchParams.get('cursor');
+  if (cursor) {
+    const decoded = decodeCursor(cursor, filters);
+    if (decoded.error) {
+      return fail(res, 400, decoded.error,
+        decoded.error === 'cursor_invalid' ? '翻页游标不可解' : '筛选条件已变，游标失效');
+    }
+    startIndex = PARTY_BRANDS.findIndex((b) => b.brand_id === decoded.key) + 1;
+    if (startIndex <= 0) return fail(res, 400, 'cursor_invalid', '翻页游标不可解');
+  }
+
+  const slice = PARTY_BRANDS.slice(startIndex, startIndex + limit);
+  const last = slice[slice.length - 1];
+  const hasMore = startIndex + limit < PARTY_BRANDS.length;
+  sendJson(res, 200, {
+    items: slice,
+    next_cursor: hasMore && last ? encodeCursor(last.brand_id, filters) : null,
+  });
+}
+
+function getPartyBrand(req, res, id) {
+  if (!requireSession(req, res)) return;
+  const brand = PARTY_BRANDS.find((b) => b.brand_id === Number(id));
+  if (!brand) return fail(res, 404, 'not_found', '品牌建设资料不存在或不在可见范围内');
+  sendJson(res, 200, brand);
+}
+
 /** §3.5 — roster-shaped: whole, unpaginated. */
 function getTodos(req, res) {
   if (!requireSession(req, res)) return;
@@ -634,6 +812,10 @@ const HAND_WRITTEN_ROLES = [
   [/^\/tasks\/\d+$/, ['teacher']],
   [/^\/party\/studies$/, ['teacher']],
   [/^\/party\/studies\/\d+$/, ['teacher']],
+  [/^\/party\/activities$/, ['teacher']],
+  [/^\/party\/activities\/\d+$/, ['teacher']],
+  [/^\/party\/brands$/, ['teacher']],
+  [/^\/party\/brands\/\d+$/, ['teacher']],
   [/^\/auth\/session$/, ['teacher', 'parent', 'admin-pc', 'partner-account']],
 ];
 
@@ -796,6 +978,14 @@ const server = createServer(async (req, res) => {
       getPartyStudies(req, res, url);
     } else if (req.method === 'GET' && /^\/party\/studies\/\d+$/.test(path)) {
       getPartyStudy(req, res, path.split('/')[3]);
+    } else if (req.method === 'GET' && path === '/party/activities') {
+      getPartyActivities(req, res, url);
+    } else if (req.method === 'GET' && /^\/party\/activities\/\d+$/.test(path)) {
+      getPartyActivity(req, res, path.split('/')[3]);
+    } else if (req.method === 'GET' && path === '/party/brands') {
+      getPartyBrands(req, res, url);
+    } else if (req.method === 'GET' && /^\/party\/brands\/\d+$/.test(path)) {
+      getPartyBrand(req, res, path.split('/')[3]);
     } else if (req.method === 'POST' && path === '/parent-tasks') {
       postParentTask(req, res, body);
     } else if (req.method === 'GET' && /^\/parent-tasks\/\d+\/progress$/.test(path)) {

@@ -19,8 +19,8 @@
  *
  * A `page` of null means the screen is not built yet, and the tap is refused out
  * loud exactly as 首页 does (ticket 08). Tickets 12 to 21 fill them in — set
- * `page`, and the refusal disappears on its own. 学习资料 is the first one set
- * (ticket 12); the rest are still null.
+ * `page`, and the refusal disappears on its own. 党建管理's three entries are
+ * all set (ticket 12); the rest are still null.
  */
 
 const guard = require('../utils/guard');
@@ -33,8 +33,8 @@ const MODULES = {
         title: '资料与活动',
         entries: [
           { key: 'learn', badge: '学', label: '学习资料', desc: '新时代党建工作要点、师德师风材料', screen: 'LearnList', page: '/packages/party/pages/learn/list' },
-          { key: 'activity', badge: '活', label: '活动', desc: '主题党日、志愿服务、青年教师读书会', screen: 'ActivityList', page: null },
-          { key: 'brand', badge: '牌', label: '品牌建设', desc: '科技启蒙、醒狮文化、自然花园', screen: 'BrandList', page: null },
+          { key: 'activity', badge: '活', label: '活动', desc: '主题党日、志愿服务、青年教师读书会', screen: 'ActivityList', page: '/packages/party/pages/activity/list' },
+          { key: 'brand', badge: '牌', label: '品牌建设', desc: '科技启蒙、醒狮文化、自然花园', screen: 'BrandList', page: '/packages/party/pages/brand/list' },
         ],
       },
     ],

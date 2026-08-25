@@ -1,0 +1,31 @@
+<view class="hl-page" wx:if="{{ready}}">
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryList">重试</text>
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障码 {{errorRequestId}}</text>
+  </view>
+
+  <view wx:if="{{loadingFirst}}" class="hl-loading">加载中…</view>
+
+  <block wx:if="{{!loadingFirst}}">
+    <!-- 空与失败是两种状态：读失败时不说「暂无」，那是把读不到说成没有活动。 -->
+    <view wx:if="{{items.length === 0 && !errorText}}" class="hl-card hl-empty">暂无党建活动</view>
+
+    <view
+      wx:for="{{items}}"
+      wx:key="activity_id"
+      class="hl-card activity"
+      data-id="{{item.activity_id}}"
+      bindtap="onTap">
+      <text class="hl-card__title">{{item.activity_title}}</text>
+      <view class="hl-card__meta activity__meta">
+        <!-- 时间由服务层按字面偏移量格式化，这里只绑定。 -->
+        <text class="activity__time">{{item.time_label}}</text>
+        <text wx:if="{{item.location_label}}">{{item.location_label}}</text>
+      </view>
+    </view>
+
+    <view wx:if="{{loadingMore}}" class="hl-loading">加载更多…</view>
+    <view wx:if="{{exhausted && items.length > 0}}" class="hl-loading">没有更多了</view>
+  </block>
+</view>

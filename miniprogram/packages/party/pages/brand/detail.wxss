@@ -1,0 +1,38 @@
+.hl-card + .hl-card {
+  margin-top: var(--space-2);
+}
+
+.detail__title {
+  font-size: 38rpx;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--fg);
+}
+
+.detail__meta {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.detail__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+}
+
+.detail__tag {
+  background: var(--green-light);
+  color: var(--green);
+}
+
+.detail__rule {
+  margin: var(--space-3) 0;
+}
+
+.detail__body {
+  font-size: 30rpx;
+  line-height: var(--line-cjk);
+  color: var(--fg);
+  white-space: pre-wrap;
+}

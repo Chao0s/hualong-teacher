@@ -17,7 +17,11 @@
       "name": "party",
       "pages": [
         "pages/learn/list",
-        "pages/learn/detail"
+        "pages/learn/detail",
+        "pages/activity/list",
+        "pages/activity/detail",
+        "pages/brand/list",
+        "pages/brand/detail"
       ]
     }
   ],

@@ -1,0 +1,31 @@
+<view class="hl-page" wx:if="{{ready}}">
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryLoad">重试</text>
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障码 {{errorRequestId}}</text>
+  </view>
+
+  <view wx:if="{{loading}}" class="hl-loading">加载中…</view>
+
+  <block wx:if="{{activity && !loading}}">
+    <view class="hl-card detail">
+      <view class="detail__title">{{activity.activity_title}}</view>
+      <view class="hl-card__meta detail__meta">
+        <!-- 活动时间：服务端给什么钟点就是什么钟点，客户端不换算（§1.2）。 -->
+        <text class="detail__time">{{activity.time_label}}</text>
+        <text wx:if="{{activity.location_label}}">{{activity.location_label}}</text>
+      </view>
+      <view class="hl-hairline detail__rule"></view>
+      <view class="detail__body">{{activity.activity_content}}</view>
+    </view>
+
+    <!-- 活动的附件可以全空（F7），所以整块按有无开合，不留一个空标题。 -->
+    <block wx:if="{{activity.files.length > 0}}">
+      <view class="hl-section-title">附件</view>
+      <view wx:for="{{activity.files}}" wx:key="file_id" class="hl-card detail__file">
+        <text class="hl-card__title">{{item.file_name}}</text>
+        <view class="hl-card__meta">{{item.usage_label}}</view>
+      </view>
+    </block>
+  </block>
+</view>

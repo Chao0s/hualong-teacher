@@ -1,13 +1,18 @@
 /**
- * 党建管理 · 学习资料 (ticket 12) — the first page family that lives in a
- * subpackage, and the first collection the contract says must NOT be filtered.
+ * 党建管理 · 活动 (ticket 12) — the second page family in the party subpackage.
  *
- * Two things here are not repeats of tickets 08 and 10. The subpackage boundary
- * is now a real structural claim that a wrong edit would break silently, so it
- * is asserted against app.json. And 契约 §4 规则 19 forbids searching or
- * filtering this collection, which means the cursor's filter set is empty — the
- * self-heal path is therefore exercised with a cursor issued under a DIFFERENT
- * filter set, because there is no second filter set on this endpoint to switch to.
+ * One thing here is not a repeat of 学习资料. This collection's business date is
+ * `activity_at`, a member of §1.2's client-submittable scheduled-time whitelist,
+ * and the whole reason the ticket names it is that a teacher must read the hour
+ * the kindergarten wrote — not the hour their phone's timezone would make of it.
+ * That is asserted twice below: against the literal the server sent, and again
+ * with the process timezone moved under the client's feet.
+ *
+ * The other difference is the status column. `activity_status` is required in
+ * the response and shares its value domain with the other two collections, but
+ * the endpoint's scope is `= 's3'`, so a teacher can only ever see one value.
+ * The service therefore does not read it at all, which is why the unknown-code
+ * fixture below proves degradation by shape rather than by wording.
  */
 
 import { test, before, after } from 'node:test'
@@ -22,8 +27,8 @@ const MP = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'min
 const read = (rel) => fs.readFileSync(path.join(MP, rel), 'utf8')
 const appJson = JSON.parse(read('app.json'))
 
-const LIST = 'packages/party/pages/learn/list'
-const DETAIL = 'packages/party/pages/learn/detail'
+const LIST = 'packages/party/pages/activity/list'
+const DETAIL = 'packages/party/pages/activity/detail'
 
 let mock
 
@@ -68,14 +73,14 @@ test('no session means no read: the page goes back to login instead of fetching'
 
 test('the list sends the pagination pair and nothing else', async () => {
   const c = await signedIn()
-  await c.party.listStudies({})
+  await c.party.listActivities({})
 
   const url = c.record.requests.pop().url
-  assert.match(url, /\/party\/studies\?/, '路径来自契约，不是页面拼的')
+  assert.match(url, /\/party\/activities\?/, '路径来自契约，不是页面拼的')
   assert.match(url, /limit=20/)
   // §4 规则 19：这个集合不搜索、不筛选。
-  assert.ok(!url.includes('study_type='), '类型只显示，不做成筛选项')
   assert.ok(!url.includes('q='), '本集合不搜索')
+  assert.ok(!url.includes('activity_status='), '状态不做成筛选项')
   // §3.1 / DO-NOT-BUILD 11：分页只有游标。
   for (const banned of ['page=', 'offset=', 'total=']) {
     assert.ok(!url.includes(banned), `分页只有游标，出现了 ${banned}`)
@@ -88,14 +93,54 @@ test('the list sends the pagination pair and nothing else', async () => {
 
 test('every row arrives ready to bind — the page formats nothing', async () => {
   const c = await signedIn()
-  const { items } = await c.party.listStudies({})
+  const { items } = await c.party.listActivities({})
 
   assert.ok(items.length > 0)
   for (const row of items) {
-    assert.ok(row.type_label, '每行都有类型文案')
-    assert.ok(!/^t\d$/.test(row.type_label), `界面上出现了枚举原值：${row.type_label}`)
-    assert.match(row.published_label, /^\d{2}-\d{2} \d{2}:\d{2}$/, '时间由服务层格式化')
-    assert.ok(row.excerpt, '列表摘要由服务端派生，客户端不截字')
+    assert.ok(row.activity_title, '每行都有标题')
+    assert.match(row.time_label, /^\d{2}-\d{2} \d{2}:\d{2}$/, '时间由服务层格式化')
+    assert.equal(typeof row.location_label, 'string', '地点永远是字符串，页面不判 null')
+  }
+})
+
+test('the list shows each activity time as written — the ticket asks for the hour, literally', async () => {
+  const c = await signedIn()
+  const { items } = await c.party.listActivities({})
+
+  // 夹具第 3 条是 2026-06-03T15:00:00+08:00。换算过就不会是 15:00。
+  const raw = await c.api.get('/party/activities/3')
+  assert.equal(raw.activity_at, '2026-06-03T15:00:00+08:00', '夹具带的是字面偏移量')
+
+  const row = items.find((r) => r.activity_id === 3)
+  assert.equal(row.time_label, '06-03 15:00', '列表上出现的就是服务端写的那个钟点')
+})
+
+test('the same hour survives a hostile device timezone — no arithmetic anywhere', async () => {
+  const c = await signedIn()
+  const original = process.env.TZ
+  const labels = []
+  try {
+    // 两个与园所时区相差极大的时区。任何一处 new Date 都会让下面两次结果分家。
+    for (const tz of ['UTC', 'America/Los_Angeles']) {
+      process.env.TZ = tz
+      const { items } = await c.party.listActivities({})
+      labels.push(items.find((r) => r.activity_id === 3).time_label)
+    }
+  } finally {
+    if (original === undefined) delete process.env.TZ
+    else process.env.TZ = original
+  }
+
+  assert.equal(labels[0], '06-03 15:00', `UTC 下变成了 ${labels[0]}`)
+  assert.equal(labels[1], '06-03 15:00', `美西时区下变成了 ${labels[1]}`)
+
+  // 守住做法本身：读时间的那一层不得建 Date。注释里讲得起 Date（utils/time.js 的头注
+  // 正是在解释为什么不建），所以先把注释去掉再查代码。
+  const codeOnly = (rel) => read(rel)
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/^\s*\/\/.*$/gm, '')
+  for (const file of ['services/party.js', 'utils/time.js', `${LIST}.js`, `${DETAIL}.js`]) {
+    assert.ok(!codeOnly(file).includes('new Date('), `${file} 建了 Date —— 设备时区会从这里漏进来`)
   }
 })
 
@@ -114,39 +159,48 @@ test('an empty list and a failed read are two different things on screen', async
   const failed = loadPage(c, `${LIST}.js`)
   answerOnce({
     statusCode: 500,
-    data: { code: 'internal_error', message: '服务出错', request_id: 'req-p1' },
+    data: { code: 'internal_error', message: '服务出错', request_id: 'req-a1' },
   })
   await failed.loadFirst()
   assert.equal(failed.data.items.length, 0)
   assert.ok(failed.data.errorText, '读失败要说出来')
-  assert.equal(failed.data.errorRequestId, 'req-p1')
+  assert.equal(failed.data.errorRequestId, 'req-a1')
 
-  // 界面上分得开：空态与错误横幅不能同屏。这一条由标记守住 —— 两个状态的数据
-  // 形状完全相同（items 为空），只有开合条件能区分它们。
+  // 界面上分得开：两个状态的数据形状完全相同，只有开合条件能区分它们。
   const wxml = read(`${LIST}.wxml`)
   assert.match(
     wxml,
     /items\.length === 0 && !errorText/,
-    '空态必须同时按 !errorText 开合，否则读不到会被说成「今天没有资料」',
+    '空态必须同时按 !errorText 开合，否则读不到会被说成「今天没有活动」',
   )
+  assert.match(wxml, /暂无党建活动/, '空态要有一句给老师看的话')
 })
 
-test('an unknown type code still renders a row, neutrally', async () => {
+test('an unknown status code still renders a row, and never reaches the screen', async () => {
   const c = await signedIn()
-  const { items } = await c.party.listStudies({})
-  // 第 7 条的 study_type 是本客户端不认识的码。
-  const row = items.find((r) => r.study_id === 7)
-  assert.ok(row, '这一行没有被丢掉')
-  assert.ok(row.type_label, '仍有文案，不留空')
-  assert.ok(!row.type_label.includes('z9'), '不得把原始码抬到界面上')
+  // 夹具第 9 条带一个本客户端不认识的状态码。
+  const raw = await c.api.get('/party/activities/9')
+  assert.equal(raw.activity_status, 'z9_future_status',
+    '夹具真的带了未知码，否则这条测试什么也没证明')
+
+  const { items } = await c.party.listActivities({})
+  const unknown = items.find((r) => r.activity_id === 9)
+  const ordinary = items.find((r) => r.activity_id === 8)
+  assert.ok(unknown, '这一行没有被丢掉')
+  assert.deepEqual(Object.keys(unknown), Object.keys(ordinary), '两行形状一致，未知码不改变结构')
+
+  const shown = JSON.stringify(unknown)
+  assert.ok(!shown.includes('z9'), '不得把原始码抬到界面上')
+  assert.ok(!shown.includes('status'), '可见范围恒为 s3，状态列不读也不显示')
 })
 
-test('a null department does not break the row', async () => {
+test('a null location does not break the row', async () => {
   const c = await signedIn()
-  const { items } = await c.party.listStudies({})
-  const row = items.find((r) => r.study_id === 4)
-  assert.equal(row.department_label, '', '可空列变成空串，不是 null 或 undefined')
-  assert.ok(row.study_title, '这一行照常显示')
+  const { items } = await c.party.listActivities({})
+  const row = items.find((r) => r.activity_id === 5)
+  assert.equal(row.location_label, '', '可空列变成空串，不是 null 或 undefined')
+  assert.ok(row.activity_title, '这一行照常显示')
+  assert.ok(row.time_label, '时间照常显示')
 })
 
 test('the list pages to the end and then stops asking', async () => {
@@ -172,12 +226,12 @@ test('appending never disturbs what is already read', async () => {
   page.onLoad()
   await page.loadFirst()
 
-  const firstId = page.data.items[0].study_id
+  const firstId = page.data.items[0].activity_id
   const before = page.data.items.length
   await page.loadMore()
 
   assert.ok(page.data.items.length > before, '列表增长了')
-  assert.equal(page.data.items[0].study_id, firstId, '第一条没被加载动画顶掉')
+  assert.equal(page.data.items[0].activity_id, firstId, '第一条没被加载动画顶掉')
   assert.equal(page.data.loadingFirst, false, '续加载不重进首读状态')
 })
 
@@ -185,12 +239,11 @@ test('a cursor from another filter set is refused, and the page reloads exactly 
   const c = await signedIn()
 
   // 本端点不筛选，所以拿一个**别的**集合在筛选条件下签发的游标来充当失效游标。
-  // 指纹算在 { scope: 'current' } 上，与本端点的空筛选集对不上。
   const foreign = await c.task.listPage({ scope: 'current', limit: 2 })
   assert.ok(foreign.nextCursor, '夹具够长，有下一页')
 
   await assert.rejects(
-    () => c.party.listStudies({ cursor: foreign.nextCursor }),
+    () => c.party.listActivities({ cursor: foreign.nextCursor }),
     (err) => err.code === 'cursor_filter_mismatch',
     '§3.3：筛选集对不上是 400，不是悄悄给出错答案',
   )
@@ -220,7 +273,7 @@ test('a failed pull-to-refresh restores the cursor instead of pinning the list a
 
   answerOnce({
     statusCode: 500,
-    data: { code: 'internal_error', message: '服务出错', request_id: 'req-p2' },
+    data: { code: 'internal_error', message: '服务出错', request_id: 'req-a2' },
   })
   await page.loadFirst()
 
@@ -228,7 +281,6 @@ test('a failed pull-to-refresh restores the cursor instead of pinning the list a
   assert.equal(page.data.cursor, priorCursor, '刷新失败要还原游标')
   assert.equal(page.data.exhausted, priorExhausted, '不得把列表钉死在「没有更多了」')
 
-  // 还原是为了这个：下一次上滑仍然发得出请求。
   const before = c.record.requests.length
   await page.loadMore()
   assert.ok(c.record.requests.length > before, '还原后列表还能继续加载')
@@ -240,64 +292,54 @@ test('an unregistered error code degrades by HTTP class, in Chinese, with a trac
 
   answerOnce({
     statusCode: 400,
-    data: { code: 'z9_unknown_new_code', message: '请求无法处理', request_id: 'req-p3' },
+    data: { code: 'z9_unknown_new_code', message: '请求无法处理', request_id: 'req-a3' },
   })
   await page.loadFirst()
 
   assert.match(page.data.errorText, /[一-龥]/, '给老师看的是中文，不是错误码')
   assert.equal(page.data.errorCanRetry, false, '400 类降级为不可重试')
-  assert.equal(page.data.errorRequestId, 'req-p3', '带一个可以报给园方的追踪号')
+  assert.equal(page.data.errorRequestId, 'req-a3', '带一个可以报给园方的追踪号')
 })
 
 // ── The detail ───────────────────────────────────────────────────────────────
 
-test('detail carries the whole body, the attachments and the external films', async () => {
+test('detail carries the whole body, the time, the place and the attachments', async () => {
   const c = await signedIn()
-  const row = await c.party.studyDetail(1)
+  const row = await c.party.activityDetail(1)
 
-  assert.ok(row.study_content.includes('指导思想'), '正文是完整的，不是列表那段摘要')
-  assert.ok(row.study_content.includes('学习要求'), '第二节也在')
+  assert.ok(row.activity_content.includes('活动安排'), '正文是完整的')
+  assert.ok(row.activity_content.includes('参与要求'), '第二节也在')
+  assert.ok(row.location_label, '有地点的活动要把地点带上')
   assert.ok(row.files.length > 0, '附件清单')
-  assert.ok(row.files.some((f) => f.usage_label === '主文件'), '主文件是契约要求必有的一份')
-  assert.equal(row.video_links.length, 2, '外部影片链接')
-  for (const v of row.video_links) {
-    assert.ok(v.title, '每条链接都有标题')
-    assert.match(v.url, /^https:\/\//, '契约只接受 https')
+  for (const file of row.files) {
+    assert.ok(file.file_name, '每个附件都有名字')
+    assert.ok(file.usage_label, '每个附件都有用途文案')
+    assert.ok(!/^(main_file|inline_media|download)$/.test(file.usage_label),
+      `界面上出现了枚举原值：${file.usage_label}`)
   }
 })
 
-test('a null video_links list arrives as an empty array, not as null', async () => {
+test('the activity time is shown as written on the detail page too', async () => {
   const c = await signedIn()
-  // 第 4 条的 video_links 是 null（契约允许该列为空）。
-  const row = await c.party.studyDetail(4)
-  assert.deepEqual(row.video_links, [], 'wx:for 拿到 null 会报错，服务层先补成数组')
-})
+  const raw = await c.api.get('/party/activities/1')
+  const row = await c.party.activityDetail(1)
 
-test('the published time is shown as written — no timezone arithmetic anywhere', async () => {
-  const c = await signedIn()
-  const raw = await c.api.get('/party/studies/1')
-  const row = await c.party.studyDetail(1)
-
-  const written = /T(\d{2}):(\d{2})/.exec(raw.published_at)
-  assert.match(raw.published_at, /\+08:00$/, '服务端给的是字面偏移量')
+  const written = /T(\d{2}):(\d{2})/.exec(raw.activity_at)
+  assert.match(raw.activity_at, /\+08:00$/, '服务端给的是字面偏移量')
   assert.ok(
-    row.published_label.endsWith(`${written[1]}:${written[2]}`),
-    `${written[1]}:${written[2]} 不得被换算成 ${row.published_label}`,
+    row.time_label.endsWith(`${written[1]}:${written[2]}`),
+    `${written[1]}:${written[2]} 不得被换算成 ${row.time_label}`,
   )
 })
 
-test('an external film is copied, never played inline', async () => {
+test('an activity with no attachments renders without an empty section', async () => {
   const c = await signedIn()
-  const page = loadPage(c, `${DETAIL}.js`)
-  await page.load(1)
-
-  page.onCopyLink({ currentTarget: { dataset: { url: 'https://www.xuexi.cn/' } } })
-  assert.equal(c.record.clipboard.pop(), 'https://www.xuexi.cn/')
-  assert.match(c.record.toasts.pop().title, /复制/, '复制之后要说一声，不能静默')
+  // 夹具第 12 条一份附件也没有（F7：活动的 file_refs 可全空）。
+  const row = await c.party.activityDetail(12)
+  assert.deepEqual(row.files, [], '没有附件时是空数组，不是 null')
 
   const wxml = read(`${DETAIL}.wxml`)
-  assert.ok(!wxml.includes('<video'), 'F7：外部影片不由小程序内嵌播放')
-  assert.match(wxml, /请复制链接到浏览器打开/, '页面要写明这句，否则老师以为点了没反应')
+  assert.match(wxml, /activity\.files\.length > 0/, '整块按有无开合，不留一个空的「附件」标题')
 })
 
 test('out-of-scope and gone read identically, with no retry', async () => {
@@ -324,9 +366,8 @@ test('a missing id is refused before any request leaves', async () => {
 // ── Read-only, and nothing that leads anywhere it should not ─────────────────
 
 test('neither screen carries an upload, create or edit control', () => {
-  // 教师端对党建资料只读：发布是管理端的事。
-  for (const file of [`${LIST}.js`, `${LIST}.wxml`, `${DETAIL}.js`, `${DETAIL}.wxml`,
-                      'services/party.js']) {
+  // 教师端对党建活动只读：发布是管理端的事。
+  for (const file of [`${LIST}.js`, `${LIST}.wxml`, `${DETAIL}.js`, `${DETAIL}.wxml`]) {
     const src = read(file)
     for (const forbidden of ['api.post', 'api.patch', 'api.del', 'wx.uploadFile',
                              '幂等', 'Idempotency', '上传', '新建', '编辑', '删除']) {
@@ -336,8 +377,7 @@ test('neither screen carries an upload, create or edit control', () => {
 })
 
 test('neither screen carries 观察记录 or a path to the PC后台', () => {
-  for (const file of [`${LIST}.js`, `${LIST}.wxml`, `${DETAIL}.js`, `${DETAIL}.wxml`,
-                      'services/party.js']) {
+  for (const file of [`${LIST}.js`, `${LIST}.wxml`, `${DETAIL}.js`, `${DETAIL}.wxml`]) {
     const src = read(file)
     assert.ok(!src.includes('观察记录'), `${file}: DO-NOT-BUILD 1`)
     assert.ok(!src.includes('pc-backend'), `${file}: DO-NOT-BUILD 2`)
@@ -347,37 +387,21 @@ test('neither screen carries 观察记录 or a path to the PC后台', () => {
 
 // ── The subpackage boundary ──────────────────────────────────────────────────
 
-test('both screens live in the party subpackage, and no tab page followed them in', () => {
+test('both screens live in the party subpackage and not in the main package', () => {
   const sub = (appJson.subPackages || []).find((s) => s.root === 'packages/party')
   assert.ok(sub, '党建分包必须在 app.json 里声明')
-  // 活动与品牌建设自本票起也在这个分包里，各自的测试文件断言各自那一对，
-  // 所以这里只认领学习资料这一对，不再对整张分包清单做全等。
-  for (const route of ['pages/learn/list', 'pages/learn/detail']) {
+  for (const route of ['pages/activity/list', 'pages/activity/detail']) {
     assert.ok(sub.pages.includes(route), `分包缺 ${route}`)
   }
-
   for (const route of [LIST, DETAIL]) {
     assert.ok(!appJson.pages.includes(route), `${route} 同时登记在主包，编译会拒绝`)
     for (const ext of ['.js', '.json', '.wxml']) {
       assert.ok(fs.existsSync(path.join(MP, route + ext)), `${route} 缺 ${ext}`)
     }
   }
-
-  // tabBar 页面必须留在主包。党建入口页是 tab 页，不得搬进分包。
-  for (const tab of appJson.tabBar.list) {
-    assert.ok(!tab.pagePath.startsWith('packages/'), `${tab.pagePath} 落进了分包`)
-  }
 })
 
-test('the subpackage is preloaded from its own navigation entry', () => {
-  const rule = appJson.preloadRule['pages/party-building/index']
-  assert.ok(rule, '预下载按导航项配置：进党建管理时就把它的分包拉下来')
-  assert.deepEqual(rule.packages, ['party'])
-  assert.equal(rule.network, 'all', 'wifi-only 会让蜂窝网络下的老师白等一次下载')
-})
-
-test('the party subpackage reads one service module and only one', () => {
-  // 一个分包只对应一个服务模块。verify:build 也查这条；这里守住页面这一侧。
+test('the activity screens read one service module and only one', () => {
   for (const route of [LIST, DETAIL]) {
     const requires = [...read(`${route}.js`).matchAll(/require\('([^']+)'\)/g)].map((m) => m[1])
     const services = requires.filter((r) => r.includes('/services/'))
@@ -386,15 +410,15 @@ test('the party subpackage reads one service module and only one', () => {
   }
 })
 
-test('the party entry page now really opens the study list', async () => {
+test('the party entry page now really opens the activity list', async () => {
   const c = await signedIn()
   const entry = loadPage(c, 'pages/party-building/index.js')
   entry.onLoad()
-  entry.onEntryTap({ detail: { key: 'learn' } })
+  entry.onEntryTap({ detail: { key: 'activity' } })
 
   assert.deepEqual(
     c.record.navigations.pop(),
-    { api: 'navigateTo', url: '/packages/party/pages/learn/list' },
+    { api: 'navigateTo', url: '/packages/party/pages/activity/list' },
     '分包页面不是 tab 页，用 navigateTo',
   )
   assert.equal(c.record.toasts.length, 0, '已经落地的入口不再说「尚未上线」')
