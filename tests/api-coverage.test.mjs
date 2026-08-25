@@ -60,6 +60,21 @@ function concretePath(template) {
   })
 }
 
+/**
+ * The contract's required query parameters, appended.
+ *
+ * Without them the call is one the contract is entitled to refuse, and "回它自己
+ * 声明的成功码" would be asserting against a request that was never legal. Three
+ * teacher operations declare required query parameters today; only the
+ * hand-written handlers enforce them, which is precisely why the test must send
+ * them rather than rely on the generated routes being permissive.
+ */
+function withRequiredQuery(path, route) {
+  const entries = Object.entries(route.requiredQuery || {})
+  if (!entries.length) return path
+  return `${path}?${entries.map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&')}`
+}
+
 function requestFor(route, token) {
   const init = { method: route.method, headers: { authorization: `Bearer ${token}` } }
   if (['POST', 'PUT', 'PATCH'].includes(route.method)) {
@@ -95,7 +110,7 @@ describe('每个教师端操作都回契约声明的成功码', () => {
 
     for (const route of routes) {
       if (route.isPublic) continue
-      const path = concretePath(route.template)
+      const path = withRequiredQuery(concretePath(route.template), route)
       // Logout really revokes (mock/server.mjs → deleteAuthSession), so calling
       // it with the shared token would 401 every operation after it. Give it a
       // token of its own rather than skipping it — it is an operation too.

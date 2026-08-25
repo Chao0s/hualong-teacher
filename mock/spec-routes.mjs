@@ -56,9 +56,34 @@ function buildRoute(op, spec) {
     isPublic: op.isPublic,
     status: Number(status),
     body: status === '204' ? null : sample(schema, spec, 0),
+    requiredQuery: requiredQuery(op, spec),
     operationId: op.operationId,
     blockedOn: op.blockedOn,
   };
+}
+
+/**
+ * The query parameters the contract marks `required`, with one legal value each.
+ *
+ * A generated route does not validate query parameters, but a hand-written one
+ * may — `GET /coordination/documents` refuses without `coord_category`, because
+ * the contract says the domain is fixed and an unknown value is a 400. Callers
+ * that walk every operation need this to build a request the contract would
+ * actually accept, instead of one it is entitled to refuse.
+ */
+function requiredQuery(op, spec) {
+  const item = spec.paths[op.path];
+  const declared = [...(item.parameters || []), ...(findOperation(spec, op).parameters || [])];
+  const out = {};
+  for (const raw of declared) {
+    const param = raw.$ref ? deref(raw.$ref, spec) : raw;
+    if (!param || param.in !== 'query' || !param.required) continue;
+    const schema = param.schema && param.schema.$ref
+      ? deref(param.schema.$ref, spec)
+      : (param.schema || {});
+    out[param.name] = sample(schema, spec, 0);
+  }
+  return out;
 }
 
 function findOperation(spec, op) {

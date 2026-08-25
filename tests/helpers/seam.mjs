@@ -52,6 +52,7 @@ export function loadClient({ baseUrl, wxOptions } = {}) {
     home: require(path.join(MP, 'services', 'home.js')),
     task: require(path.join(MP, 'services', 'task.js')),
     party: require(path.join(MP, 'services', 'party.js')),
+    coordination: require(path.join(MP, 'services', 'coordination.js')),
   }
 }
 

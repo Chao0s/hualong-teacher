@@ -301,6 +301,88 @@ const PARTY_BRANDS = Array.from({ length: 22 }, (_, i) => {
   };
 });
 
+// db_coord_document —— 综合协调文件。契约 §4 规则 20：全部 active 正式教师可见本园
+// `document_status='s3'`，合作园不得进入；按 `published_at DESC, document_id DESC`
+// 作游标分页。`coord_category` 是**必填的分类页切换**，值域固定 c1—c7，未知值回 400。
+//
+// 七类各 22 条（共 154 条），每类都够翻页（limit 缺省 20）。类目在数组里交错排列，
+// 所以一个只会切片、不会真的按类目过滤的实现在第一条测试上就会露馅。
+const COORD_CATEGORIES = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7'];
+
+// 只有 c1／c4／c5 可以填生效日期，其余类目必须为 NULL（表约束 ck_cd_effective）。
+const EFFECTIVE_CATEGORIES = ['c1', 'c4', 'c5'];
+
+const COORD_TITLES = {
+  c1: ['幼儿园保教质量评估指南摘编', '学前教育法学习要点', '园内安全责任制度修订稿'],
+  c2: ['六月园务例会通知', '期末资料归档工作提醒', '班级物资申领时间调整通知'],
+  c3: ['综合协调部岗位职责表', '园级管理小组分工图', '年级组长工作职责说明'],
+  c4: ['每日安全巡检记录表', '户外活动安全提示单', '防汛防台应急预案'],
+  c5: ['班级晨午检记录表', '夏季传染病防控提醒', '活动室消毒流程卡'],
+  c6: ['教师职业行为准则学习材料', '师德承诺书模板', '师德师风月度自查表'],
+  c7: ['跟岗教师一周安排表', '外出学习反馈模板', '结对教师交流记录'],
+};
+
+const COORD_DEPARTMENTS = ['办公室', '后勤组', '人事组'];
+
+const COORD_CONTENT = [
+  '一、适用范围',
+  '',
+  '本文件适用于全园教职工，各年级组、班级与后勤岗位按各自职责执行，遇到本文件未覆盖的情形逐级上报，不自行处置。',
+  '',
+  '二、执行要求',
+  '',
+  '各部门在收到本文件后一周内完成一次对照自查，把发现的问题与整改结果报综合协调部备案。本文件同时用于园内归档。',
+].join('\n');
+
+const COORD_DOCUMENTS = Array.from({ length: 154 }, (_, i) => {
+  const id = 154 - i;
+  const category = COORD_CATEGORIES[i % 7];
+  const titles = COORD_TITLES[category];
+  // 日期严格递减，`published_at DESC, document_id DESC` 的排序才真的成立：同一天里
+  // 七个类目各占一个钟点，下一天再从头开始。
+  const day = String(22 - Math.floor(i / 7)).padStart(2, '0');
+  const hour = String(23 - (i % 7) * 3).padStart(2, '0');
+  return {
+    document_id: id,
+    coord_category: category,
+    document_title: titles[Math.floor(i / 7) % titles.length],
+    document_content: COORD_CONTENT,
+    // 可空列。第 100 条没有发布部门，用来验证界面不被一个 null 撑塌。
+    publisher_department: id === 100 ? null : COORD_DEPARTMENTS[i % 3],
+    published_at: `2026-06-${day}T${hour}:00:00+08:00`,
+    // 只有可填的三类里、每三条中的一条真的填了，其余为 null —— 两种情形都要能显示。
+    effective_date: EFFECTIVE_CATEGORIES.indexOf(category) !== -1 && id % 3 === 0
+      ? `2026-07-${day}`
+      : null,
+    // 列表与详情的可见范围都是 s3，所以夹具里能被读到的只有 s3。
+    document_status: 's3',
+    // F8：恰有一份 usage_key='main_file'；配图与附件可选。
+    file_refs: [
+      { file_id: 9000 + id, usage_key: 'main_file', file_name: `${titles[Math.floor(i / 7) % titles.length]}.pdf`, file_size: 731136 },
+      ...(id % 4 === 0 ? [
+        { file_id: 9200 + id, usage_key: 'inline_media', file_name: '现场照片.jpg', file_size: 318204 },
+      ] : []),
+      // 第 154 条挂一份微信打不开的格式，用来验证客户端说明而不是留白。
+      ...(id === 154 ? [
+        { file_id: 9400 + id, usage_key: 'download', file_name: '原始记录.zip', file_size: 2097152 },
+      ] : []),
+    ],
+  };
+});
+
+/** 列表卡片：`excerpt` 由 `document_content` 前 100 字派生，**不落摘要列**（F8）。 */
+function toCoordCard(doc) {
+  return {
+    document_id: doc.document_id,
+    coord_category: doc.coord_category,
+    document_title: doc.document_title,
+    publisher_department: doc.publisher_department,
+    published_at: doc.published_at,
+    effective_date: doc.effective_date,
+    excerpt: doc.document_content.slice(0, 100),
+  };
+}
+
 const TODOS = [
   { todo_id: 1, todo_kind: 'upload', todo_title: '上传「祠堂里的故事」课程案例', due_at: '2026-08-25T18:00:00+08:00' },
   { todo_id: 2, todo_kind: 'task', todo_title: '完成共建任务：秋季主题墙素材征集', due_at: '2026-08-28T18:00:00+08:00' },
@@ -690,6 +772,68 @@ function getPartyBrand(req, res, id) {
   sendJson(res, 200, brand);
 }
 
+/**
+ * §3.1 — 综合协调文件列表。
+ *
+ * 与党建三类不同的地方只有一处，但它是本模块的全部难点：`coord_category` **必填**，
+ * 值域固定 c1—c7，未知值回 400（契约 §4 规则 20）。生成路由不校验查询参数，所以缺
+ * 参数与未知值这两条只有手写处理器拦得住 —— 少了它们，客户端会以为服务端很宽容，
+ * 到真实例上才发现不是。
+ *
+ * 类目是筛选集的一部分，所以它进指纹：换了类目还拿着旧游标，回
+ * `cursor_filter_mismatch`，不是悄悄给出错答案（§3.3）。
+ */
+function getCoordDocuments(req, res, url) {
+  if (!requireSession(req, res)) return;
+
+  const category = url.searchParams.get('coord_category');
+  if (category === null) {
+    return fail(res, 400, 'malformed_request', '缺少必填参数 coord_category',
+      { field: 'coord_category', rule: 'required' });
+  }
+  if (COORD_CATEGORIES.indexOf(category) === -1) {
+    return fail(res, 400, 'malformed_request', '资料分类不在可选范围内',
+      { field: 'coord_category', rule: 'enum_c1_to_c7' });
+  }
+
+  const limitRaw = url.searchParams.get('limit');
+  const limit = limitRaw === null ? 20 : Number(limitRaw);
+  if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+    return fail(res, 422, 'validation_failed', '分页参数不合法',
+      { field: 'limit', rule: 'between_1_and_100' });
+  }
+
+  const filters = { coord_category: category };
+  const pool = COORD_DOCUMENTS.filter((d) => d.coord_category === category);
+  let startIndex = 0;
+  const cursor = url.searchParams.get('cursor');
+  if (cursor) {
+    const decoded = decodeCursor(cursor, filters);
+    if (decoded.error) {
+      return fail(res, 400, decoded.error,
+        decoded.error === 'cursor_invalid' ? '翻页游标不可解' : '筛选条件已变，游标失效');
+    }
+    startIndex = pool.findIndex((d) => d.document_id === decoded.key) + 1;
+    if (startIndex <= 0) return fail(res, 400, 'cursor_invalid', '翻页游标不可解');
+  }
+
+  const slice = pool.slice(startIndex, startIndex + limit);
+  const last = slice[slice.length - 1];
+  const hasMore = startIndex + limit < pool.length;
+  sendJson(res, 200, {
+    items: slice.map(toCoordCard),
+    next_cursor: hasMore && last ? encodeCursor(last.document_id, filters) : null,
+  });
+}
+
+function getCoordDocument(req, res, id) {
+  if (!requireSession(req, res)) return;
+  const doc = COORD_DOCUMENTS.find((d) => d.document_id === Number(id));
+  // §2.3: 不存在与不在可见范围内是同一个 404。
+  if (!doc) return fail(res, 404, 'not_found', '资料不存在或不在可见范围内');
+  sendJson(res, 200, doc);
+}
+
 /** §3.5 — roster-shaped: whole, unpaginated. */
 function getTodos(req, res) {
   if (!requireSession(req, res)) return;
@@ -816,6 +960,9 @@ const HAND_WRITTEN_ROLES = [
   [/^\/party\/activities\/\d+$/, ['teacher']],
   [/^\/party\/brands$/, ['teacher']],
   [/^\/party\/brands\/\d+$/, ['teacher']],
+  // §4 规则 20：合作园不得进入综合协调，所以 partner-account 在这里就被 403 挡下。
+  [/^\/coordination\/documents$/, ['teacher']],
+  [/^\/coordination\/documents\/\d+$/, ['teacher']],
   [/^\/auth\/session$/, ['teacher', 'parent', 'admin-pc', 'partner-account']],
 ];
 
@@ -986,6 +1133,10 @@ const server = createServer(async (req, res) => {
       getPartyBrands(req, res, url);
     } else if (req.method === 'GET' && /^\/party\/brands\/\d+$/.test(path)) {
       getPartyBrand(req, res, path.split('/')[3]);
+    } else if (req.method === 'GET' && path === '/coordination/documents') {
+      getCoordDocuments(req, res, url);
+    } else if (req.method === 'GET' && /^\/coordination\/documents\/\d+$/.test(path)) {
+      getCoordDocument(req, res, path.split('/')[3]);
     } else if (req.method === 'POST' && path === '/parent-tasks') {
       postParentTask(req, res, body);
     } else if (req.method === 'GET' && /^\/parent-tasks\/\d+\/progress$/.test(path)) {

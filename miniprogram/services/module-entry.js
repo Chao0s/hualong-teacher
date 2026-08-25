@@ -19,8 +19,8 @@
  *
  * A `page` of null means the screen is not built yet, and the tap is refused out
  * loud exactly as 首页 does (ticket 08). Tickets 12 to 21 fill them in — set
- * `page`, and the refusal disappears on its own. 党建管理's three entries are
- * all set (ticket 12); the rest are still null.
+ * `page`, and the refusal disappears on its own. 党建管理's three entries and
+ * 综合协调's three entries are all set (ticket 12); the rest are still null.
  */
 
 const guard = require('../utils/guard');
@@ -46,9 +46,9 @@ const MODULES = {
       {
         title: '园务资料',
         entries: [
-          { key: 'xz', badge: '行', label: '行政资料', desc: '政策法规、通知文件、组织架构', screen: 'XZList', page: null },
-          { key: 'hq', badge: '后', label: '后勤资料', desc: '安全管理、卫生保健', screen: 'HQList', page: null },
-          { key: 'hr', badge: '人', label: '人事资料', desc: '师德师风、跟岗交流', screen: 'HRList', page: null },
+          { key: 'xz', badge: '行', label: '行政资料', desc: '政策法规、通知文件、组织架构', screen: 'XZList', page: '/packages/coordination/pages/xz/list' },
+          { key: 'hq', badge: '后', label: '后勤资料', desc: '安全管理、卫生保健', screen: 'HQList', page: '/packages/coordination/pages/hq/list' },
+          { key: 'hr', badge: '人', label: '人事资料', desc: '师德师风、跟岗交流', screen: 'HRList', page: '/packages/coordination/pages/hr/list' },
         ],
       },
     ],

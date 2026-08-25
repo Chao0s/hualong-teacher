@@ -10,6 +10,10 @@
  *   storage (get/set/remove Sync) -> an in-memory Map, recorded for assertions
  *   wx.login             -> a controllable stub (js_code value, or a failure)
  *   wx.navigateTo / wx.switchTab / wx.reLaunch / wx.showToast -> recorded, not executed
+ *   wx.downloadFile / wx.openDocument / wx.previewImage -> recorded; each branch
+ *                          is switchable through `control`, because "the file
+ *                          would not open" is a case the client must answer in
+ *                          words and there is no other way to reach it
  */
 
 export function createFakeWx({ loginCode = 'JS_CODE_OK', loginFails = false } = {}) {
@@ -22,6 +26,17 @@ export function createFakeWx({ loginCode = 'JS_CODE_OK', loginFails = false } = 
     navTitles: [],       // titles passed to setNavigationBarTitle
     clipboard: [],       // strings passed to setClipboardData
     requests: [],        // { method, url, header, data } — the wire payload as built
+    downloads: [],       // urls passed to downloadFile
+    opened: [],          // { filePath, fileType } passed to openDocument
+    previews: [],        // urls passed to previewImage
+  }
+
+  // Mutable mid-test, so one client can succeed and then fail without a reload.
+  const control = {
+    downloadFails: false,
+    downloadStatus: 200,
+    openFails: false,
+    previewFails: false,
   }
 
   const wx = {
@@ -74,7 +89,23 @@ export function createFakeWx({ loginCode = 'JS_CODE_OK', loginFails = false } = 
       if (success) success({ errMsg: 'setClipboardData:ok' })
     },
     stopPullDownRefresh() { /* nothing to stop in a test */ },
+
+    downloadFile({ url, success, fail }) {
+      record.downloads.push(url)
+      if (control.downloadFails) fail({ errMsg: 'downloadFile:fail simulated' })
+      else success({ statusCode: control.downloadStatus, tempFilePath: 'wxfile://tmp/doc' })
+    },
+    openDocument({ filePath, fileType, success, fail }) {
+      record.opened.push({ filePath, fileType })
+      if (control.openFails) fail({ errMsg: 'openDocument:fail simulated' })
+      else if (success) success({ errMsg: 'openDocument:ok' })
+    },
+    previewImage({ urls, success, fail }) {
+      record.previews.push(...urls)
+      if (control.previewFails) fail({ errMsg: 'previewImage:fail simulated' })
+      else if (success) success({ errMsg: 'previewImage:ok' })
+    },
   }
 
-  return { wx, storage, record }
+  return { wx, storage, record, control }
 }

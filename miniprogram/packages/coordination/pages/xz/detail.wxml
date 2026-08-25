@@ -1,0 +1,35 @@
+<view class="hl-page" wx:if="{{ready}}">
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryLoad">重试</text>
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障码 {{errorRequestId}}</text>
+  </view>
+
+  <view wx:if="{{loading}}" class="hl-loading">加载中…</view>
+
+  <block wx:if="{{doc && !loading}}">
+    <view class="hl-card detail">
+      <text class="hl-pill detail__category">{{doc.category_label}}</text>
+      <view class="detail__title">{{doc.document_title}}</view>
+      <view class="hl-card__meta detail__meta">
+        <text>{{doc.published_label}}</text>
+        <text wx:if="{{doc.department_label}}">{{doc.department_label}}</text>
+        <text wx:if="{{doc.effective_label}}">生效 {{doc.effective_label}}</text>
+      </view>
+      <view class="hl-hairline detail__rule"></view>
+      <view class="detail__body">{{doc.document_content}}</view>
+    </view>
+
+    <view class="hl-section-title">附件</view>
+    <view
+      wx:for="{{doc.files}}"
+      wx:key="file_id"
+      class="hl-card detail__file"
+      data-file="{{item}}"
+      bindtap="onOpenFile">
+      <text class="hl-card__title">{{item.file_name}}</text>
+      <view class="hl-card__meta">{{item.usage_label}}</view>
+      <text class="detail__open">打开</text>
+    </view>
+  </block>
+</view>

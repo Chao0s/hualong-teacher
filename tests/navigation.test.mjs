@@ -125,12 +125,13 @@ test('each entry page renders its module sections and names its own module', asy
 
 test('an entry whose screen is not built yet is refused by name, not in silence', async () => {
   const c = await signedIn()
-  // 党建管理三条自票据 12 起全部落地，都会真的跳转，所以这条改用综合协调仍未落地的
-  // 「行政资料」。落地它的票据同样要把这条挪到下一个仍未落地的入口，不要删。
-  const page = loadPage(c, 'pages/coordination/index.js')
+  // 党建管理与综合协调六条自票据 12 起全部落地，都会真的跳转，所以这条改用教研培训
+  // 仍未落地的「办园理念与课程体系」。落地它的票据同样要把这条挪到下一个仍未落地的
+  // 入口，不要删。
+  const page = loadPage(c, 'pages/training/index.js')
   page.onLoad()
 
-  const pending = page.data.sections[0].entries.find((e) => e.key === 'xz')
+  const pending = page.data.sections[0].entries.find((e) => e.key === 'course')
   page.onEntryTap({ detail: { key: pending.key } })
 
   assert.equal(c.record.navigations.length, 0, '没有跳转')

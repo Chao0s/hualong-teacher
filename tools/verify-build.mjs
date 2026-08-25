@@ -35,6 +35,7 @@ const TAB_CEILING = 5;
 // 这是本文件里唯一的一处声明 —— 新增一个分包只改这里，检查逻辑不动。
 const SUBPACKAGE_SERVICES = {
   'packages/party': 'party',
+  'packages/coordination': 'coordination',
 };
 
 const findings = [];

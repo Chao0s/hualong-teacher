@@ -1,0 +1,42 @@
+<view class="hl-page" wx:if="{{ready}}">
+  <!-- 类目标签。端点一次只收一个 coord_category，所以这里是切换，不是多选筛选。 -->
+  <view class="cat">
+    <view
+      wx:for="{{categories}}"
+      wx:key="key"
+      class="cat__item {{item.key === filters.coord_category ? 'cat__item--on' : ''}}"
+      data-key="{{item.key}}"
+      bindtap="onCategoryTap">{{item.label}}</view>
+  </view>
+
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryList">重试</text>
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障码 {{errorRequestId}}</text>
+  </view>
+
+  <view wx:if="{{loadingFirst}}" class="hl-loading">加载中…</view>
+
+  <block wx:if="{{!loadingFirst}}">
+    <!-- 空与失败是两种状态：读失败时不说「暂无」，那是把读不到说成没有东西可读。 -->
+    <view wx:if="{{items.length === 0 && !errorText}}" class="hl-card hl-empty">暂无资料</view>
+
+    <view
+      wx:for="{{items}}"
+      wx:key="document_id"
+      class="hl-card doc"
+      data-id="{{item.document_id}}"
+      bindtap="onTap">
+      <text class="hl-card__title">{{item.document_title}}</text>
+      <view class="hl-card__meta doc__meta">
+        <text>{{item.published_label}}</text>
+        <text wx:if="{{item.department_label}}">{{item.department_label}}</text>
+        <text wx:if="{{item.effective_label}}">生效 {{item.effective_label}}</text>
+      </view>
+      <view wx:if="{{item.excerpt}}" class="doc__excerpt">{{item.excerpt}}</view>
+    </view>
+
+    <view wx:if="{{loadingMore}}" class="hl-loading">加载更多…</view>
+    <view wx:if="{{exhausted && items.length > 0}}" class="hl-loading">没有更多了</view>
+  </block>
+</view>

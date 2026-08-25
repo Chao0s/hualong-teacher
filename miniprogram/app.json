@@ -23,12 +23,28 @@
         "pages/brand/list",
         "pages/brand/detail"
       ]
+    },
+    {
+      "root": "packages/coordination",
+      "name": "coordination",
+      "pages": [
+        "pages/xz/list",
+        "pages/xz/detail",
+        "pages/hq/list",
+        "pages/hq/detail",
+        "pages/hr/list",
+        "pages/hr/detail"
+      ]
     }
   ],
   "preloadRule": {
     "pages/party-building/index": {
       "network": "all",
       "packages": ["party"]
+    },
+    "pages/coordination/index": {
+      "network": "all",
+      "packages": ["coordination"]
     }
   },
   "window": {
