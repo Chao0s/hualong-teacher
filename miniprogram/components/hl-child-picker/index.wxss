@@ -1,0 +1,83 @@
+/**
+ * 名册勾选的尺寸。选择行本身的尺寸在 styles/form-rows.wxss，这里不重复。
+ *
+ * 一行放四个名字：390pt 宽的屏幕减去页面内边距，四个三字姓名格各 25% 恰好排满，
+ * 三十人共八行，一屏之内看得完 —— 这正是取勾选而不取弹层的理由。
+ */
+
+.hl-child-picker__class {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-1);
+}
+
+.hl-child-picker__class-name {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.hl-child-picker__class-note {
+  font-size: 24rpx;
+  color: var(--muted);
+}
+
+.hl-child-picker__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-1) 0;
+}
+
+.hl-child-picker__label {
+  font-size: 30rpx;
+  color: var(--fg);
+}
+
+.hl-child-picker__all {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  font-size: 26rpx;
+}
+
+.hl-child-picker__count {
+  padding: var(--space-1);
+  font-size: 26rpx;
+  color: var(--muted);
+}
+
+.hl-child-picker__empty {
+  padding: var(--space-4) var(--space-3);
+  text-align: center;
+  font-size: 26rpx;
+  color: var(--muted);
+}
+
+.hl-child-picker__grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.hl-child-picker__cell {
+  flex: 0 0 auto;
+  min-width: 150rpx;
+  min-height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 28rpx;
+}
+
+/* 勾中与未勾中的差别靠颜色一处。加边框或字重会让未勾中看起来像禁用。 */
+.hl-child-picker__cell--on {
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  font-weight: 600;
+}

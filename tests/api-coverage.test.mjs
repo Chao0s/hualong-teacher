@@ -111,6 +111,8 @@ const BUSINESS_REFUSAL_EXPECTED = {
   'POST /library/cases/1/submission': '同上',
   // 票据 16：1 号研修的参与状态是 s2 已取消，只有 s3 已完成才可提交反馈。
   'POST /trainings/1/feedback': '1 号研修的参与状态是 s2 已取消，只有 s3 已完成才可提交',
+  // 票据 19：亲子任务的 NOT NULL 列在契约的 ParentTaskWrite 上是 required。
+  'POST /home-school/parent-tasks': '空请求体缺 parent_task_type／parent_task_title／task_detail／start_at',
 }
 
 // 401／403／404 是门的回答，不是业务的回答。这三个码出现在上表里的路径上，说明门

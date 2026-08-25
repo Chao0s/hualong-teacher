@@ -85,8 +85,9 @@ const MODULES = {
       {
         title: '日常',
         entries: [
-          { key: 'moment', badge: '时', label: '在园时光', desc: '发布与发布进度（只收图片）', screen: 'GardenPublish', page: null },
-          { key: 'task', badge: '任', label: '亲子任务', desc: '发布任务、查看完成进度', screen: 'TaskPublish', page: null },
+          { key: 'moment', badge: '时', label: '在园时光', desc: '发布与发布进度（只收图片）', screen: 'GardenPublish', page: '/packages/co-education/pages/moment/publish' },
+          { key: 'momentProgress', badge: '进', label: '在园时光发布进度', desc: '本班这段时间发得够不够', screen: 'GardenProgress', page: '/packages/co-education/pages/moment/progress' },
+          { key: 'task', badge: '任', label: '亲子任务', desc: '发布任务、查看完成进度', screen: 'TaskPublish', page: '/packages/co-education/pages/task/publish' },
         ],
       },
       {

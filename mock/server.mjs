@@ -789,6 +789,8 @@ const state = {
   nextResourceId: 900,          // POST /library/resources assigns from here
   nextCaseId: 900,              // POST /library/cases assigns from here
   nextFeedbackId: 900,          // POST /trainings/{id}/feedback assigns from here
+  nextMomentId: 900,            // POST /moments assigns from here
+  nextParentTaskId: 600,        // POST /home-school/parent-tasks assigns from here
   uploadTickets: new Map(),     // upload_ticket -> { usage_key, content_type, byte_size }
   // 每一次真正执行的 a2 -> a3。幂等重放不进这张表，所以「重复点击只产生一条提交」
   // 数得出来 —— 与 accessEvents 同一个理由：断言要对着服务端自己的记录，不是对着
@@ -800,6 +802,11 @@ const state = {
   librarySubmissions: [],
   // 每一次真正执行的研修反馈提交。同上。
   trainingFeedbackWrites: [],
+  // 每一次真正执行的 s1 -> s3 发布（在园时光）与 s1 -> s2 发布（亲子任务）。
+  // 与 taskCompletions 同一个理由：幂等重放在分发层就返回了，处理器根本没跑，所以
+  // 「重复点击只产生一条」要数服务端做了几次，不能数客户端发了几个请求。
+  momentPublications: [],
+  parentTaskPublications: [],
   // db_content_access_event —— 服务端在签发短链的同一个事务里写的那一笔。放在这里
   // 是为了让「客户端不自行拼装记录请求」可断言：记录数只随 download-link 增长。
   accessEvents: [],
@@ -1685,6 +1692,23 @@ const HAND_WRITTEN_ROLES = [
   [/^\/tasks$/, ['teacher']],
   [/^\/parent-tasks$/, ['teacher']],
   [/^\/parent-tasks\/\d+\/progress$/, ['teacher']],
+  // 票据 17 的在园时光。契约给这六条写的都是 teacher（列表是 teacher｜parent｜
+  // admin-pc，但本 mock 只服务教师端，宁可比契约严：漏登记才是安全缺陷）。
+  [/^\/moments$/, ['teacher']],
+  [/^\/moments\/weekly-coverage$/, ['teacher']],
+  [/^\/moments\/\d+$/, ['teacher']],
+  [/^\/moments\/\d+\/publication$/, ['teacher']],
+  [/^\/moments\/\d+\/withdrawal$/, ['teacher']],
+  [/^\/moments\/\d+\/restoration$/, ['teacher']],
+  // 票据 19 的亲子任务。契约给这五条写的就是 teacher。
+  [/^\/home-school\/parent-tasks$/, ['teacher']],
+  [/^\/home-school\/parent-tasks\/\d+$/, ['teacher']],
+  [/^\/home-school\/parent-tasks\/\d+\/publication$/, ['teacher']],
+  [/^\/home-school\/parent-tasks\/\d+\/closure$/, ['teacher']],
+  [/^\/home-school\/parent-tasks\/\d+\/submissions$/, ['teacher']],
+  // 契约**没有**这条路径（教师端名册端点缺席，见 getClassRoster 头注）。登记在这里
+  // 是为了让门不至于悄悄缺席 —— 缺口本身是另一个问题，记在交接里。
+  [/^\/org\/class-roster$/, ['teacher']],
   // Declared by the contract; repeated here because the handler is hand-written.
   [/^\/tasks\/\d+$/, ['teacher']],
   // 票据 11 的写入面。契约给这两条写的就是 teacher。
@@ -1972,6 +1996,38 @@ const server = createServer(async (req, res) => {
       postParentTask(req, res, body);
     } else if (req.method === 'GET' && /^\/parent-tasks\/\d+\/progress$/.test(path)) {
       getParentTaskProgress(req, res);
+    } else if (req.method === 'GET' && path === '/org/class-roster') {
+      getClassRoster(req, res);
+    } else if (req.method === 'GET' && path === '/moments/weekly-coverage') {
+      // 这一条必须排在 `/moments/{id}` 之前：`weekly-coverage` 不是一个 moment_id，
+      // 但按顺序分发时先匹配到哪一条，靠的是这里的次序，不是正则的精确度。
+      getMomentWeeklyCoverage(req, res, url);
+    } else if (req.method === 'GET' && path === '/moments') {
+      getMoments(req, res, url);
+    } else if (req.method === 'POST' && path === '/moments') {
+      postMoment(req, res, body);
+    } else if (req.method === 'PATCH' && /^\/moments\/\d+$/.test(path)) {
+      patchMoment(req, res, path.split('/')[2], body);
+    } else if (req.method === 'POST' && /^\/moments\/\d+\/publication$/.test(path)) {
+      postMomentPublication(req, res, path.split('/')[2]);
+    } else if (req.method === 'POST' && /^\/moments\/\d+\/withdrawal$/.test(path)) {
+      postMomentWithdrawal(req, res, path.split('/')[2]);
+    } else if (req.method === 'POST' && /^\/moments\/\d+\/restoration$/.test(path)) {
+      postMomentRestoration(req, res, path.split('/')[2]);
+    } else if (req.method === 'GET' && path === '/home-school/parent-tasks') {
+      getHomeSchoolParentTasks(req, res, url);
+    } else if (req.method === 'POST' && path === '/home-school/parent-tasks') {
+      postHomeSchoolParentTask(req, res, body);
+    } else if (req.method === 'GET' && /^\/home-school\/parent-tasks\/\d+$/.test(path)) {
+      getHomeSchoolParentTask(req, res, path.split('/')[3]);
+    } else if (req.method === 'PATCH' && /^\/home-school\/parent-tasks\/\d+$/.test(path)) {
+      patchHomeSchoolParentTask(req, res, path.split('/')[3], body);
+    } else if (req.method === 'POST' && /^\/home-school\/parent-tasks\/\d+\/publication$/.test(path)) {
+      postParentTaskPublication(req, res, path.split('/')[3]);
+    } else if (req.method === 'POST' && /^\/home-school\/parent-tasks\/\d+\/closure$/.test(path)) {
+      postParentTaskClosure(req, res, path.split('/')[3]);
+    } else if (req.method === 'GET' && /^\/home-school\/parent-tasks\/\d+\/submissions$/.test(path)) {
+      getParentTaskSubmissions(req, res, path.split('/')[3]);
     } else if (!await serveFromContract(req, res, path)) {
       fail(res, 404, 'not_found', `未实现的端点：${req.method} ${path}`);
     }
@@ -2021,6 +2077,7 @@ export function start({ port = 0, unbound = false, noTerm = false, quiet = true 
   CASE_SNAPSHOT.forEach((row, i) => { CASES[i] = { ...row }; });
   TRAINING_FEEDBACKS.length = TRAINING_FEEDBACK_SNAPSHOT.length;
   TRAINING_FEEDBACK_SNAPSHOT.forEach((row, i) => { TRAINING_FEEDBACKS[i] = { ...row }; });
+  resetHomeSchool();
   downloadLinks.clear();
   return new Promise((resolve, reject) => {
     server.once('error', reject);
@@ -2590,6 +2647,730 @@ function postMediaFile(req, res, body) {
   }, { Location: `${BASE}/media/files/${fileId}` });
 }
 
+// ══════════════════════════════════════════════════════════════════════════
+// 家园社共育：在园时光与亲子任务（票据 17／19）
+// ══════════════════════════════════════════════════════════════════════════
+
+/**
+ * 本班名册。
+ *
+ * **契约里没有这条路径。** `openapi.yaml` 的幼儿名册只有 `/admin/org/children`
+ * （`x-hualong-roles: [admin-pc]`），教师端一条也没有；而 `MomentDraftWrite.child_id`
+ * 要教师从本班名册里挑人，`MomentWeeklyCoverageRow` 又只回 `child_id`、不回姓名。
+ * 没有名册，教师端既选不了幼儿，进度矩阵也写不出姓名列。
+ *
+ * 登记在这里的做法与 `/training/course-intro` 相同：让门不至于悄悄缺席，缺口本身记进
+ * 交接。接真服务前必须由后端补一条教师端名册端点。
+ *
+ * 名册型，**不分页**（§3.5）：一个班的幼儿数有界，语意就是「这一份，完整的」。
+ */
+const CHILD_NAMES = [
+  '陈一诺', '黄铭轩', '梁子墨', '罗芷晴', '吴悦然', '郑皓宇', '何思琪', '周睿阳',
+  '李雨萱', '张力轩', '王子涵', '赵佳怡', '刘浩然', '孙念祖', '徐嘉言', '朱可欣',
+  '胡安然', '林亦辰', '高梓晴', '马书瑶', '谢明轩', '曾若曦', '彭子睿', '苏念安',
+  '邓乐怡', '蔡承熙', '袁静姝', '汪允中',
+];
+
+const CHILDREN = Object.freeze(
+  CHILD_NAMES.map((name, i) => Object.freeze({ child_id: 101 + i, child_name: name }))
+);
+
+/**
+ * ISO 周键，`YYYY-Www`。
+ *
+ * 服务端派生列（契约 `Moment.week_key`：「由 moment_date 服务器派生，提交被忽略」）。
+ * 全程走 `Date.UTC`，所以运行这台机器的时区改变不了结果 —— 时区在这套制度里从来
+ * 不是输入（§1.2）。
+ */
+function isoWeekKey(dateStr) {
+  const [y, m, d] = String(dateStr).split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  const dow = dt.getUTCDay() || 7;          // 1..7，周一为 1
+  dt.setUTCDate(dt.getUTCDate() + 4 - dow); // 移到本周四：ISO 用它决定归属哪一年
+  const yearStart = Date.UTC(dt.getUTCFullYear(), 0, 1);
+  const week = Math.ceil(((dt.getTime() - yearStart) / 86400000 + 1) / 7);
+  return `${dt.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
+}
+
+function shiftDays(dateStr, days) {
+  const [y, m, d] = String(dateStr).split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d + days));
+  return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}`
+    + `-${String(dt.getUTCDate()).padStart(2, '0')}`;
+}
+
+// 这个 mock 世界的「园所今天」，与其余夹具（`accepted_at`／`completed_at`）同一天。
+const MOMENT_TODAY = '2026-08-26';
+
+// 进度汇总看的那一段时间：最近六周。六列在 390pt 屏上放不下，所以横向滚动是真的
+// 会发生的事，不是一条测不到的分支。
+const MOMENT_WEEK_DATES = [35, 28, 21, 14, 7, 0].map((back) => shiftDays(MOMENT_TODAY, -back));
+const MOMENT_WEEK_KEYS = MOMENT_WEEK_DATES.map(isoWeekKey);
+
+const MOMENT_TITLES = [
+  '端午艾草手作', '沙池里的水渠', '秋天的叶子拓印', '小小值日生',
+  '留耕堂门楼观察', '班级图书角整理', '中秋做灯笼', '晨间自主游戏',
+];
+
+/**
+ * 在园时光夹具。
+ *
+ * 覆盖分布是**刻意设计**的，好让进度矩阵上三种情形都出现：达到参考频率（>=2）、
+ * 只发了一次、一次也没有。最后一名幼儿谁也不覆盖 —— 契约特意说明新转入的幼儿在
+ * 入班前的周次可能显示 0 次，矩阵必须显示得出这一格。
+ */
+// 编号从 1 起，与 TASKS／RESOURCES／CASES／TRAININGS 同一条约定：契约巡检
+// （tests/api-coverage.test.mjs）用 `1` 代入每一个路径参数，夹具里没有 1 号就会把
+// 「业务前置拒绝」变成一个看起来像门坏了的 404。
+const MOMENTS = [];
+let momentSeed = 1;
+MOMENT_WEEK_DATES.forEach((date, w) => {
+  const perWeek = 2 + (w % 2);
+  for (let j = 0; j < perWeek; j += 1) {
+    MOMENTS.push({
+      moment_id: momentSeed++,
+      school_id: SCOPE.school_id,
+      class_id: SCOPE.class_id,
+      teacher_id: TEACHER.teacher_id,
+      moment_title: MOMENT_TITLES[(w * 3 + j) % MOMENT_TITLES.length],
+      moment_content: '孩子们分组尝试、互相提醒，整体参与度较高。',
+      moment_date: date,
+      week_key: MOMENT_WEEK_KEYS[w],
+      file_id: [8700 + w * 3 + j],
+      child_id: CHILDREN
+        .filter((c, idx) => idx !== CHILDREN.length - 1 && (idx + j) % 4 !== 0)
+        .map((c) => c.child_id),
+      publish_status: 's3',
+      published_at: `${date}T17:20:00+08:00`,
+      withdrawn_by_admin: false,
+      created_at: `${date}T16:00:00+08:00`,
+      updated_at: `${date}T17:20:00+08:00`,
+    });
+  }
+});
+// 一则草稿与一则已撤回，好让列表筛选、发布、撤回与恢复各有真实的落点。
+// 两则都不进周覆盖计数 —— 计数只统计 s3（契约 Q59-c1）。
+MOMENTS[0].publish_status = 's1';
+MOMENTS[0].published_at = null;
+MOMENTS[1].publish_status = 's5';
+// 管理员下架的那一笔教师不得自行恢复（Q59-m1a）。这一则是教师自己撤的，可以恢复。
+MOMENTS[1].withdrawn_by_admin = false;
+MOMENTS.push({
+  ...MOMENTS[2],
+  moment_id: momentSeed++,
+  moment_title: '被管理端下架的一则',
+  publish_status: 's5',
+  withdrawn_by_admin: true,
+});
+// 列表按 `moment_date DESC, moment_id DESC`：最新的排在最前。
+MOMENTS.sort((a, b) => (a.moment_date === b.moment_date
+  ? b.moment_id - a.moment_id
+  : (a.moment_date < b.moment_date ? 1 : -1)));
+
+const MOMENT_SNAPSHOT = MOMENTS.map((m) => ({ ...m, child_id: m.child_id.slice(), file_id: m.file_id.slice() }));
+
+const PARENT_TASKS = [
+  {
+    parent_task_id: 2,
+    school_id: SCOPE.school_id,
+    class_id: SCOPE.class_id,
+    teacher_id: TEACHER.teacher_id,
+    term_id: TERM.term_id,
+    parent_task_type: 't1',
+    parent_task_title: '亲子观察：我的家',
+    task_background: '孩子们正在讨论家中的物品、作息和家庭成员分工，适合请家长陪伴幼儿完成一次生活观察。',
+    task_detail: '请家长陪同幼儿选择一个家中生活场景，拍摄 1-2 张照片，并用一句话记录孩子的发现。',
+    start_at: '2026-08-24T08:00:00+08:00',
+    due_at: '2026-08-30T18:00:00+08:00',
+    publish_status: 's2',
+    published_at: '2026-08-24T07:55:00+08:00',
+    created_at: '2026-08-23T20:10:00+08:00',
+    updated_at: '2026-08-24T07:55:00+08:00',
+  },
+  {
+    parent_task_id: 3,
+    school_id: SCOPE.school_id,
+    class_id: SCOPE.class_id,
+    teacher_id: TEACHER.teacher_id,
+    term_id: TERM.term_id,
+    parent_task_type: 't2',
+    parent_task_title: '社区探访：留耕堂门前的石阶',
+    task_background: '留耕堂保留了传统建筑门楼、石阶和灰塑装饰，幼儿可以从真实社区环境中观察公共空间。',
+    task_detail: '请家长带幼儿在安全距离内观察留耕堂外观，拍摄一张照片，并请孩子说一说自己看到了什么。',
+    start_at: '2026-08-20T09:00:00+08:00',
+    due_at: null,
+    publish_status: 's2',
+    published_at: '2026-08-20T08:40:00+08:00',
+    created_at: '2026-08-19T15:00:00+08:00',
+    updated_at: '2026-08-20T08:40:00+08:00',
+  },
+  {
+    parent_task_id: 1,
+    school_id: SCOPE.school_id,
+    class_id: SCOPE.class_id,
+    teacher_id: TEACHER.teacher_id,
+    // 草稿可以没有 term_id：它在发布时才由 start_at 派生（契约 §4 规则 2）。
+    term_id: null,
+    parent_task_type: 't1',
+    parent_task_title: '亲子阅读打卡',
+    task_background: null,
+    task_detail: '每天与幼儿共读一本绘本，周末拍一张全家共读的照片。',
+    // 落在园历区间内（TERM 从 2026-09-01 起），所以它发布得出去。落在区间外的那一支
+    // 由 tests/parent-task.test.mjs 用一个刻意的值去撞，不靠夹具制造。
+    start_at: '2026-09-05T08:00:00+08:00',
+    due_at: '2026-09-12T20:00:00+08:00',
+    publish_status: 's1',
+    published_at: null,
+    created_at: '2026-08-25T19:00:00+08:00',
+    updated_at: '2026-08-25T19:00:00+08:00',
+  },
+  {
+    parent_task_id: 4,
+    school_id: SCOPE.school_id,
+    class_id: SCOPE.class_id,
+    teacher_id: TEACHER.teacher_id,
+    term_id: TERM.term_id,
+    parent_task_type: 't1',
+    parent_task_title: '暑期生活小记',
+    task_background: null,
+    task_detail: '请家长记录幼儿一次自己完成的家务。',
+    start_at: '2026-08-10T08:00:00+08:00',
+    due_at: '2026-08-16T18:00:00+08:00',
+    publish_status: 's3',
+    published_at: '2026-08-10T07:50:00+08:00',
+    created_at: '2026-08-09T10:00:00+08:00',
+    updated_at: '2026-08-17T09:00:00+08:00',
+  },
+];
+
+const PARENT_TASK_SNAPSHOT = PARENT_TASKS.map((t) => ({ ...t }));
+
+/**
+ * 家长提交行。**缺行等价 c2**（契约 §4 规则 2 的 `effective_submission_status`），
+ * 所以这里只放真的交了的那些，看板按名册左连接补齐。
+ */
+const PARENT_TASK_SUBMISSIONS = [];
+CHILDREN.forEach((child, idx) => {
+  if (idx % 3 !== 0) {
+    PARENT_TASK_SUBMISSIONS.push({
+      parent_task_id: 2,
+      child_id: child.child_id,
+      submission_status: 'c1',
+      // 一名幼儿的提交正在内容安全批次里。看板只回布尔化的「审核中」，不回批次键。
+      under_content_check: idx === 4,
+      submitted_at: '2026-08-25T20:11:00+08:00',
+    });
+  }
+  if (idx < 5) {
+    PARENT_TASK_SUBMISSIONS.push({
+      parent_task_id: 3,
+      child_id: child.child_id,
+      submission_status: 'c1',
+      under_content_check: false,
+      submitted_at: '2026-08-22T19:30:00+08:00',
+    });
+  }
+});
+
+const PARENT_TASK_SUBMISSION_SNAPSHOT = PARENT_TASK_SUBMISSIONS.map((s) => ({ ...s }));
+
+/** 把这两张票的可变夹具收回原样。`start()` 每次调用都跑它。 */
+function resetHomeSchool() {
+  MOMENTS.length = MOMENT_SNAPSHOT.length;
+  MOMENT_SNAPSHOT.forEach((row, i) => {
+    MOMENTS[i] = { ...row, child_id: row.child_id.slice(), file_id: row.file_id.slice() };
+  });
+  PARENT_TASKS.length = PARENT_TASK_SNAPSHOT.length;
+  PARENT_TASK_SNAPSHOT.forEach((row, i) => { PARENT_TASKS[i] = { ...row }; });
+  PARENT_TASK_SUBMISSIONS.length = PARENT_TASK_SUBMISSION_SNAPSHOT.length;
+  PARENT_TASK_SUBMISSION_SNAPSHOT.forEach((row, i) => { PARENT_TASK_SUBMISSIONS[i] = { ...row }; });
+  state.nextMomentId = 900;
+  state.nextParentTaskId = 600;
+  state.momentPublications.length = 0;
+  state.parentTaskPublications.length = 0;
+}
+
+/** GET /org/class-roster —— 名册型，整取不分页。契约缺口，见上方头注。 */
+function getClassRoster(req, res) {
+  return sendJson(res, 200, {
+    class_id: SCOPE.class_id,
+    class_name: SCOPE.class_name,
+    items: CHILDREN.map((c) => ({ ...c })),
+  });
+}
+
+// ── 在园时光（票据 17） ─────────────────────────────────────────────────────
+//
+// 状态机只有三个值（契约 MomentStatus）：F10／Q59-k1 删掉了没有事实来源的 s2 待审 与
+// s4 驳回 —— 教师确认内容符合规范后直接 s1 -> s3，**不存在等待管理端处理的中间态**。
+//
+//   NONE --POST /moments--> s1 --publication--> s3 --withdrawal--> s5 --restoration--> s3
+//   s1 --PATCH--> s1
+//
+// s5 由两条路产生（教师自撤、管理员 d3 下架），状态值本身不区分；`withdrawn_by_admin`
+// 才是判据，教师不得推翻管理员那一笔（Q59-m1a）。
+
+const MOMENT_WRITE_FIELDS = [
+  { key: 'moment_title', required: false, kind: 'text', max: 50 },
+  { key: 'moment_content', required: false, kind: 'text', max: 600 },
+  { key: 'moment_date', required: false, kind: 'date' },
+  { key: 'child_id', required: false, kind: 'int_array' },
+  { key: 'file_id', required: false, kind: 'int_array' },
+];
+
+// §1.2：写入端只收裸日期，无时间、无偏移。
+const WIRE_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * 草稿写入校验。
+ *
+ * 草稿允许不完整（契约明写：标题可空、零幼儿、零图片），完整性只在发布时验，所以这里
+ * 没有一个必填项。能在这一步拒绝的只有形状：未知键、超长、非法日期、越界幼儿、超九张图。
+ */
+function validateMomentWrite(body) {
+  const bad = validateWrite(body, MOMENT_WRITE_FIELDS, { partial: true });
+  if (bad) return { status: 422, code: 'validation_failed', details: bad };
+
+  if (body.moment_date !== undefined && body.moment_date !== null
+      && !WIRE_DATE.test(body.moment_date)) {
+    return {
+      status: 422,
+      code: 'validation_failed',
+      details: { field: 'moment_date', rule: 'bare_date_yyyy_mm_dd' },
+    };
+  }
+  if (Array.isArray(body.file_id)) {
+    if (body.file_id.length > 9) {
+      return { status: 422, code: 'validation_failed', details: { field: 'file_id', rule: 'moment_image_limit' } };
+    }
+    if (new Set(body.file_id).size !== body.file_id.length) {
+      return { status: 422, code: 'validation_failed', details: { field: 'file_id', rule: 'unique_items' } };
+    }
+  }
+  if (Array.isArray(body.child_id)) {
+    // teacher 端 `child_id` 是 scoped：服务端把 class_id=$ctx_class 内联进同一条
+    // predicate 重验，越界回 422 scope_violation（契约 MomentDraftWrite）。
+    const known = new Set(CHILDREN.map((c) => c.child_id));
+    const stray = body.child_id.find((id) => !known.has(id));
+    if (stray !== undefined) {
+      return { status: 422, code: 'scope_violation', details: { field: 'child_id', rule: 'child_in_own_class' } };
+    }
+  }
+  return null;
+}
+
+function momentBody(row) {
+  return { ...row, child_id: row.child_id.slice(), file_id: row.file_id.slice() };
+}
+
+/** POST /moments —— 建草稿（NONE -> s1）。 */
+function postMoment(req, res, rawBody) {
+  if (refuseWithoutTerm(res)) return;
+  // §7.3 / §1.2：派生列与事件时间戳在 schema 校验**之前**剥掉，所以提交它们既不生效
+  // 也不报错。`week_key` 同属这一族 —— 它由 moment_date 派生，契约明写提交被忽略。
+  const body = stripDerived(rawBody);
+  delete body.week_key;
+
+  const bad = validateMomentWrite(body);
+  if (bad) return fail(res, bad.status, bad.code, '填写内容不符合要求', bad.details);
+
+  const date = body.moment_date || MOMENT_TODAY;
+  const row = {
+    moment_id: state.nextMomentId++,
+    school_id: SCOPE.school_id,
+    class_id: SCOPE.class_id,
+    teacher_id: TEACHER.teacher_id,
+    moment_title: body.moment_title || null,
+    moment_content: body.moment_content || null,
+    moment_date: date,
+    week_key: isoWeekKey(date),
+    child_id: body.child_id ? body.child_id.slice() : [],
+    file_id: body.file_id ? body.file_id.slice() : [],
+    publish_status: 's1',
+    published_at: null,
+    withdrawn_by_admin: false,
+    created_at: '2026-08-26T17:30:00+08:00',
+    updated_at: '2026-08-26T17:30:00+08:00',
+  };
+  MOMENTS.unshift(row);
+  return sendJson(res, 201, momentBody(row), { Location: `${BASE}/moments/${row.moment_id}` });
+}
+
+/**
+ * PATCH /moments/{id} —— 草稿自动保存（s1 -> s1，整份 LWW）。
+ *
+ * **没有 revision，不做合并，不加锁**（契约 §5.1）：多装置并发保存是整份
+ * last-write-wins，产品明确接受低概率内容遗失。s3／s5 一律 409：正文、日期、图片与
+ * 幼儿名单在发布后永久唯读，修正须撤回后另建新草稿（F16）。
+ */
+function patchMoment(req, res, id, rawBody) {
+  if (refuseWithoutTerm(res)) return;
+  const row = MOMENTS.find((m) => m.moment_id === Number(id));
+  if (!row) return fail(res, 404, 'not_found', '在园时光不存在或不在可见范围内');
+  if (row.publish_status !== 's1') {
+    return fail(res, 409, 'state_precondition_failed', '已发布的在园时光不能修改，请撤回后另建草稿',
+      { from: row.publish_status, required: 's1' });
+  }
+
+  const body = stripDerived(rawBody);
+  delete body.week_key;
+  const bad = validateMomentWrite(body);
+  if (bad) return fail(res, bad.status, bad.code, '填写内容不符合要求', bad.details);
+
+  // `child_id` 与 `file_id` 是**整份替换**，不是追加（契约 `child_select_rule`）。
+  MOMENT_WRITE_FIELDS.forEach((f) => {
+    if (body[f.key] === undefined) return;
+    row[f.key] = Array.isArray(body[f.key]) ? body[f.key].slice() : body[f.key];
+  });
+  if (body.moment_date !== undefined) row.week_key = isoWeekKey(row.moment_date);
+  row.updated_at = '2026-08-26T17:35:00+08:00';
+  return sendJson(res, 200, momentBody(row));
+}
+
+/**
+ * POST /moments/{id}/publication —— 发布（s1 -> s3）。
+ *
+ * **这个按钮本身就是人工审核**（F10／Q59-h1）：不送微信内容安全 API、不进管理端待审
+ * 队列、不写 db_review_action，也不新增任何合规声明或 `content_reviewed_at`。
+ * 发布是 one-way，`published_at` 服务端设值，**不建立任何家长通知**（Q59-m4）。
+ */
+function postMomentPublication(req, res, id) {
+  if (refuseWithoutTerm(res)) return;
+  const row = MOMENTS.find((m) => m.moment_id === Number(id));
+  if (!row) return fail(res, 404, 'not_found', '在园时光不存在或不在可见范围内');
+  if (row.publish_status !== 's1') {
+    return fail(res, 409, 'state_precondition_failed', '只有草稿可以发布',
+      { from: row.publish_status, required: 's1' });
+  }
+
+  // 发布前置，四条，全部服务端复验（契约逐条抄录）。
+  const title = (row.moment_title || '').trim();
+  if (title.length < 1 || title.length > 50) {
+    return fail(res, 422, 'validation_failed', '填写内容不符合要求',
+      { field: 'moment_title', rule: 'length_1_50' });
+  }
+  if (!row.child_id.length) {
+    return fail(res, 422, 'validation_failed', '填写内容不符合要求',
+      { field: 'child_id', rule: 'at_least_one_child' });
+  }
+  const content = (row.moment_content || '').trim();
+  if (content.length === 0 && row.file_id.length === 0) {
+    return fail(res, 422, 'validation_failed', '填写内容不符合要求',
+      { field: 'moment_content', rule: 'content_or_image_required' });
+  }
+  if (content.length > 600) {
+    return fail(res, 422, 'validation_failed', '填写内容不符合要求',
+      { field: 'moment_content', rule: 'max_length_600' });
+  }
+  if (row.file_id.length > 9) {
+    return fail(res, 422, 'validation_failed', '填写内容不符合要求',
+      { field: 'file_id', rule: 'moment_image_limit' });
+  }
+
+  row.publish_status = 's3';
+  row.published_at = '2026-08-26T17:40:00+08:00';
+  row.updated_at = row.published_at;
+  state.momentPublications.push({ moment_id: row.moment_id, teacher_id: TEACHER.teacher_id });
+  return sendJson(res, 200, momentBody(row));
+}
+
+/** POST /moments/{id}/withdrawal —— 教师自行撤回（s3 -> s5）。周覆盖计数随之退出。 */
+function postMomentWithdrawal(req, res, id) {
+  if (refuseWithoutTerm(res)) return;
+  const row = MOMENTS.find((m) => m.moment_id === Number(id));
+  if (!row) return fail(res, 404, 'not_found', '在园时光不存在或不在可见范围内');
+  if (row.publish_status !== 's3') {
+    return fail(res, 409, 'state_precondition_failed', '只有已发布的在园时光可以撤回',
+      { from: row.publish_status, required: 's3' });
+  }
+  row.publish_status = 's5';
+  row.withdrawn_by_admin = false;
+  row.updated_at = '2026-08-26T17:45:00+08:00';
+  return sendJson(res, 200, momentBody(row));
+}
+
+/**
+ * POST /moments/{id}/restoration —— 教师自行恢复（s5 -> s3）。
+ *
+ * **教师不得推翻管理员撤回**（Q59-m1a）：管理员 d3 下架的那一笔回 409，只能由同园
+ * 管理员以 d5 恢复。恢复只让 moment 本身重新公开，不重建已解除的下游引用。
+ */
+function postMomentRestoration(req, res, id) {
+  if (refuseWithoutTerm(res)) return;
+  const row = MOMENTS.find((m) => m.moment_id === Number(id));
+  if (!row) return fail(res, 404, 'not_found', '在园时光不存在或不在可见范围内');
+  if (row.publish_status !== 's5') {
+    return fail(res, 409, 'state_precondition_failed', '只有已撤回的在园时光可以恢复',
+      { from: row.publish_status, required: 's5' });
+  }
+  if (row.withdrawn_by_admin) {
+    return fail(res, 409, 'state_precondition_failed', '这一则由管理端下架，只能由管理员恢复');
+  }
+  row.publish_status = 's3';
+  row.updated_at = '2026-08-26T17:50:00+08:00';
+  return sendJson(res, 200, momentBody(row));
+}
+
+/** GET /moments —— 游标分页，`moment_date DESC, moment_id DESC`。 */
+function getMoments(req, res, url) {
+  const filters = {
+    week_key: url.searchParams.get('week_key') || '',
+    publish_status: url.searchParams.get('publish_status') || '',
+  };
+  let rows = MOMENTS.slice();
+  if (filters.week_key) rows = rows.filter((m) => m.week_key === filters.week_key);
+  if (filters.publish_status) rows = rows.filter((m) => m.publish_status === filters.publish_status);
+
+  const cursor = url.searchParams.get('cursor');
+  if (cursor) {
+    const decoded = decodeCursor(cursor, filters);
+    if (decoded.error) return fail(res, 400, decoded.error, '游标无效或与筛选条件不匹配');
+    const at = rows.findIndex((m) => m.moment_id === decoded.key);
+    rows = at === -1 ? [] : rows.slice(at + 1);
+  }
+  const limit = Math.min(Number(url.searchParams.get('limit')) || 20, 100);
+  const page = rows.slice(0, limit);
+  const more = rows.length > limit;
+  return sendJson(res, 200, {
+    items: page.map(momentBody),
+    next_cursor: more && page.length ? encodeCursor(page[page.length - 1].moment_id, filters) : null,
+  });
+}
+
+/**
+ * GET /moments/weekly-coverage —— 本班每名幼儿的周覆盖次数（只读派生）。
+ *
+ * 计数口径逐条抄契约（§4 规则 1／Q59-c1—c3）：只计 `publish_status='s3'` 且覆盖该幼儿
+ * 的 **distinct moment_id**；`>=2` 完成，`0`／`1` 未完成，**超过 2 照实显示不截断**。
+ * 撤回退出聚合是**派生的**，不是一次写入 —— 所以这里就地数，不存计数。
+ *
+ * 名册型：`child_id ASC`，**整取不分页**（§3.5）。对象集合是查询当下仍属本班的幼儿，
+ * 不是当周名册快照。
+ */
+function getMomentWeeklyCoverage(req, res, url) {
+  const weekKey = url.searchParams.get('week_key') || isoWeekKey(MOMENT_TODAY);
+  const published = MOMENTS.filter((m) => m.publish_status === 's3' && m.week_key === weekKey);
+  const items = CHILDREN.map((child) => {
+    const count = new Set(
+      published.filter((m) => m.child_id.indexOf(child.child_id) !== -1).map((m) => m.moment_id)
+    ).size;
+    return {
+      child_id: child.child_id,
+      moment_weekly_complete_count: count,
+      moment_detail_week_status: count >= 2 ? 'd1' : (count === 1 ? 'd2' : 'd3'),
+      moment_status: count >= 2 ? 'h1' : 'h2',
+    };
+  });
+  return sendJson(res, 200, { week_key: weekKey, items });
+}
+
+// ── 亲子任务（票据 19） ─────────────────────────────────────────────────────
+//
+//   NONE --POST--> s1 草稿 --publication--> s2 已发布 --closure--> s3 已结束
+//   s1 --PATCH--> s1
+//
+// **没有任何回头路**（F16）：s2／s3 的时间、正文、附件与 term_id 全部唯读，要改只能
+// 关闭旧任务再新建。契约里没有 s2 -> s1，也没有 s3 -> s2。
+
+const PARENT_TASK_WRITE_FIELDS = [
+  { key: 'parent_task_type', required: true, kind: 'enum', values: ['t1', 't2'] },
+  { key: 'parent_task_title', required: true, kind: 'text', max: 100 },
+  { key: 'task_background', required: false, kind: 'text', max: 500 },
+  { key: 'task_detail', required: true, kind: 'text', max: 1000 },
+  { key: 'start_at', required: true, kind: 'planned_time' },
+  { key: 'due_at', required: false, kind: 'planned_time' },
+];
+
+/**
+ * §1.2 的计划时刻校验。**白名单只有 `start_at` 与 `due_at` 这两列到得了这个端点**；
+ * 其余每一个 `*_at` 都是事件时间戳，由 `stripDerived` 静默剥掉，不报错也不生效。
+ *
+ * 偏移量是**字面量，不是转换**：`Z`、`+00:00`、`+09:00` 一律 422，服务端不做换算。
+ * 换算会把教师设的 18:00 截止悄悄变成隔天 02:00 —— 整套裸值制度存在的理由就是不让
+ * 这件事发生。
+ */
+function validatePlannedTimes(body) {
+  for (const field of ['start_at', 'due_at']) {
+    const value = body[field];
+    if (value === undefined || value === null) continue;
+    if (typeof value !== 'string' || !WIRE_AT.test(value)) {
+      return { field, rule: 'offset_must_be_plus0800_literal' };
+    }
+  }
+  return null;
+}
+
+function parentTaskBody(row) {
+  return { ...row };
+}
+
+/** POST /home-school/parent-tasks —— 新建草稿（NONE -> s1）。 */
+function postHomeSchoolParentTask(req, res, rawBody) {
+  if (refuseWithoutTerm(res)) return;
+  const body = stripDerived(rawBody);
+  // `term_id` 也不由客户端提交：它在发布时由 start_at 派生（§4 规则 2）。
+  delete body.term_id;
+
+  const badTime = validatePlannedTimes(body);
+  if (badTime) return fail(res, 422, 'timestamp_not_accepted', '时间格式不被接受', badTime);
+  const bad = validateWrite(body, PARENT_TASK_WRITE_FIELDS);
+  if (bad) return fail(res, 422, 'validation_failed', '填写内容不符合要求', bad);
+
+  const row = {
+    parent_task_id: state.nextParentTaskId++,
+    school_id: SCOPE.school_id,
+    class_id: SCOPE.class_id,
+    teacher_id: TEACHER.teacher_id,
+    term_id: null,
+    parent_task_type: body.parent_task_type,
+    parent_task_title: body.parent_task_title,
+    task_background: body.task_background === undefined ? null : body.task_background,
+    task_detail: body.task_detail,
+    start_at: body.start_at,
+    due_at: body.due_at === undefined ? null : body.due_at,
+    publish_status: 's1',
+    // 服务端设值。客户端提交的 published_at 已经被剥掉，所以这里回的一定是自己的值。
+    published_at: null,
+    created_at: '2026-08-26T18:00:00+08:00',
+    updated_at: '2026-08-26T18:00:00+08:00',
+  };
+  PARENT_TASKS.unshift(row);
+  return sendJson(res, 201, parentTaskBody(row), {
+    Location: `${BASE}/home-school/parent-tasks/${row.parent_task_id}`,
+  });
+}
+
+/** GET /home-school/parent-tasks/{id} —— 一条任务，整条。不在范围内回 404（§2.3）。 */
+function getHomeSchoolParentTask(req, res, id) {
+  const row = PARENT_TASKS.find((t) => t.parent_task_id === Number(id));
+  if (!row) return fail(res, 404, 'not_found', '亲子任务不存在或不在可见范围内');
+  return sendJson(res, 200, parentTaskBody(row));
+}
+
+/** PATCH /home-school/parent-tasks/{id} —— 改草稿，仅 s1。 */
+function patchHomeSchoolParentTask(req, res, id, rawBody) {
+  if (refuseWithoutTerm(res)) return;
+  const row = PARENT_TASKS.find((t) => t.parent_task_id === Number(id));
+  if (!row) return fail(res, 404, 'not_found', '亲子任务不存在或不在可见范围内');
+  if (row.publish_status !== 's1') {
+    return fail(res, 409, 'state_precondition_failed', '已发布的任务不能修改，请结束后新建',
+      { from: row.publish_status, required: 's1' });
+  }
+  const body = stripDerived(rawBody);
+  delete body.term_id;
+
+  const badTime = validatePlannedTimes(body);
+  if (badTime) return fail(res, 422, 'timestamp_not_accepted', '时间格式不被接受', badTime);
+  const bad = validateWrite(body, PARENT_TASK_WRITE_FIELDS, { partial: true });
+  if (bad) return fail(res, 422, 'validation_failed', '填写内容不符合要求', bad);
+
+  applyWrite(row, body, PARENT_TASK_WRITE_FIELDS);
+  row.updated_at = '2026-08-26T18:05:00+08:00';
+  return sendJson(res, 200, parentTaskBody(row));
+}
+
+/**
+ * POST /home-school/parent-tasks/{id}/publication —— 发布（s1 -> s2）。
+ *
+ * 同事务按 `start_at` 落在哪个园历区间派生**唯一** `term_id` 并写入；**未命中即拒绝
+ * 发布**，回 409 no_active_term。**绝不猜一个学期**（§5.4）。请求体为空 —— 内容在草稿
+ * 阶段已经写好，这一步只做状态转移与派生。
+ */
+function postParentTaskPublication(req, res, id) {
+  if (refuseWithoutTerm(res)) return;
+  const row = PARENT_TASKS.find((t) => t.parent_task_id === Number(id));
+  if (!row) return fail(res, 404, 'not_found', '亲子任务不存在或不在可见范围内');
+  if (row.publish_status !== 's1') {
+    return fail(res, 409, 'state_precondition_failed', '只有草稿可以发布',
+      { from: row.publish_status, required: 's1' });
+  }
+  // `start_at` 的日期部分要落进园历区间。裸串比较即可：三个值同为 YYYY-MM-DD 前缀。
+  const startDate = String(row.start_at).slice(0, 10);
+  if (startDate < TERM.start_date || startDate > TERM.end_date) {
+    return fail(res, 409, 'no_active_term', '开始时间没有落进任何一个学期，无法发布');
+  }
+  row.publish_status = 's2';
+  row.term_id = TERM.term_id;
+  row.published_at = '2026-08-26T18:10:00+08:00';
+  row.updated_at = row.published_at;
+  state.parentTaskPublications.push({ parent_task_id: row.parent_task_id, teacher_id: TEACHER.teacher_id });
+  return sendJson(res, 200, parentTaskBody(row));
+}
+
+/** POST /home-school/parent-tasks/{id}/closure —— 结束（s2 -> s3）。s3 没有回头路。 */
+function postParentTaskClosure(req, res, id) {
+  if (refuseWithoutTerm(res)) return;
+  const row = PARENT_TASKS.find((t) => t.parent_task_id === Number(id));
+  if (!row) return fail(res, 404, 'not_found', '亲子任务不存在或不在可见范围内');
+  if (row.publish_status !== 's2') {
+    return fail(res, 409, 'state_precondition_failed', '只有已发布的任务可以结束',
+      { from: row.publish_status, required: 's2' });
+  }
+  row.publish_status = 's3';
+  row.updated_at = '2026-08-26T18:15:00+08:00';
+  return sendJson(res, 200, parentTaskBody(row));
+}
+
+/** GET /home-school/parent-tasks —— 游标分页，`updated_at DESC, parent_task_id DESC`。 */
+function getHomeSchoolParentTasks(req, res, url) {
+  const filters = {
+    publish_status: url.searchParams.get('publish_status') || '',
+    parent_task_type: url.searchParams.get('parent_task_type') || '',
+  };
+  let rows = PARENT_TASKS.slice()
+    .sort((a, b) => (a.updated_at === b.updated_at
+      ? b.parent_task_id - a.parent_task_id
+      : (a.updated_at < b.updated_at ? 1 : -1)));
+  if (filters.publish_status) rows = rows.filter((t) => t.publish_status === filters.publish_status);
+  if (filters.parent_task_type) rows = rows.filter((t) => t.parent_task_type === filters.parent_task_type);
+
+  const cursor = url.searchParams.get('cursor');
+  if (cursor) {
+    const decoded = decodeCursor(cursor, filters);
+    if (decoded.error) return fail(res, 400, decoded.error, '游标无效或与筛选条件不匹配');
+    const at = rows.findIndex((t) => t.parent_task_id === decoded.key);
+    rows = at === -1 ? [] : rows.slice(at + 1);
+  }
+  const limit = Math.min(Number(url.searchParams.get('limit')) || 20, 100);
+  const page = rows.slice(0, limit);
+  const more = rows.length > limit;
+  return sendJson(res, 200, {
+    items: page.map(parentTaskBody),
+    next_cursor: more && page.length ? encodeCursor(page[page.length - 1].parent_task_id, filters) : null,
+  });
+}
+
+/**
+ * GET /home-school/parent-tasks/{id}/submissions —— 完成情况看板。
+ *
+ * 名册型：按本班在园名册**左连接**提交行，缺行等价 `c2`；`child_id ASC`，**整取不
+ * 分页**（§3.5）。`active_check_batch_key` 的批次内容不回，只回布尔化的「审核中」——
+ * 批次键是内部工作值，教师侧没有任何依赖它的动作。
+ *
+ * ⚠ `openapi.yaml` 在这条路径上**声明了 `limit` 与 `cursor` 两个参数**，与它自己的
+ * `x-hualong-sort: child_id ASC` 和 §3.5「名册型不分页」相矛盾。契约正文是权威，所以
+ * 这里整取，`next_cursor` 恒为 null；这条自相矛盾记进交接。
+ */
+function getParentTaskSubmissions(req, res, id) {
+  const taskId = Number(id);
+  const task = PARENT_TASKS.find((t) => t.parent_task_id === taskId);
+  if (!task) return fail(res, 404, 'not_found', '亲子任务不存在或不在可见范围内');
+
+  const items = CHILDREN.map((child) => {
+    const hit = PARENT_TASK_SUBMISSIONS.find(
+      (s) => s.parent_task_id === taskId && s.child_id === child.child_id
+    );
+    return {
+      child_id: child.child_id,
+      child_name: child.child_name,
+      submission_status: hit ? hit.submission_status : 'c2',
+      under_content_check: hit ? hit.under_content_check : false,
+      submitted_at: hit ? hit.submitted_at : null,
+    };
+  });
+  return sendJson(res, 200, { items, next_cursor: null });
+}
+
 /**
  * Test hook: flip the term live, so "the term resumes and the same page's
  * write entries come back WITHOUT a re-login" is testable against the real
@@ -2633,6 +3414,26 @@ export function librarySubmissions() {
 /** Test hook: the training-feedback rows the server actually created (票据 16). */
 export function trainingFeedbackWrites() {
   return state.trainingFeedbackWrites.slice();
+}
+
+/** Test hook: the s1 -> s3 在园时光 publications the server actually executed (票据 17). */
+export function momentPublications() {
+  return state.momentPublications.slice();
+}
+
+/** Test hook: the s1 -> s2 亲子任务 publications the server actually executed (票据 19). */
+export function parentTaskPublications() {
+  return state.parentTaskPublications.slice();
+}
+
+/** Test hook: the class roster the mock serves, so a test can size the matrix. */
+export function classRoster() {
+  return CHILDREN.map((c) => ({ ...c }));
+}
+
+/** Test hook: the six week keys the progress span covers, newest last. */
+export function momentWeekKeys() {
+  return MOMENT_WEEK_KEYS.slice();
 }
 
 // CLI behaviour, unchanged: `node mock/server.mjs [--unbound] [--no-term]`.

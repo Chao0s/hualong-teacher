@@ -1,0 +1,169 @@
+<view wx:if="{{ready}}" class="hl-page hl-stack">
+  <view wx:if="{{loading}}" class="hl-loading">加载中…</view>
+
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障编号 {{errorRequestId}}</text>
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryLoad">重试</text>
+  </view>
+
+  <view wx:if="{{readonly}}" class="hl-card co-readonly">{{readonlyReason}}</view>
+
+  <block wx:if="{{!loading && draft}}">
+    <!-- ── edit ───────────────────────────────────────────────────────── -->
+    <view wx:if="{{stage === 'edit'}}" class="hl-stack">
+      <view class="hl-card">
+        <view class="co-field__label">任务类型</view>
+        <view class="hl-chips">
+          <view
+            wx:for="{{types}}"
+            wx:key="key"
+            class="hl-chips__item {{draft.parent_task_type === item.key ? 'hl-chips__item--on' : ''}}"
+            data-key="{{item.key}}"
+            bindtap="onTypeTap">{{item.label}}</view>
+        </view>
+      </view>
+
+      <view class="hl-card">
+        <view class="co-field">
+          <view class="co-field__label">任务名称</view>
+          <input
+            class="co-input"
+            value="{{draft.parent_task_title}}"
+            maxlength="{{limits.parent_task_title}}"
+            disabled="{{readonly}}"
+            placeholder="例如：亲子观察 · 我的家"
+            data-field="parent_task_title"
+            bindinput="onTextInput" />
+        </view>
+
+        <view class="co-field">
+          <view class="co-field__label">任务背景（选填）</view>
+          <textarea
+            class="co-textarea"
+            value="{{draft.task_background}}"
+            maxlength="{{limits.task_background}}"
+            disabled="{{readonly}}"
+            placeholder="孩子们最近在讨论什么"
+            data-field="task_background"
+            bindinput="onTextInput" />
+        </view>
+
+        <view class="co-field">
+          <view class="co-field__label">任务详情</view>
+          <textarea
+            class="co-textarea"
+            value="{{draft.task_detail}}"
+            maxlength="{{limits.task_detail}}"
+            disabled="{{readonly}}"
+            placeholder="请家长和幼儿一起做什么、交什么"
+            data-field="task_detail"
+            bindinput="onTextInput" />
+        </view>
+      </view>
+
+      <!--
+        计划时刻。教师挑的年月日与时分原样缀上 +08:00 发出去 —— 客户端不做任何时区
+        换算，所以这里看到的 18:00 就是保存下来的 18:00。
+      -->
+      <view class="hl-card">
+        <picker mode="date" value="{{draft.start_date}}" disabled="{{readonly}}" data-field="start_date" bindchange="onPlannedChange">
+          <view class="hl-pick-row">
+            <view class="hl-pick-row__label">开始日期<text class="hl-pick-row__required">*</text></view>
+            <view class="hl-pick-row__value {{draft.start_date ? '' : 'hl-pick-row__value--empty'}}">
+              {{draft.start_date ? draft.start_date : '请选择'}}
+            </view>
+          </view>
+        </picker>
+        <picker mode="time" value="{{draft.start_time}}" disabled="{{readonly}}" data-field="start_time" bindchange="onPlannedChange">
+          <view class="hl-pick-row">
+            <view class="hl-pick-row__label">开始时刻<text class="hl-pick-row__required">*</text></view>
+            <view class="hl-pick-row__value">{{draft.start_time}}</view>
+          </view>
+        </picker>
+        <picker mode="date" value="{{draft.due_date}}" disabled="{{readonly}}" data-field="due_date" bindchange="onPlannedChange">
+          <view class="hl-pick-row">
+            <view class="hl-pick-row__label">截止日期</view>
+            <view class="hl-pick-row__value {{draft.due_date ? '' : 'hl-pick-row__value--empty'}}">
+              {{draft.due_date ? draft.due_date : '不设截止'}}
+            </view>
+          </view>
+        </picker>
+        <picker wx:if="{{draft.due_date}}" mode="time" value="{{draft.due_time}}" disabled="{{readonly}}" data-field="due_time" bindchange="onPlannedChange">
+          <view class="hl-pick-row">
+            <view class="hl-pick-row__label">截止时刻</view>
+            <view class="hl-pick-row__value">{{draft.due_time}}</view>
+          </view>
+        </picker>
+        <view wx:if="{{draft.due_date}}" class="co-notice" bindtap="onClearDue">不设截止</view>
+      </view>
+
+      <!--
+        班级与幼儿选择器，与在园时光发布页同一个组件。这一页用它的只读姿态：亲子任务
+        按班下发，契约的 ParentTaskWrite 里没有 child_id。
+      -->
+      <view class="hl-card">
+        <hl-child-picker
+          mode="multi"
+          label="这条任务发给"
+          class-name="{{className}}"
+          children="{{children}}"
+          value="{{[]}}"
+          disabled="{{true}}" />
+        <view class="co-notice">亲子任务按班下发，全班家长都会收到。</view>
+      </view>
+
+      <view wx:if="{{blockers.length}}" class="hl-card co-blockers">
+        <view class="co-field__label">还差这几项才能发布</view>
+        <view wx:for="{{blockers}}" wx:key="key" class="co-blockers__item">{{item.text}}</view>
+      </view>
+
+      <button class="hl-btn hl-btn--block" disabled="{{readonly}}" bindtap="onPreviewTap">预览并发布</button>
+
+      <view wx:if="{{tasks.length}}" class="hl-section-title">本班任务</view>
+      <view wx:for="{{tasks}}" wx:key="parent_task_id" class="hl-card">
+        <view class="hl-card__title">{{item.parent_task_title}}</view>
+        <view class="hl-card__meta">{{item.type_label}} · {{item.start_label}} 起 · {{item.due_label}}</view>
+        <view class="hl-card__meta"><text class="hl-pill {{item.status_pill}}">{{item.status_label}}</text></view>
+        <view
+          wx:if="{{item.has_progress}}"
+          class="hl-error__retry"
+          data-id="{{item.parent_task_id}}"
+          bindtap="onProgressTap">查看完成进度</view>
+      </view>
+    </view>
+
+    <!-- ── preview ────────────────────────────────────────────────────── -->
+    <view wx:elif="{{stage === 'preview'}}" class="hl-stack">
+      <view class="hl-section-title">发布前请完整看一遍</view>
+      <scroll-view class="co-preview" scroll-y bindscrolltolower="onPreviewEnd">
+        <view class="hl-card">
+          <view class="hl-card__title">{{preview.body.parent_task_title}}</view>
+          <view class="hl-card__meta">{{preview.typeLabel}} · {{className}}</view>
+          <!-- 发出去的就是这两个字符串，偏移量一并显示。 -->
+          <view class="hl-card__meta">开始 {{preview.startLabel}}</view>
+          <view class="hl-card__meta">截止 {{preview.dueLabel}}</view>
+          <view wx:if="{{preview.body.task_background}}" class="co-preview__text">{{preview.body.task_background}}</view>
+          <view class="co-preview__text">{{preview.body.task_detail}}</view>
+        </view>
+      </scroll-view>
+
+      <view wx:if="{{!previewedInFull}}" class="co-notice">请滑到底看完全部内容，之后才能发布。</view>
+
+      <button class="hl-btn hl-btn--block" disabled="{{!previewedInFull || submitting}}" bindtap="onConfirmTap">
+        {{submitting ? '发布中…' : '确认发布'}}
+      </button>
+      <button class="hl-btn hl-btn--hollow hl-btn--block" disabled="{{locked}}" bindtap="onBackToEdit">返回修改</button>
+    </view>
+
+    <!-- ── done ───────────────────────────────────────────────────────── -->
+    <view wx:else class="hl-stack">
+      <view class="hl-card">
+        <view class="hl-card__title">已发布给家长</view>
+        <view class="hl-card__meta">{{readonlyReason}}</view>
+      </view>
+      <button class="hl-btn hl-btn--block" bindtap="onProgressTap">查看完成进度</button>
+      <button class="hl-btn hl-btn--hollow hl-btn--block" bindtap="onBackTap">返回</button>
+    </view>
+  </block>
+</view>

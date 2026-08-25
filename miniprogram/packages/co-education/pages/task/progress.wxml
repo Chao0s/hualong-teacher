@@ -1,0 +1,40 @@
+<view wx:if="{{ready}}" class="hl-page hl-stack">
+  <view wx:if="{{loading}}" class="hl-loading">加载中…</view>
+
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障编号 {{errorRequestId}}</text>
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryLoad">重试</text>
+  </view>
+
+  <block wx:if="{{!loading && !errorText}}">
+    <view class="hl-card">
+      <view class="hl-card__title">{{taskTitle}}</view>
+      <view class="hl-card__meta">{{statusLabel}}</view>
+      <view class="co-summary">{{summary}}</view>
+    </view>
+
+    <view class="co-legend">
+      <view class="co-legend__item">
+        <view class="co-legend__dot co-legend__dot--done"></view>
+        <text>已提交</text>
+      </view>
+      <view class="co-legend__item">
+        <view class="co-legend__dot co-legend__dot--todo"></view>
+        <text>未提交</text>
+      </view>
+    </view>
+
+    <!--
+      进度矩阵。**不给 `tappable`**：家长交的东西教师不替他交，所以这一页的格子点不动，
+      也没有任何写入入口。这与在园时光进度页的差别是有意的，不是疏忽。
+    -->
+    <hl-progress-grid
+      columns="{{columns}}"
+      rows="{{rows}}"
+      name-label="幼儿"
+      empty-text="本班名册里还没有幼儿，所以这条任务没有可显示的完成情况。" />
+
+    <button class="hl-btn hl-btn--hollow hl-btn--block" bindtap="onBackTap">返回</button>
+  </block>
+</view>

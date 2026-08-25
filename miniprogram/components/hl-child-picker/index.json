@@ -1,0 +1,6 @@
+{
+  "component": true,
+  "usingComponents": {
+    "hl-picker-row": "../hl-picker-row/index"
+  }
+}

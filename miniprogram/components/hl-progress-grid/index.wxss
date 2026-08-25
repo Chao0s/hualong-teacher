@@ -1,0 +1,86 @@
+/**
+ * 网格的尺寸。
+ *
+ * 行高在姓名列与单元格列上必须**完全相同**，否则两边会逐行错开 —— 它们是两个独立的
+ * 容器，对齐只能靠同一个高度值。所以高度写死 88rpx（微信设计指南的最小可点高度），
+ * 不用 auto。
+ */
+
+.hl-grid__body {
+  display: flex;
+  align-items: flex-start;
+  background: var(--surface);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.hl-grid__names {
+  flex: none;
+  /* 三字姓名加内边距。四字的极少数会截断，比让姓名列吃掉半屏好。 */
+  width: 160rpx;
+  border-right: 1px solid var(--border);
+}
+
+.hl-grid__scroll {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.hl-grid__cols {
+  display: inline-flex;
+  flex-direction: column;
+}
+
+.hl-grid__row {
+  display: flex;
+}
+
+.hl-grid__cell {
+  flex: none;
+  width: 140rpx;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26rpx;
+  color: var(--fg);
+  border-bottom: 1px solid var(--border);
+}
+
+.hl-grid__names .hl-grid__cell {
+  width: 160rpx;
+}
+
+.hl-grid__cell--head {
+  background: var(--bg);
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.hl-grid__cell--name {
+  justify-content: flex-start;
+  padding-left: var(--space-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 可点的格子给一点底色，让「点得进去」看得出来。不可点的格子不带它。 */
+.hl-grid__cell--tap:active {
+  background: var(--accent-light);
+}
+
+.hl-grid__dot {
+  width: 24rpx;
+  height: 24rpx;
+  border-radius: 50%;
+}
+
+.hl-grid__dot--done {
+  background: var(--green);
+}
+
+.hl-grid__dot--todo {
+  background: var(--border);
+}

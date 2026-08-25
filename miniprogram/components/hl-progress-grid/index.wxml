@@ -1,0 +1,49 @@
+<view class="hl-grid">
+  <!-- 班级没有数据时说一句，不留一片空白（票据 19 验收项）。 -->
+  <view wx:if="{{rows.length === 0}}" class="hl-empty">{{emptyText}}</view>
+
+  <view wx:else class="hl-grid__body">
+    <!--
+      姓名列在 scroll-view **之外**：横向滚动的只有右边那半，所以姓名不随之滚走。
+      这是结构上的事实，不是一条盼它别动的样式。
+    -->
+    <view class="hl-grid__names">
+      <view class="hl-grid__cell hl-grid__cell--head">{{nameLabel}}</view>
+      <view
+        wx:for="{{rows}}"
+        wx:key="key"
+        class="hl-grid__cell hl-grid__cell--name">{{item.name}}</view>
+    </view>
+
+    <scroll-view class="hl-grid__scroll" scroll-x enable-flex>
+      <view class="hl-grid__cols">
+        <view class="hl-grid__row">
+          <view
+            wx:for="{{columns}}"
+            wx:key="key"
+            class="hl-grid__cell hl-grid__cell--head">{{item.label}}</view>
+        </view>
+
+        <view wx:for="{{rows}}" wx:for-item="row" wx:key="key" class="hl-grid__row">
+          <view
+            wx:for="{{row.cells}}"
+            wx:for-item="cell"
+            wx:key="key"
+            class="hl-grid__cell {{tappable ? 'hl-grid__cell--tap' : ''}}"
+            data-row-key="{{row.key}}"
+            data-col-key="{{cell.key}}"
+            bindtap="onCellTap">
+            <!--
+              两态颜色点。颜色是给眼睛的，aria-label 是给读屏软件的 —— 一个颜色点
+              对读屏软件本来是空的。两者说的是同一件事，文案由调用方给。
+            -->
+            <view
+              class="hl-grid__dot {{cell.done ? 'hl-grid__dot--done' : 'hl-grid__dot--todo'}}"
+              aria-role="img"
+              aria-label="{{cell.hint}}"></view>
+          </view>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+</view>

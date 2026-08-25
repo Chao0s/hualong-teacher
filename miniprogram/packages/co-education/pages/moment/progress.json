@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "在园时光发布进度",
+  "usingComponents": {
+    "hl-progress-grid": "/components/hl-progress-grid/index"
+  }
+}

@@ -1,0 +1,43 @@
+<view wx:if="{{ready}}" class="hl-page hl-stack">
+  <view wx:if="{{loading}}" class="hl-loading">加载中…</view>
+
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障编号 {{errorRequestId}}</text>
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryLoad">重试</text>
+  </view>
+
+  <block wx:if="{{!loading}}">
+    <view class="hl-card">
+      <view class="hl-card__title">{{className}} 在园时光发布进度</view>
+      <view class="co-summary">{{summary}}</view>
+      <!-- 与参考频率的差距，说成一句话而不是一个百分比：教师要的是「还差多少」。 -->
+      <view class="co-summary__gap">{{gapText}}</view>
+    </view>
+
+    <view class="co-legend">
+      <view class="co-legend__item">
+        <view class="co-legend__dot co-legend__dot--done"></view>
+        <text>已达到每周 {{target}} 次</text>
+      </view>
+      <view class="co-legend__item">
+        <view class="co-legend__dot co-legend__dot--todo"></view>
+        <text>未达到</text>
+      </view>
+    </view>
+
+    <!--
+      进度矩阵。姓名列在组件内部就不在横向滚动容器里，所以列多起来时它不随之滚走。
+      `tappable` 在这一页是**真**：点一格进的是教师自己的发布表单，带上幼儿与周次。
+    -->
+    <hl-progress-grid
+      columns="{{columns}}"
+      rows="{{rows}}"
+      name-label="幼儿"
+      tappable="{{true}}"
+      empty-text="本班名册里还没有幼儿，所以这段时间没有可统计的发布情况。"
+      bind:celltap="onCellTap" />
+
+    <button class="hl-btn hl-btn--hollow hl-btn--block" bindtap="onBackTap">返回</button>
+  </block>
+</view>

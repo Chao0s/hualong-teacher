@@ -1,0 +1,49 @@
+<view class="hl-child-picker">
+  <!-- 班级是一行说明，不是一个选择位：class_id 由服务端按登录上下文设值（§7.3）。 -->
+  <view wx:if="{{className}}" class="hl-child-picker__class">
+    <text class="hl-child-picker__class-name">{{className}}</text>
+    <text class="hl-child-picker__class-note">班级由登录身份决定，不可更改</text>
+  </view>
+
+  <!-- 单选：spec §2.2 已把「幼儿选择」判成滚轮，这里复用同一个组件。 -->
+  <hl-picker-row
+    wx:if="{{mode === 'single'}}"
+    label="{{label}}"
+    options="{{pickerOptions}}"
+    value="{{pickerValue}}"
+    required="{{required}}"
+    bind:pick="onPick" />
+
+  <!-- 多选：就地勾选名册。教师要确认的是「谁没被勾上」，弹层恰好会藏起那几个。 -->
+  <view wx:else class="hl-child-picker__multi">
+    <view class="hl-child-picker__head">
+      <view class="hl-child-picker__label">
+        {{label}}<text wx:if="{{required}}" class="hl-pick-row__required">*</text>
+      </view>
+      <view
+        wx:if="{{!disabled}}"
+        class="hl-child-picker__all"
+        bindtap="onToggleAll">{{allPicked ? '清空' : '全选'}}</view>
+    </view>
+
+    <view class="hl-child-picker__count">
+      已勾选 {{pickedCount}} / {{totalCount}} 人（{{pickedRate}}%）
+    </view>
+
+    <view wx:if="{{totalCount === 0}}" class="hl-child-picker__empty">
+      本班名册还没有幼儿，请联系园所管理员。
+    </view>
+
+    <view wx:else class="hl-child-picker__grid">
+      <view
+        wx:for="{{rows}}"
+        wx:key="childId"
+        class="hl-child-picker__cell {{item.picked ? 'hl-child-picker__cell--on' : ''}}"
+        aria-role="checkbox"
+        aria-checked="{{item.picked}}"
+        aria-label="{{item.childName}}{{item.picked ? ' 已勾选' : ' 未勾选'}}"
+        data-child-id="{{item.childId}}"
+        bindtap="onRowTap">{{item.childName}}</view>
+    </view>
+  </view>
+</view>

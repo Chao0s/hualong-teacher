@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "发布亲子任务",
+  "usingComponents": {
+    "hl-child-picker": "/components/hl-child-picker/index"
+  }
+}

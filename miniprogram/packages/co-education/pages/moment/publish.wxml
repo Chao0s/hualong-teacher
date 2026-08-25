@@ -1,0 +1,125 @@
+<view wx:if="{{ready}}" class="hl-page hl-stack">
+  <view wx:if="{{loading}}" class="hl-loading">加载中…</view>
+
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障编号 {{errorRequestId}}</text>
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryLoad">重试</text>
+  </view>
+
+  <!-- 假期与已发布都是只读**状态**，不是错误：一行理由，不是一个弹窗。 -->
+  <view wx:if="{{readonly}}" class="hl-card co-readonly">{{readonlyReason}}</view>
+
+  <block wx:if="{{!loading && draft}}">
+    <!-- ── edit ───────────────────────────────────────────────────────── -->
+    <view wx:if="{{stage === 'edit'}}" class="hl-stack">
+      <view class="hl-card">
+        <view class="co-field">
+          <view class="co-field__label">活动名称</view>
+          <input
+            class="co-input"
+            value="{{draft.moment_title}}"
+            maxlength="{{limits.moment_title}}"
+            disabled="{{readonly}}"
+            placeholder="例如：端午艾草手作"
+            data-field="moment_title"
+            bindinput="onTextInput" />
+        </view>
+
+        <view class="co-field">
+          <view class="co-field__label">活动评语</view>
+          <textarea
+            class="co-textarea"
+            value="{{draft.moment_content}}"
+            maxlength="{{limits.moment_content}}"
+            disabled="{{readonly}}"
+            placeholder="孩子们做了什么、说了什么"
+            data-field="moment_content"
+            bindinput="onTextInput" />
+        </view>
+
+        <picker mode="date" value="{{draft.moment_date}}" disabled="{{readonly}}" bindchange="onDateChange">
+          <view class="hl-pick-row">
+            <view class="hl-pick-row__label">活动日期<text class="hl-pick-row__required">*</text></view>
+            <view class="hl-pick-row__value {{draft.moment_date ? '' : 'hl-pick-row__value--empty'}}">
+              {{draft.moment_date ? draft.moment_date : '请选择'}}
+            </view>
+          </view>
+        </picker>
+      </view>
+
+      <!--
+        照片。**只有图片入口，一个视频入口也没有**（DO-NOT-BUILD 12）：这里没有
+        视频标签、没有取景组件、没有任何通往视频的按钮。负向断言在
+        tests/moments.test.mjs 里逐个字符串扫这个文件。
+      -->
+      <view class="hl-card">
+        <view class="co-field__label">照片（最多 {{imageLimit}} 张）</view>
+        <view class="co-photos">
+          <view wx:for="{{draft.file_id}}" wx:key="*this" class="co-photos__item">
+            <text class="co-photos__id">照片 {{index + 1}}</text>
+            <view
+              wx:if="{{!readonly}}"
+              class="co-photos__remove"
+              data-file-id="{{item}}"
+              bindtap="onRemovePhoto">移除</view>
+          </view>
+          <view
+            wx:if="{{!readonly && draft.file_id.length < imageLimit}}"
+            class="co-photos__add"
+            bindtap="onPickPhotos">{{picking ? '上传中…' : '＋ 添加照片'}}</view>
+        </view>
+        <view wx:if="{{photoNotice}}" class="co-notice">{{photoNotice}}</view>
+      </view>
+
+      <view class="hl-card">
+        <hl-child-picker
+          mode="multi"
+          label="本次涉及幼儿"
+          class-name="{{className}}"
+          children="{{children}}"
+          value="{{draft.child_id}}"
+          required="{{true}}"
+          disabled="{{readonly}}"
+          bind:change="onChildrenChange" />
+      </view>
+
+      <view wx:if="{{blockers.length}}" class="hl-card co-blockers">
+        <view class="co-field__label">还差这几项才能发布</view>
+        <view wx:for="{{blockers}}" wx:key="key" class="co-blockers__item">{{item.text}}</view>
+      </view>
+
+      <button class="hl-btn hl-btn--block" disabled="{{readonly}}" bindtap="onPreviewTap">预览并发布</button>
+    </view>
+
+    <!-- ── preview ────────────────────────────────────────────────────── -->
+    <view wx:elif="{{stage === 'preview'}}" class="hl-stack">
+      <view class="hl-section-title">发布前请完整看一遍</view>
+      <scroll-view class="co-preview" scroll-y bindscrolltolower="onPreviewEnd">
+        <view class="hl-card">
+          <view class="hl-card__title">{{preview.draft.moment_title}}</view>
+          <view class="hl-card__meta">{{preview.draft.moment_date}} · {{className}}</view>
+          <view class="co-preview__text">{{preview.body.moment_content}}</view>
+          <view class="hl-card__meta">照片 {{preview.photoCount}} 张</view>
+          <view class="hl-card__meta">涉及幼儿：{{preview.childNames}}</view>
+        </view>
+      </scroll-view>
+
+      <view wx:if="{{!previewedInFull}}" class="co-notice">请滑到底看完全部内容，之后才能发布。</view>
+
+      <button class="hl-btn hl-btn--block" disabled="{{!previewedInFull || submitting}}" bindtap="onConfirmTap">
+        {{submitting ? '发布中…' : '确认发布'}}
+      </button>
+      <button class="hl-btn hl-btn--hollow hl-btn--block" disabled="{{locked}}" bindtap="onBackToEdit">返回修改</button>
+    </view>
+
+    <!-- ── done ───────────────────────────────────────────────────────── -->
+    <view wx:else class="hl-stack">
+      <view class="hl-card">
+        <view class="hl-card__title">已发布</view>
+        <view class="hl-card__meta">家长现在就看得到。发布后内容不能再改。</view>
+      </view>
+      <button class="hl-btn hl-btn--block" bindtap="onBackTap">返回</button>
+    </view>
+  </block>
+</view>

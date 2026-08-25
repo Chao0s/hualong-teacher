@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "发布在园时光",
+  "usingComponents": {
+    "hl-child-picker": "/components/hl-child-picker/index"
+  }
+}

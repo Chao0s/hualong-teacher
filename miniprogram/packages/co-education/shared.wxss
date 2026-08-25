@@ -1,0 +1,151 @@
+/**
+ * 家园社共育四页共用的表单与状态样式（票据 17／19）。
+ *
+ * 为什么是分包内的一份而不是 app.wxss：这些形状目前只有这四页在用，放进主包会让每一个
+ * 客户端都下载它们。分包内共享一份，四页各自 `@import` 它 —— 抄四遍的代价不是行数，
+ * 是四处慢慢长歪。
+ *
+ * 选择行与横排标签的尺寸**不在这里**：那两样在 styles/form-rows.wxss，由 app.wxss 统一
+ * 引入，38 页复用同一份（form-control-spec.md §5）。
+ */
+
+/* ── 表单字段 ────────────────────────────────────────────────────────────── */
+
+.co-field + .co-field {
+  margin-top: var(--space-3);
+}
+
+.co-field__label {
+  font-size: 26rpx;
+  color: var(--muted);
+}
+
+.co-input {
+  width: 100%;
+  min-height: 88rpx;
+  font-size: 30rpx;
+  color: var(--fg);
+}
+
+.co-textarea {
+  width: 100%;
+  min-height: 220rpx;
+  font-size: 30rpx;
+  color: var(--fg);
+  line-height: var(--line-cjk);
+}
+
+/* ── 就地说明 ────────────────────────────────────────────────────────────── */
+
+/* 说明不是错误：它用正文色的弱化版，不用 --danger。教师选了一张过大的照片不是故障。 */
+.co-notice {
+  margin-top: var(--space-2);
+  font-size: 26rpx;
+  color: var(--muted);
+  line-height: var(--line-cjk);
+}
+
+/* 只读态是**状态**，不是错误：一行理由，不是一个弹窗，颜色也不是红的。 */
+.co-readonly {
+  font-size: 28rpx;
+  color: var(--muted);
+  line-height: var(--line-cjk);
+}
+
+.co-blockers__item {
+  margin-top: var(--space-1);
+  font-size: 28rpx;
+  color: var(--danger);
+  line-height: var(--line-cjk);
+}
+
+/* ── 照片 ────────────────────────────────────────────────────────────────── */
+
+.co-photos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.co-photos__item,
+.co-photos__add {
+  width: 164rpx;
+  height: 144rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  font-size: 24rpx;
+  color: var(--muted);
+}
+
+.co-photos__add {
+  border: 2rpx dashed var(--accent);
+  color: var(--accent-dark);
+}
+
+.co-photos__id {
+  font-size: 26rpx;
+  color: var(--fg);
+}
+
+.co-photos__remove {
+  color: var(--danger);
+}
+
+/* ── 预览 ────────────────────────────────────────────────────────────────── */
+
+/* 预览是把关本身，所以它有自己的边界，看得出与编辑区不是同一件事。 */
+.co-preview {
+  max-height: 720rpx;
+}
+
+.co-preview__text {
+  margin-top: var(--space-2);
+  font-size: 30rpx;
+  color: var(--fg);
+  line-height: var(--line-cjk);
+}
+
+/* ── 进度页 ──────────────────────────────────────────────────────────────── */
+
+.co-summary {
+  font-size: 28rpx;
+  color: var(--fg);
+  line-height: var(--line-cjk);
+}
+
+.co-summary__gap {
+  margin-top: var(--space-1);
+  font-size: 26rpx;
+  color: var(--muted);
+}
+
+/* 两态图例。颜色点本身在 hl-progress-grid 里，这里只排图例那一行。 */
+.co-legend {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-1);
+  font-size: 24rpx;
+  color: var(--muted);
+}
+
+.co-legend__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.co-legend__dot {
+  width: 20rpx;
+  height: 20rpx;
+  border-radius: 50%;
+}
+
+.co-legend__dot--done { background: var(--green); }
+.co-legend__dot--todo { background: var(--border); }

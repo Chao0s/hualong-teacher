@@ -57,6 +57,16 @@
         "pages/train/list",
         "pages/train/detail"
       ]
+    },
+    {
+      "root": "packages/co-education",
+      "name": "co-education",
+      "pages": [
+        "pages/moment/publish",
+        "pages/moment/progress",
+        "pages/task/publish",
+        "pages/task/progress"
+      ]
     }
   ],
   "preloadRule": {
@@ -71,6 +81,10 @@
     "pages/training/index": {
       "network": "all",
       "packages": ["library", "training"]
+    },
+    "pages/co-education/index": {
+      "network": "all",
+      "packages": ["co-education"]
     }
   },
   "window": {
