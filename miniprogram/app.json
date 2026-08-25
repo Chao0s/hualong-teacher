@@ -7,7 +7,9 @@
     "pages/training/index",
     "pages/co-education/index",
     "pages/notice/list",
-    "pages/notice/detail"
+    "pages/notice/detail",
+    "pages/task/board",
+    "pages/task/detail"
   ],
   "window": {
     "backgroundTextStyle": "dark",

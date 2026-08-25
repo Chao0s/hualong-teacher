@@ -142,13 +142,9 @@ function openCase() {
   wx.showToast({ title: '案例库尚未上线', icon: 'none' });
 }
 
-/**
- * A 待办事项 card leads to 任务进度看板, which ticket 10 builds. Until then it
- * says so: every region on 首页 that looks tappable either navigates or gives a
- * reason, and none of them absorbs a tap in silence.
- */
+/** A 待办事项 card leads to 任务进度看板 (ticket 10). */
 function openTodo() {
-  wx.showToast({ title: '待办事项看板尚未上线', icon: 'none' });
+  guard.navigateTo('/pages/task/board', 'home');
 }
 
 module.exports = {

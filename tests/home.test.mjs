@@ -141,13 +141,15 @@ test('every tappable region on 首页 either navigates or gives a reason', async
   const c = await signedIn()
   const page = loadPage(c, 'pages/home/index.js')
 
+  // 案例库 has no screens yet (ticket 13), so it refuses by name.
   page.onCaseTap()
   assert.match(c.record.toasts.pop().title, /案例库尚未上线/)
+  assert.equal(c.record.navigations.length, 0, 'a refusal never becomes a jump')
 
+  // 待办事项 gained its destination in ticket 10, so the honest answer is now
+  // the navigation itself.
   page.onTodoTap()
-  assert.match(c.record.toasts.pop().title, /看板尚未上线/)
-
-  assert.equal(c.record.navigations.length, 0, 'nothing dead-ended into a jump')
+  assert.deepEqual(c.record.navigations.pop(), { api: 'navigateTo', url: '/pages/task/board' })
 })
 
 // ── Structure: what must not be here ─────────────────────────────────────────

@@ -99,6 +99,49 @@ const HOME_CASES = [
   { case_id: 64, case_name: '醒狮从哪里来', case_field: 'f9_future_field', case_grade: 'k2' },
 ];
 
+// db_task + db_task_assign。教师看到的是**自己那一行** assign（契约 §7.3：
+// teacher_id 派生），同事的执行状态不回。
+// 15 条，够翻页；状态覆盖 a1/a2/a3 与 t1/t2/t3/t4，另含一个本客户端不认识的
+// 状态码，用来验证枚举降级（§1.1）。
+const TASK_TITLES = [
+  '衣食住行艺课程资源包共建',
+  '社区建筑观察活动材料提交',
+  '课程游戏化研修反馈汇总',
+  '班级主题墙秋季素材征集',
+  '幼儿一日生活流程优化建议',
+];
+
+const TASK_INTRO = '围绕五类生活经验收集班级实践材料，形成可进入资源库和案例库的素材包。';
+const TASK_DIVISION = '各班收集不少于 10 张实践照片与 1 份教师转化说明，于截止日前提交。';
+
+const TASKS = Array.from({ length: 15 }, (_, i) => {
+  const id = 15 - i;
+  // 前 5 条进行中，中间 5 条待接收，其余已完成；第 13 条已取消。
+  const assignStatus = i < 5 ? 'a2' : i < 10 ? 'a1' : 'a3';
+  let taskStatus = i < 5 ? 't2' : i < 10 ? 't1' : 't3';
+  if (id === 3) taskStatus = 't4';
+  // 一个未来版本才有的状态码：客户端必须照常显示，不得崩、不得留空。
+  if (id === 7) taskStatus = 'z9_future_status';
+  return {
+    task_id: id,
+    task_title: TASK_TITLES[i % TASK_TITLES.length],
+    task_intro: TASK_INTRO,
+    task_division: TASK_DIVISION,
+    due_at: `2026-09-${String(1 + (i % 28)).padStart(2, '0')}T18:00:00+08:00`,
+    task_status: taskStatus,
+    creator_type: i % 3 === 0 ? 'c2' : 'c1',
+    assign: {
+      assign_id: 500 + id,
+      task_id: id,
+      teacher_id: 12,
+      assign_status: assignStatus,
+      accepted_at: assignStatus === 'a1' ? null : '2026-08-20T09:00:00+08:00',
+      completed_at: assignStatus === 'a3' ? '2026-08-22T16:30:00+08:00' : null,
+      feedback: null,
+    },
+  };
+});
+
 const TODOS = [
   { todo_id: 1, todo_kind: 'upload', todo_title: '上传「祠堂里的故事」课程案例', due_at: '2026-08-25T18:00:00+08:00' },
   { todo_id: 2, todo_kind: 'task', todo_title: '完成共建任务：秋季主题墙素材征集', due_at: '2026-08-28T18:00:00+08:00' },
@@ -347,6 +390,88 @@ function getHomeCases(req, res) {
   sendJson(res, 200, { items: HOME_CASES });
 }
 
+/**
+ * §3.1 — 任务看板。游标分页，并带一个真实的筛选条件（`scope`），因为票据 10 要求
+ * 「游标与筛选绑定，筛选变化时丢弃旧游标」——没有筛选就验证不了这条。
+ *
+ *   scope=current  未完成（assign_status a1/a2）
+ *   scope=history  已完成（a3）
+ *   缺省           全部
+ */
+function getTasks(req, res, url) {
+  if (!requireSession(req, res)) return;
+
+  const limitRaw = url.searchParams.get('limit');
+  const limit = limitRaw === null ? 20 : Number(limitRaw);
+  if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+    return fail(res, 422, 'validation_failed', '分页参数不合法',
+      { field: 'limit', rule: 'between_1_and_100' });
+  }
+
+  const scope = url.searchParams.get('scope') || '';
+  if (scope && scope !== 'current' && scope !== 'history') {
+    return fail(res, 422, 'validation_failed', '筛选条件不合法',
+      { field: 'scope', rule: 'current_or_history' });
+  }
+
+  const filters = scope ? { scope } : {};
+  const rows = TASKS.filter((t) => {
+    if (scope === 'current') return t.assign.assign_status !== 'a3';
+    if (scope === 'history') return t.assign.assign_status === 'a3';
+    return true;
+  });
+
+  let startIndex = 0;
+  const cursor = url.searchParams.get('cursor');
+  if (cursor) {
+    const decoded = decodeCursor(cursor, filters);
+    if (decoded.error) {
+      return fail(res, 400, decoded.error,
+        decoded.error === 'cursor_invalid' ? '翻页游标不可解' : '筛选条件已变，游标失效');
+    }
+    startIndex = rows.findIndex((t) => t.task_id === decoded.key) + 1;
+    if (startIndex <= 0) return fail(res, 400, 'cursor_invalid', '翻页游标不可解');
+  }
+
+  const slice = rows.slice(startIndex, startIndex + limit);
+  const last = slice[slice.length - 1];
+  const hasMore = startIndex + limit < rows.length;
+  sendJson(res, 200, {
+    items: slice,
+    next_cursor: hasMore && last ? encodeCursor(last.task_id, filters) : null,
+  });
+}
+
+/**
+ * GET /tasks/{task_id} — 契约里真实存在的端点。
+ *
+ * `assign` 只回调用者本人那一行；`progress` 由 assign 行实算（契约明确禁止使用
+ * 原型里 52／12／6 那组常量）。§2.3：越出范围回 404，不回 403。
+ */
+function getTask(req, res, id) {
+  if (!requireSession(req, res)) return;
+  const task = TASKS.find((t) => t.task_id === Number(id));
+  if (!task) return fail(res, 404, 'not_found', '任务不存在或不在可见范围内');
+
+  const total = TASKS.length;
+  const accepted = TASKS.filter((t) => t.assign.accepted_at !== null).length;
+  const completed = TASKS.filter((t) => t.assign.assign_status === 'a3').length;
+
+  sendJson(res, 200, {
+    ...task,
+    progress: {
+      total_count: total,
+      accepted_count: accepted,
+      completed_count: completed,
+      completion_rate: total === 0 ? 0 : Number((completed / total).toFixed(4)),
+    },
+    file_refs: [
+      { file_id: 9001, usage_key: 'main_file', file_name: '班级实践照片打包.zip', file_size: 2483712 },
+      { file_id: 9002, usage_key: 'attachment', file_name: '教师转化说明.docx', file_size: 38214 },
+    ],
+  });
+}
+
 // ── Dispatch ───────────────────────────────────────────────────────────────
 
 const server = createServer(async (req, res) => {
@@ -419,6 +544,10 @@ const server = createServer(async (req, res) => {
       getTodos(req, res);
     } else if (req.method === 'GET' && path === '/home/cases') {
       getHomeCases(req, res);
+    } else if (req.method === 'GET' && path === '/tasks') {
+      getTasks(req, res, url);
+    } else if (req.method === 'GET' && /^\/tasks\/\d+$/.test(path)) {
+      getTask(req, res, path.split('/')[2]);
     } else if (req.method === 'POST' && path === '/parent-tasks') {
       postParentTask(req, res, body);
     } else if (req.method === 'GET' && /^\/parent-tasks\/\d+\/progress$/.test(path)) {

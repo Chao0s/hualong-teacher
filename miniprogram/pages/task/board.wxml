@@ -1,0 +1,47 @@
+<view class="hl-page" wx:if="{{ready}}">
+
+  <view class="scopes">
+    <view
+      wx:for="{{scopes}}"
+      wx:key="key"
+      class="scopes__item {{item.key === activeScope ? 'scopes__item--on' : ''}}"
+      data-scope="{{item.key}}"
+      bindtap="onScopeTap">
+      {{item.label}}
+    </view>
+  </view>
+
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryList">重试</text>
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障码 {{errorRequestId}}</text>
+  </view>
+
+  <view wx:if="{{loadingFirst}}" class="hl-loading">加载中…</view>
+
+  <block wx:if="{{!loadingFirst}}">
+    <!-- 空与失败是两种状态：读失败时不说「暂无」。 -->
+    <view wx:if="{{items.length === 0 && !errorText}}" class="hl-card hl-empty">暂无任务</view>
+
+    <view
+      wx:for="{{items}}"
+      wx:key="task_id"
+      class="hl-card task"
+      data-id="{{item.task_id}}"
+      bindtap="onTap">
+      <view class="task__row">
+        <text class="hl-card__title">{{item.task_title}}</text>
+        <text class="hl-pill {{item.status_class}}">{{item.status_label}}</text>
+      </view>
+      <view class="hl-card__meta">
+        截止 {{item.due_label}}
+        <text wx:if="{{item.creator_label}}"> · {{item.creator_label}}</text>
+      </view>
+      <view wx:if="{{item.closed_note}}" class="task__closed">{{item.closed_note}}</view>
+      <view class="task__intro">{{item.task_intro}}</view>
+    </view>
+
+    <view wx:if="{{loadingMore}}" class="hl-loading">加载更多…</view>
+    <view wx:if="{{exhausted && items.length > 0}}" class="hl-loading">没有更多了</view>
+  </block>
+</view>

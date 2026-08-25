@@ -74,6 +74,19 @@ test('every tab icon pair exists on disk and every tab page is registered', () =
   }
 })
 
+test('every registered page has all three of its files', () => {
+  // A route in app.json whose .js/.json/.wxml is missing is a compile failure,
+  // and nothing else in the suite would notice — the seam only loads the pages
+  // a test names. This checks the manifest against the disk.
+  for (const route of appJson.pages) {
+    for (const ext of ['.js', '.json', '.wxml']) {
+      const file = path.join(MP, route + ext)
+      assert.ok(fs.existsSync(file), `${route} 缺 ${ext}，编译会失败`)
+    }
+  }
+  assert.ok(appJson.pages.length >= 10, `登记的页面太少（${appJson.pages.length}）`)
+})
+
 test('tabBar pages sit in the main package', () => {
   // 官方分包规则：tabBar 页面必须位于主包内。There are no subpackages yet; this
   // test is the tripwire for ticket 12, which introduces them.

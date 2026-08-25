@@ -50,6 +50,7 @@ export function loadClient({ baseUrl, wxOptions } = {}) {
     notice: require(path.join(MP, 'services', 'notice.js')),
     kase: require(path.join(MP, 'services', 'case.js')),
     home: require(path.join(MP, 'services', 'home.js')),
+    task: require(path.join(MP, 'services', 'task.js')),
   }
 }
 

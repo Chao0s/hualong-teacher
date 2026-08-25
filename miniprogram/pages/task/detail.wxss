@@ -1,0 +1,55 @@
+.detail__title {
+  margin-top: var(--space-1);
+  font-size: 38rpx;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.detail__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.detail__intro,
+.detail__division {
+  font-size: 28rpx;
+  color: var(--fg);
+  line-height: var(--line-cjk);
+}
+
+.detail__intro {
+  margin-top: var(--space-2);
+  color: var(--muted);
+}
+
+.detail__file + .detail__file {
+  margin-top: var(--space-2);
+}
+
+.submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 88rpx;
+  margin-top: var(--space-4);
+  border-radius: var(--radius-pill);
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  font-size: 30rpx;
+  font-weight: 500;
+}
+
+/* 关闭或假期：看得出不可用，理由写在下一行，不靠点击才说。 */
+.submit--off {
+  background: var(--bg);
+  color: var(--muted);
+}
+
+.submit__reason {
+  margin-top: var(--space-2);
+  text-align: center;
+  font-size: 24rpx;
+  color: var(--muted);
+}

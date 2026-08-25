@@ -1,0 +1,47 @@
+<view class="hl-page" wx:if="{{ready}}">
+
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryLoad">重试</text>
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障码 {{errorRequestId}}</text>
+  </view>
+
+  <view wx:if="{{loading}}" class="hl-loading">加载中…</view>
+
+  <block wx:if="{{task && !loading}}">
+    <view class="hl-card">
+      <view wx:if="{{task.creator_label}}" class="hl-card__meta">{{task.creator_label}}</view>
+      <view class="detail__title">{{task.task_title}}</view>
+      <view class="detail__row">
+        <text class="hl-pill {{task.assign_status_class}}">{{task.assign_status_label}}</text>
+        <text class="hl-card__meta">截止 {{task.due_label}}</text>
+      </view>
+      <view class="detail__intro">{{task.task_intro}}</view>
+    </view>
+
+    <view class="hl-section-title">分工要求</view>
+    <view class="hl-card detail__division">{{task.task_division}}</view>
+
+    <view class="hl-section-title">已提交材料</view>
+    <view wx:if="{{task.files.length === 0}}" class="hl-card hl-empty">暂无材料</view>
+    <view wx:for="{{task.files}}" wx:key="file_id" class="hl-card detail__file">
+      <text class="hl-card__title">{{item.file_name}}</text>
+      <view class="hl-card__meta">{{item.size_label}}</view>
+    </view>
+
+    <view class="hl-section-title">进度</view>
+    <view class="hl-card">
+      <view wx:if="{{task.progress_label}}" class="hl-card__meta">{{task.progress_label}}</view>
+      <view wx:if="{{task.accepted_label}}" class="hl-card__meta">已接收 {{task.accepted_label}}</view>
+      <view wx:if="{{task.completed_label}}" class="hl-card__meta">已完成 {{task.completed_label}}</view>
+    </view>
+
+    <!-- 入口，不是控件：本页不提交、不编辑、不删除。写入是票据 11。 -->
+    <view
+      class="submit {{submitDisabled ? 'submit--off' : ''}}"
+      bindtap="onSubmitTap">
+      提交材料 / 反馈
+    </view>
+    <view wx:if="{{submitReason}}" class="submit__reason">{{submitReason}}</view>
+  </block>
+</view>
