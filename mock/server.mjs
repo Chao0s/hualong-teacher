@@ -144,6 +144,10 @@ const TASKS = Array.from({ length: 15 }, (_, i) => {
   };
 });
 
+// 票据 11 的写入面会真的改上面这些 assign 行，所以开服时要还原 —— 否则一个测试
+// 文件里的提交会渗进下一个，两边都是对的却一起变红。
+const TASK_ASSIGN_SNAPSHOT = TASKS.map((t) => ({ ...t.assign }));
+
 // db_party_study —— 党建学习资料。契约 §4 规则 19：按 published_at DESC, study_id
 // DESC 作游标分页，**不搜索、不筛选** —— `study_type` 只显示，不做成筛选项（F7），
 // 所以本端点除分页对之外不收任何参数。
@@ -726,6 +730,12 @@ const state = {
   revoked: new Set(),
   idempotency: new Map(),       // key -> { status, body, bodyHash }
   nextTaskId: 900,              // POST /parent-tasks assigns from here
+  nextFileId: 8800,             // POST /media/files assigns from here
+  uploadTickets: new Map(),     // upload_ticket -> { usage_key, content_type, byte_size }
+  // 每一次真正执行的 a2 -> a3。幂等重放不进这张表，所以「重复点击只产生一条提交」
+  // 数得出来 —— 与 accessEvents 同一个理由：断言要对着服务端自己的记录，不是对着
+  // 客户端发了几个请求。
+  taskCompletions: [],
   // db_content_access_event —— 服务端在签发短链的同一个事务里写的那一笔。放在这里
   // 是为了让「客户端不自行拼装记录请求」可断言：记录数只随 download-link 增长。
   accessEvents: [],
@@ -1613,6 +1623,13 @@ const HAND_WRITTEN_ROLES = [
   [/^\/parent-tasks\/\d+\/progress$/, ['teacher']],
   // Declared by the contract; repeated here because the handler is hand-written.
   [/^\/tasks\/\d+$/, ['teacher']],
+  // 票据 11 的写入面。契约给这两条写的就是 teacher。
+  [/^\/tasks\/\d+\/acceptance$/, ['teacher']],
+  [/^\/tasks\/\d+\/completion$/, ['teacher']],
+  // 契约给媒体两条路写的是 teacher｜parent｜admin-pc，但**本 mock 只服务教师端**。
+  // 登记为 teacher，宁可比契约严：漏登记才是安全缺陷，多登记只是覆盖面窄。
+  [/^\/media\/upload-credentials$/, ['teacher']],
+  [/^\/media\/files$/, ['teacher']],
   [/^\/party\/studies$/, ['teacher']],
   [/^\/party\/studies\/\d+$/, ['teacher']],
   [/^\/party\/activities$/, ['teacher']],
@@ -1737,6 +1754,15 @@ const server = createServer(async (req, res) => {
     return;
   }
 
+  // §8.1 的对象存储同样**不在 `/api/v1` 基址下**，理由与短链一样：字节不经过 API
+  // 实例，所以它连基址都不共享。也不进 HAND_WRITTEN_ROLES —— 客户端拿的是凭证，
+  // 不是会话。
+  if (req.method === 'POST' && url.pathname === '/cos/') {
+    postCosObject(req, res, await readRaw(req));
+    rlog(`  ${req.method} ${url.pathname} -> ${res.statusCode}`);
+    return;
+  }
+
   const path = url.pathname.startsWith(BASE) ? url.pathname.slice(BASE.length) : null;
 
   if (path === null) {
@@ -1809,6 +1835,14 @@ const server = createServer(async (req, res) => {
       getTasks(req, res, url);
     } else if (req.method === 'GET' && /^\/tasks\/\d+$/.test(path)) {
       getTask(req, res, path.split('/')[2]);
+    } else if (req.method === 'POST' && /^\/tasks\/\d+\/acceptance$/.test(path)) {
+      postTaskAcceptance(req, res, path.split('/')[2]);
+    } else if (req.method === 'POST' && /^\/tasks\/\d+\/completion$/.test(path)) {
+      postTaskCompletion(req, res, path.split('/')[2], body);
+    } else if (req.method === 'POST' && path === '/media/upload-credentials') {
+      postUploadCredentials(req, res, body);
+    } else if (req.method === 'POST' && path === '/media/files') {
+      postMediaFile(req, res, body);
     } else if (req.method === 'GET' && path === '/party/studies') {
       getPartyStudies(req, res, url);
     } else if (req.method === 'GET' && /^\/party\/studies\/\d+$/.test(path)) {
@@ -1880,6 +1914,10 @@ export function start({ port = 0, unbound = false, noTerm = false, quiet = true 
   state.revoked.clear();
   state.idempotency.clear();
   state.accessEvents.length = 0;
+  state.taskCompletions.length = 0;
+  state.uploadTickets.clear();
+  state.nextFileId = 8800;
+  TASKS.forEach((t, i) => { t.assign = { ...TASK_ASSIGN_SNAPSHOT[i] }; });
   downloadLinks.clear();
   return new Promise((resolve, reject) => {
     server.once('error', reject);
@@ -1935,6 +1973,198 @@ function getParentTaskProgress(req, res) {
   return sendJson(res, 200, { items: ROSTER });
 }
 
+// ── 任务写入面（票据 11） ────────────────────────────────────────────────────
+
+// §7.3 的三层：服务端在 schema 校验**之前**剥掉派生列，所以提交它们既不生效也不
+// 报错。顺序是关键 —— 反过来的话 additionalProperties: false 会把契约说该接受的
+// 请求 422 掉。§1.2 的事件时间戳同属这一族。
+const DERIVED_KEYS = new Set([
+  'school_id', 'class_id', 'created_by', 'uploaded_by',
+  'requested_by_teacher_id', 'teacher_id',
+  'created_at', 'submitted_at', 'published_at', 'reviewed_at', 'uploaded_at',
+  'locked_at', 'applied_at', 'accepted_at', 'completed_at', 'cancelled_at',
+]);
+
+function stripDerived(body) {
+  const out = {};
+  Object.keys(body || {}).forEach((k) => { if (!DERIVED_KEYS.has(k)) out[k] = body[k]; });
+  return out;
+}
+
+/**
+ * §5.4 / §6.4：任何依赖当前学期的写入，在派生不到进行中学期时回 409，绝不猜一个
+ * 学期。客户端可以预先禁用入口，但那是体贴，不是边界 —— 服务端独立拒绝。
+ */
+function refuseWithoutTerm(res) {
+  if (!OPTS.noTerm) return false;
+  fail(res, 409, 'no_active_term', '当前没有进行中的学期');
+  return true;
+}
+
+/**
+ * POST /tasks/{task_id}/acceptance — a1 → a2，服务端写 accepted_at。
+ *
+ * 契约的 scope 是 `WHERE task_id=$1 AND teacher_id=$ctx AND assign_status='a1'
+ * RETURNING`：零行即 404／409。任务不存在是 404，状态不对是 409。
+ * **本端点无请求体。**
+ */
+function postTaskAcceptance(req, res, id) {
+  if (refuseWithoutTerm(res)) return;
+  const task = TASKS.find((t) => t.task_id === Number(id));
+  if (!task) return fail(res, 404, 'not_found', '任务不存在或不在可见范围内');
+  if (task.assign.assign_status !== 'a1') {
+    return fail(res, 409, 'state_precondition_failed', '任务不在待接收状态');
+  }
+  task.assign.assign_status = 'a2';
+  task.assign.accepted_at = '2026-08-26T09:30:00+08:00';
+  return sendJson(res, 200, task.assign);
+}
+
+/**
+ * POST /tasks/{task_id}/completion — a2 → a3，写 completed_at 与可选 feedback。
+ *
+ * `a1` 未接受直接完成回 409：转移图上没有 a1 → a3 这条边，幂等键也替代不了状态机
+ * （§4.4）。请求体是 `TaskCompletionWrite`：`additionalProperties: false`，
+ * 只有 `feedback`（maxLength 500）。
+ *
+ * 只改 `db_task_assign`，**不改 `db_task.task_status`** —— `db_task` 是状态机还是
+ * 投影，G62 未决，猜一个会让教师端读到一个没有权威的状态。
+ */
+function postTaskCompletion(req, res, id, rawBody) {
+  if (refuseWithoutTerm(res)) return;
+  const task = TASKS.find((t) => t.task_id === Number(id));
+  if (!task) return fail(res, 404, 'not_found', '任务不存在或不在可见范围内');
+  if (task.assign.assign_status !== 'a2') {
+    return fail(res, 409, 'state_precondition_failed', '任务不在进行中状态');
+  }
+
+  const body = stripDerived(rawBody);
+  const extra = Object.keys(body).find((k) => k !== 'feedback');
+  if (extra) {
+    return fail(res, 422, 'validation_failed', '填写内容不符合要求',
+      { field: extra, rule: 'additional_properties_not_allowed' });
+  }
+  const feedback = body.feedback === undefined ? null : body.feedback;
+  if (feedback !== null && (typeof feedback !== 'string' || feedback.length > 500)) {
+    return fail(res, 422, 'validation_failed', '填写内容不符合要求',
+      { field: 'feedback', rule: 'max_length_500' });
+  }
+
+  task.assign.assign_status = 'a3';
+  task.assign.completed_at = '2026-08-26T16:40:00+08:00';
+  task.assign.feedback = feedback;
+  state.taskCompletions.push({ task_id: task.task_id, teacher_id: TEACHER.teacher_id });
+  return sendJson(res, 200, task.assign);
+}
+
+// ── 媒体流（契约 §8） ───────────────────────────────────────────────────────
+
+// CONTEXT.md §3：处理前单档上限 10 MB。这是我们的产品限制。
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+const UPLOAD_CONTENT_TYPES = [
+  'image/jpeg', 'image/png', 'image/webp', 'image/heic', 'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+];
+
+/**
+ * POST /media/upload-credentials — 签发 COS 表单上传（PostObject）凭证。
+ *
+ * §8.1 铁律：字节不经过 API 实例。所以签发的 `url` 指向**基址之外**的地方，
+ * 本地由 `/cos/` 冒充对象存储 —— 它不在 `/api/v1` 下面，正是为了让「客户端把字节
+ * 送去了别处」这件事在测试里断言得到。
+ *
+ * `wx.uploadFile` 发的是 multipart 的 POST，所以凭证放行的必须是 PostObject；
+ * 只签 PutObject 会在真机上失败，而浏览器里用 PUT 自测看不出来。
+ */
+function postUploadCredentials(req, res, body) {
+  const { usage_key: usageKey, content_type: contentType, byte_size: byteSize } = body;
+  if (typeof usageKey !== 'string' || usageKey === '' || usageKey.length > 32) {
+    return fail(res, 422, 'validation_failed', '填写内容不符合要求',
+      { field: 'usage_key', rule: 'required_max_32' });
+  }
+  if (UPLOAD_CONTENT_TYPES.indexOf(contentType) === -1) {
+    return fail(res, 422, 'validation_failed', '填写内容不符合要求',
+      { field: 'content_type', rule: 'enum' });
+  }
+  if (!Number.isInteger(byteSize) || byteSize < 1 || byteSize > MAX_UPLOAD_BYTES) {
+    return fail(res, 422, 'validation_failed', '填写内容不符合要求',
+      { field: 'byte_size', rule: 'between_1_and_10485760' });
+  }
+
+  const ticket = randomUUID();
+  const objectKey = `incoming/2026/08/26/${ticket}`;
+  state.uploadTickets.set(ticket, { usageKey, contentType, byteSize, uploaded: false });
+  return sendJson(res, 201, {
+    upload_ticket: ticket,
+    bucket: 'hualong-media-1464472146',
+    region: 'ap-guangzhou',
+    url: `http://127.0.0.1:${server.address().port}/cos/`,
+    object_key: objectKey,
+    // policy 把 key 绑死到单一 object_key，不签目录级或通配凭证。
+    form_fields: {
+      key: objectKey,
+      policy: 'bW9jay1wb2xpY3k=',
+      'q-sign-algorithm': 'sha1',
+      'q-ak': 'AKIDMOCK',
+      'q-key-time': '1787000000;1787000900',
+      'q-signature': 'mocksignature',
+      'Content-Type': contentType,
+      success_action_status: '200',
+    },
+    field_order: ['key', 'policy', 'q-sign-algorithm', 'q-ak', 'q-key-time',
+      'q-signature', 'Content-Type', 'success_action_status'],
+    expires_at: '2026-08-26T14:15:00+08:00',
+    max_bytes: MAX_UPLOAD_BYTES,
+  });
+}
+
+/**
+ * 冒充 COS 的表单上传端点。**不在 `/api/v1` 下**，因为真实的它也不在。
+ * 只记下这个 object_key 的字节已经到位，好让 `POST /media/files` 有东西可核对。
+ */
+function postCosObject(req, res, raw) {
+  const m = /incoming(?:\/|%2F)[^&\s"]+/i.exec(raw || '');
+  if (m) {
+    const key = decodeURIComponent(m[0]);
+    const ticket = key.split('/').pop();
+    const pending = state.uploadTickets.get(ticket);
+    if (pending) pending.uploaded = true;
+  }
+  // success_action_status=200，且响应体不是 JSON —— COS 不说 JSON。
+  res.writeHead(200, { 'content-type': 'application/xml' });
+  res.end('<PostResponse/>');
+}
+
+/**
+ * POST /media/files — 把已上传的对象落成 db_file。
+ *
+ * W17：只存处理后成品，`file_size` 记处理后大小，原件随即删除（这里就是丢掉 ticket
+ * 与那条 pending 记录）。`file_id` 只在成品上产生，所以拿不到 ticket 就没有 file_id。
+ */
+function postMediaFile(req, res, body) {
+  const ticket = body.upload_ticket;
+  const pending = typeof ticket === 'string' ? state.uploadTickets.get(ticket) : null;
+  if (!pending) {
+    return fail(res, 422, 'validation_failed', '上传凭证无效或已使用',
+      { field: 'upload_ticket', rule: 'valid_unused_ticket' });
+  }
+  if (!pending.uploaded) {
+    return fail(res, 422, 'validation_failed', '对象尚未上传到对象存储',
+      { field: 'upload_ticket', rule: 'object_present' });
+  }
+  state.uploadTickets.delete(ticket);
+
+  const fileId = state.nextFileId++;
+  return sendJson(res, 201, {
+    file_id: fileId,
+    file_type: 'f1',
+    file_name: `${fileId}.jpg`,
+    // 处理后：去 EXIF、长边缩到 2000、MozJPEG 重编码之后比原件小。
+    file_size: Math.round(pending.byteSize * 0.6),
+    uploaded_at: '2026-08-26T14:15:31+08:00',
+  }, { Location: `${BASE}/media/files/${fileId}` });
+}
+
 /**
  * Test hook: flip the term live, so "the term resumes and the same page's
  * write entries come back WITHOUT a re-login" is testable against the real
@@ -1952,6 +2182,17 @@ export function setNoTerm(value) {
  */
 export function accessEvents() {
   return state.accessEvents.slice();
+}
+
+/**
+ * Test hook: the a2 → a3 transitions the server actually executed.
+ *
+ * 「重复点击只产生一条提交」只有对着这份记录才断言得了。幂等重放在分发层就返回了
+ * 原始状态码与响应体，处理器根本没跑，所以这张表不涨 —— 数客户端发了几个请求答不了
+ * 这个问题，数服务端做了几次才行。
+ */
+export function taskCompletions() {
+  return state.taskCompletions.slice();
 }
 
 // CLI behaviour, unchanged: `node mock/server.mjs [--unbound] [--no-term]`.

@@ -87,6 +87,27 @@ function requestFor(route, token) {
   return init
 }
 
+/**
+ * 手写处理器带真实前置条件的写入路径 —— 这条广度测试满足不了它们（票据 11）。
+ *
+ * 广度测试证明的是「路径存在，且角色门放教师进来」。对这几条，一个**业务**级 4xx
+ * 恰好证明同一件事：请求越过了认证与授权，走进了业务规则。所以这里断言的是「不是
+ * 401／403／404」—— 比 2xx 更贴近这条测试真正管的事。硬要它们回 2xx，只能靠把前置
+ * 条件从 mock 里拿掉，那等于为了让测试变绿而把服务端变笨。
+ *
+ * 键是 `METHOD 具体路径`，值是它为什么必然被业务规则拒。
+ */
+const BUSINESS_REFUSAL_EXPECTED = {
+  'POST /tasks/1/acceptance': '1 号任务在夹具里已完成（a3），a1 那一行不存在',
+  'POST /tasks/1/completion': '同上：转移图上没有 a3 → a3 这条边',
+  'POST /media/upload-credentials': '空请求体缺 usage_key／content_type／byte_size',
+  'POST /media/files': '空请求体缺 upload_ticket',
+}
+
+// 401／403／404 是门的回答，不是业务的回答。这三个码出现在上表里的路径上，说明门
+// 出了问题，仍然要红。
+const GATE_STATUSES = [401, 403, 404]
+
 describe('每个教师端操作都回契约声明的成功码', () => {
   test('契约已挂载', () => {
     if (specError) {
@@ -107,6 +128,7 @@ describe('每个教师端操作都回契约声明的成功码', () => {
     const token = await signIn('teacher')
     const failures = []
     let ok = 0
+    let refused = 0
 
     for (const route of routes) {
       if (route.isPublic) continue
@@ -119,11 +141,20 @@ describe('每个教师端操作都回契约声明的成功码', () => {
       // The hand-written handlers answer some of these paths with their own
       // richer logic and their own codes; both are legal contract answers, so
       // the assertion is "a declared 2xx", not "exactly the generated one".
-      if (res.status >= 200 && res.status < 300) ok += 1
-      else failures.push(`${route.method} ${path} -> ${res.status}（契约声明 ${route.status}）`)
+      if (res.status >= 200 && res.status < 300) {
+        ok += 1
+        continue
+      }
+      const reason = BUSINESS_REFUSAL_EXPECTED[`${route.method} ${path}`]
+      if (reason && !GATE_STATUSES.includes(res.status)) {
+        refused += 1
+        t.diagnostic(`业务前置拒绝（门已通过）：${route.method} ${path} -> ${res.status} —— ${reason}`)
+        continue
+      }
+      failures.push(`${route.method} ${path} -> ${res.status}（契约声明 ${route.status}）`)
     }
 
-    t.diagnostic(`成功 ${ok} / ${routes.length - 1} 个教师端操作`)
+    t.diagnostic(`成功 ${ok} / ${routes.length - 1} 个教师端操作，另有 ${refused} 个被业务前置拒绝`)
     assert.deepEqual(failures, [], `以下操作未回 2xx：\n  ${failures.join('\n  ')}`)
   })
 

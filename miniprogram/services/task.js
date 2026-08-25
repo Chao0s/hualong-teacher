@@ -135,9 +135,13 @@ function submitEntry({ taskStatus, canWrite }) {
   return { disabled: false, reason: '' };
 }
 
-/** Ticket 11 builds the submit screen. Until then, say so out loud. */
-function openSubmit() {
-  wx.showToast({ title: '提交材料尚未上线', icon: 'none' });
+/**
+ * Open the submit screen (ticket 11). Navigation, not a write — the write, its
+ * gate declaration and its idempotency key live in services/task-submit.js, so
+ * this module stays read-only.
+ */
+function openSubmit(taskId) {
+  wx.navigateTo({ url: `/pages/task/submit?task_id=${taskId}` });
 }
 
 module.exports = {

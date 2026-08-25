@@ -200,9 +200,14 @@ test('tapping a disabled entry does nothing — the reason is already on screen'
   assert.equal(c.record.toasts.length, 0, '不把已经写在页面上的理由再弹一次')
   assert.equal(c.record.navigations.length, 0)
 
-  page.setData({ submitDisabled: false })
+  // 票据 11 之后入口通向真正的写入页，且必须带上任务编号。
+  page.setData({ submitDisabled: false, taskId: 1 })
   page.onSubmitTap()
-  assert.match(c.record.toasts.pop().title, /尚未上线/, '可用时诚实说明写入页还没建')
+  assert.deepEqual(
+    c.record.navigations.pop(),
+    { api: 'navigateTo', url: '/pages/task/submit?task_id=1' },
+    '入口仍然只是入口：跳转，不提交',
+  )
 })
 
 test('neither task screen carries a submit, edit or delete control', () => {

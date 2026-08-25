@@ -1,0 +1,67 @@
+.submit__division {
+  margin-top: var(--space-2);
+  font-size: 28rpx;
+  color: var(--muted);
+  line-height: var(--line-cjk);
+}
+
+.submit__hint {
+  font-size: 28rpx;
+  color: var(--muted);
+  line-height: var(--line-cjk);
+}
+
+.submit__input {
+  width: 100%;
+  min-height: 240rpx;
+  font-size: 30rpx;
+  color: var(--fg);
+  line-height: var(--line-cjk);
+}
+
+.submit__count {
+  margin-top: var(--space-2);
+  text-align: right;
+  font-size: 24rpx;
+  color: var(--muted);
+}
+
+.submit__count--over {
+  color: var(--danger);
+}
+
+/* 预览是把关本身，所以它有自己的边界，看得出与编辑区不是同一件事。 */
+.submit__preview {
+  max-height: 640rpx;
+  padding: var(--space-3);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.submit__preview-text {
+  margin-top: var(--space-2);
+  font-size: 30rpx;
+  color: var(--fg);
+  line-height: var(--line-cjk);
+}
+
+.submit__preview-end {
+  margin-top: var(--space-4);
+  text-align: center;
+  font-size: 24rpx;
+  color: var(--muted);
+}
+
+/* 条件未满足：看得出不可用，理由写在旁边，不靠点击才说。 */
+.submit__btn--off {
+  background: var(--bg);
+  color: var(--muted);
+}
+
+.submit__reason {
+  margin-top: var(--space-2);
+  text-align: center;
+  font-size: 24rpx;
+  color: var(--muted);
+}

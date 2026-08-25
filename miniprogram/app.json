@@ -9,7 +9,8 @@
     "pages/notice/list",
     "pages/notice/detail",
     "pages/task/board",
-    "pages/task/detail"
+    "pages/task/detail",
+    "pages/task/submit"
   ],
   "subPackages": [
     {

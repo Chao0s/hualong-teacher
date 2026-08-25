@@ -44,6 +44,18 @@ Page({
     this.loadFirst();
   },
 
+  /**
+   * 从详情或提交页返回时重读（票据 11）。onLoad 先于 onShow，所以第一次 onShow
+   * 只做记号，不重复发一次请求。
+   */
+  onShow() {
+    if (!this.entered) {
+      this.entered = true;
+      return;
+    }
+    return this.loadFirst();
+  },
+
   onPullDownRefresh() {
     this.loadFirst().then(() => wx.stopPullDownRefresh());
   },

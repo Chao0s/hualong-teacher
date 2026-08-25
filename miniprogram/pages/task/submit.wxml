@@ -1,0 +1,88 @@
+<view class="hl-page" wx:if="{{ready}}">
+
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryLoad">重试</text>
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障码 {{errorRequestId}}</text>
+  </view>
+
+  <view wx:if="{{loading}}" class="hl-loading">加载中…</view>
+
+  <block wx:if="{{task && !loading}}">
+    <view class="hl-card">
+      <view class="hl-card__title">{{task.task_title}}</view>
+      <view class="hl-card__meta">截止 {{task.due_label}}</view>
+      <view class="submit__division">{{task.task_division}}</view>
+    </view>
+
+    <!-- 只读态：假期，或任务已结束。理由就地写出，不做成会拒绝人的按钮。 -->
+    <view wx:if="{{readonly}}" class="hl-card hl-empty">{{readonlyReason}}</view>
+
+    <block wx:if="{{!readonly}}">
+
+      <!-- 还没接受任务：接受是一次纯状态转移，不携带内容。 -->
+      <view wx:if="{{needsAccept}}" class="hl-card">
+        <view class="submit__hint">这项任务还没有接受。接受之后才能提交材料与反馈。</view>
+        <view class="hl-btn hl-btn--block" bindtap="onAcceptTap">
+          {{accepting ? '处理中…' : '接受任务'}}
+        </view>
+      </view>
+
+      <block wx:if="{{!needsAccept}}">
+
+        <!-- 第一阶段：写。 -->
+        <block wx:if="{{stage === 'edit'}}">
+          <view class="hl-section-title">材料说明 / 反馈</view>
+          <view class="hl-card">
+            <textarea
+              class="submit__input"
+              value="{{feedback}}"
+              placeholder="写下这次提交的材料说明或反馈"
+              maxlength="-1"
+              disabled="{{locked}}"
+              bindinput="onFeedbackInput" />
+            <view class="submit__count {{feedbackTooLong ? 'submit__count--over' : ''}}">
+              {{feedback.length}} / 500
+            </view>
+          </view>
+          <view wx:if="{{feedbackTooLong}}" class="submit__reason">超过 500 字，请精简后再预览。</view>
+          <view
+            class="hl-btn hl-btn--block {{feedbackTooLong ? 'submit__btn--off' : ''}}"
+            bindtap="onPreviewTap">预览</view>
+          <view class="submit__reason">提交前必须完整预览。预览里的内容就是提交的内容。</view>
+        </block>
+
+        <!-- 第二阶段：读完最终内容。读到底才解锁确认。 -->
+        <block wx:if="{{stage === 'preview'}}">
+          <view class="hl-section-title">预览（这就是将要提交的内容）</view>
+          <scroll-view
+            class="submit__preview"
+            scroll-y="true"
+            bindscrolltolower="onPreviewEnd">
+            <view class="submit__preview-text">{{preview.body.feedback || '（未填写文字说明）'}}</view>
+            <view class="submit__preview-end">—— 以上是全部内容 ——</view>
+          </scroll-view>
+
+          <view wx:if="{{!previewedInFull}}" class="submit__reason">请读到最后一行，再确认提交。</view>
+          <view
+            class="hl-btn hl-btn--block {{previewedInFull ? '' : 'submit__btn--off'}}"
+            bindtap="onConfirmTap">
+            {{submitting ? '提交中…' : '确认提交'}}
+          </view>
+          <view class="hl-btn hl-btn--hollow hl-btn--block" bindtap="onBackToEdit">返回修改</view>
+        </block>
+
+        <!-- 第三阶段：已提交，内容锁定。没有「审核中」这个状态。 -->
+        <block wx:if="{{stage === 'done'}}">
+          <view class="hl-section-title">已提交</view>
+          <view class="hl-card">
+            <view class="submit__hint">材料已提交，内容已锁定，不能再修改。</view>
+            <view class="submit__preview-text">{{preview.body.feedback || '（未填写文字说明）'}}</view>
+          </view>
+          <view class="hl-btn hl-btn--block" bindtap="onBackTap">返回任务详情</view>
+        </block>
+
+      </block>
+    </block>
+  </block>
+</view>

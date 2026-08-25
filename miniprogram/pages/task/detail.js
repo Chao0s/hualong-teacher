@@ -44,6 +44,21 @@ Page({
     this.load(taskId);
   },
 
+  /**
+   * 从提交页返回时重读（票据 11）。
+   *
+   * 「提交成功后详情的状态立即更新，无需手工刷新」的落点就是这里。首次进入时
+   * onLoad 已经读过一遍，而平台的顺序是 onLoad 先于 onShow —— `entered` 让第一次
+   * onShow 只做记号，不重复发一次请求。
+   */
+  onShow() {
+    if (!this.entered) {
+      this.entered = true;
+      return;
+    }
+    if (this.data.taskId) return this.load(this.data.taskId);
+  },
+
   onRetryLoad() {
     if (!this.data.taskId) return;
     this.setData({ loading: true, errorText: '', errorRequestId: '', errorCanRetry: false });
@@ -77,6 +92,6 @@ Page({
     // Disabled entries explain themselves where they stand; a tap must not
     // become a second, louder refusal.
     if (this.data.submitDisabled) return;
-    task.openSubmit();
+    task.openSubmit(this.data.taskId);
   },
 });
