@@ -459,6 +459,89 @@ function relatedCasesFor(resourceId) {
   return [];
 }
 
+// db_case —— 课程案例。契约 §10 的 `/library/cases` 只写了一行 summary
+// 「案例列表（predicate 与资源同构）」，**没有 description，也没有 x-hualong-scope**，
+// 所以逐字 predicate 在契约里不存在。这里按「与资源同构」实现：
+// `school_id = $ctx_school AND (case_status = 's3' OR created_by = $ctx_teacher)`，
+// 按 `updated_at DESC, case_id DESC` 作游标分页。这是转述，不是抄录（见
+// services/library.js 头注与交接的契约缺口）。
+//
+// 筛选参数三个：case_grade、case_field、case_area（外加 admin 才用得上的
+// case_status）。**衣食住行艺分类不是案例的列**，所以这里也没有。
+//
+// 120 条，且**任一单维筛选后仍多于一页**（默认 limit=20）：年级各 40 条、领域各 24
+// 条、活动形式各 45 条。少于这个数，「换筛选丢弃旧游标」之后新筛选集就只剩一页，
+// 「新游标是新筛选集签发的」这半条就验证不了。
+const CASE_NAMES = [
+  '祠堂里的故事', '龙舟竞渡', '番禺美食地图', '粤语童谣共唱', '砖雕纹样拓印',
+  '桥有多长', '我会安全过街', '社区小店的一天', '采访老街坊', '香云纱的颜色',
+  '双皮奶是怎么来的', '醒狮从哪里来',
+];
+
+const CASE_INTRO = '以身边的本土资源为载体，引导幼儿观察、讲述并动手表达，形成对家乡的初步认同。';
+const CASE_TRANS = '从具象到抽象：先看一看摸一摸，再搭一搭做一做，最后说一说，把经验接回幼儿自己的生活。';
+
+// 年级走 3 周期、领域走 5 周期、活动形式走 8 周期 —— 三者两两互质，所以三个维度
+// **互不相关**。若其中两个同周期，「按领域筛」与「按领域加年级筛」会得到同一批行，
+// 组合筛选的测试就什么也证明不了。
+const CASE_GRADES = ['k1', 'k2', 'k3'];
+const CASE_FIELDS = ['f1', 'f2', 'f3', 'f4', 'f5'];
+// 多选数组列。8 个组合，a1—a5 每个都出现在 3 个组合里，所以单筛任一活动形式都是 45
+// 条，稳稳多于一页。
+const CASE_AREAS = [
+  ['a1'], ['a2'], ['a3', 'a5'], ['a4', 'a5'],
+  ['a1', 'a3'], ['a2', 'a4'], ['a3', 'a4', 'a5'], ['a1', 'a2'],
+];
+
+const CASES = Array.from({ length: 120 }, (_, i) => {
+  const id = 120 - i;
+  return {
+    case_id: id,
+    case_name: CASE_NAMES[i % CASE_NAMES.length],
+    case_grade: CASE_GRADES[i % 3],
+    // 一个未来版本才有的领域码：客户端必须照常显示，不得崩、不得留空。
+    case_field: id === 91 ? 'f9_future_field' : CASE_FIELDS[i % 5],
+    // 第 88 条的数组里混一个未知码：未知项被丢掉，同一行里已知的那几项照常显示。
+    case_area: id === 88 ? ['a3', 'z9_future_area'] : CASE_AREAS[i % 8],
+    case_intro: CASE_INTRO,
+    case_trans: CASE_TRANS,
+    // 可空列。第 84 条没有关联资源，详情页照常显示，只是那一节是空态。
+    resource_ids: id === 84 ? null : [30, 29],
+    cover_file_id: null,
+    // 第 82 条没有 Word 详案：没有附件的案例照常显示，只是少一个下载入口。
+    word_file_id: id === 82 ? null : 7000 + id,
+    created_by: TEACHER.teacher_id,
+    // 可见范围的两半都要有夹具：绝大多数是本园已发布的 s3，另有三条是这位教师
+    // **自己写的**非 s3（草稿、待审、被驳回）。
+    case_status: id === 4 ? 's1' : id === 6 ? 's2' : id === 8 ? 's4' : 's3',
+    submitted_at: id === 4 ? null : '2026-07-10T09:00:00+08:00',
+    // 严格递减，`updated_at DESC, case_id DESC` 的排序才真的成立：一天里八条，
+    // 从 20:00 每两小时退一档到 06:00，下一天再从头开始。
+    updated_at: `2026-07-${String(16 - Math.floor(i / 8)).padStart(2, '0')}`
+      + `T${String(20 - (i % 8) * 2).padStart(2, '0')}:00:00+08:00`,
+  };
+});
+
+/**
+ * 「这个案例引用了哪些资源」由**服务端展开**。`db_case.resource_ids` 只有整数 ID，
+ * 契约的 `Case` schema 也只回 ID，客户端拿不到名称；逐个去拉资源详情是 N+1 次请求，
+ * 且任一条不在可见范围时会拿到 404 把整页拖垮。
+ *
+ * 该字段与 `related_cases`、`/home/cases` 同类：只在本地契约服务上成立，接真服务时
+ * 必须重对。
+ */
+function relatedResourcesFor(kase) {
+  return (kase.resource_ids || [])
+    .map((rid) => RESOURCES.find((r) => r.resource_id === rid))
+    .filter(Boolean)
+    .map((r) => ({
+      resource_id: r.resource_id,
+      resource_name: r.resource_name,
+      resource_tag: r.resource_tag,
+      grade: r.grade,
+    }));
+}
+
 // POST /library/resources/{id}/download-link 签发的短链。link_id -> { resource_id }。
 // §8.4：短链指向**我们的** /dl/{link_id}，不是对象存储；在那里逐次复核内容状态后
 // 才 302 到真正的地址。所以这张表存的是内容归属，不是一个已经签好的对象存储地址。
@@ -990,6 +1073,83 @@ function getResource(req, res, id) {
 }
 
 /**
+ * §3.1 — 案例列表。
+ *
+ * 三个筛选维度，**三者一起进指纹**（§3.3）：换掉任一维度还拿着旧游标，回
+ * `cursor_filter_mismatch`，不是悄悄给出错答案。
+ *
+ * `case_area` 是数组列，所以筛的是「包含」，不是「等于」——契约的筛选参数本身是单值
+ * enum，筛的却是一个多选列。把它写成等于，带 `['a3','a5']` 的行会在筛 a3 时凭空消失。
+ */
+function getCases(req, res, url) {
+  if (!requireSession(req, res)) return;
+
+  const limitRaw = url.searchParams.get('limit');
+  const limit = limitRaw === null ? 20 : Number(limitRaw);
+  if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+    return fail(res, 422, 'validation_failed', '分页参数不合法',
+      { field: 'limit', rule: 'between_1_and_100' });
+  }
+
+  const grade = url.searchParams.get('case_grade');
+  if (grade !== null && ['k1', 'k2', 'k3'].indexOf(grade) === -1) {
+    return fail(res, 400, 'malformed_request', '年级不在可选范围内',
+      { field: 'case_grade', rule: 'enum_k1_to_k3' });
+  }
+  const field = url.searchParams.get('case_field');
+  if (field !== null && CASE_FIELDS.indexOf(field) === -1) {
+    return fail(res, 400, 'malformed_request', '领域不在可选范围内',
+      { field: 'case_field', rule: 'enum_f1_to_f5' });
+  }
+  const area = url.searchParams.get('case_area');
+  if (area !== null && ['a1', 'a2', 'a3', 'a4', 'a5'].indexOf(area) === -1) {
+    return fail(res, 400, 'malformed_request', '活动形式不在可选范围内',
+      { field: 'case_area', rule: 'enum_a1_to_a5' });
+  }
+
+  const filters = {};
+  if (grade !== null) filters.case_grade = grade;
+  if (field !== null) filters.case_field = field;
+  if (area !== null) filters.case_area = area;
+
+  const pool = CASES.filter((c) => {
+    if (grade !== null && c.case_grade !== grade) return false;
+    if (field !== null && c.case_field !== field) return false;
+    // 数组列筛的是包含。等于会让 ['a3','a5'] 在筛 a3 时消失。
+    if (area !== null && (c.case_area || []).indexOf(area) === -1) return false;
+    return true;
+  });
+
+  let startIndex = 0;
+  const cursor = url.searchParams.get('cursor');
+  if (cursor) {
+    const decoded = decodeCursor(cursor, filters);
+    if (decoded.error) {
+      return fail(res, 400, decoded.error,
+        decoded.error === 'cursor_invalid' ? '翻页游标不可解' : '筛选条件已变，游标失效');
+    }
+    startIndex = pool.findIndex((c) => c.case_id === decoded.key) + 1;
+    if (startIndex <= 0) return fail(res, 400, 'cursor_invalid', '翻页游标不可解');
+  }
+
+  const slice = pool.slice(startIndex, startIndex + limit);
+  const last = slice[slice.length - 1];
+  const hasMore = startIndex + limit < pool.length;
+  sendJson(res, 200, {
+    items: slice,
+    next_cursor: hasMore && last ? encodeCursor(last.case_id, filters) : null,
+  });
+}
+
+function getCase(req, res, id) {
+  if (!requireSession(req, res)) return;
+  const kase = CASES.find((c) => c.case_id === Number(id));
+  // §2.3: 不存在与不在可见范围内是同一个 404。
+  if (!kase) return fail(res, 404, 'not_found', '案例不存在或不在可见范围内');
+  sendJson(res, 200, { ...kase, related_resources: relatedResourcesFor(kase) });
+}
+
+/**
  * §8.4 / F5 — 签发 30 分钟 bearer 下载短链。
  *
  * 同事务写 `db_content_access_event(link_issued)`：**记录是这一次调用的副作用**，
@@ -1017,19 +1177,46 @@ function postResourceDownloadLink(req, res, id) {
   }, { 'cache-control': 'no-store' });
 }
 
+/** 案例详案的短链。与资源那条同一份契约条文，只有前缀与目标表不同。 */
+function postCaseDownloadLink(req, res, id) {
+  if (!requireSession(req, res)) return;
+  const kase = CASES.find((c) => c.case_id === Number(id));
+  if (!kase) return fail(res, 404, 'not_found', '案例不存在或不在可见范围内');
+  if (!kase.word_file_id) {
+    return fail(res, 409, 'state_precondition_failed', '这条案例没有可下载的详案');
+  }
+
+  const linkId = randomUUID().replace(/-/g, '').slice(0, 24);
+  downloadLinks.set(linkId, { case_id: kase.case_id });
+  state.accessEvents.push({ link_id: linkId, case_id: kase.case_id, event: 'link_issued' });
+
+  sendJson(res, 201, {
+    link_id: linkId,
+    url: `http://127.0.0.1:${server.address().port}/dl/${linkId}`,
+    expires_at: '2026-07-16T18:30:00+08:00',
+  }, { 'cache-control': 'no-store' });
+}
+
 /**
  * §8.4 — 取档服务。
  *
  * 不在 `/api/v1` 基址下，**不收 `Authorization`**：短链本身就是凭证，签发后不再验
  * session 或帐户启停。但内容状态每次都验 —— 从 s3 撤回会让已签发未到期的短链立刻
  * 失效，这正是「立刻停止新查看与下载」（F6）的落点。
+ *
+ * 一条短链只属于一张业务表（§8.4 的 `db_file_ref.owner_object`），所以这里按短链记的
+ * 归属去查那一张表，不是两张表都试一遍。
  */
 function getDownload(req, res, linkId) {
   const link = downloadLinks.get(linkId);
   if (!link) return fail(res, 404, 'not_found', '下载链接无效或已过期');
-  const resource = RESOURCES.find((r) => r.resource_id === link.resource_id);
+
+  const owner = link.case_id === undefined
+    ? RESOURCES.find((r) => r.resource_id === link.resource_id)
+    : CASES.find((c) => c.case_id === link.case_id);
+  const status = owner && (link.case_id === undefined ? owner.resource_status : owner.case_status);
   // 逐次复核内容状态：撤回后短链当场失效，不等它自己到期。
-  if (!resource || resource.resource_status !== 's3') {
+  if (status !== 's3') {
     return fail(res, 404, 'not_found', '内容已下架，链接失效');
   }
   // 真服务在这里 302 到刚签好的短时对象存储地址；本 mock 直接把字节给出来。
@@ -1038,7 +1225,7 @@ function getDownload(req, res, linkId) {
     'cache-control': 'no-store',
     'x-request-id': res.__requestId,
   });
-  res.end(`mock docx for resource ${resource.resource_id}`);
+  res.end(`mock docx for ${link.case_id === undefined ? 'resource' : 'case'} ${link.case_id === undefined ? link.resource_id : link.case_id}`);
 }
 
 /** §3.5 — roster-shaped: whole, unpaginated. */
@@ -1176,6 +1363,12 @@ const HAND_WRITTEN_ROLES = [
   [/^\/library\/resources$/, ['teacher']],
   [/^\/library\/resources\/\d+$/, ['teacher']],
   [/^\/library\/resources\/\d+\/download-link$/, ['teacher']],
+  // 案例三条同理。契约给列表与详情写了 partner-account 与 admin-pc，给 download-link
+  // 写了 partner-account —— 本 mock 只服务教师端，宁可比契约严：漏登记才是安全缺陷，
+  // 多登记只是这个 mock 覆盖面窄。
+  [/^\/library\/cases$/, ['teacher']],
+  [/^\/library\/cases\/\d+$/, ['teacher']],
+  [/^\/library\/cases\/\d+\/download-link$/, ['teacher']],
   [/^\/auth\/session$/, ['teacher', 'parent', 'admin-pc', 'partner-account']],
 ];
 
@@ -1363,6 +1556,12 @@ const server = createServer(async (req, res) => {
       getResource(req, res, path.split('/')[3]);
     } else if (req.method === 'POST' && /^\/library\/resources\/\d+\/download-link$/.test(path)) {
       postResourceDownloadLink(req, res, path.split('/')[3]);
+    } else if (req.method === 'GET' && path === '/library/cases') {
+      getCases(req, res, url);
+    } else if (req.method === 'GET' && /^\/library\/cases\/\d+$/.test(path)) {
+      getCase(req, res, path.split('/')[3]);
+    } else if (req.method === 'POST' && /^\/library\/cases\/\d+\/download-link$/.test(path)) {
+      postCaseDownloadLink(req, res, path.split('/')[3]);
     } else if (req.method === 'GET' && path === '/coordination/documents') {
       getCoordDocuments(req, res, url);
     } else if (req.method === 'GET' && /^\/coordination\/documents\/\d+$/.test(path)) {

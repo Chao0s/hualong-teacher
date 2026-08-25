@@ -42,7 +42,9 @@
       "pages": [
         "pages/home/index",
         "pages/resource/list",
-        "pages/resource/detail"
+        "pages/resource/detail",
+        "pages/case/list",
+        "pages/case/detail"
       ]
     }
   ],

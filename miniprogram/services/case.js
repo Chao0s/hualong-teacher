@@ -20,6 +20,12 @@ const api = require('../utils/request');
 const CASE_FIELD = { f1: '健康', f2: '语言', f3: '社会', f4: '科学', f5: '艺术' };
 const CASE_GRADE = { k1: '小班', k2: '中班', k3: '大班' };
 
+// db_case.case_area —— 活动形式。它与上面两张表**不同形**：DDL 上是 `TEXT[] NOT NULL`
+// 且至少一项，所以一条案例可以同时是集体教学与数字化。中文取原型 case-library.html
+// 的筛选文案，不取 DDL 注释里的英文直译（`a4=home_school` 直译成「家园共育」会与底部
+// 导航的「家园社共育」变成同一事物的两个名字）。
+const CASE_AREA = { a1: '集体教学', a2: '区域', a3: '主题探究', a4: '家园社共育', a5: '数字化' };
+
 // db_home_case, the curated shelf. Three rows by definition, so §3.5 whole-read
 // rather than a cursor. The path is provisional: the contract has no teacher
 // read surface yet (tracker DECISIONS item 9).
@@ -45,10 +51,11 @@ async function recommendedForHome() {
 }
 
 module.exports = {
-  // 两张表现在真的被第二个读者读了（services/library.js，票据 13）：`case_grade`
+  // 三张表现在真的被第二个读者读了（services/library.js，票据 13）：`case_grade`
   // 与 `db_resource.grade` 是同一个值域，一份映射服务两张表，谁也不抄第二份。
   CASE_FIELD,
   CASE_GRADE,
+  CASE_AREA,
   decorateCard,
   recommendedForHome,
 };

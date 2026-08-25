@@ -28,6 +28,7 @@ const notice = require('./notice');
 // `case` is a reserved word; the module is named for what it holds, the binding
 // for what JavaScript allows.
 const kase = require('./case');
+const library = require('./library');
 
 const TODOS_PATH = '/home/todos';
 
@@ -135,12 +136,22 @@ function openQuickEntry(key, canWrite) {
 }
 
 /**
- * Every path into 案例库 — a recommended card and the 全部 link both — lands
- * here. The module has no screens in this slice, so the honest answer is the
- * only answer; ticket 11 replaces the body with a navigation.
+ * 推荐课程案例卡片 -> 案例详情（票据 13）。
+ *
+ * 首页只知道「点了哪一条」，不知道案例详情在哪个分包的哪一页 —— 那件事 services/
+ * library.js 说了算，这里转交。所以首页与资源详情的关联案例进的是**同一个**案例详情
+ * 页，而不是两处各写一条路径然后慢慢分叉。
+ *
+ * 票据 08 的交接特意让卡片先不带 id，等的就是这一轮：现在 wxml 上有 `data-id`，
+ * 这里收下它。
  */
-function openCase() {
-  wx.showToast({ title: '案例库尚未上线', icon: 'none' });
+function openCase(caseId) {
+  library.openCase(caseId);
+}
+
+/** 「全部案例」 -> 案例列表。与单张卡片是两个去向，所以是两个函数。 */
+function openCaseList() {
+  library.open('case');
 }
 
 /** A 待办事项 card leads to 任务进度看板 (ticket 10). */
@@ -153,5 +164,6 @@ module.exports = {
   quickEntries,
   openQuickEntry,
   openCase,
+  openCaseList,
   openTodo,
 };

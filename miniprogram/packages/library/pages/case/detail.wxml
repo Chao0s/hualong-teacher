@@ -1,0 +1,52 @@
+<view class="hl-page" wx:if="{{ready}}">
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryLoad">重试</text>
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障码 {{errorRequestId}}</text>
+  </view>
+
+  <view wx:if="{{loading}}" class="hl-loading">加载中…</view>
+
+  <block wx:if="{{kase && !loading}}">
+    <view class="hl-card detail">
+      <view class="detail__top">
+        <text class="detail__title">{{kase.case_name}}</text>
+        <text class="hl-pill {{kase.status_pill}}">{{kase.status_label}}</text>
+      </view>
+      <view wx:if="{{kase.tag_label}}" class="hl-card__meta">{{kase.tag_label}}</view>
+    </view>
+
+    <view class="hl-section-title">活动简介</view>
+    <view class="hl-card detail__body">{{kase.case_intro}}</view>
+
+    <view class="hl-section-title">活动转化</view>
+    <view class="hl-card detail__body">{{kase.case_trans}}</view>
+
+    <!-- 自评、他评与活动反思在这份文档里：db_case 没有这三列，契约的 Case schema
+         也没有，原型同样把它们排在 Word 详案的第七、八、九节。 -->
+    <block wx:if="{{kase.word_file_id}}">
+      <view class="hl-section-title">详案</view>
+      <view class="hl-card detail__file" bindtap="onDownload">
+        <text class="hl-card__title">查看详案</text>
+        <view class="hl-card__meta">含活动目标、流程、延伸，以及自评、他评与活动反思</view>
+        <view class="hl-card__meta">链接 30 分钟内有效，过期请重新打开</view>
+      </view>
+    </block>
+
+    <view class="hl-section-title">关联的课程资源</view>
+    <view wx:if="{{kase.related_resources.length === 0}}" class="hl-card hl-empty">暂无关联资源</view>
+    <view
+      wx:for="{{kase.related_resources}}"
+      wx:key="resource_id"
+      class="hl-card detail__res"
+      data-id="{{item.resource_id}}"
+      bindtap="onOpenResource">
+      <view class="detail__res-thumb">{{item.thumb_label}}</view>
+      <view class="detail__res-text">
+        <view class="hl-card__title">{{item.resource_name}}</view>
+        <view wx:if="{{item.tag_label}}" class="hl-card__meta">{{item.tag_label}}</view>
+      </view>
+      <hl-icon name="icon-10" color="muted" size="32rpx" />
+    </view>
+  </block>
+</view>

@@ -137,24 +137,30 @@ test('a quick entry with no screen yet is stopped before the jump', async () => 
   assert.equal(c.record.navigations.length, 1, '课程资源 已落地，应当真的跳转')
   assert.equal(c.record.navigations[0].url, '/packages/library/pages/home/index')
 
-  // The refusal half still needs a subject. 案例库 is unbuilt in this slice, and
-  // every path into it — a recommended card and the 全部 link both — lands on
-  // openCase. Keep asserting it refuses BY NAME: a dead tap is worse than a
-  // clear no, and that is the whole point of this test.
+  // 案例库 landed in ticket 13, so this half no longer has a refusal to assert —
+  // it asserts the jump instead, and the id it carries. 推荐课程案例 cards were
+  // deliberately built WITHOUT an id in ticket 08 because there was nowhere to
+  // send it; that is the half this pins down now.
   c.record.navigations.length = 0
-  c.home.openCase()
-  assert.equal(c.record.navigations.length, 0, '未落地的模块不得跳转')
-  assert.match(c.record.toasts.pop().title, /尚未上线/, 'and it said why')
+  c.home.openCase(71)
+  assert.equal(c.record.navigations.length, 1, '案例库已落地，应当真的跳转')
+  assert.equal(c.record.navigations[0].url, '/packages/library/pages/case/detail?case_id=71')
 })
 
 test('every tappable region on 首页 either navigates or gives a reason', async () => {
   const c = await signedIn()
   const page = loadPage(c, 'pages/home/index.js')
 
-  // 案例库 has no screens yet (ticket 13), so it refuses by name.
-  page.onCaseTap()
-  assert.match(c.record.toasts.pop().title, /案例库尚未上线/)
-  assert.equal(c.record.navigations.length, 0, 'a refusal never becomes a jump')
+  // 案例库 gained its screens in ticket 13. A recommended card carries the id it
+  // was tapped on; 全部案例 is a different destination, so it is a different
+  // handler — one that opens the list.
+  page.onCaseTap({ currentTarget: { dataset: { id: 71 } } })
+  assert.deepEqual(c.record.navigations.pop(),
+    { api: 'navigateTo', url: '/packages/library/pages/case/detail?case_id=71' })
+
+  page.onCaseMore()
+  assert.deepEqual(c.record.navigations.pop(),
+    { api: 'navigateTo', url: '/packages/library/pages/case/list' })
 
   // 待办事项 gained its destination in ticket 10, so the honest answer is now
   // the navigation itself.

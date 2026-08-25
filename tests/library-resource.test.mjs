@@ -7,7 +7,8 @@
  *      自愈就再也翻不出下一页——而且屏幕上什么也不会说。
  *   2. 状态列是真信息。资源与党建三类不同，教师看得到自己写的非 s3，所以「已发布」
  *      与「还在我手里」必须分得出来。
- *   3. 「尚未上线」必须说出口。关联案例的目标还没落地，点了没反应比说一句拒绝更糟。
+ *   3. 每一次点击都要有下文。案例库在票据 13 的后半落地，所以入口页的案例卡片与资源
+ *      详情的关联案例现在断言的是「真的跳，且带对 id」，不再是「说一句尚未上线」。
  *
  * 选择控件（hl-picker-row）的三条规则也在这里：滑动中不写、只有确认才写、取消不改。
  * 它们靠组件不持有选中值达成，所以断言的是「组件没有可改的东西」，不是「组件很自律」。
@@ -87,14 +88,14 @@ describe('统一入口页', () => {
     assert.deepEqual(keys, ['resource', 'case'], '两条去向都在')
   })
 
-  test('案例库未落地时在跳转前拦下并说出原因', async () => {
+  test('案例库已落地，点了真的跳', async () => {
     const c = await signedIn()
     const page = loadPage(c, HOME)
     page.onLoad({})
 
     page.onEntryTap({ currentTarget: { dataset: { key: 'case' } } })
-    assert.equal(c.record.navigations.length, 0, '没有跳转')
-    assert.match(c.record.toasts.pop().title, /尚未上线/, '说了是哪一条以及为什么')
+    assert.equal(c.record.navigations.length, 1)
+    assert.match(c.record.navigations[0].url, /packages\/library\/pages\/case\/list/)
   })
 
   test('资源库已落地，点了真的跳', async () => {
@@ -260,12 +261,12 @@ describe('资源详情', () => {
     assert.ok(Array.isArray(detail.related_cases), '关联案例是数组')
   })
 
-  test('关联案例未落地时在跳转前拦下并说明', async () => {
+  test('关联案例跳进案例详情，并带着被点那一条的 id', async () => {
     const c = await signedIn()
     c.library.openCase(71)
 
-    assert.equal(c.record.navigations.length, 0, '没有跳转')
-    assert.match(c.record.toasts.pop().title, /尚未上线/, '说了原因')
+    assert.equal(c.record.navigations.length, 1, '案例详情已落地')
+    assert.equal(c.record.navigations[0].url, '/packages/library/pages/case/detail?case_id=71')
   })
 
   test('下载只调 download-link，不自拼第二个「我看过了」请求', async () => {

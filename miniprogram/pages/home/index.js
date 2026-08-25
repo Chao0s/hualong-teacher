@@ -116,8 +116,12 @@ Page({
     home.openTodo();
   },
 
-  onCaseTap() {
-    home.openCase();
+  onCaseTap(e) {
+    home.openCase(e.currentTarget.dataset.id);
+  },
+
+  onCaseMore() {
+    home.openCaseList();
   },
 
   onQuickTap(e) {

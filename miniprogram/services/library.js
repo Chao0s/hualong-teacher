@@ -1,30 +1,35 @@
 /**
- * 资源库服务 — the resource library's reads (ticket 13).
+ * 资源库与案例库服务 — the library module's reads (ticket 13).
  *
- * Boundary: the 资源库 module, and it is also the subpackage boundary. The pages
- * in `packages/library` read this file and no other service module — one
- * subpackage, one service module, the rule `npm run verify:build` enforces.
+ * Boundary: the 资源库／案例库 module, and it is also the subpackage boundary. The
+ * pages in `packages/library` read this file and no other service module — one
+ * subpackage, one service module, the rule `npm run verify:build` enforces. 案例
+ * 与资源同属 `/library/*`，同属一个分包，所以案例的读取写进本文件，不另立并列服务。
  *
- * 案例的两张枚举表**不在这里**。`case_field` 与 `case_grade` 归 services/case.js，
- * 票据 08 评审第 4 条就是为防「案例库开工时最省事的动作是复制那两张表」才把它们单独
- * 拆出来的。本文件需要年级文案时 require 它，不抄。`db_resource.grade` 与
+ * 案例的三张枚举表**不在这里**。`case_field`／`case_grade`／`case_area` 归
+ * services/case.js，票据 08 评审第 4 条就是为防「案例库开工时最省事的动作是复制那几张
+ * 表」才把它们单独拆出来的。本文件需要文案时 require 它，不抄。`db_resource.grade` 与
  * `db_case.case_grade` 是同一个值域（k1／k2／k3），一份映射服务两张表。
  *
  * 状态列与可见范围，资源与案例**分别**确认的结论（票据 13 验收项）：
  *
  *   资源  状态列 `db_resource.resource_status`，值域 s1—s5 **五态俱全**。
- *         teacher 的可见范围 openapi 逐字写出：
+ *         teacher 的可见范围 openapi 逐字写出（`/library/resources` 的 description）：
  *           `school_id = $ctx_school AND (resource_status = 's3' OR created_by = $ctx_teacher)`
  *         也就是：本园已发布的，加上**自己写的全部**（含草稿、待审、被驳回）。
- *   案例  状态列 `db_case.case_status`，值域同为 s1—s5。可见范围 openapi 只写了
- *         「predicate 与资源同构」一句，**没有把 predicate 逐字写出来**。
- *
- * 两者因此**不共用一套假设**：资源那条是抄来的，案例那条是转述来的。案例页落地前
- * 必须回契约取到逐字 predicate，不得把本文件的资源 predicate 复制过去。
+ *         **这一条是抄录。**
+ *   案例  状态列 `db_case.case_status`，值域同为 s1—s5。可见范围：
+ *           `school_id = $ctx_school AND (case_status = 's3' OR created_by = $ctx_teacher)`
+ *         **这一条是转述，不是抄录。** 案例页开工前按上面那句头注回契约取过了，
+ *         `openapi.yaml` 的 `GET /library/cases` 只有一行 summary
+ *         「案例列表（predicate 与资源同构）」——**既没有 description，也没有
+ *         `x-hualong-scope`**，逐字 predicate 在契约里根本不存在。这是一个契约缺口，
+ *         记在交接里；上面那条 predicate 是按「与资源同构」这五个字推出来的，接真服务
+ *         时必须重对。资源那条不得复制过来当作案例的依据，两条各有各的来处。
  *
  * 与党建／综合协调最大的差别也在这里：那两个模块只看得到 s3，状态文案是一个恒定值，
- * 恒定值不是信息，所以它们一律不读状态列。资源不同 —— 教师看得到自己那几条非 s3，
- * 状态是真信息，必须显示，否则教师分不清「已发布」与「还在我手里」。
+ * 恒定值不是信息，所以它们一律不读状态列。资源与案例不同 —— 教师看得到自己那几条非
+ * s3，状态是真信息，必须显示，否则教师分不清「已发布」与「还在我手里」。
  *
  * Read-only. 上传与提交审核是票据 15／16 的事，本文件不写任何东西。
  *
@@ -40,6 +45,7 @@ const { present } = require('../utils/present');
 const kase = require('./case');
 
 const RESOURCE_PATH = '/library/resources';
+const CASE_PATH = '/library/cases';
 
 // db_resource.resource_tag —— 衣食住行艺，五类固定。这就是原型里的「衣食住行艺分类」，
 // 也是资源库的主轴。形态定案：横排标签，不进滚轮（form-control-spec.md §2.1）。
@@ -92,10 +98,37 @@ function gradeFilters() {
     .concat(Object.keys(kase.CASE_GRADE).map((key) => ({ key, label: kase.CASE_GRADE[key] })));
 }
 
+/** 五大领域筛选。`db_case.case_field`，取值同样借自 services/case.js。 */
+function fieldFilters() {
+  return [{ key: '', label: '全部' }]
+    .concat(Object.keys(kase.CASE_FIELD).map((key) => ({ key, label: kase.CASE_FIELD[key] })));
+}
+
+/**
+ * 活动形式筛选。`db_case.case_area`。
+ *
+ * 这一列在 DDL 上是多选数组，但契约的**筛选参数是单值** enum（`case_area` 的 schema
+ * 是 `type: string`，不是数组）。所以筛的语义是「包含这一项」，界面上也就只让选一项。
+ * 形态仍是横排标签：form-control-spec.md §2.1 按第 1 问（该列多选）判它是标签，
+ * 按第 2 问（5 项＋全部，取值固定）判出来也是标签，两条路同一个答案。
+ */
+function areaFilters() {
+  return [{ key: '', label: '全部' }]
+    .concat(Object.keys(kase.CASE_AREA).map((key) => ({ key, label: kase.CASE_AREA[key] })));
+}
+
 /** `['k1','k3']` -> `小班 · 大班`。可空的数组列，null 与空数组都读作没有。 */
 function gradeLabel(grade) {
   return (grade || [])
     .map((k) => kase.CASE_GRADE[k])
+    .filter(Boolean)
+    .join(' · ');
+}
+
+/** `['a1','a5']` -> `集体教学 · 数字化`。未知码丢掉的是那一项，不是整行。 */
+function areaLabel(area) {
+  return (area || [])
+    .map((a) => kase.CASE_AREA[a])
     .filter(Boolean)
     .join(' · ');
 }
@@ -166,6 +199,87 @@ async function resourceDetail(resourceId) {
   };
 }
 
+/**
+ * The case list-row shape.
+ *
+ * 与 `kase.decorateCard` **不是同一张卡**：那张是首页推荐架子与资源详情的关联案例用的
+ * 三行小卡，这张要多显示状态徽章、活动形式与简介摘要。两者共用的是枚举表，不是卡片
+ * 形状 —— 复用形状会让两处中的一处显示它不该显示的东西。
+ */
+function decorateCaseCard(row) {
+  const field = kase.CASE_FIELD[row.case_field] || '';
+  const grade = kase.CASE_GRADE[row.case_grade] || '';
+  return {
+    case_id: row.case_id,
+    case_name: row.case_name,
+    // 未知领域码丢掉的是缩略图上的那个字，不是整张卡片。
+    thumb_label: field ? field.charAt(0) : '案',
+    tag_label: [grade, field, areaLabel(row.case_area)].filter(Boolean).join(' · '),
+    // s3 不挂徽章：它是常态，挂上去只是在重复「一切正常」。与资源同一条规则。
+    status_label: row.case_status === 's3' ? '' : (CONTENT_STATUS[row.case_status] || '未知状态'),
+    status_pill: STATUS_PILL[row.case_status] || 'hl-pill--unknown',
+    excerpt: row.case_intro || '',
+  };
+}
+
+/**
+ * One page of 案例, newest first (§3.1 cursor pagination).
+ *
+ * 契约给了三个筛选参数（外加 admin 才用得上的 `case_status`）：`case_grade`、
+ * `case_field`、`case_area`。**衣食住行艺分类不是案例的列** —— 那是
+ * `db_resource.resource_tag`，只能筛资源。票据正文把五个筛选维度并列，实际横跨两张
+ * 表，这一条与资源那边记的是同一件事。
+ */
+async function listCases({ case_grade: grade, case_field: field, case_area: area, cursor, limit } = {}) {
+  const page = await api.getPage(CASE_PATH, {
+    cursor,
+    limit,
+    case_grade: grade,
+    case_field: field,
+    case_area: area,
+  });
+  return { items: page.items.map(decorateCaseCard), nextCursor: page.nextCursor };
+}
+
+/**
+ * One 案例, whole.
+ *
+ * §2.3: 不在可见范围内与不存在同为 404，本模块原样透传。
+ *
+ * **教师自评、他评与活动反思没有对应的列。** `db_case` 只有 `case_intro`（活动简介）
+ * 与 `case_trans`（活动转化），契约的 `Case` schema 亦然。原型 case-detail.html 把
+ * 「七、自评」「八、他评」「九、活动反思」放在 **Word 详案的正文里**，不是页面上的三
+ * 个字段。所以本页把这三节留在详案中，由下载入口通向；此处不发明三个契约里没有的
+ * 字段。这条差异记在交接的「契约与原型对不上」里。
+ *
+ * `related_resources` 是**服务端做的正向展开**：`db_case.resource_ids` 只有整数 ID，
+ * 没有名称，而契约的 `Case` schema 也只回 ID。客户端若逐个去拉资源详情，就是 N+1 次
+ * 请求，且其中任一条不在可见范围时会拿到 404 把整页拖垮。该字段与 `related_cases`、
+ * `/home/cases` 同类：只在本地契约服务上成立，接真服务时必须重对。
+ */
+async function caseDetail(caseId) {
+  const row = await api.get(`${CASE_PATH}/${caseId}`);
+  const field = kase.CASE_FIELD[row.case_field] || '';
+  const grade = kase.CASE_GRADE[row.case_grade] || '';
+  return {
+    case_id: row.case_id,
+    case_name: row.case_name,
+    tag_label: [grade, field, areaLabel(row.case_area)].filter(Boolean).join(' · '),
+    status_label: CONTENT_STATUS[row.case_status] || '未知状态',
+    status_pill: STATUS_PILL[row.case_status] || 'hl-pill--unknown',
+    case_intro: row.case_intro || '',
+    case_trans: row.case_trans || '',
+    // Word 详案。没有附件的案例照常显示，只是少一个下载入口。
+    word_file_id: row.word_file_id || null,
+    related_resources: (row.related_resources || []).map((r) => ({
+      resource_id: r.resource_id,
+      resource_name: r.resource_name,
+      thumb_label: RESOURCE_TAG[r.resource_tag] || '资',
+      tag_label: [RESOURCE_TAG[r.resource_tag], gradeLabel(r.grade)].filter(Boolean).join(' · '),
+    })),
+  };
+}
+
 /** 打不开就说一句中文，绝不留白。几条失败路径共用一个出口。 */
 function sayCannotOpen(text) {
   wx.showToast({ title: text, icon: 'none' });
@@ -180,11 +294,15 @@ function sayCannotOpen(text) {
  *
  * 短链指向我们自己的 `/dl/{link_id}`，不是对象存储；在那里逐次复核内容状态后才
  * 302 到真正的地址。所以这里不缓存短链，也不把它交给页面留存。
+ *
+ * 资源与案例走同一段实作：两条路的契约条文逐字相同（openapi 的两个
+ * `createXDownloadLink` 是同一份 description 与同一个 F5／§8.4 依据），只有前缀不同。
+ * 抄第二遍就意味着「客户端只发一个请求」这条要在两处各记一次。
  */
-async function downloadWordFile(resourceId) {
+async function downloadWord(contentPath) {
   let link;
   try {
-    link = await api.post(`${RESOURCE_PATH}/${resourceId}/download-link`);
+    link = await api.post(`${contentPath}/download-link`);
   } catch (err) {
     // 会话失效是门的决定，不是一句提示。
     if (guard.endSessionOnAuthFailure(err)) return;
@@ -209,17 +327,28 @@ async function downloadWordFile(resourceId) {
   });
 }
 
+/** 资源详情的详案下载。 */
+function downloadWordFile(resourceId) {
+  return downloadWord(`${RESOURCE_PATH}/${resourceId}`);
+}
+
+/** 案例详情的详案下载。自评、他评与活动反思都在这份文档里。 */
+function downloadCaseWordFile(caseId) {
+  return downloadWord(`${CASE_PATH}/${caseId}`);
+}
+
 /**
- * 统一入口页的两条去向，以及资源详情的关联案例出口。
+ * 统一入口页的两条去向，以及案例详情的三个入口（首页推荐卡片、资源详情的关联案例、
+ * 案例列表的行）。
  *
  * `page` 为 null 表示那个屏幕还没落地，点击**在跳转前被拦下并说出原因**，与
- * services/module-entry.js 的拒绝方式相同。案例库两页由下一轮做，落地时把这里的
- * null 换成路径，拒绝自己就消失。
+ * services/module-entry.js 的拒绝方式相同。案例两页在本轮落地，两处 null 因此换成了
+ * 路径，那条拒绝自己就消失了 —— 拒绝的措辞留在这里没删，下一个未落地的去向照样用它。
  */
 const DESTINATIONS = {
   resource: { label: '课程资源库', page: '/packages/library/pages/resource/list' },
-  case: { label: '课程案例库', page: null },
-  caseDetail: { label: '课程案例', page: null },
+  case: { label: '课程案例库', page: '/packages/library/pages/case/list' },
+  caseDetail: { label: '课程案例', page: '/packages/library/pages/case/detail' },
 };
 
 /** 入口页的两张卡片，ready to bind。 */
@@ -246,7 +375,13 @@ function open(key, query) {
   guard.navigateTo(query ? `${target.page}?${query}` : target.page, 'resource-library');
 }
 
-/** 关联案例的跳转出口。案例详情未落地时在跳转前拦下并说明原因。 */
+/**
+ * 案例详情的唯一入口。
+ *
+ * 三条路都走这里：首页推荐课程案例卡片、资源详情的关联案例、案例列表的行。id 由调用者
+ * 给，因为只有调用者知道点的是哪一条 —— 但**去哪个页面**这件事只在这里说一次，
+ * 首页与资源库因此不可能与案例库各说各的（services/home.js 头注的同一条判断）。
+ */
 function openCase(caseId) {
   open('caseDetail', `case_id=${caseId}`);
 }
@@ -256,9 +391,14 @@ module.exports = {
   CONTENT_STATUS,
   tagFilters,
   gradeFilters,
+  fieldFilters,
+  areaFilters,
   listResources,
   resourceDetail,
+  listCases,
+  caseDetail,
   downloadWordFile,
+  downloadCaseWordFile,
   entries,
   open,
   openCase,
