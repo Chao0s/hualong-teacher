@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "课程资源",
+  "usingComponents": {
+    "hl-icon": "/components/hl-icon/index"
+  }
+}

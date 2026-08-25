@@ -1,0 +1,59 @@
+<view class="hl-page" wx:if="{{ready}}">
+  <!-- 两个维度都是横排标签（form-control-spec.md §2.1）。单选，≤6 项，一眼看全。 -->
+  <view class="hl-chips">
+    <view class="hl-chips__label">衣食住行艺分类</view>
+    <view
+      wx:for="{{tagOptions}}"
+      wx:key="key"
+      class="hl-chips__item {{item.key === filters.resource_tag ? 'hl-chips__item--on' : ''}}"
+      data-field="resource_tag"
+      data-key="{{item.key}}"
+      bindtap="onFilterTap">{{item.label}}</view>
+  </view>
+
+  <view class="hl-chips">
+    <view class="hl-chips__label">年级</view>
+    <view
+      wx:for="{{gradeOptions}}"
+      wx:key="key"
+      class="hl-chips__item {{item.key === filters.grade ? 'hl-chips__item--on' : ''}}"
+      data-field="grade"
+      data-key="{{item.key}}"
+      bindtap="onFilterTap">{{item.label}}</view>
+  </view>
+
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryList">重试</text>
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障码 {{errorRequestId}}</text>
+  </view>
+
+  <view wx:if="{{loadingFirst}}" class="hl-loading">加载中…</view>
+
+  <block wx:if="{{!loadingFirst}}">
+    <!-- 空与失败是两种状态：读失败时不说「暂无」，那是把读不到说成没有东西可读。 -->
+    <view wx:if="{{items.length === 0 && !errorText}}" class="hl-card hl-empty">
+      当前筛选暂无资源，换一个分类或年级再看
+    </view>
+
+    <view
+      wx:for="{{items}}"
+      wx:key="resource_id"
+      class="hl-card res"
+      data-id="{{item.resource_id}}"
+      bindtap="onTap">
+      <view class="res__thumb">{{item.thumb_label}}</view>
+      <view class="res__body">
+        <view class="res__top">
+          <text class="hl-card__title">{{item.resource_name}}</text>
+          <text wx:if="{{item.status_label}}" class="hl-pill {{item.status_pill}}">{{item.status_label}}</text>
+        </view>
+        <view wx:if="{{item.tag_label}}" class="hl-card__meta">{{item.tag_label}}</view>
+        <view wx:if="{{item.excerpt}}" class="res__excerpt">{{item.excerpt}}</view>
+      </view>
+    </view>
+
+    <view wx:if="{{loadingMore}}" class="hl-loading">加载更多…</view>
+    <view wx:if="{{exhausted && items.length > 0}}" class="hl-loading">没有更多了</view>
+  </block>
+</view>

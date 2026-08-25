@@ -1,0 +1,14 @@
+.hub {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.hub + .hub {
+  margin-top: var(--space-2);
+}
+
+.hub__text {
+  flex: 1;
+  min-width: 0;
+}

@@ -1,0 +1,14 @@
+<view class="hl-page" wx:if="{{ready}}">
+  <view
+    wx:for="{{entries}}"
+    wx:key="key"
+    class="hl-card hub"
+    data-key="{{item.key}}"
+    bindtap="onEntryTap">
+    <view class="hub__text">
+      <view class="hl-card__title">{{item.title}}</view>
+      <view class="hl-card__meta">{{item.desc}}</view>
+    </view>
+    <hl-icon name="icon-10" color="muted" size="32rpx" />
+  </view>
+</view>

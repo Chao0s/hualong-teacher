@@ -1,0 +1,53 @@
+<view class="hl-page" wx:if="{{ready}}">
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryLoad">重试</text>
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障码 {{errorRequestId}}</text>
+  </view>
+
+  <view wx:if="{{loading}}" class="hl-loading">加载中…</view>
+
+  <block wx:if="{{resource && !loading}}">
+    <!-- 资源简介：契约没有 resource_intro 这一列，简介就是这条资源的身份。 -->
+    <view class="hl-card detail">
+      <view class="detail__top">
+        <text class="detail__title">{{resource.resource_name}}</text>
+        <text class="hl-pill {{resource.status_pill}}">{{resource.status_label}}</text>
+      </view>
+      <view wx:if="{{resource.tag_label}}" class="hl-card__meta">{{resource.tag_label}}</view>
+    </view>
+
+    <view class="hl-section-title">资源解读</view>
+    <view class="hl-card detail__body">{{resource.resource_explain}}</view>
+
+    <view class="hl-section-title">资源获取</view>
+    <view class="hl-card detail__body">{{resource.resource_access}}</view>
+
+    <view class="hl-section-title">资源转化建议</view>
+    <view class="hl-card detail__body">{{resource.resource_trans}}</view>
+
+    <block wx:if="{{resource.word_file_id}}">
+      <view class="hl-section-title">详案</view>
+      <view class="hl-card detail__file" bindtap="onDownload">
+        <text class="hl-card__title">下载详案</text>
+        <view class="hl-card__meta">链接 30 分钟内有效，过期请重新下载</view>
+      </view>
+    </block>
+
+    <view class="hl-section-title">关联的课程案例</view>
+    <view wx:if="{{resource.related_cases.length === 0}}" class="hl-card hl-empty">暂无关联案例</view>
+    <view
+      wx:for="{{resource.related_cases}}"
+      wx:key="case_id"
+      class="hl-card detail__case"
+      data-id="{{item.case_id}}"
+      bindtap="onOpenCase">
+      <view class="detail__case-thumb">{{item.thumb_label}}</view>
+      <view class="detail__case-text">
+        <view class="hl-card__title">{{item.case_name}}</view>
+        <view wx:if="{{item.tag_label}}" class="hl-card__meta">{{item.tag_label}}</view>
+      </view>
+      <hl-icon name="icon-10" color="muted" size="32rpx" />
+    </view>
+  </block>
+</view>

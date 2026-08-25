@@ -35,6 +35,15 @@
         "pages/hr/list",
         "pages/hr/detail"
       ]
+    },
+    {
+      "root": "packages/library",
+      "name": "library",
+      "pages": [
+        "pages/home/index",
+        "pages/resource/list",
+        "pages/resource/detail"
+      ]
     }
   ],
   "preloadRule": {
@@ -45,6 +54,10 @@
     "pages/coordination/index": {
       "network": "all",
       "packages": ["coordination"]
+    },
+    "pages/training/index": {
+      "network": "all",
+      "packages": ["library"]
     }
   },
   "window": {

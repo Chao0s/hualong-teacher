@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "资源详情",
+  "usingComponents": {
+    "hl-icon": "/components/hl-icon/index"
+  }
+}

@@ -130,10 +130,20 @@ test('a quick entry with no screen yet is stopped before the jump', async () => 
     assert.equal(entry.disabled, false, 'nothing is term-blocked during the term')
   }
 
-  // 课程资源 belongs to 资源库, the sixth module — the bar holds five, so it has
-  // no tab and no page yet (ticket 13).
+  // 课程资源 landed in ticket 13, so this half now asserts the jump. 资源库 is the
+  // sixth module and the bar holds five, so it reaches its subpackage by page
+  // entry rather than by tab — that is the shape being pinned here.
   page.onQuickTap({ currentTarget: { dataset: { key: 'resource' } } })
-  assert.equal(c.record.navigations.length, 0, 'no navigation happened')
+  assert.equal(c.record.navigations.length, 1, '课程资源 已落地，应当真的跳转')
+  assert.equal(c.record.navigations[0].url, '/packages/library/pages/home/index')
+
+  // The refusal half still needs a subject. 案例库 is unbuilt in this slice, and
+  // every path into it — a recommended card and the 全部 link both — lands on
+  // openCase. Keep asserting it refuses BY NAME: a dead tap is worse than a
+  // clear no, and that is the whole point of this test.
+  c.record.navigations.length = 0
+  c.home.openCase()
+  assert.equal(c.record.navigations.length, 0, '未落地的模块不得跳转')
   assert.match(c.record.toasts.pop().title, /尚未上线/, 'and it said why')
 })
 

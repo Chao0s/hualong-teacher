@@ -1,0 +1,83 @@
+/**
+ * 选择行与横排标签的共享尺寸（票据 13）。
+ *
+ * SOURCE OF TRUTH: docs/frontend spec files/form-control-spec.md §3。行高与间距
+ * 在这里定死，页面不得再写自己的一套 —— 后续 38 页复用同一份，各写各的会让同一个
+ * 控件在二十张表单里高矮不一。
+ *
+ * 尺寸的来处不是偏好：微信设计指南的最小可点高度是 88rpx，选择行取 96rpx 留出余量。
+ * 唤起区域是整行，不是行末的箭头（箭头只有 32rpx，指头点不准）。
+ */
+
+/* ── 选择行 ─────────────────────────────────────────────────────────────── */
+
+.hl-pick-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 96rpx;
+  padding: 0 var(--space-3);
+  background: var(--surface);
+  border-radius: var(--radius);
+}
+
+.hl-pick-row + .hl-pick-row {
+  margin-top: var(--space-2);
+}
+
+.hl-pick-row__label {
+  flex: none;
+  font-size: 30rpx;
+  color: var(--fg);
+}
+
+/* 必填星号跟在标签之后，不在值那一侧：表单竖排扫读时视线落在左列。 */
+.hl-pick-row__required {
+  margin-left: 4rpx;
+  color: var(--danger);
+}
+
+.hl-pick-row__value {
+  flex: 1;
+  min-width: 0;
+  text-align: right;
+  font-size: 30rpx;
+  color: var(--fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 未选与已选的差别只有颜色一处。再加字号或字重会让未选看起来像禁用。 */
+.hl-pick-row__value--empty {
+  color: var(--muted);
+}
+
+/* ── 横排标签 ───────────────────────────────────────────────────────────── */
+
+.hl-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding-bottom: var(--space-2);
+}
+
+.hl-chips__label {
+  width: 100%;
+  font-size: 26rpx;
+  color: var(--muted);
+}
+
+.hl-chips__item {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 28rpx;
+}
+
+.hl-chips__item--on {
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  font-weight: 600;
+}

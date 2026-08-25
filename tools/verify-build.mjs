@@ -36,6 +36,7 @@ const TAB_CEILING = 5;
 const SUBPACKAGE_SERVICES = {
   'packages/party': 'party',
   'packages/coordination': 'coordination',
+  'packages/library': 'library',
 };
 
 const findings = [];

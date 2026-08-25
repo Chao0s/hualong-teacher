@@ -45,6 +45,10 @@ async function recommendedForHome() {
 }
 
 module.exports = {
+  // 两张表现在真的被第二个读者读了（services/library.js，票据 13）：`case_grade`
+  // 与 `db_resource.grade` 是同一个值域，一份映射服务两张表，谁也不抄第二份。
+  CASE_FIELD,
+  CASE_GRADE,
   decorateCard,
   recommendedForHome,
 };

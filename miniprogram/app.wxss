@@ -1,4 +1,5 @@
 @import 'styles/tokens.wxss';
+@import 'styles/form-rows.wxss';
 
 page {
   background: var(--bg);

@@ -1,0 +1,17 @@
+<!-- 唤起区域是整行：picker 包住整行，不是只包住行末的箭头。 -->
+<picker
+  mode="selector"
+  range="{{labels}}"
+  value="{{index}}"
+  bindchange="onChange"
+  bindcancel="onCancel">
+  <view class="hl-pick-row">
+    <view class="hl-pick-row__label">
+      {{label}}<text wx:if="{{required}}" class="hl-pick-row__required">*</text>
+    </view>
+    <view class="hl-pick-row__value {{valueLabel ? '' : 'hl-pick-row__value--empty'}}">
+      {{valueLabel ? valueLabel : '请选择'}}
+    </view>
+    <hl-icon name="icon-10" color="muted" size="32rpx" />
+  </view>
+</picker>

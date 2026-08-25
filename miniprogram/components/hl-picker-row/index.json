@@ -1,0 +1,6 @@
+{
+  "component": true,
+  "usingComponents": {
+    "hl-icon": "../hl-icon/index"
+  }
+}

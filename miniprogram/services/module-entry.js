@@ -61,6 +61,10 @@ const MODULES = {
         title: '课程与研修',
         entries: [
           { key: 'course', badge: '课', label: '办园理念与课程体系', desc: '课程建设的来龙去脉', screen: 'CourseIntroDetail', page: null },
+          // 资源库是第六个模块，导航栏放不下（DO-NOT-BUILD 14），所以它借 教研培训
+          // 的入口页落一条门。`module` 因此与本模块不同：门要按目的地的模块查，不是
+          // 按出发地的（合作园只准进 resource-library／case-library）。
+          { key: 'resource', badge: '资', label: '课程资源', desc: '课程资源库与课程案例库', screen: 'CourseResourceHome', module: 'resource-library', page: '/packages/library/pages/home/index' },
           { key: 'train', badge: '研', label: '研修', desc: '研修安排、详情与反馈', screen: 'TrainList', page: null },
         ],
       },
@@ -133,7 +137,7 @@ function openEntry(moduleId, key) {
     wx.showToast({ title: `${entry.label}尚未上线`, icon: 'none' });
     return;
   }
-  guard.navigateTo(entry.page, moduleId);
+  guard.navigateTo(entry.page, entry.module || moduleId);
 }
 
 module.exports = {

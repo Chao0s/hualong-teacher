@@ -1,0 +1,45 @@
+.hl-card + .hl-card {
+  margin-top: var(--space-2);
+}
+
+.res {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.res__thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: var(--radius-sm);
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  font-size: 34rpx;
+  font-weight: 600;
+  flex: none;
+}
+
+.res__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.res__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.res__excerpt {
+  margin-top: var(--space-2);
+  font-size: 26rpx;
+  color: var(--muted);
+  /* 两行足够看出这条讲什么；再多就该点进去读了。 */
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}

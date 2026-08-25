@@ -383,6 +383,87 @@ function toCoordCard(doc) {
   };
 }
 
+// db_resource —— 课程资源。契约 §10：teacher 的可见范围是
+// `school_id = $ctx_school AND (resource_status = 's3' OR created_by = $ctx_teacher)`，
+// 按 `updated_at DESC, resource_id DESC` 作游标分页。筛选参数只有 resource_tag 与
+// grade（外加 admin 才用得上的 resource_status／class_id）—— **五大领域与活动形式
+// 不是资源的列**，它们只筛案例，所以这里也没有。
+//
+// 32 条，够翻页；**每个分类各 6 到 7 条，limit=5 时筛完仍有多页**，否则「换筛选丢弃
+// 旧游标」验证不了。第 9 条带一个本客户端不认识的分类码，第 14 条 `grade` 为 null，
+// 用来验证未知枚举与可空列都不把界面撑塌。
+const RESOURCE_NAMES = [
+  '香云纱纹样', '双皮奶', '沙湾留耕堂 · 何氏宗祠', '龙舟竞渡', '醒狮纹样',
+  '广绣小包', '荔枝蜜', '沙湾古镇', '安全过街', '粤语童谣',
+  '陶艺纹饰',
+];
+
+const RESOURCE_EXPLAIN = '从空间、材料与族群记忆切入，帮助幼儿理解社区生活经验与公共文化。';
+const RESOURCE_ACCESS = '教师可实地走访拍摄，或由园所统一整理安全可用的参观照片、讲解词与观察表。';
+const RESOURCE_TRANS = '可转化为观察、拓印、建构与口述故事活动，引导幼儿从看见到表达。';
+
+// 分类走 5 周期、年级走 4 周期，最小公倍数 20 > 32 条的一半 —— 两个维度因此**不相关**。
+// 若两者同周期，「按分类筛」与「按分类加年级筛」会得到同一批行，组合筛选的测试就什么
+// 也证明不了。
+const RESOURCE_TAGS = ['g1', 'g2', 'g3', 'g4', 'g5'];
+const RESOURCE_GRADES = [['k1'], ['k2'], ['k3'], ['k2', 'k3']];
+
+const RESOURCES = Array.from({ length: 32 }, (_, i) => {
+  const id = 32 - i;
+  return {
+    resource_id: id,
+    resource_type: ['r1', 'r5', 'r3', 'r4'][i % 4],
+    resource_name: RESOURCE_NAMES[i % RESOURCE_NAMES.length],
+    // 一个未来版本才有的分类码：客户端必须照常显示，不得崩、不得留空。
+    resource_tag: id === 9 ? 'z9_future_tag' : RESOURCE_TAGS[i % 5],
+    // 可空的数组列。第 14 条为 null，客户端不得把 null 当成数组。
+    grade: id === 14 ? null : RESOURCE_GRADES[i % 4],
+    resource_explain: RESOURCE_EXPLAIN,
+    resource_access: RESOURCE_ACCESS,
+    resource_trans: RESOURCE_TRANS,
+    cover_file_id: null,
+    // 第 12 条没有 Word 详案：没有附件的资源照常显示，只是少一个下载入口。
+    word_file_id: id === 12 ? null : 6000 + id,
+    created_by: TEACHER.teacher_id,
+    // 可见范围的两半都要有夹具：绝大多数是本园已发布的 s3，另有三条是这位教师
+    // **自己写的**非 s3（草稿、待审、被驳回）—— 这是资源与党建三类最大的差别，
+    // 那三类只看得到 s3，这里看得到自己的全部。
+    resource_status: id === 3 ? 's1' : id === 5 ? 's2' : id === 7 ? 's4' : 's3',
+    required_count: 5,
+    completed_count: 5,
+    complete: 'c1',
+    submitted_at: id === 3 ? null : '2026-07-10T09:00:00+08:00',
+    // 严格递减，`updated_at DESC, resource_id DESC` 的排序才真的成立：一天里两条，
+    // 先 18:00 后 09:00，下一天再从头开始。
+    updated_at: `2026-07-${String(16 - Math.floor(i / 2)).padStart(2, '0')}T${['18', '09'][i % 2]}:00:00+08:00`,
+  };
+});
+
+/**
+ * 「这个资源被哪些案例用了」由**服务端**答。方向要看清楚：`db_case.resource_ids`
+ * 记着案例引用了哪些资源，`db_resource` 上没有反向列，而契约的 `/library/cases`
+ * 也没有 `resource_id` 这个筛选参数。所以客户端既拉不到、也不该拼这份清单。
+ *
+ * 该字段与 `/home/cases` 同类：只在本地契约服务上成立，接真服务时必须重对。
+ */
+const RELATED_CASES = {
+  71: { case_id: 71, case_name: '祠堂里的故事', case_field: 'f3', case_grade: 'k3' },
+  68: { case_id: 68, case_name: '龙舟竞渡', case_field: 'f1', case_grade: 'k3' },
+  64: { case_id: 64, case_name: '砖雕纹样拓印', case_field: 'f5', case_grade: 'k3' },
+};
+
+function relatedCasesFor(resourceId) {
+  // 第 30 条（留耕堂）挂两条，第 29 条挂一条，其余为空 —— 有与没有都要能显示。
+  if (resourceId === 30) return [RELATED_CASES[71], RELATED_CASES[64]];
+  if (resourceId === 29) return [RELATED_CASES[68]];
+  return [];
+}
+
+// POST /library/resources/{id}/download-link 签发的短链。link_id -> { resource_id }。
+// §8.4：短链指向**我们的** /dl/{link_id}，不是对象存储；在那里逐次复核内容状态后
+// 才 302 到真正的地址。所以这张表存的是内容归属，不是一个已经签好的对象存储地址。
+const downloadLinks = new Map();
+
 const TODOS = [
   { todo_id: 1, todo_kind: 'upload', todo_title: '上传「祠堂里的故事」课程案例', due_at: '2026-08-25T18:00:00+08:00' },
   { todo_id: 2, todo_kind: 'task', todo_title: '完成共建任务：秋季主题墙素材征集', due_at: '2026-08-28T18:00:00+08:00' },
@@ -404,6 +485,9 @@ const state = {
   revoked: new Set(),
   idempotency: new Map(),       // key -> { status, body, bodyHash }
   nextTaskId: 900,              // POST /parent-tasks assigns from here
+  // db_content_access_event —— 服务端在签发短链的同一个事务里写的那一笔。放在这里
+  // 是为了让「客户端不自行拼装记录请求」可断言：记录数只随 download-link 增长。
+  accessEvents: [],
 };
 
 // §3.5 — a roster-shaped collection: one row per child, whole, child_id ASC.
@@ -834,6 +918,129 @@ function getCoordDocument(req, res, id) {
   sendJson(res, 200, doc);
 }
 
+/**
+ * §3.1 — 资源列表。
+ *
+ * 两个筛选维度都可选，且**两者一起进指纹**（§3.3）：换掉任一维度还拿着旧游标，回
+ * `cursor_filter_mismatch`，不是悄悄给出错答案。这是本 mock 里第一条带两个维度的
+ * 列表 —— 单维度的实现「碰巧」也能通过组合筛选的测试，两维度不会。
+ *
+ * `grade` 是数组列，所以筛的是「包含」，不是「等于」。把它写成等于，带
+ * `['k2','k3']` 的行会在筛 k2 时凭空消失。
+ */
+function getResources(req, res, url) {
+  if (!requireSession(req, res)) return;
+
+  const limitRaw = url.searchParams.get('limit');
+  const limit = limitRaw === null ? 20 : Number(limitRaw);
+  if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+    return fail(res, 422, 'validation_failed', '分页参数不合法',
+      { field: 'limit', rule: 'between_1_and_100' });
+  }
+
+  const tag = url.searchParams.get('resource_tag');
+  if (tag !== null && RESOURCE_TAGS.indexOf(tag) === -1) {
+    return fail(res, 400, 'malformed_request', '资源分类不在可选范围内',
+      { field: 'resource_tag', rule: 'enum_g1_to_g5' });
+  }
+  const grade = url.searchParams.get('grade');
+  if (grade !== null && ['k1', 'k2', 'k3'].indexOf(grade) === -1) {
+    return fail(res, 400, 'malformed_request', '年级不在可选范围内',
+      { field: 'grade', rule: 'enum_k1_to_k3' });
+  }
+
+  const filters = {};
+  if (tag !== null) filters.resource_tag = tag;
+  if (grade !== null) filters.grade = grade;
+
+  const pool = RESOURCES.filter((r) => {
+    if (tag !== null && r.resource_tag !== tag) return false;
+    // 数组列筛的是包含。等于会让 ['k2','k3'] 在筛 k2 时消失。
+    if (grade !== null && (r.grade || []).indexOf(grade) === -1) return false;
+    return true;
+  });
+
+  let startIndex = 0;
+  const cursor = url.searchParams.get('cursor');
+  if (cursor) {
+    const decoded = decodeCursor(cursor, filters);
+    if (decoded.error) {
+      return fail(res, 400, decoded.error,
+        decoded.error === 'cursor_invalid' ? '翻页游标不可解' : '筛选条件已变，游标失效');
+    }
+    startIndex = pool.findIndex((r) => r.resource_id === decoded.key) + 1;
+    if (startIndex <= 0) return fail(res, 400, 'cursor_invalid', '翻页游标不可解');
+  }
+
+  const slice = pool.slice(startIndex, startIndex + limit);
+  const last = slice[slice.length - 1];
+  const hasMore = startIndex + limit < pool.length;
+  sendJson(res, 200, {
+    items: slice,
+    next_cursor: hasMore && last ? encodeCursor(last.resource_id, filters) : null,
+  });
+}
+
+function getResource(req, res, id) {
+  if (!requireSession(req, res)) return;
+  const resource = RESOURCES.find((r) => r.resource_id === Number(id));
+  // §2.3: 不存在与不在可见范围内是同一个 404。
+  if (!resource) return fail(res, 404, 'not_found', '资源不存在或不在可见范围内');
+  sendJson(res, 200, { ...resource, related_cases: relatedCasesFor(resource.resource_id) });
+}
+
+/**
+ * §8.4 / F5 — 签发 30 分钟 bearer 下载短链。
+ *
+ * 同事务写 `db_content_access_event(link_issued)`：**记录是这一次调用的副作用**，
+ * 客户端不再另发一个「我看过了」的请求。这里用一个计数器把那笔记录做成可断言的，
+ * 否则「客户端不自行拼装记录请求」这条只能靠看代码，不能靠测试。
+ *
+ * 回的 `url` 指向我们自己的 `/dl/{link_id}`，不是对象存储。
+ */
+function postResourceDownloadLink(req, res, id) {
+  if (!requireSession(req, res)) return;
+  const resource = RESOURCES.find((r) => r.resource_id === Number(id));
+  if (!resource) return fail(res, 404, 'not_found', '资源不存在或不在可见范围内');
+  if (!resource.word_file_id) {
+    return fail(res, 409, 'state_precondition_failed', '这条资源没有可下载的详案');
+  }
+
+  const linkId = randomUUID().replace(/-/g, '').slice(0, 24);
+  downloadLinks.set(linkId, { resource_id: resource.resource_id });
+  state.accessEvents.push({ link_id: linkId, resource_id: resource.resource_id, event: 'link_issued' });
+
+  sendJson(res, 201, {
+    link_id: linkId,
+    url: `http://127.0.0.1:${server.address().port}/dl/${linkId}`,
+    expires_at: '2026-07-16T18:30:00+08:00',
+  }, { 'cache-control': 'no-store' });
+}
+
+/**
+ * §8.4 — 取档服务。
+ *
+ * 不在 `/api/v1` 基址下，**不收 `Authorization`**：短链本身就是凭证，签发后不再验
+ * session 或帐户启停。但内容状态每次都验 —— 从 s3 撤回会让已签发未到期的短链立刻
+ * 失效，这正是「立刻停止新查看与下载」（F6）的落点。
+ */
+function getDownload(req, res, linkId) {
+  const link = downloadLinks.get(linkId);
+  if (!link) return fail(res, 404, 'not_found', '下载链接无效或已过期');
+  const resource = RESOURCES.find((r) => r.resource_id === link.resource_id);
+  // 逐次复核内容状态：撤回后短链当场失效，不等它自己到期。
+  if (!resource || resource.resource_status !== 's3') {
+    return fail(res, 404, 'not_found', '内容已下架，链接失效');
+  }
+  // 真服务在这里 302 到刚签好的短时对象存储地址；本 mock 直接把字节给出来。
+  res.writeHead(200, {
+    'content-type': 'application/octet-stream',
+    'cache-control': 'no-store',
+    'x-request-id': res.__requestId,
+  });
+  res.end(`mock docx for resource ${resource.resource_id}`);
+}
+
 /** §3.5 — roster-shaped: whole, unpaginated. */
 function getTodos(req, res) {
   if (!requireSession(req, res)) return;
@@ -963,6 +1170,12 @@ const HAND_WRITTEN_ROLES = [
   // §4 规则 20：合作园不得进入综合协调，所以 partner-account 在这里就被 403 挡下。
   [/^\/coordination\/documents$/, ['teacher']],
   [/^\/coordination\/documents\/\d+$/, ['teacher']],
+  // 契约给资源三条路都写了 partner-account，但**本 mock 只服务教师端**，且合作园的
+  // predicate 另有一条「规则版本未撤销」的约束，这里没有实现。所以登记为 teacher，
+  // 宁可比契约严：漏登记才是安全缺陷，多登记只是这个 mock 覆盖面窄。
+  [/^\/library\/resources$/, ['teacher']],
+  [/^\/library\/resources\/\d+$/, ['teacher']],
+  [/^\/library\/resources\/\d+\/download-link$/, ['teacher']],
   [/^\/auth\/session$/, ['teacher', 'parent', 'admin-pc', 'partner-account']],
 ];
 
@@ -1049,6 +1262,17 @@ const server = createServer(async (req, res) => {
   }
 
   const url = new URL(req.url, `http://localhost:${PORT}`);
+
+  // §8.4 的取档服务**不在 `/api/v1` 基址下**，所以它必须在基址判定之前接住，否则
+  // 会被下面那句当成未知路径。它也不在 HAND_WRITTEN_ROLES 里，而且不能在 ——
+  // 那张表做的是「按会话查角色」，而短链签发后按契约就不再验 session 了。
+  const dl = /^\/dl\/([A-Za-z0-9_-]+)$/.exec(url.pathname);
+  if (req.method === 'GET' && dl) {
+    getDownload(req, res, dl[1]);
+    rlog(`  ${req.method} ${url.pathname} -> ${res.statusCode}`);
+    return;
+  }
+
   const path = url.pathname.startsWith(BASE) ? url.pathname.slice(BASE.length) : null;
 
   if (path === null) {
@@ -1133,6 +1357,12 @@ const server = createServer(async (req, res) => {
       getPartyBrands(req, res, url);
     } else if (req.method === 'GET' && /^\/party\/brands\/\d+$/.test(path)) {
       getPartyBrand(req, res, path.split('/')[3]);
+    } else if (req.method === 'GET' && path === '/library/resources') {
+      getResources(req, res, url);
+    } else if (req.method === 'GET' && /^\/library\/resources\/\d+$/.test(path)) {
+      getResource(req, res, path.split('/')[3]);
+    } else if (req.method === 'POST' && /^\/library\/resources\/\d+\/download-link$/.test(path)) {
+      postResourceDownloadLink(req, res, path.split('/')[3]);
     } else if (req.method === 'GET' && path === '/coordination/documents') {
       getCoordDocuments(req, res, url);
     } else if (req.method === 'GET' && /^\/coordination\/documents\/\d+$/.test(path)) {
@@ -1173,6 +1403,8 @@ export function start({ port = 0, unbound = false, noTerm = false, quiet = true 
   state.sessions.clear();
   state.revoked.clear();
   state.idempotency.clear();
+  state.accessEvents.length = 0;
+  downloadLinks.clear();
   return new Promise((resolve, reject) => {
     server.once('error', reject);
     server.listen(port, '127.0.0.1', () => {
@@ -1234,6 +1466,16 @@ function getParentTaskProgress(req, res) {
  */
 export function setNoTerm(value) {
   OPTS.noTerm = Boolean(value);
+}
+
+/**
+ * Test hook: the access events the server wrote for itself (§8.4).
+ *
+ * 「详案的查看或下载动作触发服务端记录，客户端不自行拼装记录请求」只有对着这份记录
+ * 才断言得了：数一数它涨了几笔，再数一数客户端发了几个请求。
+ */
+export function accessEvents() {
+  return state.accessEvents.slice();
 }
 
 // CLI behaviour, unchanged: `node mock/server.mjs [--unbound] [--no-term]`.

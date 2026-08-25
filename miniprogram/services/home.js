@@ -57,13 +57,14 @@ const TODO_LABEL = {
  * Three entries gained a destination when the bottom bar landed: they reach
  * their module's entry page, which then lists the screen itself. Two hops, both
  * honest. 课程资源 has no tab of its own — 资源库 is the sixth module and the bar
- * holds five (DO-NOT-BUILD 14) — so it waits for ticket 13.
+ * holds five (DO-NOT-BUILD 14) — so this quick entry IS its only door from 首页
+ * (ticket 13), and it lands on the same 课程资源 page 教研培训 reaches.
  */
 const QUICK_ENTRIES = [
   { key: 'training', label: '教研培训', module: 'teaching-research', page: '/pages/training/index', needsTerm: false, icon: 'icon-16', color: 'accent' },
   { key: 'moment', label: '在园时光', module: 'co-education', page: '/pages/co-education/index', needsTerm: true, icon: 'icon-17', color: 'green' },
   { key: 'month-eval', label: '月度评价', module: 'co-education', page: '/pages/co-education/index', needsTerm: true, icon: 'icon-18', color: 'amber' },
-  { key: 'resource', label: '课程资源', module: 'resource-library', page: null, needsTerm: false, icon: 'icon-19', color: 'blue' },
+  { key: 'resource', label: '课程资源', module: 'resource-library', page: '/packages/library/pages/home/index', needsTerm: false, icon: 'icon-19', color: 'blue' },
 ];
 
 /**
