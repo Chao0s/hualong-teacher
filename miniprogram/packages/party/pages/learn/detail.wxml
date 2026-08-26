@@ -15,26 +15,29 @@
         <text>{{study.published_label}}</text>
         <text wx:if="{{study.department_label}}">{{study.department_label}}</text>
       </view>
-      <view class="hl-hairline detail__rule"></view>
-      <view class="detail__body">{{study.study_content}}</view>
-    </view>
 
-    <block wx:if="{{study.video_links.length > 0}}">
-      <view class="hl-section-title">相关视频学习</view>
-      <view class="hl-card">
-        <!-- 外部网站影片，小程序不内嵌播放，只提供复制（F7）。 -->
-        <view class="video__hint">外部网站影片，请复制链接到浏览器打开。</view>
-        <view
-          wx:for="{{study.video_links}}"
-          wx:key="url"
-          class="video__row"
-          data-url="{{item.url}}"
-          bindtap="onCopyLink">
-          <text class="video__title">{{item.title}}</text>
-          <text class="video__copy">复制链接</text>
+      <!-- 原型 party-study-detail.html 把正文收在一块带框的「文件预览」里，
+           视频学习跟在同一块的下半段。 -->
+      <view class="preview">
+        <view class="preview__title">文件预览</view>
+        <view class="preview__body">{{study.study_content}}</view>
+
+        <view wx:if="{{study.video_links.length > 0}}" class="video">
+          <view class="video__title">相关视频学习</view>
+          <!-- 外部网站影片，小程序不内嵌播放，只提供复制（F7）。 -->
+          <view class="video__hint">外部网站影片，请复制链接到浏览器打开。</view>
+          <view
+            wx:for="{{study.video_links}}"
+            wx:key="url"
+            class="video__row"
+            data-url="{{item.url}}"
+            bindtap="onCopyLink">
+            <text class="video__name">{{item.title}}</text>
+            <text class="video__copy">复制链接</text>
+          </view>
         </view>
       </view>
-    </block>
+    </view>
 
     <view class="hl-section-title">附件</view>
     <view wx:for="{{study.files}}" wx:key="file_id" class="hl-card detail__file">

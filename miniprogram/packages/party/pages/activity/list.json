@@ -1,5 +1,8 @@
 {
   "navigationBarTitleText": "党建活动",
   "enablePullDownRefresh": true,
-  "backgroundTextStyle": "dark"
+  "backgroundTextStyle": "dark",
+  "usingComponents": {
+    "hl-icon": "/components/hl-icon/index"
+  }
 }

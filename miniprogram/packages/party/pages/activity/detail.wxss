@@ -1,25 +1,54 @@
-.hl-card + .hl-card {
+/* 头图 —— 原型 party-activity-detail.html 的 `.cover`。 */
+.cover {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 300rpx;
+  padding: var(--space-4);
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, #2563eb, #65b7ff);
+  color: #fff;
+}
+
+.cover__title {
+  font-size: 42rpx;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.cover__sub {
+  margin-top: var(--space-1);
+  font-size: 24rpx;
+  opacity: 0.9;
+}
+
+.hl-card {
   margin-top: var(--space-2);
 }
 
-.detail__title {
-  font-size: 38rpx;
-  font-weight: 600;
-  line-height: 1.5;
+/* 「标签｜值」一行 —— 原型的 `.row`，标签列定宽，值靠左对齐成一列。 */
+.row {
+  display: flex;
+  font-size: 28rpx;
+}
+
+.row__label {
+  width: 144rpx;
+  flex: none;
+  color: var(--muted);
+}
+
+.row__value {
+  flex: 1;
+  min-width: 0;
   color: var(--fg);
 }
 
-.detail__meta {
-  display: flex;
-  gap: var(--space-2);
-}
-
-.detail__time {
-  color: var(--accent-dark);
-}
-
-.detail__rule {
-  margin: var(--space-3) 0;
+.section__title {
+  margin-bottom: var(--space-2);
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--fg);
 }
 
 .detail__body {

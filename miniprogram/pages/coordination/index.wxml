@@ -1,3 +1,11 @@
 <view class="hl-page" wx:if="{{ready}}">
+  <!-- 原型 comprehensive-coordination.html 顶部的说明卡。 -->
+  <view class="banner">
+    <text class="banner__kicker">园务协同支持</text>
+    <view class="banner__title">统筹行政、人事与后勤保障</view>
+    <view class="banner__desc">集中查看园内制度、通知、安全卫生与教师发展支持事项。</view>
+    <view class="banner__mark">协</view>
+  </view>
+
   <hl-entry-sections sections="{{sections}}" bindtapentry="onEntryTap" />
 </view>

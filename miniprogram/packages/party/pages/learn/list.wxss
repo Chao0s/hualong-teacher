@@ -1,5 +1,52 @@
+/* 摘要卡 —— 原型 party-study-list.html 的 `.summary`。渐变的两端在令牌里都有
+ * （#dc2626 = --danger，#f97316 与 --orange 同色相），所以这里不写死颜色。 */
+.summary {
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, var(--danger), var(--orange));
+  color: #fff;
+}
+
+.summary__title {
+  font-size: 40rpx;
+  font-weight: 600;
+}
+
+.summary__desc {
+  margin-top: var(--space-1);
+  font-size: 24rpx;
+  opacity: 0.9;
+}
+
 .hl-card + .hl-card {
   margin-top: var(--space-2);
+}
+
+/* 原型的一行是「色块＋文字＋右侧操作」三栏。 */
+.study {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.study__mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 76rpx;
+  height: 76rpx;
+  border-radius: var(--radius-sm);
+  background: var(--danger-light);
+  color: var(--danger);
+  font-size: 24rpx;
+  font-weight: 600;
+  flex: none;
+}
+
+.study__text {
+  flex: 1;
+  min-width: 0;
 }
 
 .study__meta {
@@ -20,4 +67,18 @@
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+}
+
+/* 原型右侧的「预览」标签。它不是第二个可点区域 —— 整张卡都进详情页，
+ * 这一格只说明点进去看到的是什么。 */
+.study__action {
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-2);
+  height: 48rpx;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  color: var(--muted);
+  font-size: 22rpx;
+  flex: none;
 }

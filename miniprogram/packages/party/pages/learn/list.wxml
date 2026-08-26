@@ -1,4 +1,10 @@
 <view class="hl-page" wx:if="{{ready}}">
+  <!-- 原型 party-study-list.html 顶部的摘要卡：一句话说明这张列表收的是什么。 -->
+  <view class="summary">
+    <view class="summary__title">全部学习文件</view>
+    <view class="summary__desc">集中查看政策文件、专题学习材料与园内制度学习内容。</view>
+  </view>
+
   <view wx:if="{{errorText}}" class="hl-error">
     {{errorText}}
     <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryList">重试</text>
@@ -17,13 +23,17 @@
       class="hl-card study"
       data-id="{{item.study_id}}"
       bindtap="onTap">
-      <text class="hl-card__title">{{item.study_title}}</text>
-      <view class="hl-card__meta study__meta">
-        <text class="study__type">{{item.type_label}}</text>
-        <text>{{item.published_label}}</text>
-        <text wx:if="{{item.department_label}}">{{item.department_label}}</text>
+      <view class="study__mark">学</view>
+      <view class="study__text">
+        <text class="hl-card__title">{{item.study_title}}</text>
+        <view class="hl-card__meta study__meta">
+          <text class="study__type">{{item.type_label}}</text>
+          <text>{{item.published_label}}</text>
+          <text wx:if="{{item.department_label}}">{{item.department_label}}</text>
+        </view>
+        <view wx:if="{{item.excerpt}}" class="study__excerpt">{{item.excerpt}}</view>
       </view>
-      <view wx:if="{{item.excerpt}}" class="study__excerpt">{{item.excerpt}}</view>
+      <text class="study__action">预览</text>
     </view>
 
     <view wx:if="{{loadingMore}}" class="hl-loading">加载更多…</view>

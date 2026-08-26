@@ -87,7 +87,7 @@
 
 .ev-domain__value {
   font-variant-numeric: tabular-nums;
-  color: var(--brand);
+  color: var(--accent);
 }
 
 /* ── A4 版面（综合评估报告页）─────────────────────────────────────────────── */

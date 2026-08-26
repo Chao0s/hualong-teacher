@@ -1,4 +1,10 @@
 <view class="hl-page" wx:if="{{ready}}">
+  <!-- 原型 party-brand-list.html 顶部的摘要卡。 -->
+  <view class="summary">
+    <view class="summary__title">全部品牌主题</view>
+    <view class="summary__desc">沉淀本园课程特色、环境特色和党建引领实践案例。</view>
+  </view>
+
   <view wx:if="{{errorText}}" class="hl-error">
     {{errorText}}
     <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryList">重试</text>
@@ -17,12 +23,18 @@
       class="hl-card brand"
       data-id="{{item.brand_id}}"
       bindtap="onTap">
-      <text class="hl-card__title">{{item.brand_title}}</text>
-      <view class="hl-card__meta brand__meta">
-        <text>{{item.published_label}}</text>
-        <!-- 标签是可空列，服务层拼好一行；没有标签就不渲染这一格。 -->
-        <text wx:if="{{item.tag_label}}" class="brand__tags">{{item.tag_label}}</text>
+      <!-- 原型每行的缩略块画的是该主题的首字；首字取不到就是取不到，
+           所以这里统一用 school-affairs.html 给品牌建设的那个字。 -->
+      <view class="brand__thumb">品</view>
+      <view class="brand__text">
+        <text class="hl-card__title">{{item.brand_title}}</text>
+        <view class="hl-card__meta brand__meta">
+          <text>{{item.published_label}}</text>
+          <!-- 标签是可空列，服务层拼好一行；没有标签就不渲染这一格。 -->
+          <text wx:if="{{item.tag_label}}" class="brand__tags">{{item.tag_label}}</text>
+        </view>
       </view>
+      <hl-icon name="icon-10" color="muted" size="32rpx" />
     </view>
 
     <view wx:if="{{loadingMore}}" class="hl-loading">加载更多…</view>

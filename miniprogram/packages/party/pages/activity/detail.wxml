@@ -8,14 +8,25 @@
   <view wx:if="{{loading}}" class="hl-loading">加载中…</view>
 
   <block wx:if="{{activity && !loading}}">
-    <view class="hl-card detail">
-      <view class="detail__title">{{activity.activity_title}}</view>
-      <view class="hl-card__meta detail__meta">
-        <!-- 活动时间：服务端给什么钟点就是什么钟点，客户端不换算（§1.2）。 -->
-        <text class="detail__time">{{activity.time_label}}</text>
-        <text wx:if="{{activity.location_label}}">{{activity.location_label}}</text>
+    <!-- 原型 party-activity-detail.html 的头图：标题压在渐变块的下沿。 -->
+    <view class="cover">
+      <view class="cover__title">{{activity.activity_title}}</view>
+      <view class="cover__sub">
+        <text>党建活动</text>
+        <text wx:if="{{activity.location_label}}"> · {{activity.location_label}}</text>
       </view>
-      <view class="hl-hairline detail__rule"></view>
+    </view>
+
+    <view class="hl-card">
+      <view class="row">
+        <text class="row__label">活动时间</text>
+        <!-- 活动时间：服务端给什么钟点就是什么钟点，客户端不换算（§1.2）。 -->
+        <text class="row__value">{{activity.time_label}}</text>
+      </view>
+    </view>
+
+    <view class="hl-card">
+      <view class="section__title">图文介绍</view>
       <view class="detail__body">{{activity.activity_content}}</view>
     </view>
 

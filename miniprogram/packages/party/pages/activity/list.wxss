@@ -1,5 +1,50 @@
+/* 摘要卡 —— 原型 party-activity-list.html 的 `.summary`，蓝系。 */
+.summary {
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, #2563eb, var(--blue), #65b7ff);
+  color: #fff;
+}
+
+.summary__title {
+  font-size: 40rpx;
+  font-weight: 600;
+}
+
+.summary__desc {
+  margin-top: var(--space-1);
+  font-size: 24rpx;
+  opacity: 0.9;
+}
+
 .hl-card + .hl-card {
   margin-top: var(--space-2);
+}
+
+.activity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.activity__mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 76rpx;
+  height: 76rpx;
+  border-radius: var(--radius-sm);
+  background: var(--blue-light);
+  color: var(--blue);
+  font-size: 24rpx;
+  font-weight: 600;
+  flex: none;
+}
+
+.activity__text {
+  flex: 1;
+  min-width: 0;
 }
 
 .activity__meta {

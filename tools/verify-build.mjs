@@ -263,6 +263,29 @@ function checkWxssFile(file) {
   if (open !== close) note(rel(file), `花括号不配对：${open} 个 {，${close} 个 }`);
 }
 
+// ── 悬空的设计令牌 ──────────────────────────────────────────────────────────
+//
+// `var(--nope)` 在 CSS 里不会报错：那条属性整个失效，元素就照没有它的样子渲染。
+// 一个漏定义的 `--radius-lg` 表现为「这张卡怎么没有圆角」，而没有任何东西会说出
+// 原因。原型自己就中过这一枪——`screens/growth-book.html` 与 `component-showcase.html`
+// 都引用了从未定义的 `--radius-lg`。照抄原型时很容易把它一起抄过来。
+
+{
+  const styleFiles = files.filter((f) => ['.wxss', '.wxml'].includes(extname(f)));
+  const defined = new Set();
+  for (const f of styleFiles) {
+    for (const m of readFileSync(f, 'utf8').matchAll(/(--[a-zA-Z0-9-]+)\s*:/g)) defined.add(m[1]);
+  }
+  for (const f of styleFiles) {
+    const r = relative(ROOT, f).replace(/\\/g, '/');
+    for (const m of readFileSync(f, 'utf8').matchAll(/var\(\s*(--[a-zA-Z0-9-]+)/g)) {
+      if (!defined.has(m[1])) {
+        note(r, `引用了从未定义的令牌 ${m[1]} —— 这条属性会整个失效，且不报任何错`);
+      }
+    }
+  }
+}
+
 // ── 正式构建路径的额外闸（票据 23）──────────────────────────────────────────
 
 if (RELEASE) {

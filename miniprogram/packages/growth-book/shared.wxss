@@ -16,15 +16,15 @@
 /* 可勾选的那两类。开与关都是同一个控件，它自己说清楚现在是哪一种。 */
 .gb-source__toggle {
   padding: var(--space-1) var(--space-3);
-  border: 2rpx solid var(--line);
+  border: 2rpx solid var(--border);
   border-radius: 999rpx;
   font-size: 26rpx;
   color: var(--muted);
 }
 
 .gb-source__toggle--on {
-  border-color: var(--brand);
-  color: var(--brand);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 /* 固定书脊。不是一个点不动的勾 —— 那会假装教师有一个他并没有的选择。 */

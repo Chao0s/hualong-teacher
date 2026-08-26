@@ -1,4 +1,10 @@
 <view class="hl-page" wx:if="{{ready}}">
+  <!-- 原型 party-activity-list.html 顶部的摘要卡。 -->
+  <view class="summary">
+    <view class="summary__title">全部党建活动</view>
+    <view class="summary__desc">按时间查看园内主题党日、志愿服务和理论学习活动。</view>
+  </view>
+
   <view wx:if="{{errorText}}" class="hl-error">
     {{errorText}}
     <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryList">重试</text>
@@ -17,12 +23,16 @@
       class="hl-card activity"
       data-id="{{item.activity_id}}"
       bindtap="onTap">
-      <text class="hl-card__title">{{item.activity_title}}</text>
-      <view class="hl-card__meta activity__meta">
-        <!-- 时间由服务层按字面偏移量格式化，这里只绑定。 -->
-        <text class="activity__time">{{item.time_label}}</text>
-        <text wx:if="{{item.location_label}}">{{item.location_label}}</text>
+      <view class="activity__mark">活</view>
+      <view class="activity__text">
+        <text class="hl-card__title">{{item.activity_title}}</text>
+        <view class="hl-card__meta activity__meta">
+          <!-- 时间由服务层按字面偏移量格式化，这里只绑定。 -->
+          <text class="activity__time">{{item.time_label}}</text>
+          <text wx:if="{{item.location_label}}">{{item.location_label}}</text>
+        </view>
       </view>
+      <hl-icon name="icon-10" color="muted" size="32rpx" />
     </view>
 
     <view wx:if="{{loadingMore}}" class="hl-loading">加载更多…</view>

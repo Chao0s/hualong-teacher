@@ -2,9 +2,10 @@
   margin-top: var(--space-2);
 }
 
+/* 原型的类型徽章是红系，与党建学习的色标一致（party-study-detail.html `.badge`）。 */
 .detail__type {
-  background: var(--accent-light);
-  color: var(--accent-dark);
+  background: var(--danger-light);
+  color: var(--danger);
 }
 
 .detail__title {
@@ -20,18 +21,43 @@
   gap: var(--space-2);
 }
 
-.detail__rule {
-  margin: var(--space-3) 0;
+/* 「文件预览」框 —— 原型 `.preview`。底色比卡片略浅一档在小程序上看不出来，
+ * 所以只留边框，不写死一个 #fafcfc。 */
+.preview {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
 }
 
-.detail__body {
+.preview__title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.preview__body {
+  margin-top: var(--space-2);
   font-size: 30rpx;
   line-height: var(--line-cjk);
   color: var(--fg);
   white-space: pre-wrap;
 }
 
+.video {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+}
+
+.video__title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--fg);
+}
+
 .video__hint {
+  margin-top: var(--space-1);
   font-size: 26rpx;
   color: var(--muted);
 }
@@ -41,12 +67,14 @@
   align-items: center;
   justify-content: space-between;
   margin-top: var(--space-2);
-  padding-top: var(--space-2);
-  border-top: 1px solid var(--border);
+  padding: var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
 }
 
-.video__title {
+.video__name {
   flex: 1;
+  min-width: 0;
   font-size: 28rpx;
   color: var(--fg);
 }
@@ -56,4 +84,5 @@
   color: var(--accent-dark);
   font-size: 26rpx;
   font-weight: 600;
+  flex: none;
 }

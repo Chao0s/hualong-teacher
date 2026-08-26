@@ -1,0 +1,73 @@
+/* 说明卡 —— 原型 comprehensive-coordination.html 的 `.banner`。 */
+.banner {
+  position: relative;
+  overflow: hidden;
+  min-height: 276rpx;
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+}
+
+/* 原型右下角那枚浅色圆。它只是底纹，压在文字下面。 */
+.banner::after {
+  content: '';
+  position: absolute;
+  right: -40rpx;
+  bottom: -60rpx;
+  width: 300rpx;
+  height: 300rpx;
+  border-radius: 50%;
+  background: var(--accent-light);
+}
+
+.banner__kicker {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  height: 48rpx;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  font-size: 22rpx;
+  font-weight: 600;
+}
+
+.banner__title {
+  position: relative;
+  z-index: 1;
+  margin-top: var(--space-3);
+  font-size: 42rpx;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--fg);
+}
+
+.banner__desc {
+  position: relative;
+  z-index: 1;
+  width: 470rpx;
+  margin-top: var(--space-1);
+  font-size: 24rpx;
+  color: var(--muted);
+}
+
+.banner__mark {
+  position: absolute;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 112rpx;
+  height: 112rpx;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: #fff;
+  font-size: 44rpx;
+  font-weight: 600;
+}
