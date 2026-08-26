@@ -1069,6 +1069,37 @@ function getNotice(req, res, id) {
   sendJson(res, 200, notice);
 }
 
+// 入口页三个分区各取几条。契约只说「三类各回最新若干条」，没有定数；三是原型的
+// 张数，也是轮播的上限，两处用同一个数就不会有一处先变。
+const PARTY_HOME_LIMIT = 3;
+
+/**
+ * §4 规则 19 — 党建管理入口页的聚合读取（`db_party_home`，persist=0）。
+ *
+ * 生成路由本来就答这条路径，但它按模式造样本，四个数组各回一条 `"sample"`，
+ * 拼不出一张卡片。所以这里手写，从三个集合的夹具派生。
+ *
+ * **轮播是派生结果，不是可管理的推荐清单。** F7 拔掉的是 `db_party_feature`
+ * 那张挑选表，轮播本身留着：查本园 `study_status='s3'`，按
+ * `published_at DESC, study_id DESC` 取 3，不足就回实际笔数 —— 所以这里是
+ * 一次 slice，没有手工排序、排期或跨类型混排。
+ *
+ * 三个集合的夹具已经按各自的业务日期降序排好（列表端点也直接切片它们），
+ * 所以取最新几条就是取开头几条。
+ *
+ * 本端点不写 `db_content_access_event`：事件只在成功打开详情时插入（规则 19）。
+ */
+function getPartyHome(req, res) {
+  if (!requireSession(req, res)) return;
+  sendJson(res, 200, {
+    carousel: PARTY_STUDIES.slice(0, PARTY_HOME_LIMIT).map(toStudyCard),
+    latest_studies: PARTY_STUDIES.slice(0, PARTY_HOME_LIMIT).map(toStudyCard),
+    // 契约的活动与品牌都没有另立卡片形状，回的就是完整对象，所以这里原样切片。
+    latest_activities: PARTY_ACTIVITIES.slice(0, PARTY_HOME_LIMIT),
+    latest_brands: PARTY_BRANDS.slice(0, PARTY_HOME_LIMIT),
+  });
+}
+
 /**
  * §3.1 — 党建学习列表。
  *
@@ -1742,6 +1773,7 @@ const HAND_WRITTEN_ROLES = [
   // 登记为 teacher，宁可比契约严：漏登记才是安全缺陷，多登记只是覆盖面窄。
   [/^\/media\/upload-credentials$/, ['teacher']],
   [/^\/media\/files$/, ['teacher']],
+  [/^\/party\/home$/, ['teacher']],
   [/^\/party\/studies$/, ['teacher']],
   [/^\/party\/studies\/\d+$/, ['teacher']],
   [/^\/party\/activities$/, ['teacher']],
@@ -1995,6 +2027,8 @@ const server = createServer(async (req, res) => {
       postUploadCredentials(req, res, body);
     } else if (req.method === 'POST' && path === '/media/files') {
       postMediaFile(req, res, body);
+    } else if (req.method === 'GET' && path === '/party/home') {
+      getPartyHome(req, res);
     } else if (req.method === 'GET' && path === '/party/studies') {
       getPartyStudies(req, res, url);
     } else if (req.method === 'GET' && /^\/party\/studies\/\d+$/.test(path)) {

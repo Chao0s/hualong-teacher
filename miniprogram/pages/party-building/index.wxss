@@ -1,0 +1,178 @@
+/* 党建管理入口页 —— 逐格对着 screens/school-affairs.html 转写。
+ *
+ * 换算因子是 tokens.wxss 头注里已经定案的那个：原型宽 390，真实因子 1.923，
+ * 仍用四舍五入的 2，不重算。所以 142px 写成 284rpx，11px 写成 22rpx。
+ *
+ * 颜色只用令牌。原型三条轮播渐变各有三站，令牌层只对得上其中两站：
+ *   b1  #b91c1c → #dc2626 → #f97316   深红一站没有令牌，用 danger → orange 两站
+ *   b2  #8a3b12 → #b45309 → #feaf06   两站棕色没有令牌，用 orange → amber 两站
+ *   b3  #0f766e → #189b91 → #49c3b7   浅青一站没有令牌（pages/home 已记过同一条）
+ * 缺的站记在这里，不往 tokens.wxss 里加 —— 那是治理文件，加令牌要单独走。
+ */
+
+/* ── 轮播 ──────────────────────────────────────────────────────────────────── */
+
+.banner {
+  height: 284rpx;
+  border-radius: 32rpx;
+  overflow: hidden;
+}
+
+.banner__card {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  position: relative;
+  overflow: hidden;
+  height: 100%;
+  padding: 40rpx 36rpx;
+  color: #fff;
+}
+
+/* 原型 `.banner-card::after`：右上角压着半圈白色细环。 */
+.banner__card::after {
+  content: '';
+  position: absolute;
+  top: -64rpx;
+  right: -56rpx;
+  width: 256rpx;
+  height: 256rpx;
+  border: 36rpx solid rgba(255, 255, 255, 0.18);
+  border-radius: 50%;
+}
+
+.banner__card--0 { background: linear-gradient(135deg, var(--danger), var(--orange)); }
+.banner__card--1 { background: linear-gradient(135deg, var(--orange), var(--amber)); }
+.banner__card--2 { background: linear-gradient(135deg, var(--accent-dark), var(--accent)); }
+
+.banner__title {
+  position: relative;
+  z-index: 1;
+  font-size: 38rpx;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.banner__sub {
+  position: relative;
+  z-index: 1;
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  line-height: 1.45;
+  opacity: 0.9;
+}
+
+/* 指示点。激活的那个是一条宽条，不是一个大圆点。 */
+.dots {
+  display: flex;
+  justify-content: center;
+  gap: 12rpx;
+  margin: 20rpx 0 4rpx;
+}
+
+.dots__dot {
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: var(--radius-pill);
+  /* 原型的未选中点是 #c9e7e7，令牌层没有这一档浅青，用最接近的分隔线色。 */
+  background: var(--border);
+  transition: width 0.2s ease;
+}
+
+.dots__dot--on {
+  width: 40rpx;
+  background: var(--accent);
+}
+
+/* ── 分区标题 ──────────────────────────────────────────────────────────────── */
+
+.sec {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 44rpx 0 20rpx;
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.sec__more {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: var(--accent-dark);
+}
+
+/* ── 三个分区共用的一行 ────────────────────────────────────────────────────── */
+
+.hl-card + .hl-card {
+  margin-top: var(--space-2);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  min-height: 132rpx;
+  padding: 22rpx 24rpx;
+}
+
+.row__mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 24rpx;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.row__mark--study    { background: var(--danger-light); color: var(--danger); }
+.row__mark--activity { background: var(--blue-light);   color: var(--blue); }
+.row__mark--brand    { background: var(--green-light);  color: var(--green); }
+
+.row__text {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 标题一行封顶，超出用省略号 —— 原型的 `.title` 就是这样，两行会把卡撑变形。 */
+.row__title {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 28rpx;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.row__meta {
+  display: flex;
+  gap: 12rpx;
+  margin-top: var(--space-1);
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 22rpx;
+  color: var(--muted);
+}
+
+.row__ops {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  flex: none;
+}
+
+/* 「预览」与「下载」。两个按钮调同一个端点，见 services/party.js。 */
+.pill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 48rpx;
+  padding: 0 14rpx;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  font-size: 22rpx;
+  color: var(--muted);
+}

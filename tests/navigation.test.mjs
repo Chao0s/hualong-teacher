@@ -105,9 +105,14 @@ test('tabBar pages sit in the main package', () => {
 
 // ── The four entry pages ─────────────────────────────────────────────────────
 
+// 党建管理已按原型 school-affairs.html 重建：轮播加三个分区，读 `GET /party/home`，
+// 不再是 hl-entry-sections 的三条整宽链接。它的分区、空态与去向由
+// tests/party-home.test.mjs 守住。其余三页的原型形状各不相同，还没有轮到它们。
+const SECTION_ENTRY_PAGES = ENTRY_PAGES.filter(([route]) => route !== 'pages/party-building/index')
+
 test('each entry page renders its module sections and names its own module', async () => {
   const c = await signedIn()
-  for (const [route, zh] of ENTRY_PAGES) {
+  for (const [route, zh] of SECTION_ENTRY_PAGES) {
     const page = loadPage(c, `${route}.js`)
     page.onLoad()
     assert.ok(page.data.ready, `${zh} 未通过会话门`)
@@ -119,6 +124,9 @@ test('each entry page renders its module sections and names its own module', asy
         assert.ok(entry.badge && entry.label, `${zh} 有一条不完整的入口`)
       }
     }
+  }
+  // 导航栏标题四页一起守 —— 那一条与版面无关。
+  for (const [route, zh] of ENTRY_PAGES) {
     assert.equal(JSON.parse(read(`${route}.json`)).navigationBarTitleText, zh)
   }
 })

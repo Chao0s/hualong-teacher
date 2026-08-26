@@ -17,7 +17,10 @@
 
 const api = require('../utils/request');
 const time = require('../utils/time');
+const guard = require('../utils/guard');
+const { present } = require('../utils/present');
 
+const HOME_PATH = '/party/home';
 const STUDY_PATH = '/party/studies';
 const ACTIVITY_PATH = '/party/activities';
 const BRAND_PATH = '/party/brands';
@@ -37,6 +40,23 @@ const STUDY_TYPE_FALLBACK = '资料';
 
 // db_file_ref.usage_key — 本模块只用这三个（F7）。
 const USAGE_LABEL = { main_file: '主文件', inline_media: '配图', download: '附件' };
+
+// db_file_ref.owner_object —— 取档要按这张业务表重跑一次授权（§8.4）。
+const STUDY_FILE_OWNER = 'db_party_study';
+
+// wx.openDocument 认得的扩展名。清单是微信平台定的，不是我们定的；不在表里的
+// 附件在手机上打不开，要当场说清楚。学习资料的主文件是文档，不是图片，所以这里
+// 没有 综合协调 那份图片清单。
+const DOCUMENT_EXT = ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'pdf'];
+
+// 入口页卡片首格的那个词。它们是**固定词，不是列**：党建活动与品牌建设都没有类型
+// 列（F7 连活动的主办部门与参与对象都拔了），原型这一格写死了这两个词。照抄原型，
+// 但记在这里，免得下一个人去数据库里找它们。
+const ACTIVITY_KIND_WORD = '活动介绍';
+const BRAND_KIND_WORD = '主题图文';
+
+// 轮播卡片副标题的后半句，原型 school-affairs.html 的 `.banner-sub` 原话。
+const SLIDE_HINT = '点击查看最近发布的学习文件';
 
 /**
  * 附件的一行，三个详情页共用。
@@ -168,6 +188,173 @@ async function brandDetail(brandId) {
   };
 }
 
+// ── 入口页（PartyHome）───────────────────────────────────────────────────────
+
+/** 轮播的一张。副标题在这里拼好，页面只绑一个字符串。 */
+function decorateSlide(study) {
+  const typeLabel = STUDY_TYPE_LABEL[study.study_type] || STUDY_TYPE_FALLBACK;
+  return {
+    study_id: study.study_id,
+    study_title: study.study_title,
+    sub_label: `${typeLabel} · ${time.formatDay(study.published_at)} · ${SLIDE_HINT}`,
+  };
+}
+
+/**
+ * 入口页的一张学习资料卡。
+ *
+ * 与列表行的差别只有两处，两处都来自原型：这里的日期不带钟点，而且不给摘要 ——
+ * 入口页一张卡只有一行 meta，摘要放不下。
+ */
+function decorateStudyBrief(study) {
+  return {
+    study_id: study.study_id,
+    study_title: study.study_title,
+    type_label: STUDY_TYPE_LABEL[study.study_type] || STUDY_TYPE_FALLBACK,
+    day_label: time.formatDay(study.published_at),
+    department_label: study.publisher_department || '',
+  };
+}
+
+/** 入口页的一张活动卡。业务日期是 `activity_at`，不是 `published_at`。 */
+function decorateActivityBrief(activity) {
+  return {
+    activity_id: activity.activity_id,
+    activity_title: activity.activity_title,
+    kind_label: ACTIVITY_KIND_WORD,
+    day_label: time.formatDay(activity.activity_at),
+    // 可空列。空串让页面按空串开合，不渲染一个空盒子。
+    location_label: activity.activity_location || '',
+  };
+}
+
+/** 入口页的一张品牌建设卡。原型这一行是「主题图文 ＋ 两个标签」。 */
+function decorateBrandBrief(brand) {
+  return {
+    brand_id: brand.brand_id,
+    brand_title: brand.brand_title,
+    kind_label: BRAND_KIND_WORD,
+    // `brand_tag` 可空。原型一行只放得下两个标签，多的截掉，页面不再截。
+    tags: (brand.brand_tag || []).slice(0, 2),
+  };
+}
+
+/**
+ * 入口页的一次聚合读取 —— 一个请求，四个分区。
+ *
+ * §4 规则 19：`carousel` 是**派生结果**，不是可管理的推荐清单。服务端查本园
+ * `study_status='s3'`，按 `published_at DESC, study_id DESC` 取 3，不足就回实际
+ * 笔数 —— 所以客户端既不排序也不补位，回几条就画几条。F7 拔掉的是
+ * `db_party_feature` 那张挑选表，不是轮播本身。
+ *
+ * 四个数组都可能缺席或为空（园所刚开张时三类都是空的），所以每一个都按空数组兜底：
+ * 页面用长度分空态，不用 undefined 分。
+ */
+async function partyHome() {
+  const home = await api.get(HOME_PATH);
+  return {
+    carousel: (home.carousel || []).map(decorateSlide),
+    studies: (home.latest_studies || []).map(decorateStudyBrief),
+    activities: (home.latest_activities || []).map(decorateActivityBrief),
+    brands: (home.latest_brands || []).map(decorateBrandBrief),
+  };
+}
+
+function extensionOf(fileName) {
+  const dot = String(fileName || '').lastIndexOf('.');
+  return dot < 0 ? '' : String(fileName).slice(dot + 1).toLowerCase();
+}
+
+/** 打不开就说一句中文，绝不留白。几条失败路径共用一个出口。 */
+function sayCannotOpen(text) {
+  wx.showToast({ title: text, icon: 'none' });
+}
+
+/**
+ * 打开一份学习资料的主文件。原型那张卡上的「预览」与「下载」都走这里。
+ *
+ * ── 两个按钮，一条契约能力 ──────────────────────────────────────────────────
+ *
+ * 登记表里 `/party/studies/{study_id}` **只有 view，没有 download-link**（那是资源
+ * 库与案例库才有的）。党建学习唯一的取档能力是 `GET /media/files/{file_id}/url`，
+ * 签发一条不超过 5 分钟的读取 URL。所以「预览」与「下载」调的是**同一个端点**，
+ * 差别只在拿到文件之后：预览直接打开，下载多开右上角菜单，让教师转发或另存 ——
+ * 微信小程序没有用户看得见的下载目录，那个菜单就是平台给的「存下来」。
+ * 不要以为这里有两条路径可走。
+ *
+ * ── 为什么要先读一次详情 ────────────────────────────────────────────────────
+ *
+ * `PartyStudyCard`（入口页与列表拿到的形状）**没有 `file_refs`**，只有详情才有。
+ * `file_id` 只能从详情里来，所以一次点击是两个请求：先详情拿 `file_id`，再签 URL。
+ * 代价要说明白：详情读成功会写一笔 `db_content_access_event(viewed)`（§4 规则 19），
+ * 于是入口页上按一次「预览」也会记一次浏览，即使教师没进详情页。
+ *
+ * §8.4：读取形状里没有可直接访问的地址，每一次取档都现签，服务端借这次调用重跑一遍
+ * 授权。所以这里不缓存 URL，也不把它交给页面。
+ *
+ * @param {number} studyId
+ * @param {boolean} save true 走「下载」，false 走「预览」。
+ */
+async function openStudyFile(studyId, save) {
+  let study;
+  try {
+    // 详情端点，不是列表 —— 卡片形状里没有 file_refs。
+    study = await api.get(`${STUDY_PATH}/${studyId}`);
+  } catch (err) {
+    if (guard.endSessionOnAuthFailure(err)) return;
+    sayCannotOpen(present(err).message);
+    return;
+  }
+
+  // 契约要求每份学习资料至少有一份 main_file（F7），但「要求」不是「保证」：
+  // 少了它就说一句，不要让按钮变成一次无声的空转。
+  const ref = (study.file_refs || []).find((r) => r.usage_key === 'main_file');
+  if (!ref) {
+    sayCannotOpen('这份学习资料还没有可打开的文件');
+    return;
+  }
+
+  const ext = extensionOf(ref.file_name);
+  if (DOCUMENT_EXT.indexOf(ext) === -1) {
+    // 微信打不开这种格式。先说清楚，不必白跑一次签名。
+    sayCannotOpen('这种格式的文件无法在手机上打开，请到电脑上查看');
+    return;
+  }
+
+  let signed;
+  try {
+    signed = await api.get(`/media/files/${ref.file_id}/url`, {
+      query: { owner_object: STUDY_FILE_OWNER, owner_id: studyId },
+    });
+  } catch (err) {
+    // 会话失效是门的决定，不是一句提示。
+    if (guard.endSessionOnAuthFailure(err)) return;
+    sayCannotOpen(present(err).message);
+    return;
+  }
+
+  wx.downloadFile({
+    url: signed.url,
+    success: (res) => {
+      if (res.statusCode !== 200) {
+        sayCannotOpen('文件下载失败，请稍后再试');
+        return;
+      }
+      wx.openDocument({
+        filePath: res.tempFilePath,
+        fileType: ext,
+        // 「下载」与「预览」在这里分手，也只在这里分手。
+        showMenu: Boolean(save),
+        success: () => {
+          if (save) wx.showToast({ title: '可用右上角菜单转发或另存', icon: 'none' });
+        },
+        fail: () => sayCannotOpen('文件打开失败，请到电脑上查看'),
+      });
+    },
+    fail: () => sayCannotOpen('文件下载失败，请检查网络后再试'),
+  });
+}
+
 /**
  * Copy an external video link.
  *
@@ -188,6 +375,8 @@ function copyVideoLink(url) {
 }
 
 module.exports = {
+  partyHome,
+  openStudyFile,
   listStudies,
   studyDetail,
   listActivities,

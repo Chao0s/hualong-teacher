@@ -414,7 +414,7 @@ test('the party entry page now really opens the activity list', async () => {
   const c = await signedIn()
   const entry = loadPage(c, 'pages/party-building/index.js')
   entry.onLoad()
-  entry.onEntryTap({ detail: { key: 'activity' } })
+  entry.onEntryTap({ currentTarget: { dataset: { key: 'activity' } } })
 
   assert.deepEqual(
     c.record.navigations.pop(),

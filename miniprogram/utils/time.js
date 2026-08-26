@@ -107,6 +107,18 @@ function formatShort(value) {
   return `${pad(p.month)}-${pad(p.day)} ${pad(p.hour)}:${pad(p.minute)}`;
 }
 
+/**
+ * `2026-08-19T14:03:22+08:00` -> `08-19`. Display only.
+ *
+ * 入口页的卡片一行里要塞下类型、日期与部门，钟点在那里既放不下也没有用。它与
+ * `formatShort` 读的是同一份写好的部分，同样不建 Date。
+ */
+function formatDay(value) {
+  const p = parseWireTimestamp(value);
+  if (!p) return value || '';
+  return `${pad(p.month)}-${pad(p.day)}`;
+}
+
 /** `2026-08-19T14:03:22+08:00` -> `2026年8月19日 14:03`. Display only. */
 function formatLong(value) {
   const p = parseWireTimestamp(value);
@@ -186,6 +198,7 @@ module.exports = {
   isWireTimestamp,
   parseWireTimestamp,
   formatShort,
+  formatDay,
   formatLong,
   isPeriodKey,
   currentMonthKey,

@@ -1,3 +1,118 @@
 <view class="hl-page" wx:if="{{ready}}">
-  <hl-entry-sections sections="{{sections}}" bindtapentry="onEntryTap" />
+
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryLoad">重试</text>
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障码 {{errorRequestId}}</text>
+  </view>
+
+  <view class="hl-loading" wx:if="{{loading}}">加载中…</view>
+
+  <!-- 空与失败是两种状态：读失败时三个区都不说「暂无」，那是在替服务器撒谎。 -->
+  <block wx:if="{{!loading}}">
+
+    <!-- 轮播 —— 原型的 `.banner-wrap`。一条学习资料都没有时整块不画（spec
+         `IF study_count=0, show_banner=0`），不是画一个空壳。 -->
+    <block wx:if="{{carousel.length > 0}}">
+      <swiper
+        class="banner"
+        circular
+        autoplay
+        interval="3600"
+        duration="300"
+        bindchange="onSlideChange">
+        <swiper-item wx:for="{{carousel}}" wx:key="study_id">
+          <view
+            class="banner__card banner__card--{{index % 3}}"
+            data-id="{{item.study_id}}"
+            bindtap="onStudyTap">
+            <view class="banner__title">{{item.study_title}}</view>
+            <view class="banner__sub">{{item.sub_label}}</view>
+          </view>
+        </swiper-item>
+      </swiper>
+      <!-- 指示点自己画：平台的 indicator-dots 只有圆点，原型的激活态是一条宽条。 -->
+      <view class="dots">
+        <view
+          wx:for="{{carousel}}"
+          wx:key="study_id"
+          class="dots__dot {{index === slide ? 'dots__dot--on' : ''}}" />
+      </view>
+    </block>
+
+    <view class="sec">
+      党建学习
+      <text class="sec__more" data-key="learn" bindtap="onEntryTap">全部 ›</text>
+    </view>
+    <view wx:if="{{studies.length === 0 && !errorText}}" class="hl-card hl-empty">暂无党建学习内容</view>
+    <view
+      wx:for="{{studies}}"
+      wx:key="study_id"
+      class="hl-card row"
+      data-id="{{item.study_id}}"
+      bindtap="onStudyTap">
+      <view class="row__mark row__mark--study">学</view>
+      <view class="row__text">
+        <view class="row__title">{{item.study_title}}</view>
+        <view class="row__meta">
+          <text>{{item.type_label}}</text>
+          <text>{{item.day_label}}</text>
+          <text wx:if="{{item.department_label}}">{{item.department_label}}</text>
+        </view>
+      </view>
+      <!-- 两个按钮，一条契约能力：都走 GET /media/files/{file_id}/url，
+           差别只在拿到文件之后（见 services/party.js → openStudyFile）。
+           catchtap 截住冒泡，否则按「下载」会连带进详情页。 -->
+      <view class="row__ops">
+        <text class="pill" data-id="{{item.study_id}}" catchtap="onPreviewTap">预览</text>
+        <text class="pill" data-id="{{item.study_id}}" catchtap="onDownloadTap">下载</text>
+      </view>
+    </view>
+
+    <view class="sec">
+      党建活动
+      <text class="sec__more" data-key="activity" bindtap="onEntryTap">全部 ›</text>
+    </view>
+    <view wx:if="{{activities.length === 0 && !errorText}}" class="hl-card hl-empty">暂无党建活动</view>
+    <view
+      wx:for="{{activities}}"
+      wx:key="activity_id"
+      class="hl-card row"
+      data-id="{{item.activity_id}}"
+      bindtap="onActivityTap">
+      <view class="row__mark row__mark--activity">活</view>
+      <view class="row__text">
+        <view class="row__title">{{item.activity_title}}</view>
+        <view class="row__meta">
+          <text>{{item.kind_label}}</text>
+          <text>{{item.day_label}}</text>
+          <text wx:if="{{item.location_label}}">{{item.location_label}}</text>
+        </view>
+      </view>
+      <hl-icon name="icon-10" color="muted" size="32rpx" />
+    </view>
+
+    <view class="sec">
+      品牌建设
+      <text class="sec__more" data-key="brand" bindtap="onEntryTap">全部 ›</text>
+    </view>
+    <view wx:if="{{brands.length === 0 && !errorText}}" class="hl-card hl-empty">暂无品牌建设内容</view>
+    <view
+      wx:for="{{brands}}"
+      wx:key="brand_id"
+      class="hl-card row"
+      data-id="{{item.brand_id}}"
+      bindtap="onBrandTap">
+      <view class="row__mark row__mark--brand">品</view>
+      <view class="row__text">
+        <view class="row__title">{{item.brand_title}}</view>
+        <view class="row__meta">
+          <text>{{item.kind_label}}</text>
+          <text wx:for="{{item.tags}}" wx:for-item="tag" wx:key="*this">{{tag}}</text>
+        </view>
+      </view>
+      <hl-icon name="icon-10" color="muted" size="32rpx" />
+    </view>
+
+  </block>
 </view>

@@ -390,7 +390,8 @@ test('the party entry page now really opens the study list', async () => {
   const c = await signedIn()
   const entry = loadPage(c, 'pages/party-building/index.js')
   entry.onLoad()
-  entry.onEntryTap({ detail: { key: 'learn' } })
+  // 入口页重建后「全部 ›」是页面自己的标签，不再是组件事件：key 从 dataset 来。
+  entry.onEntryTap({ currentTarget: { dataset: { key: 'learn' } } })
 
   assert.deepEqual(
     c.record.navigations.pop(),

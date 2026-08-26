@@ -44,7 +44,10 @@ export function createFakeWx({ loginCode = 'JS_CODE_OK', loginFails = false } = 
     clipboard: [],       // strings passed to setClipboardData
     requests: [],        // { method, url, header, data } — the wire payload as built
     downloads: [],       // urls passed to downloadFile
-    opened: [],          // { filePath, fileType } passed to openDocument
+    // { filePath, fileType, showMenu } passed to openDocument. showMenu is what
+    // separates 党建学习 的「下载」 from its 「预览」 — one endpoint, two buttons —
+    // so it has to be visible here or that difference is untestable.
+    opened: [],
     previews: [],        // urls passed to previewImage
     picks: [],           // { api, options } passed to chooseImage/chooseMessageFile
     uploads: [],         // { url, filePath, formData } passed to uploadFile
@@ -131,8 +134,8 @@ export function createFakeWx({ loginCode = 'JS_CODE_OK', loginFails = false } = 
       if (control.downloadFails) fail({ errMsg: 'downloadFile:fail simulated' })
       else success({ statusCode: control.downloadStatus, tempFilePath: 'wxfile://tmp/doc' })
     },
-    openDocument({ filePath, fileType, success, fail }) {
-      record.opened.push({ filePath, fileType })
+    openDocument({ filePath, fileType, showMenu, success, fail }) {
+      record.opened.push({ filePath, fileType, showMenu })
       if (control.openFails) fail({ errMsg: 'openDocument:fail simulated' })
       else if (success) success({ errMsg: 'openDocument:ok' })
     },

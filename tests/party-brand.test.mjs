@@ -377,7 +377,7 @@ test('the party entry page now really opens the brand list', async () => {
   const c = await signedIn()
   const entry = loadPage(c, 'pages/party-building/index.js')
   entry.onLoad()
-  entry.onEntryTap({ detail: { key: 'brand' } })
+  entry.onEntryTap({ currentTarget: { dataset: { key: 'brand' } } })
 
   assert.deepEqual(
     c.record.navigations.pop(),
