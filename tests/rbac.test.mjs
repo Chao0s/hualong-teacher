@@ -213,6 +213,10 @@ const CONTRACT_ABSENT = [
   ['GET', '/tasks'],
   ['GET', '/tasks/1'],
   ['GET', '/parent-tasks/1/progress'],
+  // 教师端的班级名册。契约里每一个名册与幼儿端点都在 `/admin/org/*` 下，是
+  // admin-pc 专属；**没有任何以名册为目的的教师端端点**。这一条承重：没有它，
+  // 选择幼儿的控件根本列不出人，在园时光的覆盖矩阵也没有姓名列可填。
+  ['GET', '/org/class-roster'],
 ]
 
 describe('RBAC · 契约未枚举但客户端在调的路径也有门', () => {
