@@ -3,9 +3,28 @@
  *
  * A native Mini Program has no build step and produces no dist/, so there is
  * nothing to run and inspect the way a bundler lets you. The compiler lives
- * inside WeChat DevTools, and `miniprogram-ci preview` needs an upload key plus
- * an IP allowlist entry. This stands in for it: it reads what DevTools reads and
- * fails on what DevTools would reject.
+ * inside WeChat DevTools. This stands in for it: it reads what DevTools reads
+ * and fails on what DevTools would reject.
+ *
+ * WHY THIS EXISTS RATHER THAN A REAL COMPILE — measured 2026-08-26, not assumed,
+ * because the assumption is worth checking once and expensive to re-check:
+ *
+ *   ci.Project              refuses to construct: "privateKeyPath should not be
+ *                           empty". Every upload/preview path goes through it.
+ *   ci.getCompiledResult    looks like a compile-without-upload, but validates
+ *                           its argument as `upload` does and wants a full
+ *                           Project. Same key requirement.
+ *   ci.DevtoolsProject      constructs WITHOUT a key, and is inert — projectPath
+ *                           comes back empty, the file set is size 0, _ready is
+ *                           false. It is the IDE's own bridge object; away from
+ *                           a running IDE it does nothing.
+ *   DevTools CLI            compiles with no key at all, using the IDE's logged-in
+ *                           session — but needs 设置 → 安全设置 → 服务端口. And
+ *                           `cli quit` cannot help you turn it on, because the CLI
+ *                           reaches the IDE THROUGH that port.
+ *
+ * So: a real compile needs either a PEM upload key (plus an IP allowlist entry)
+ * or one human toggle in the IDE. Neither is something this file can supply.
  *
  * It exists because of commit 6b24802 — four entry pages shipped `{{{{ready}}}}`
  * and could not compile, while 76 tests passed, because the tests read the files
