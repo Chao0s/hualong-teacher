@@ -12,7 +12,8 @@
     "spec:inventory": "node tools/spec-inventory.mjs",
     "verify:build": "node tools/verify-build.mjs",
     "check:remote-scripts": "node scripts/check-remote-scripts.mjs",
-    "hooks:install": "git config core.hooksPath .githooks"
+    "hooks:install": "git config core.hooksPath .githooks",
+    "verify:release": "node tools/verify-build.mjs --release"
   },
   "engines": {
     "node": ">=18"

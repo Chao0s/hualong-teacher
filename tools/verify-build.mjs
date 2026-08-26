@@ -25,6 +25,15 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, '..');
 const ROOT = resolve(REPO, 'miniprogram');
 
+/**
+ * `--release` 打开正式构建路径的额外检查（票据 23 验收项）。
+ *
+ * 关闭域名校验最危险的地方是：它留着不影响任何日常开发，只在提审那天变成阻断。
+ * 所以日常 `npm run verify:build` 照旧放行，`npm run verify:release` 拦下它。
+ * 一笔债要么有人记着，要么有一道闸记着 —— 后者不会忘。
+ */
+const RELEASE = process.argv.includes('--release');
+
 // 微信平台硬上限：主包 2 MB，整包（含分包）20 MB。超过就是上传被拒，不是警告。
 const MAIN_PACKAGE_LIMIT = 2 * 1024 * 1024;
 const TOTAL_LIMIT = 20 * 1024 * 1024;
@@ -252,6 +261,26 @@ function checkWxssFile(file) {
   const open = (src.match(/\{/g) || []).length;
   const close = (src.match(/\}/g) || []).length;
   if (open !== close) note(rel(file), `花括号不配对：${open} 个 {，${close} 个 }`);
+}
+
+// ── 正式构建路径的额外闸（票据 23）──────────────────────────────────────────
+
+if (RELEASE) {
+  const shared = readJson(join(REPO, 'project.config.json'), 'project.config.json') || {};
+  if (shared.setting?.urlCheck === false) {
+    note('project.config.json',
+      '域名校验仍关着（setting.urlCheck=false）。开发期靠它绕过未备案的域名，'
+      + '正式包不得带着它出门 —— 打开它，或先把 API 域名备案并加进服务器域名白名单。');
+  }
+  // 生产档的 baseUrl 在域名落定前是空的；空着可以，填一个没备案的域名不行。
+  const config = readFileSync(join(ROOT, 'config.js'), 'utf8');
+  const prod = /prod\s*:\s*\{[\s\S]{0,300}?baseUrl\s*:\s*'([^']*)'/.exec(config);
+  if (prod && prod[1] && !prod[1].startsWith('https://')) {
+    note('miniprogram/config.js', `生产档 baseUrl 不是 https：${prod[1]}`);
+  }
+  if (!shared.appid || /^touristappid$/i.test(shared.appid)) {
+    note('project.config.json', '正式包需要一个真实 AppID');
+  }
 }
 
 // ── 包体积 ──────────────────────────────────────────────────────────────────
