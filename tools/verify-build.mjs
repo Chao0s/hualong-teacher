@@ -38,6 +38,10 @@ const SUBPACKAGE_SERVICES = {
   'packages/coordination': 'coordination',
   'packages/library': 'library',
   'packages/training': 'training',
+  // 五维评价（票据 18）自成一个分包，与资源库借教研培训落一条门是同一个形状：一个
+  // tabBar 模块可以带不止一个分包，`preloadRule` 上写着 library／training／assessment
+  // 三个。分开的理由是服务模块边界 —— 量表与研修没有共用的读写面。
+  'packages/assessment': 'assessment',
   'packages/co-education': 'co-education',
 };
 

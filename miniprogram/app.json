@@ -59,6 +59,15 @@
       ]
     },
     {
+      "root": "packages/assessment",
+      "name": "assessment",
+      "pages": [
+        "pages/five-chart/index",
+        "pages/scale/index",
+        "pages/radar/index"
+      ]
+    },
+    {
       "root": "packages/co-education",
       "name": "co-education",
       "pages": [
@@ -80,7 +89,7 @@
     },
     "pages/training/index": {
       "network": "all",
-      "packages": ["library", "training"]
+      "packages": ["library", "training", "assessment"]
     },
     "pages/co-education/index": {
       "network": "all",

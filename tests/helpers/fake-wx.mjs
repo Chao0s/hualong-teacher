@@ -21,6 +21,16 @@
  *   wx.uploadFile        -> a real multipart-ish POST to the URL the credential
  *                          named, so "the bytes did not go through the API
  *                          instance" (§8.1) is assertable
+ *   wx.getWindowInfo     -> a controllable pixelRatio, because "2 倍屏与 3 倍屏都不
+ *                          模糊" is a claim about a number the client reads from
+ *                          the platform and cannot otherwise be reached
+ *   wx.createSelectorQuery + canvas 2d context -> RECORDED, never drawn. The
+ *                          canvas node keeps its width/height as set, so the
+ *                          backing-store rule (CSS size × pixelRatio) is
+ *                          assertable, and every context call lands in
+ *                          record.canvasOps in order, so "the canvas was cleared
+ *                          BEFORE anything was drawn" is a question about that
+ *                          list rather than about pixels
  */
 
 export function createFakeWx({ loginCode = 'JS_CODE_OK', loginFails = false } = {}) {
@@ -38,6 +48,9 @@ export function createFakeWx({ loginCode = 'JS_CODE_OK', loginFails = false } = 
     previews: [],        // urls passed to previewImage
     picks: [],           // { api, options } passed to chooseImage/chooseMessageFile
     uploads: [],         // { url, filePath, formData } passed to uploadFile
+    canvasOps: [],       // { op, args } — every 2d context call, in order
+    canvasNodes: [],     // the canvas nodes handed out, with their final w/h
+    selectorQueries: [], // { selector, fields } passed to createSelectorQuery
   }
 
   // Mutable mid-test, so one client can succeed and then fail without a reload.
@@ -53,6 +66,13 @@ export function createFakeWx({ loginCode = 'JS_CODE_OK', loginFails = false } = 
     pickCancels: false,
     pickFails: false,
     uploadFails: false,
+    // 屏幕倍率。2 与 3 是真机上最常见的两档；换掉它就换了后备缓冲该有多大。
+    pixelRatio: 2,
+    // The CSS size the platform would measure for the queried node.
+    nodeSize: { width: 300, height: 300 },
+    // `null` means the selector matched nothing — the platform reports that as a
+    // null entry, and a client that does not check it crashes on `res[0].node`.
+    nodeMissing: false,
   }
 
   const wx = {
@@ -125,6 +145,50 @@ export function createFakeWx({ loginCode = 'JS_CODE_OK', loginFails = false } = 
     chooseImage(options) { choose('chooseImage', options) },
     chooseMessageFile(options) { choose('chooseMessageFile', options) },
 
+    // app.js reads safe-area metrics; the radar page reads pixelRatio. Both go
+    // through the same call, so one fake serves both.
+    getWindowInfo() {
+      return {
+        pixelRatio: control.pixelRatio,
+        statusBarHeight: 20,
+        screenHeight: 800,
+        screenWidth: 375,
+        safeArea: { bottom: 800 },
+      }
+    },
+
+    /**
+     * The Canvas 2D lookup, as the official example uses it:
+     *   createSelectorQuery().select('#id').fields({ node: true, size: true }).exec(cb)
+     *
+     * The chain is returned by every step so the client can write it in one
+     * expression, which is how the platform behaves and how the docs show it.
+     */
+    createSelectorQuery() {
+      let selector = ''
+      let fields = null
+      const query = {
+        select(sel) { selector = sel; return query },
+        selectAll(sel) { selector = sel; return query },
+        fields(opts) { fields = opts; return query },
+        exec(cb) {
+          record.selectorQueries.push({ selector, fields })
+          if (control.nodeMissing) { cb([null]); return }
+          const node = {
+            width: control.nodeSize.width,
+            height: control.nodeSize.height,
+            getContext: (type) => {
+              record.canvasOps.push({ op: 'getContext', args: [type] })
+              return createRecordingContext()
+            },
+          }
+          record.canvasNodes.push(node)
+          cb([{ node, width: control.nodeSize.width, height: control.nodeSize.height }])
+        },
+      }
+      return query
+    },
+
     /**
      * §8.1: the bytes go to the object storage, not to the API instance. The
      * fake posts the form fields for real, so `POST /media/files` afterwards
@@ -144,6 +208,33 @@ export function createFakeWx({ loginCode = 'JS_CODE_OK', loginFails = false } = 
         fail({ errMsg: `uploadFile:fail ${err.message}` })
       })
     },
+  }
+
+  /**
+   * A recording 2d context. Nothing is rasterised — the assertions are about
+   * WHICH calls happened and in WHAT ORDER, and a real rasteriser would answer
+   * neither question. Settable properties are recorded too, so a test can prove
+   * the stroke colour of the grid differs from the polygon's.
+   */
+  function createRecordingContext() {
+    const ops = record.canvasOps
+    const ctx = {}
+    const methods = [
+      'clearRect', 'save', 'restore', 'scale', 'translate', 'rotate',
+      'beginPath', 'closePath', 'moveTo', 'lineTo', 'arc', 'rect',
+      'stroke', 'fill', 'fillRect', 'strokeRect', 'fillText', 'setLineDash',
+    ]
+    for (const name of methods) {
+      ctx[name] = (...args) => { ops.push({ op: name, args }) }
+    }
+    for (const prop of ['fillStyle', 'strokeStyle', 'lineWidth', 'font', 'textAlign', 'textBaseline', 'globalAlpha']) {
+      let held = null
+      Object.defineProperty(ctx, prop, {
+        get: () => held,
+        set: (v) => { held = v; ops.push({ op: `set:${prop}`, args: [v] }) },
+      })
+    }
+    return ctx
   }
 
   /** chooseImage and chooseMessageFile differ only in the tempFiles shape. */

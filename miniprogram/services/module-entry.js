@@ -21,7 +21,8 @@
  * loud exactly as 首页 does (ticket 08). Tickets 12 to 21 fill them in — set
  * `page`, and the refusal disappears on its own. 党建管理's three entries and
  * 综合协调's three entries are all set (ticket 12); 教研培训's 办园理念与课程体系 and
- * 研修 are set (ticket 14); the rest are still null.
+ * 研修 are set (ticket 14), 填写五大领域量表 and 评价五维图 (ticket 18); the rest are
+ * still null.
  */
 
 const guard = require('../utils/guard');
@@ -72,8 +73,8 @@ const MODULES = {
       {
         title: '五大领域评价',
         entries: [
-          { key: 'scale', badge: '量', label: '填写五大领域量表', desc: '按领域逐项打分', screen: 'Scale', page: null },
-          { key: 'chart', badge: '维', label: '评价五维图', desc: '看已完成的评价结果', screen: 'FiveChart', page: null },
+          { key: 'scale', badge: '量', label: '填写五大领域量表', desc: '按领域逐项打分', screen: 'Scale', page: '/packages/assessment/pages/scale/index' },
+          { key: 'chart', badge: '维', label: '评价五维图', desc: '看已完成的评价结果', screen: 'FiveChart', page: '/packages/assessment/pages/five-chart/index' },
         ],
       },
     ],

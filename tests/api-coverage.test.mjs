@@ -119,6 +119,23 @@ const BUSINESS_REFUSAL_EXPECTED = {
 // 出了问题，仍然要红。
 const GATE_STATUSES = [401, 403, 404]
 
+/**
+ * 范围谓词真的生效的那几条 —— 对它们，**404 就是契约要求的答案**（票据 18）。
+ *
+ * 与上表分开，因为拒绝的性质不同。上表是「门通过了，业务规则挡住」，所以断言的是「不是
+ * 4 门码」。这几条的处理器实现了 `x-hualong-scope` 的 `child_id ... AND class_id=$ctx_class`：
+ * 广度测试打的 `child_id=1` 不在本班名册上，而 §2.3 明写范围不符回 **404**，且必须与
+ * 「这个 id 从来不存在」逐字相同 —— 那个区分本身就是未成年人记录的信道
+ * （Platform SECURITY.md 红线 4）。硬要它们回 2xx，只能把范围谓词从 mock 里拿掉。
+ *
+ * 401／403 仍然要红：那两个是门的回答，rbac.test.mjs 对同样这几条另有正面断言。
+ */
+const SCOPE_REFUSAL_EXPECTED = {
+  'GET /children/1/child-assessment': '1 号幼儿不在本班名册上（§2.3 范围不符即 404）',
+  'PUT /children/1/child-assessment/items/1': '同上',
+  'GET /children/1/child-assessment/report': '同上',
+}
+
 describe('每个教师端操作都回契约声明的成功码', () => {
   test('契约已挂载', () => {
     if (specError) {
@@ -160,6 +177,12 @@ describe('每个教师端操作都回契约声明的成功码', () => {
       if (reason && !GATE_STATUSES.includes(res.status)) {
         refused += 1
         t.diagnostic(`业务前置拒绝（门已通过）：${route.method} ${path} -> ${res.status} —— ${reason}`)
+        continue
+      }
+      const scopeReason = SCOPE_REFUSAL_EXPECTED[`${route.method} ${path}`]
+      if (scopeReason && res.status === 404) {
+        refused += 1
+        t.diagnostic(`范围拒绝（契约要求 404）：${route.method} ${path} —— ${scopeReason}`)
         continue
       }
       failures.push(`${route.method} ${path} -> ${res.status}（契约声明 ${route.status}）`)

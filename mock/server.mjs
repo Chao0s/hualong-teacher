@@ -27,6 +27,7 @@
  */
 
 import { createServer } from 'node:http';
+import { readFileSync } from 'node:fs';
 import { randomUUID, createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { ROLE_BY_SURFACE, authorizeRole, RoleResolutionError } from './authz.mjs';
@@ -791,6 +792,13 @@ const state = {
   nextFeedbackId: 900,          // POST /trainings/{id}/feedback assigns from here
   nextMomentId: 900,            // POST /moments assigns from here
   nextParentTaskId: 600,        // POST /home-school/parent-tasks assigns from here
+  nextChildAssessmentId: 700,   // 首次评分建主记录时从这里取号
+  // child_id -> 一份综合评估。**草稿要真的存得住**：教师填一半退出再进来，读回来的
+  // 必须是刚才那些题。所以它活在这里，而不是每次请求现造。
+  childAssessments: new Map(),
+  // 每一次真正执行的 c2 -> c1。与 taskCompletions 同一个理由：幂等重放在分发层就返回
+  // 了，处理器根本没跑，所以「重复提交只产生一份」要数服务端做了几次。
+  childAssessmentCompletions: [],
   uploadTickets: new Map(),     // upload_ticket -> { usage_key, content_type, byte_size }
   // 每一次真正执行的 a2 -> a3。幂等重放不进这张表，所以「重复点击只产生一条提交」
   // 数得出来 —— 与 accessEvents 同一个理由：断言要对着服务端自己的记录，不是对着
@@ -1752,6 +1760,15 @@ const HAND_WRITTEN_ROLES = [
   // 契约**没有**这条路径，连表都没有（见 COURSE_INTRO 的头注）。登记在这里是为了让门
   // 不至于悄悄缺席 —— 缺口本身是另一个问题，记在交接里。
   [/^\/training\/course-intro$/, ['teacher']],
+  // 票据 18 的五大领域量表与综合评估。契约给这六条写的都是 teacher。
+  // `/scales/...` 的正则收全部量表版本，不只收现役那一版：门要覆盖整条路径，处理器
+  // 才按版本挑。漏登记是安全缺陷，多登记只是覆盖面窄。
+  [/^\/scales\/[^/]+\/[^/]+$/, ['teacher']],
+  [/^\/child-assessments$/, ['teacher']],
+  [/^\/child-assessments\/class-report$/, ['teacher']],
+  [/^\/children\/\d+\/child-assessment$/, ['teacher']],
+  [/^\/children\/\d+\/child-assessment\/items\/[^/]+$/, ['teacher']],
+  [/^\/children\/\d+\/child-assessment\/report$/, ['teacher']],
   [/^\/auth\/session$/, ['teacher', 'parent', 'admin-pc', 'partner-account']],
 ];
 
@@ -1872,8 +1889,11 @@ const server = createServer(async (req, res) => {
     const needsBody = req.method === 'POST' || req.method === 'PATCH' || req.method === 'PUT';
     const raw = needsBody ? await readRaw(req) : '';
 
+    // §4.1 的幂等键不是 POST 专属：`PUT …/child-assessment/items/{item_id}` 在契约上
+    // 也声明了 `Idempotency-Key` 参数，而末题那一次 PUT 就是提交。只认 POST 会让
+    // 「重复提交按幂等键回原始状态码与原始响应体」在这条路径上根本不成立。
     const idemKey = req.headers['idempotency-key'];
-    if (idemKey && req.method === 'POST') {
+    if (idemKey && (req.method === 'POST' || req.method === 'PUT')) {
       const seen = state.idempotency.get(idemKey);
       if (seen) {
         const hash = createHash('sha256').update(raw || '{}').digest('hex');
@@ -2028,6 +2048,21 @@ const server = createServer(async (req, res) => {
       postParentTaskClosure(req, res, path.split('/')[3]);
     } else if (req.method === 'GET' && /^\/home-school\/parent-tasks\/\d+\/submissions$/.test(path)) {
       getParentTaskSubmissions(req, res, path.split('/')[3]);
+    } else if (req.method === 'GET' && path === `/scales/${SCALE_CODE}/${SCALE_VERSION}`) {
+      // 只答现役那一版；别的版本落到契约生成的路由上（见 getScale 头注）。
+      getScale(req, res);
+    } else if (req.method === 'GET' && path === '/child-assessments/class-report') {
+      // 这一条必须排在 `/child-assessments` 之前 —— 两条都是精确字符串，次序在这里
+      // 不是必需的，但把它写在前面，加一条前缀匹配时就不必再想一次。
+      getChildAssessmentClassReport(req, res);
+    } else if (req.method === 'GET' && path === '/child-assessments') {
+      getChildAssessments(req, res);
+    } else if (req.method === 'GET' && /^\/children\/\d+\/child-assessment$/.test(path)) {
+      getChildAssessment(req, res, path.split('/')[2]);
+    } else if (req.method === 'GET' && /^\/children\/\d+\/child-assessment\/report$/.test(path)) {
+      getChildAssessmentReport(req, res, path.split('/')[2]);
+    } else if (req.method === 'PUT' && /^\/children\/\d+\/child-assessment\/items\/[^/]+$/.test(path)) {
+      putChildAssessmentItem(req, res, path.split('/')[2], path.split('/')[5], body);
     } else if (!await serveFromContract(req, res, path)) {
       fail(res, 404, 'not_found', `未实现的端点：${req.method} ${path}`);
     }
@@ -2064,6 +2099,9 @@ export function start({ port = 0, unbound = false, noTerm = false, quiet = true 
   state.taskCompletions.length = 0;
   state.librarySubmissions.length = 0;
   state.trainingFeedbackWrites.length = 0;
+  state.childAssessments.clear();
+  state.childAssessmentCompletions.length = 0;
+  state.nextChildAssessmentId = 700;
   state.uploadTickets.clear();
   state.nextFileId = 8800;
   state.nextResourceId = 900;
@@ -3371,6 +3409,266 @@ function getParentTaskSubmissions(req, res, id) {
   return sendJson(res, 200, { items, next_cursor: null });
 }
 
+// ══════════════════════════════════════════════════════════════════════════
+// 五大领域量表与综合评估（票据 18）
+// ══════════════════════════════════════════════════════════════════════════
+//
+//   NONE --PUT items/{id} 首次评分--> c2 草稿 --PUT 末题--> c1 已完成
+//
+// **一个端点，两个已登记出口**（api/action-registry.tsv 两行、openapi 一条路径）：
+// `child_assessment.score_item`（NONE→c2）与 `child_assessment.score_item.complete`
+// （c2→c1）。中间那些不改状态的评分（c2→c2）刻意没有登记行 —— 登记表记转移，不记端点。
+//
+// 三条规则抄契约，不是这里发明的：
+//   1. `completed_count` = **题项列数**。未评的题没有列，不是 0 分。重评已评的题不涨。
+//   2. `child_assessment_status` 由 `completed_count` 派生，**请求体里没有它**。
+//   3. 主记录在**首次评分时**建立，同事务绑定 `scale_code`／`scale_version`／
+//      `required_count`。升版不回头把旧记录判成草稿。一题未评时主记录不存在，GET 回 404。
+
+/**
+ * 题库来自 `data/guide-scale.json`，**服务端读一次**。
+ *
+ * 后端 spec 05 写明这份 JSON 是 `db_scale_item` 的导入来源（reference data，
+ * `UNIQUE(scale_code, scale_version, item_id)`，无状态列、不进覆盖账本）。所以在这个
+ * mock 里它扮演那张表。**题库只有这一份**：客户端不内嵌，页面不持有。
+ */
+const GUIDE_SCALE = JSON.parse(
+  readFileSync(new URL('../data/guide-scale.json', import.meta.url), 'utf8')
+);
+
+const SCALE_CODE = 'guide';
+const SCALE_VERSION = '1.0';
+
+/** 124 条题项，四层层级拍平 —— 层级不落表，靠 `item_id` 前缀逐级截断（§2.6）。 */
+const SCALE_ITEMS = Object.freeze(
+  GUIDE_SCALE.domains.flatMap((domain) => domain.aspects.flatMap(
+    (aspect) => aspect.goals.flatMap((goal) => goal.items.map((item) => Object.freeze({
+      item_id: item.item_id,
+      // `item_name` 短名与 `question` 完整问句是**两段不同的文字**，合并会让其中一页
+      // 没字可显示（DATABASE_SPEC.md §3.1 的 2026-08-14 更正）。
+      item_name: item.item_name,
+      question: item.question,
+      item_type: item.item_type,
+      anchors: item.anchors,
+      anchored_levels: item.anchored_levels || [],
+      inferred_levels: item.inferred_levels || [],
+    })))
+  ))
+);
+
+const SCALE_REQUIRED_COUNT = SCALE_ITEMS.length;
+
+/**
+ * 每名幼儿一份评估，进程内持久。
+ *
+ * **草稿要真的存得住**：教师填一半退出、再进来，读回来的必须是刚才那些题。所以这张表
+ * 活在 `state` 上而不是每次请求现造，`start()` 才清空它。
+ *
+ * 形状：`child_id -> { child_assessment_id, scale_code, scale_version, required_count,
+ * scores: Map<item_id, score>, submitted_at }`。
+ */
+function assessmentFor(childId) {
+  return state.childAssessments.get(childId) || null;
+}
+
+function assessmentStatus(row) {
+  return row.scores.size >= row.required_count ? 'c1' : 'c2';
+}
+
+/** `ChildAssessmentProgress` —— 名册左连接的进度行。无记录时 `child_assessment_id` 为空。 */
+function assessmentProgress(child) {
+  const row = assessmentFor(child.child_id);
+  if (!row) {
+    return {
+      child_id: child.child_id,
+      child_name: child.child_name,
+      child_assessment_id: null,
+      scale_code: null,
+      scale_version: null,
+      // 分母来自**现役**量表：还没有主记录的幼儿还没绑定版本。
+      required_count: SCALE_REQUIRED_COUNT,
+      completed_count: 0,
+      child_assessment_status: 'c2',
+      submitted_at: null,
+    };
+  }
+  return {
+    child_id: child.child_id,
+    child_name: child.child_name,
+    child_assessment_id: row.child_assessment_id,
+    scale_code: row.scale_code,
+    scale_version: row.scale_version,
+    // 分母随**该行绑定的版本**解释，不随最新版本变动（契约原话）。
+    required_count: row.required_count,
+    completed_count: row.scores.size,
+    child_assessment_status: assessmentStatus(row),
+    submitted_at: row.submitted_at,
+  };
+}
+
+/** 本班在园名册里的那一名幼儿，或 null。范围不符与不存在在这里是同一件事（§2.3）。 */
+function childInScope(id) {
+  return CHILDREN.find((c) => c.child_id === Number(id)) || null;
+}
+
+/**
+ * GET /scales/{scale_code}/{scale_version} —— 题库下发，124 题。
+ *
+ * 只有现役 `guide` 1.0 由这个处理器答；其他版本落到契约生成的路由上（本 mock 不装载
+ * 第二份题库，而广度测试打的是一个占位版本号）。
+ */
+function getScale(req, res) {
+  return sendJson(res, 200, {
+    scale_code: SCALE_CODE,
+    scale_version: SCALE_VERSION,
+    items: SCALE_ITEMS.map((item) => ({ ...item })),
+  });
+}
+
+/** GET /child-assessments —— 名册型，**整取不分页**（§3.5），`child_id ASC`。 */
+function getChildAssessments(req, res) {
+  return sendJson(res, 200, { items: CHILDREN.map(assessmentProgress) });
+}
+
+/**
+ * GET /children/{child_id}/child-assessment —— 主记录与**已评题**，续填用。
+ *
+ * `items` 只含已评题：**未评 = 该题无列，不是 0 分**。一题未评时主记录不存在，回 404 ——
+ * 教师第一次进量表页看到的就是它，客户端把它翻译成「还没开始」。
+ */
+function getChildAssessment(req, res, id) {
+  const child = childInScope(id);
+  if (!child) return fail(res, 404, 'not_found', '幼儿不存在或不在可见范围内');
+  const row = assessmentFor(child.child_id);
+  if (!row) return fail(res, 404, 'not_found', '这名幼儿本学期还没有综合评估记录');
+  return sendJson(res, 200, {
+    ...assessmentProgress(child),
+    items: [...row.scores.entries()].map(([item_id, score]) => ({ item_id, score })),
+  });
+}
+
+/**
+ * PUT /children/{child_id}/child-assessment/items/{item_id} —— 逐题增量保存。
+ *
+ * 请求体是 `ChildAssessmentItemWrite`：`additionalProperties: false`，只有 `score`
+ * （1—5 整数，NOT NULL —— 没有「未评」这个值，未评是没有列）。派生键与事件时间戳一律
+ * 先剥再验，否则 `additionalProperties: false` 会把一个契约说该收的请求 422 掉（§7.3）。
+ */
+function putChildAssessmentItem(req, res, id, itemId, rawBody) {
+  if (refuseWithoutTerm(res)) return;
+  const child = childInScope(id);
+  if (!child) return fail(res, 404, 'not_found', '幼儿不存在或不在可见范围内');
+
+  const item = SCALE_ITEMS.find((i) => i.item_id === itemId);
+  if (!item) return fail(res, 404, 'not_found', '题号不在现役量表里');
+
+  const body = stripDerived(rawBody || {});
+  const extra = Object.keys(body).filter((k) => k !== 'score');
+  if (extra.length) {
+    return fail(res, 422, 'validation_failed', '请求体含契约未声明的字段',
+      { field: extra[0], rule: 'additionalProperties: false' });
+  }
+  if (!Number.isInteger(body.score) || body.score < 1 || body.score > 5) {
+    return fail(res, 422, 'validation_failed', '得分必须是 1 到 5 的整数',
+      { field: 'score', rule: 'minimum: 1, maximum: 5' });
+  }
+
+  let row = assessmentFor(child.child_id);
+  if (!row) {
+    // 主记录在首次评分时建立，同事务绑定量表版本与题数。
+    row = {
+      child_assessment_id: state.nextChildAssessmentId,
+      scale_code: SCALE_CODE,
+      scale_version: SCALE_VERSION,
+      required_count: SCALE_REQUIRED_COUNT,
+      scores: new Map(),
+      submitted_at: null,
+    };
+    state.nextChildAssessmentId += 1;
+    state.childAssessments.set(child.child_id, row);
+  }
+  if (assessmentStatus(row) === 'c1') {
+    // c1 之后内容锁定。撤销评分（c1→c2）不在转移图上，本契约不提供该路径。
+    return fail(res, 409, 'state_precondition_failed', '这份量表已提交，内容已锁定',
+      { from: 'c1', required: 'c2' });
+  }
+
+  row.scores.set(itemId, body.score);
+  if (assessmentStatus(row) === 'c1') {
+    row.submitted_at = '2026-08-26T16:20:00+08:00';
+    // 服务端真正执行的一次 c2 -> c1。幂等重放在分发层就返回了，处理器根本没跑，所以
+    // 这张表不涨 —— 「重复提交只产生一份」要数服务端做了几次，不能数客户端发了几个请求。
+    state.childAssessmentCompletions.push({
+      child_id: child.child_id,
+      child_assessment_id: row.child_assessment_id,
+    });
+  }
+  return sendJson(res, 200, assessmentProgress(child));
+}
+
+/**
+ * 任一层级的题项级均值（§4 规则 13）。
+ *
+ * **题项级均值，不是下级均值的均值** —— 各目标／维度题项数不等，两级平均会造成加权失真。
+ * 未评的题不进分母；该层级一题未评时回 `null`，**不回 0**：接口要能表达「尚无评分」。
+ */
+function scaleAggregate(code, scoreLists) {
+  let sum = 0;
+  let count = 0;
+  scoreLists.forEach((scores) => {
+    scores.forEach((score, itemId) => {
+      if (!itemId.startsWith(code)) return;
+      sum += score;
+      count += 1;
+    });
+  });
+  return { code, item_count: count, average: count ? sum / count : null };
+}
+
+const DOMAIN_CODES = Object.freeze(['H', 'L', 'S', 'K', 'A']);
+
+/** GET /children/{child_id}/child-assessment/report —— 五领域均分 + 逐题明细，零文字分析。 */
+function getChildAssessmentReport(req, res, id) {
+  const child = childInScope(id);
+  if (!child) return fail(res, 404, 'not_found', '幼儿不存在或不在可见范围内');
+  const row = assessmentFor(child.child_id);
+  if (!row) return fail(res, 404, 'not_found', '这名幼儿本学期还没有综合评估记录');
+
+  const all = scaleAggregate('', [row.scores]);
+  return sendJson(res, 200, {
+    child_assessment_id: row.child_assessment_id,
+    child_id: child.child_id,
+    term_id: TERM.term_id,
+    scale_code: row.scale_code,
+    scale_version: row.scale_version,
+    submitted_at: row.submitted_at,
+    domains: DOMAIN_CODES.map((code) => scaleAggregate(code, [row.scores])),
+    total_average: all.average,
+    items: [...row.scores.entries()].map(([item_id, score]) => ({ item_id, score })),
+  });
+}
+
+/**
+ * GET /child-assessments/class-report —— 班级五领域均分。
+ *
+ * **只统计已完成（c1）**，草稿不计入。无已完成评估时 `assessed_child_count=0` 且
+ * `domains: []`，供前端区分「均分 0」与「尚无资料」。
+ */
+function getChildAssessmentClassReport(req, res) {
+  const done = CHILDREN
+    .map((c) => assessmentFor(c.child_id))
+    .filter((row) => row && assessmentStatus(row) === 'c1');
+
+  return sendJson(res, 200, {
+    class_id: SCOPE.class_id,
+    term_id: TERM.term_id,
+    assessed_child_count: done.length,
+    domains: done.length
+      ? DOMAIN_CODES.map((code) => scaleAggregate(code, done.map((r) => r.scores)))
+      : [],
+  });
+}
+
 /**
  * Test hook: flip the term live, so "the term resumes and the same page's
  * write entries come back WITHOUT a re-login" is testable against the real
@@ -3429,6 +3727,16 @@ export function parentTaskPublications() {
 /** Test hook: the class roster the mock serves, so a test can size the matrix. */
 export function classRoster() {
   return CHILDREN.map((c) => ({ ...c }));
+}
+
+/** Test hook: the c2 -> c1 综合评估 submissions the server actually executed (票据 18). */
+export function childAssessmentCompletions() {
+  return state.childAssessmentCompletions.slice();
+}
+
+/** Test hook: the 124 scale items the mock serves, so a test can score them all. */
+export function scaleItems() {
+  return SCALE_ITEMS.map((item) => ({ ...item }));
 }
 
 /** Test hook: the six week keys the progress span covers, newest last. */

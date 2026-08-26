@@ -125,13 +125,14 @@ test('each entry page renders its module sections and names its own module', asy
 
 test('an entry whose screen is not built yet is refused by name, not in silence', async () => {
   const c = await signedIn()
-  // 党建管理与综合协调六条自票据 12 起全部落地；教研培训第一组的三条自票据 14 起也
-  // 全部落地，所以这条从「办园理念与课程体系」挪到同一模块第二组仍未落地的「填写五大
-  // 领域量表」。落地它的票据同样要把这条挪到下一个仍未落地的入口，不要删。
-  const page = loadPage(c, 'pages/training/index.js')
+  // 党建管理与综合协调六条自票据 12 起全部落地；教研培训第一组的三条自票据 14 起、
+  // 第二组的两条自票据 18 起也全部落地，所以这条从「填写五大领域量表」挪到家园社共育
+  // 第二组仍未落地的「月度评价」。落地它的票据同样要把这条挪到下一个仍未落地的入口，
+  // 不要删。
+  const page = loadPage(c, 'pages/co-education/index.js')
   page.onLoad()
 
-  const pending = page.data.sections[1].entries.find((e) => e.key === 'scale')
+  const pending = page.data.sections[1].entries.find((e) => e.key === 'month')
   page.onEntryTap({ detail: { key: pending.key } })
 
   assert.equal(c.record.navigations.length, 0, '没有跳转')

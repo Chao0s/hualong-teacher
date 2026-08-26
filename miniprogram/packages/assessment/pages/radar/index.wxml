@@ -1,0 +1,48 @@
+<view wx:if="{{ready}}" class="hl-page hl-stack">
+  <view wx:if="{{loading}}" class="hl-loading">加载中…</view>
+
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障编号 {{errorRequestId}}</text>
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryLoad">重试</text>
+  </view>
+
+  <block wx:if="{{!loading && radar}}">
+    <view class="hl-card">
+      <view class="hl-card__title">{{title}}</view>
+      <view wx:if="{{subtitle}}" class="hl-card__meta">{{subtitle}}</view>
+    </view>
+
+    <!--
+      图。**没有得分时不渲染画布**，换成一句说明 —— 空画布上那个塌成一点的五边形
+      比什么都不画更容易被读成「这孩子五项全是最低分」（票据 18 验收项 8）。
+    -->
+    <view class="hl-card">
+      <canvas wx:if="{{radar.can_draw}}" type="2d" id="radar" class="as-canvas"></canvas>
+      <view wx:else class="hl-empty">{{radar.empty_reason}}</view>
+    </view>
+
+    <!--
+      表。与图**同屏对照**，给出具体数值 —— 教师要的是数值不是形状，所以两样一起交付。
+      这里的 value_label 与画布上写的是同一个字符串，服务层给的同一份数据。
+    -->
+    <view class="hl-card">
+      <view class="as-table__head">
+        <view class="as-table__domain">领域</view>
+        <view class="as-table__count">已评题数</view>
+        <view class="as-table__score">均分</view>
+      </view>
+      <view wx:for="{{radar.axes}}" wx:key="code" class="as-table__row">
+        <view class="as-table__domain">{{item.name}}</view>
+        <view class="as-table__count">{{item.item_count}} 题</view>
+        <view class="as-table__score">{{item.value_label}}</view>
+      </view>
+      <view class="as-table__row">
+        <view class="as-table__domain">全部题项</view>
+        <view class="as-table__count"></view>
+        <view class="as-table__score">{{radar.total_label}}</view>
+      </view>
+      <view class="as-notice">均分按 1 到 5 分计，保留一位小数。未评的领域显示「—」，不计作 0 分。</view>
+    </view>
+  </block>
+</view>

@@ -1,0 +1,32 @@
+<view wx:if="{{ready}}" class="hl-page hl-stack">
+  <view wx:if="{{loading}}" class="hl-loading">加载中…</view>
+
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障编号 {{errorRequestId}}</text>
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryLoad">重试</text>
+  </view>
+
+  <block wx:if="{{!loading && !errorText}}">
+    <view class="hl-card">
+      <view class="hl-card__title">五大领域评价</view>
+      <view class="hl-card__meta">{{summary}}</view>
+      <view class="as-notice">{{classHint}}</view>
+      <button class="hl-btn hl-btn--hollow hl-btn--block" bindtap="onClassRadarTap">班级五维雷达图</button>
+    </view>
+
+    <view class="hl-card">
+      <view class="hl-section-title">本班幼儿</view>
+      <view
+        wx:for="{{rows}}"
+        wx:key="child_id"
+        class="as-row"
+        data-child-id="{{item.child_id}}"
+        bindtap="onChildTap">
+        <view class="as-row__name">{{item.child_name}}</view>
+        <view class="as-row__progress">{{item.progress_label}}</view>
+        <view class="hl-pill {{item.status_pill}}">{{item.status_label}}</view>
+      </view>
+    </view>
+  </block>
+</view>

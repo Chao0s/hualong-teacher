@@ -289,5 +289,9 @@ module.exports = {
   get: (path, opts) => request('GET', path, opts),
   post: (path, opts) => request('POST', path, opts),
   patch: (path, opts) => request('PATCH', path, opts),
+  // PUT is the contract's verb for idempotent per-item scoring
+  // (`PUT /children/{child_id}/child-assessment/items/{item_id}`, §4.1). The core
+  // already treats it as body-carrying; this only exposes it.
+  put: (path, opts) => request('PUT', path, opts),
   del: (path, opts) => request('DELETE', path, opts),
 };

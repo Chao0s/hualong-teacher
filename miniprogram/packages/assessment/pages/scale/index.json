@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "填写五大领域量表",
+  "usingComponents": {
+    "hl-child-picker": "/components/hl-child-picker/index",
+    "hl-picker-row": "/components/hl-picker-row/index"
+  }
+}

@@ -1,0 +1,93 @@
+<view wx:if="{{ready}}" class="hl-page hl-stack">
+  <view wx:if="{{loading}}" class="hl-loading">加载中…</view>
+
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障编号 {{errorRequestId}}</text>
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryLoad">重试</text>
+  </view>
+
+  <block wx:if="{{!loading}}">
+    <!-- 幼儿选择：滚轮（form-control-spec §2.2 已定案的名册型单选）。 -->
+    <view class="hl-card">
+      <hl-child-picker
+        mode="single"
+        label="选择幼儿"
+        children="{{children}}"
+        value="{{childValue}}"
+        required="{{true}}"
+        disabled="{{locked}}"
+        bind:change="onChildChange" />
+      <view class="hl-card__meta">{{scaleLabel}}</view>
+    </view>
+
+    <block wx:if="{{progress}}">
+      <view class="hl-card">
+        <view class="hl-card__title">{{childName}}</view>
+        <view class="hl-card__meta">{{progressLabel}}</view>
+        <view wx:if="{{remainingHint}}" class="as-notice">{{remainingHint}}</view>
+      </view>
+
+      <!-- 假期与已提交都是只读**状态**，不是错误：一行理由，不是一个弹窗。 -->
+      <view wx:if="{{readonly}}" class="hl-card as-readonly">{{readonlyReason}}</view>
+
+      <!-- ── fill ───────────────────────────────────────────────────────── -->
+      <block wx:if="{{stage === 'fill' || stage === 'done'}}">
+        <!-- 领域切换：横排标签（五项，取值固定，三问第 2 问命中）。 -->
+        <view class="hl-chips">
+          <view class="hl-chips__label">领域</view>
+          <view
+            wx:for="{{domains}}"
+            wx:key="code"
+            class="hl-chips__item {{item.code === activeDomain ? 'hl-chips__item--on' : ''}}"
+            data-code="{{item.code}}"
+            bindtap="onDomainTap">{{item.name}} {{item.count}}</view>
+        </view>
+
+        <view wx:for="{{items}}" wx:key="item_id" class="hl-card as-item">
+          <view class="as-item__no">{{item.item_id}}</view>
+          <view class="as-item__name">{{item.item_name}}</view>
+          <view class="as-item__question">{{item.question}}</view>
+          <view wx:for="{{item.anchors}}" wx:for-item="anchor" wx:key="level" class="as-anchor">
+            <view class="as-anchor__level">{{anchor.level}} 分</view>
+            <view>{{anchor.text}}</view>
+          </view>
+          <hl-picker-row
+            label="打分"
+            options="{{item.options}}"
+            value="{{item.value}}"
+            required="{{true}}"
+            data-item-id="{{item.item_id}}"
+            bind:pick="onScorePick" />
+        </view>
+
+        <button wx:if="{{stage === 'done'}}" class="hl-btn hl-btn--block" bindtap="onRadarTap">
+          看五维雷达图
+        </button>
+      </block>
+
+      <!-- ── preview ────────────────────────────────────────────────────── -->
+      <block wx:elif="{{stage === 'preview'}}">
+        <view class="hl-section-title">提交前请完整看一遍这 {{preview.count}} 题</view>
+        <scroll-view class="as-preview" scroll-y bindscrolltolower="onPreviewEnd">
+          <view wx:for="{{preview.rows}}" wx:key="item_id" class="as-preview__line">
+            <view class="as-preview__no">{{item.domain_name}} {{item.item_id}}</view>
+            <view class="as-preview__name">{{item.item_name}}</view>
+            <view class="as-preview__score">{{item.score}} 分</view>
+          </view>
+        </scroll-view>
+
+        <view wx:if="{{!previewedInFull}}" class="as-notice">
+          请滑到底看完全部题目，之后才能提交。最后一题是 {{preview.finalLabel}}。
+        </view>
+
+        <button class="hl-btn hl-btn--block" disabled="{{!previewedInFull || submitting}}" bindtap="onConfirmTap">
+          {{submitting ? '提交中…' : '确认提交'}}
+        </button>
+        <button class="hl-btn hl-btn--hollow hl-btn--block" disabled="{{locked}}" bindtap="onBackToFill">
+          返回修改
+        </button>
+      </block>
+    </block>
+  </block>
+</view>

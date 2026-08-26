@@ -1,0 +1,184 @@
+/**
+ * 五维评价三页共用的样式（票据 18）。
+ *
+ * 为什么是分包内的一份而不是 app.wxss：这些形状目前只有这三页在用，放进主包会让每一个
+ * 客户端都下载它们。分包内共享一份，三页各自 `@import` 它 —— 与 packages/co-education
+ * 的 shared.wxss 同一条理由。
+ *
+ * 选择行与横排标签的尺寸**不在这里**：那两样在 styles/form-rows.wxss，由 app.wxss 统一
+ * 引入，38 页复用同一份（form-control-spec.md §5）。
+ */
+
+/* ── 名册行 ─────────────────────────────────────────────────────────────── */
+
+.as-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+}
+
+.as-row + .as-row {
+  border-top: 1px solid var(--border);
+}
+
+.as-row__name {
+  flex: none;
+  width: 160rpx;
+  font-size: 30rpx;
+  color: var(--fg);
+}
+
+.as-row__progress {
+  flex: 1;
+  font-size: 26rpx;
+  color: var(--muted);
+}
+
+/* ── 题卡 ───────────────────────────────────────────────────────────────── */
+
+.as-item + .as-item {
+  margin-top: var(--space-3);
+}
+
+.as-item__no {
+  font-size: 24rpx;
+  color: var(--muted);
+}
+
+.as-item__name {
+  margin-top: 4rpx;
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.as-item__question {
+  margin-top: var(--space-1);
+  font-size: 28rpx;
+  color: var(--fg);
+  line-height: var(--line-cjk);
+}
+
+/*
+ * 三条锚点。滚轮只显示选中的那一行，所以锚点从选择控件里移出来，放进题卡正文 ——
+ * 教师先读锚点再拨滚轮。原型是为下拉列表排的版，信息层级不同（票据 18 验收项 2）。
+ */
+.as-anchor {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+  font-size: 26rpx;
+  color: var(--muted);
+  line-height: var(--line-cjk);
+}
+
+.as-anchor__level {
+  flex: none;
+  width: 64rpx;
+  color: var(--accent-dark);
+}
+
+/* ── 说明与只读态 ───────────────────────────────────────────────────────── */
+
+/* 说明不是错误：正文色的弱化版，不用 --danger。 */
+.as-notice {
+  margin-top: var(--space-2);
+  font-size: 26rpx;
+  color: var(--muted);
+  line-height: var(--line-cjk);
+}
+
+/* 只读态是**状态**，不是错误：一行理由，不是一个弹窗，颜色也不是红的。 */
+.as-readonly {
+  font-size: 28rpx;
+  color: var(--muted);
+  line-height: var(--line-cjk);
+}
+
+/* ── 预览 ───────────────────────────────────────────────────────────────── */
+
+.as-preview {
+  max-height: 60vh;
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: var(--space-3);
+}
+
+.as-preview__line {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-1) 0;
+  font-size: 26rpx;
+  line-height: var(--line-cjk);
+}
+
+.as-preview__no {
+  flex: none;
+  width: 140rpx;
+  color: var(--muted);
+}
+
+.as-preview__name {
+  flex: 1;
+  min-width: 0;
+  color: var(--fg);
+}
+
+.as-preview__score {
+  flex: none;
+  width: 80rpx;
+  text-align: right;
+  color: var(--accent-dark);
+  font-weight: 600;
+}
+
+/* ── 雷达图与数据表 ─────────────────────────────────────────────────────── */
+
+/*
+ * 画布的 CSS 尺寸。后备缓冲由 JS 按 pixelRatio 放大，再靠这两行缩回去 —— 两倍屏与
+ * 三倍屏因此都不模糊，而版面不随倍率变。宽度用百分比，所以窄屏与宽屏都不变形。
+ */
+.as-canvas {
+  width: 100%;
+  height: 560rpx;
+}
+
+.as-table__head,
+.as-table__row {
+  display: flex;
+  align-items: center;
+  padding: var(--space-2) 0;
+  font-size: 28rpx;
+}
+
+.as-table__head {
+  color: var(--muted);
+  font-size: 26rpx;
+  border-bottom: 1px solid var(--border);
+}
+
+.as-table__row + .as-table__row {
+  border-top: 1px solid var(--border);
+}
+
+.as-table__domain {
+  flex: 1;
+  color: var(--fg);
+}
+
+.as-table__count {
+  flex: none;
+  width: 160rpx;
+  text-align: right;
+  color: var(--muted);
+  font-size: 26rpx;
+}
+
+.as-table__score {
+  flex: none;
+  width: 120rpx;
+  text-align: right;
+  color: var(--accent-dark);
+  font-weight: 600;
+}
