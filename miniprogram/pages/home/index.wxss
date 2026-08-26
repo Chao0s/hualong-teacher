@@ -18,6 +18,14 @@
   color: #fff;
 }
 
+/* 原型 `.banner-sub`：12px、不加粗、0.88 不透明度。 */
+.head__sub {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.88);
+}
+
 .head__meta {
   margin-top: var(--space-1);
   font-size: 24rpx;
@@ -54,12 +62,64 @@
   margin-top: var(--space-2);
 }
 
-.todo__row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-2);
+/* 待办事项的三张统计卡 —— 原型 `.todo-cards`／`.todo-card`／`.dot-icon`／
+ * `.todo-badge`，rpx 一律按票据 01 的粗因子 2 换算。角标文字色 #a15d00 与
+ * #226ac7 是原型字面量（state-warn / state-info），令牌表里没有对应项。 */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20rpx;
 }
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18rpx;
+  min-height: 224rpx;
+  padding: 30rpx 16rpx 26rpx;
+  border-radius: 32rpx;
+  text-align: center;
+}
+
+/* 网格里的相邻卡片不再堆叠（与 .cases 同一条理由）。 */
+.stats .hl-card + .hl-card {
+  margin-top: 0;
+}
+
+.stat__mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 68rpx;
+  height: 68rpx;
+  border-radius: 22rpx;
+  font-size: 28rpx;
+  font-weight: 800;
+}
+
+.stat__mark--upload     { color: var(--accent-dark); background: var(--accent-light); }
+.stat__mark--task       { color: #a15d00; background: var(--amber-light); }
+.stat__mark--assessment { color: var(--blue); background: var(--blue-light); }
+
+.stat__title {
+  font-size: 27rpx;
+  font-weight: 700;
+}
+
+.stat__badge {
+  margin-top: auto;
+  padding: 6rpx 18rpx;
+  border-radius: var(--radius-pill);
+  font-size: 21rpx;
+  font-weight: 700;
+  color: var(--accent-dark);
+  background: var(--accent-light);
+  white-space: nowrap;
+}
+
+.stat__badge--warn { color: #a15d00; background: var(--amber-light); }
+.stat__badge--info { color: #226ac7; background: var(--blue-light); }
 
 /* 常用入口：原型是 `repeat(4, 1fr)` 的一行四格，不是两列。 */
 .quick {
@@ -82,12 +142,29 @@
 }
 
 .quick__icon {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 88rpx;
   height: 88rpx;
   border-radius: 28rpx;
+}
+
+/* 通知卡的未读角标：未读为 0 时整个节点不渲染，不是渲染一个 0。 */
+.quick__unread {
+  position: absolute;
+  top: -10rpx;
+  right: -10rpx;
+  min-width: 32rpx;
+  height: 32rpx;
+  padding: 0 8rpx;
+  border-radius: var(--radius-pill);
+  background: var(--danger);
+  color: #fff;
+  font-size: 20rpx;
+  line-height: 32rpx;
+  text-align: center;
 }
 
 .quick__icon--accent { background: var(--accent-light); }
@@ -99,18 +176,6 @@
   font-size: 24rpx;
   font-weight: 600;
   white-space: nowrap;
-}
-
-/* A notice row keeps its chevron at the trailing edge. */
-.notice-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.notice-row__text {
-  flex: 1;
-  min-width: 0;
 }
 
 /* A write entry during the holiday: visibly off, and the tap explains why. */

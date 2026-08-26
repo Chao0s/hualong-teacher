@@ -176,10 +176,11 @@ test('the parent-only screens the prototype offered are absent', () => {
 
 test('a tab destination uses switchTab; wx.navigateTo would fail silently on it', async () => {
   const c = await signedIn()
-  const page = loadPage(c, 'pages/home/index.js')
-  page.hydrateFromSession()
 
-  page.onQuickTap({ currentTarget: { dataset: { key: 'training' } } })
+  // No quick entry reaches a tab any more (通知 took the 教研培训 slot on
+  // 2026-08-26 precisely because that card duplicated the tab), so the subject
+  // is pinned where it lives: the guard itself.
+  c.guard.navigateTo('/pages/training/index', 'teaching-research')
   assert.deepEqual(c.record.navigations.pop(), { api: 'switchTab', url: '/pages/training/index' })
 
   // A non-tab destination keeps the ordinary API.

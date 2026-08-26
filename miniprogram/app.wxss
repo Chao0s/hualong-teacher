@@ -16,9 +16,11 @@ view, text, button, input, textarea, scroll-view {
 
 /* ── Layout ─────────────────────────────────────────────────────────────── */
 
+/* 水平内边距按原型的 `0 16px`（32rpx）取 --space-4；园方 2026-08-26 拍板放宽。
+ * 全局只此一处，各页不要自己另写。 */
 .hl-page {
   min-height: 100vh;
-  padding: var(--space-3);
+  padding: var(--space-3) var(--space-4);
 }
 
 .hl-stack > view + view {

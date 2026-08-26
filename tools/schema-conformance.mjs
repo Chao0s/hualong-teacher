@@ -186,7 +186,10 @@ const KNOWN = {
   // 已登记的契约缺口，见 HANDOFF.md → 契约缺口。
   related_cases: '资源详情的服务端反向连接，契约未登记',
   related_resources: '同上，方向相反',
-  todo_kind: '来自 /home/todos —— 契约里没有这个端点（2026-08-24 已登记）',
+  // db_upload_action（01 home-spec.md，persist=0 聚合）的字段，镜像
+  // db_resource.resource_status / db_case.case_status。承载它的 /home/todos
+  // 在契约里没有端点（2026-08-24 已登记），所以字段也进不了 149 个操作的模式。
+  upload_status: '来自 /home/todos —— 契约里没有这个端点（2026-08-24 已登记）',
 };
 
 const names = schemaNames();

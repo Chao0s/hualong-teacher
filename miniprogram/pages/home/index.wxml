@@ -1,12 +1,14 @@
 <view class="hl-page" wx:if="{{ready}}">
 
-  <!-- 原型 home.html 顶部那块 `.banner-img.b1` 渐变头图。票据 08 要求一眼看到姓名、
-       班级与学期，原型这一格放的是标题与副标题 —— 两者占同一格，所以是同一块头图
-       换上票据的内容，不是并排放两个页头。 -->
+  <!-- 原型 home.html 顶部那块 `.banner-img.b1` 渐变头图，标题与副标题照原型
+       （2026-08-26 改版拍板补回）。票据 08 要求一眼看到姓名、班级与学期 —— 两者
+       占同一格，所以是同一块头图多一行身份，不是并排放两个页头。 -->
   <view class="head">
-    <view class="head__hello">{{teacherName || '老师'}}，你好</view>
+    <view class="head__hello">教师工作台</view>
+    <view class="head__sub">上传资源、处理待办任务</view>
     <view class="head__meta">
-      <text wx:if="{{className}}">{{className}}</text>
+      <text>{{teacherName || '老师'}}</text>
+      <text wx:if="{{className}}" class="head__term">{{className}}</text>
       <text wx:if="{{termName}}" class="head__term">{{termName}}</text>
     </view>
   </view>
@@ -23,35 +25,20 @@
   <!-- 空与失败是两种状态：读失败时四个区都不说「暂无」，那是在替服务器撒谎。 -->
   <block wx:if="{{!loading}}">
 
-    <view class="hl-section-title">
-      待办事项
-      <text wx:if="{{todoCount > 0}}" class="hl-pill hl-pill--pending">待处理 {{todoCount}}</text>
-    </view>
-    <view wx:if="{{todos.length === 0 && !errorText}}" class="hl-card hl-empty">暂无待办</view>
-    <view wx:for="{{todos}}" wx:key="todo_id" class="hl-card todo" data-kind="{{item.todo_kind}}" bindtap="onTodoTap">
-      <view class="todo__row">
-        <text class="hl-card__title">{{item.todo_title}}</text>
-        <text class="hl-pill {{item.pill_class}}">{{item.kind_label}}</text>
+    <!-- 待办事项 —— 原型的三张统计卡（传／办／评），2026-08-26 改版恢复。三张卡
+         恒在：数字为 0 也照样显示「待处理 0」（01 home-spec.md 90 行）。 -->
+    <view class="hl-section-title">待办事项</view>
+    <view wx:if="{{stats.length > 0}}" class="stats">
+      <view
+        wx:for="{{stats}}"
+        wx:key="key"
+        class="hl-card stat"
+        data-kind="{{item.key}}"
+        bindtap="onTodoTap">
+        <view class="stat__mark stat__mark--{{item.key}}">{{item.mark}}</view>
+        <view class="stat__title">{{item.title}}</view>
+        <view class="stat__badge {{item.badge_class}}">{{item.badge}}</view>
       </view>
-      <view wx:if="{{item.due_label}}" class="hl-card__meta">截止 {{item.due_label}}</view>
-    </view>
-
-    <view class="hl-section-title">
-      资源中心通知
-      <text class="more" bindtap="onNoticeMore">全部</text>
-    </view>
-    <view wx:if="{{notices.length === 0 && !errorText}}" class="hl-card hl-empty">暂无通知</view>
-    <view
-      wx:for="{{notices}}"
-      wx:key="notice_id"
-      class="hl-card notice-row"
-      data-id="{{item.notice_id}}"
-      bindtap="onNoticeTap">
-      <view class="notice-row__text">
-        <text class="hl-card__title">{{item.notice_title}}</text>
-        <view class="hl-card__meta">{{item.published_label}}</view>
-      </view>
-      <hl-icon name="icon-10" color="muted" size="32rpx" />
     </view>
 
     <view class="hl-section-title">常用入口</view>
@@ -62,9 +49,11 @@
         class="quick__item {{item.disabled ? 'quick__item--off' : ''}}"
         data-key="{{item.key}}"
         bindtap="onQuickTap">
-        <!-- 原型的 `.quick-icon`：图标坐在一块与自身色调同族的圆角底色上。 -->
+        <!-- 原型的 `.quick-icon`：图标坐在一块与自身色调同族的圆角底色上。
+             通知卡带未读角标 —— 资源中心通知自此从一节变一卡，未读数还在。 -->
         <view class="quick__icon quick__icon--{{item.color}}">
           <hl-icon name="{{item.icon}}" color="{{item.color}}" size="44rpx" />
+          <view wx:if="{{item.key === 'notice' && unreadNotice > 0}}" class="quick__unread">{{unreadNotice}}</view>
         </view>
         <text class="quick__label">{{item.label}}</text>
       </view>

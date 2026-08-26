@@ -1,11 +1,10 @@
 /**
  * 通知服务 — the contract's notice reads, in one place (ticket 08).
  *
- * Boundary: the notice module, NOT a page. 首页's notice region and 通知列表页
- * are two views of the same collection, so they are two calls into this file
- * and never two copies of the same read. The endpoint path, the page size and
- * the published-time format are written here once; a page that wanted a
- * different summary length would change `SUMMARY_LIMIT`, not open its own read.
+ * Boundary: the notice module, NOT a page. The endpoint path, the page size
+ * and the published-time format are written here once. Since the 2026-08-26
+ * redesign 首页 no longer reads notice rows — its quick-entry badge rides on
+ * the db_home aggregate — so 通知列表页 is this module's only list caller.
  *
  * Everything returned is view-ready (spec 实现决定 7): a page binds it and
  * formats nothing.
@@ -15,9 +14,6 @@ const api = require('../utils/request');
 const time = require('../utils/time');
 
 const PATH = '/notices';
-
-// 首页 shows the newest few and links to the full list. One number, one place.
-const SUMMARY_LIMIT = 5;
 
 /** The list-row shape. A summary row and a list row are deliberately identical. */
 function decorate(notice) {
@@ -38,12 +34,6 @@ async function listPage({ cursor, limit } = {}) {
   return { items: page.items.map(decorate), nextCursor: page.nextCursor };
 }
 
-/** 首页's notice region: the newest few rows, same shape as the list. */
-async function summary() {
-  const { items } = await listPage({ limit: SUMMARY_LIMIT });
-  return items;
-}
-
 /**
  * One notice, whole.
  *
@@ -60,8 +50,6 @@ async function detail(noticeId) {
 }
 
 module.exports = {
-  SUMMARY_LIMIT,
   listPage,
-  summary,
   detail,
 };

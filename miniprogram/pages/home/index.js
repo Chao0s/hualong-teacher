@@ -1,13 +1,14 @@
 /**
  * Home — APP-STRUCTURE.md flowchart 01, screen id `Home`.
  *
- * Four regions, per the flowchart: 待办事项 / 资源中心通知 / 常用入口 /
- * 推荐课程案例.
+ * Four constituents, per the flowchart: 待办事项 (three stat cards since the
+ * 2026-08-26 redesign) / 资源中心通知 (a quick-entry card with an unread badge,
+ * no longer a section of rows) / 常用入口 / 推荐课程案例.
  *
  * This page is the layering template the remaining 38 screens copy (ticket 08).
  * It calls services, calls setData, and answers taps. It holds no endpoint
  * path, no enum table, no time format and no error branch — those live in
- * services/home.js, services/notice.js and utils/present.js.
+ * services/home.js and utils/present.js.
  */
 
 const guard = require('../../utils/guard');
@@ -30,9 +31,8 @@ Page({
     termNotice: '',
     canWrite: false,
 
-    todos: [],
-    todoCount: 0,
-    notices: [],
+    stats: [],
+    unreadNotice: 0,
     cases: [],
     // Write entries start off and are turned on by the term state, never the
     // other way round.
@@ -101,15 +101,6 @@ Page({
 
   onRetryLoad() {
     this.load();
-  },
-
-  onNoticeTap(e) {
-    const { id } = e.currentTarget.dataset;
-    wx.navigateTo({ url: `/pages/notice/detail?notice_id=${id}` });
-  },
-
-  onNoticeMore() {
-    wx.navigateTo({ url: '/pages/notice/list' });
   },
 
   onTodoTap(e) {

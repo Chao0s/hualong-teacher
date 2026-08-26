@@ -62,8 +62,8 @@ test('首页 during the holiday: read-only and explanatory, not an error', async
   assert.equal(page.data.termName, '假期中')
   assert.ok(page.data.termNotice, 'the banner explains instead of a blank')
   assert.equal(page.data.canWrite, false)
-  assert.ok(page.data.todos.length > 0, 'existing content still reads')
-  assert.ok(page.data.notices.length > 0, 'existing content still reads')
+  assert.equal(page.data.stats.length, 3, 'existing content still reads')
+  assert.ok(page.data.cases.length > 0, 'existing content still reads')
 })
 
 test('a write entry during the holiday explains itself instead of failing silently', async () => {
@@ -77,12 +77,12 @@ test('a write entry during the holiday explains itself instead of failing silent
   assert.match(c.record.toasts.pop().title, /假期/, 'the reason is on the spot')
 
   // A read entry is NOT term-gated: it falls through to the ordinary path.
-  // Since ticket 09 that path reaches the 教研培训 tab, so the proof is a
+  // 通知 took the 教研培训 slot in the 2026-08-26 redesign, so the proof is its
   // navigation rather than a toast — reading still works during the holiday.
-  page.onQuickTap({ currentTarget: { dataset: { key: 'training' } } })
+  page.onQuickTap({ currentTarget: { dataset: { key: 'notice' } } })
   assert.deepEqual(
     c.record.navigations.pop(),
-    { api: 'switchTab', url: '/pages/training/index' },
+    { api: 'navigateTo', url: '/pages/notice/list' },
     'gated by neither the term nor a missing page',
   )
 })

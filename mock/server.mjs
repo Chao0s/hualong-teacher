@@ -83,6 +83,9 @@ const NOTICE_BODY = [
 
 // 26 notices, so cursor paging actually pages. Newest first, matching the
 // contract's "business time DESC + primary key DESC" ordering.
+// `read_at` is db_notification's own column; the newest three are unread, so
+// the 首页 quick-entry badge (unread_notice_count on GET /home/todos) has a
+// non-zero fixture to count.
 const NOTICES = Array.from({ length: 26 }, (_, i) => {
   const id = 26 - i;
   const day = String(20 - (i % 20)).padStart(2, '0');
@@ -91,6 +94,7 @@ const NOTICES = Array.from({ length: 26 }, (_, i) => {
     notice_title: NOTICE_TITLES[i % NOTICE_TITLES.length],
     notice_body: NOTICE_BODY,
     published_at: `2026-08-${day}T09:${String(10 + (i % 45)).padStart(2, '0')}:00+08:00`,
+    read_at: i < 3 ? null : `2026-08-${day}T12:00:00+08:00`,
   };
 });
 
@@ -769,14 +773,10 @@ const COURSE_INTRO = {
 // 才 302 到真正的地址。所以这张表存的是内容归属，不是一个已经签好的对象存储地址。
 const downloadLinks = new Map();
 
-const TODOS = [
-  { todo_id: 1, todo_kind: 'upload', todo_title: '上传「祠堂里的故事」课程案例', due_at: '2026-08-25T18:00:00+08:00' },
-  { todo_id: 2, todo_kind: 'task', todo_title: '完成共建任务：秋季主题墙素材征集', due_at: '2026-08-28T18:00:00+08:00' },
-  { todo_id: 3, todo_kind: 'evaluation', todo_title: '填写 8 月月度评价（还差 6 名幼儿）', due_at: '2026-08-31T18:00:00+08:00' },
-  // An intentionally unknown kind: the client must degrade to a neutral pill
-  // rather than crash (§1.1's tolerate-unknown-enums rule).
-  { todo_id: 4, todo_kind: 'z9_future_kind', todo_title: '未来版本新增的待办类型', due_at: null },
-];
+// db_upload_action (01 home-spec.md, persist=0) — the latest upload record's
+// status, mirrored from db_resource/db_case. One hand-written value: the 首页
+// 传 card shows the mapped label, never this code.
+const HOME_UPLOAD_STATUS = 's2';
 
 // ── Mutable state ──────────────────────────────────────────────────────────
 
@@ -1630,9 +1630,33 @@ function getDownload(req, res, linkId) {
 }
 
 /** §3.5 — roster-shaped: whole, unpaginated. */
+/**
+ * GET /home/todos — the db_home aggregate (01 home-spec.md, persist=0). Since
+ * the 2026-08-26 redesign the 首页 renders three stat cards, so this returns
+ * the counts behind them rather than a row list:
+ *
+ *   upload_status        传 — latest upload record status (db_upload_action)
+ *   pending_task_count   办 — COUNT assign_status IN (a1,a2), spec line 89
+ *   completed_count /    评 — children whose comprehensive assessment is done,
+ *   required_count            over the class roster
+ *   unread_notice_count  通知入口角标 — COUNT db_notification.read_at IS NULL
+ *
+ * Computed from the live fixtures, so a task completion or an assessment
+ * submission moves the numbers the way the real aggregate would.
+ */
 function getTodos(req, res) {
   if (!requireSession(req, res)) return;
-  sendJson(res, 200, { items: TODOS });
+  const done = CHILDREN.filter((c) => {
+    const row = assessmentFor(c.child_id);
+    return row && assessmentStatus(row) === 'c1';
+  }).length;
+  sendJson(res, 200, {
+    upload_status: HOME_UPLOAD_STATUS,
+    pending_task_count: TASKS.filter((t) => ['a1', 'a2'].includes(t.assign.assign_status)).length,
+    completed_count: done,
+    required_count: CHILDREN.length,
+    unread_notice_count: NOTICES.filter((n) => !n.read_at).length,
+  });
 }
 
 /** §3.5 — the curated shelf is three rows by definition; it never pages. */

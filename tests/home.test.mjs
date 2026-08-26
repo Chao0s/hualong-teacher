@@ -42,21 +42,29 @@ test('首页 aggregates the four regions, each ready to bind', async () => {
   const c = await signedIn()
   const view = await c.home.load()
 
-  assert.ok(view.todos.length > 0, '待办事项')
-  assert.equal(view.todoCount, view.todos.length, '待处理数量 is computed for the page')
-  assert.ok(view.notices.length > 0, '资源中心通知')
-  assert.ok(view.cases.length > 0, '推荐课程案例')
-  assert.equal(c.home.quickEntries(true).length, 4, '常用入口')
+  // 待办事项 is three stat cards now (2026-08-26 redesign), matching the
+  // prototype's 近期任务 grid and the spec's ui=home.todo.* bindings.
+  assert.deepEqual(view.stats.map((s) => s.key), ['upload', 'task', 'assessment'], '待办事项')
+  const [upload, task, assessment] = view.stats
+  assert.equal(upload.badge, '待审核', 'the latest upload record status, mapped, never the raw code')
+  // 01 home-spec.md line 90: 显示「待处理 N」, and the fixture holds 10 a1/a2 assigns.
+  assert.equal(task.badge, '待处理 10')
+  // Numerator/denominator per ui=home.todo.assessment.badge.*; a fresh mock has
+  // no completed child assessment, and the fixture class holds 28 children.
+  assert.equal(assessment.badge, '0/28')
+  for (const s of view.stats) {
+    assert.ok(s.mark && s.title, 'every card carries its mark and title')
+  }
 
-  // View-ready means: no raw wire value reaches a binding.
-  for (const todo of view.todos) {
-    assert.ok(todo.kind_label, 'every todo carries its label')
-    assert.ok(todo.pill_class, 'and its pill class')
-    if (todo.due_at) assert.match(todo.due_label, /^\d{2}-\d{2} \d{2}:\d{2}$/)
-  }
-  for (const n of view.notices) {
-    assert.match(n.published_label, /^\d{2}-\d{2} \d{2}:\d{2}$/, 'formatted in the service')
-  }
+  // 资源中心通知 is a quick-entry card now; its unread count still arrives.
+  assert.equal(view.unreadNotice, 3, 'db_notification.read_at — the fixture holds 3 unread')
+
+  assert.ok(view.cases.length > 0, '推荐课程案例')
+  const entries = c.home.quickEntries(true)
+  assert.equal(entries.length, 4, '常用入口')
+  assert.ok(entries.some((e) => e.key === 'notice'), '通知 gained the entry it never had')
+  assert.ok(!entries.some((e) => e.key === 'training'), '教研培训 duplicated the tab and gave way')
+
   for (const kase of view.cases) {
     assert.ok(kase.thumb_label, 'a card always has a thumb')
     assert.ok(kase.case_name)
@@ -69,22 +77,16 @@ test('the page binds what the service returned, unchanged', async () => {
   await page.load()
 
   const view = await c.home.load()
-  assert.deepEqual(page.data.todos, view.todos, 'the page reformats nothing')
-  assert.deepEqual(page.data.notices, view.notices)
+  assert.deepEqual(page.data.stats, view.stats, 'the page reformats nothing')
   assert.deepEqual(page.data.cases, view.cases)
-  assert.equal(page.data.todoCount, view.todoCount)
+  assert.equal(page.data.unreadNotice, view.unreadNotice)
   assert.equal(page.data.loading, false)
   assert.equal(page.data.errorText, '')
 })
 
-test('an unknown enum degrades to neutral and still shows — todo AND case', async () => {
+test('an unknown enum degrades to neutral and still shows', async () => {
   const c = await signedIn()
   const view = await c.home.load()
-
-  const unknownTodo = view.todos.find((t) => t.todo_kind === 'z9_future_kind')
-  assert.ok(unknownTodo, 'the row is present, not dropped')
-  assert.equal(unknownTodo.pill_class, 'hl-pill--unknown')
-  assert.equal(unknownTodo.kind_label, '待办', 'neutral, never the raw code')
 
   const unknownCase = view.cases.find((k) => k.case_id === 64)
   assert.ok(unknownCase, 'the card is present, not dropped')
@@ -92,20 +94,18 @@ test('an unknown enum degrades to neutral and still shows — todo AND case', as
   assert.equal(unknownCase.tag_label, '中班', 'the half that is known still shows')
 })
 
-// ── One notice implementation, two views ─────────────────────────────────────
+// ── One notice collection, two surfaces ──────────────────────────────────────
 
-test('首页 notice summary and 通知列表页 are the same read', async () => {
+test('通知入口的未读数与通知列表说同一件事', async () => {
   const c = await signedIn()
-  const summary = await c.notice.summary()
+  const view = await c.home.load()
   const page = loadPage(c, 'pages/notice/list.js')
   await page.loadFirst()
 
-  assert.equal(summary.length, c.notice.SUMMARY_LIMIT, '首页 asks for the few it shows')
-  assert.ok(page.data.items.length > summary.length, 'the list asks for the default page')
-  // Same collection, same ordering, same decoration — row for row.
-  for (let i = 0; i < summary.length; i += 1) {
-    assert.deepEqual(page.data.items[i], summary[i], `row ${i} is identical`)
-  }
+  // The three unread rows are the newest, so the list's first page holds them
+  // all — the badge and the rows must count the same collection.
+  const unreadOnPage = page.data.items.filter((n) => !n.read_at).length
+  assert.equal(view.unreadNotice, unreadOnPage, '角标与列表不许各说各话')
 })
 
 test('no page names a notice endpoint or formats a time', () => {
@@ -129,6 +129,11 @@ test('a quick entry with no screen yet is stopped before the jump', async () => 
   for (const entry of page.data.quickEntries) {
     assert.equal(entry.disabled, false, 'nothing is term-blocked during the term')
   }
+
+  // 通知 gained its quick entry in the 2026-08-26 redesign; it reaches the same
+  // NoticeList screen the old section header did.
+  page.onQuickTap({ currentTarget: { dataset: { key: 'notice' } } })
+  assert.deepEqual(c.record.navigations.pop(), { api: 'navigateTo', url: '/pages/notice/list' })
 
   // 课程资源 landed in ticket 13, so this half now asserts the jump. 资源库 is the
   // sixth module and the bar holds five, so it reaches its subpackage by page
@@ -173,6 +178,12 @@ test('every tappable region on 首页 either navigates or gives a reason', async
   assert.deepEqual(c.record.navigations.pop(),
     { api: 'navigateTo', url: '/packages/library/pages/upload/form' },
     '待上传进上传表单，且不带目标类型 —— 待办行上没有一列说得出是资源还是案例')
+
+  // The third stat card (2026-08-26 redesign): 质量评估 reaches the scale form,
+  // the built counterpart of the prototype's assessment-tool.html.
+  page.onTodoTap({ currentTarget: { dataset: { kind: 'assessment' } } })
+  assert.deepEqual(c.record.navigations.pop(),
+    { api: 'navigateTo', url: '/packages/assessment/pages/scale/index' })
 })
 
 // ── Structure: what must not be here ─────────────────────────────────────────
