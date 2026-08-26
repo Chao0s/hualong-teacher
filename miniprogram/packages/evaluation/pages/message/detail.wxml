@@ -1,0 +1,24 @@
+<view class="hl-page hl-stack" wx:if="{{ready}}">
+
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryLoad">重试</text>
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障码 {{errorRequestId}}</text>
+  </view>
+
+  <view class="hl-loading" wx:if="{{loading}}">加载中…</view>
+
+  <view wx:if="{{message}}" class="hl-card">
+    <view class="ev-msg-head">
+      <view class="ev-msg-head__avatar">{{message.avatar}}</view>
+      <view>
+        <view class="ev-msg-head__who">{{message.child_name}}</view>
+        <view class="ev-msg-head__meta">提交于 {{message.submitted_label}}</view>
+      </view>
+    </view>
+    <view class="ev-msg__text">{{message.message_text}}</view>
+    <view class="ev-notice">寄语提交后永久只读。</view>
+  </view>
+
+  <button wx:if="{{!loading}}" class="hl-btn hl-btn--hollow hl-btn--block" bindtap="onBack">返回</button>
+</view>

@@ -374,8 +374,33 @@ function copyVideoLink(url) {
   });
 }
 
+// ══════════════════════════════════════════════════════════════════════════
+// 去向
+// ══════════════════════════════════════════════════════════════════════════
+//
+// 入口页三个分区标题右侧的「全部 ›」。这三条原本住在 services/module-entry.js 里，
+// 那是四个入口页共用同一种版面时的安排；四页各按自己的原型重建之后（2026-08-27），
+// 那个文件的最后一个调用方就是这三条，于是搬回本模块，与其他三个服务模块自己持有
+// 去向的做法一致（services/library.js 的 `DESTINATIONS`、services/co-education.js
+// 的 `PAGES`）。
+
+const MODULE_ID = 'party-building';
+const SECTION_PAGES = {
+  learn: '/packages/party/pages/learn/list',
+  activity: '/packages/party/pages/activity/list',
+  brand: '/packages/party/pages/brand/list',
+};
+
+/** 走一条去向，或者什么也不做（key 不认识只可能是调用方写错）。 */
+function openSection(key) {
+  const page = SECTION_PAGES[key];
+  if (!page) return false;
+  return guard.navigateTo(page, MODULE_ID);
+}
+
 module.exports = {
   partyHome,
+  openSection,
   openStudyFile,
   listStudies,
   studyDetail,

@@ -192,6 +192,18 @@ const HAND_WRITTEN_BODY = {
     start_at: '2026-09-05T18:00:00+08:00',
     due_at: '2026-09-12T18:00:00+08:00',
   },
+  // 成长档案这条链的两条写入（2026-08-26）。契约里没有它们，所以生成不出请求体。
+  'POST /home-school/teacher-messages': {
+    child_id: 'all',
+    message_text: '走查用的寄语正文。',
+  },
+  'POST /home-school/parent-evaluations': {
+    evaluation_type: 't1',
+    // 夹具已经发起过 2026-04／05／06 三期，同周期同类型只能发起一次（409），
+    // 所以走查用一个它没用过的周期。
+    evaluation_period: '2026-03',
+    evaluation_prompt: '走查用的评价说明。',
+  },
 }
 
 /**

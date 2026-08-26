@@ -216,6 +216,13 @@ const CONTRACT_ABSENT = [
   // 教研培训入口页的聚合读取。spec 04 的 `db_training_home` 定义得很完整，
   // `openapi.yaml` 里却没有承载它的操作（2026-08-26 按原型重建时登记）。
   ['GET', '/training/home'],
+  // 成长档案这条链的五条读面（2026-08-27）。对象定义写在 spec 05 里，
+  // `openapi.yaml` 的 149 个操作里一个也没有。两条写入另在下面单独钉。
+  ['GET', '/home-school/home'],
+  ['GET', '/home-school/teacher-eval'],
+  ['GET', '/home-school/teacher-messages'],
+  ['GET', '/home-school/parent-evaluations'],
+  ['GET', '/home-school/community-feed'],
   // 教师端的班级名册。契约里每一个名册与幼儿端点都在 `/admin/org/*` 下，是
   // admin-pc 专属；**没有任何以名册为目的的教师端端点**。这一条承重：没有它，
   // 选择幼儿的控件根本列不出人，在园时光的覆盖矩阵也没有姓名列可填。

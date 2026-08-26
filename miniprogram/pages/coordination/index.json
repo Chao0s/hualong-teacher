@@ -1,6 +1,3 @@
 {
-  "navigationBarTitleText": "综合协调",
-  "usingComponents": {
-    "hl-entry-sections": "/components/hl-entry-sections/index"
-  }
+  "navigationBarTitleText": "综合协调"
 }

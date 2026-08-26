@@ -69,6 +69,14 @@ const CLIENT_OWN = [
   /^start_time$/, /^due_time$/, /^due_date$/, /^start_date$/,
   // 页面路由参数。`navigateTo?content_id=12` 不是 API 查询参数，不上线。
   /^content_id$/, /^target$/,
+  // `hl-progress-grid` 的列键（2026-08-27）。它们标的是**表格的第几列**，不是任何
+  // 一个字段：一张四列的表要有四个稳定的键给 `cells` 对齐，仅此而已。真正上线的
+  // 那几个状态列名（`moment_status` 等）另在别处，照常受核。
+  /^parent_month$/, /^parent_term$/, /^teacher_month$/, /^teacher_term$/,
+  /^comprehensive$/, /^parent_eval$/, /^growth_book$/, /^growth_record$/,
+  /^parent_task$/, /^moment$/, /^message$/, /^month$/, /^term$/, /^upload$/,
+  // 页面路由参数，同 content_id：`?round_id=701` 不是 API 查询参数。
+  /^round_id$/,
 ];
 const isClientOwn = (name) => CLIENT_OWN.some((re) => re.test(name));
 
@@ -195,6 +203,17 @@ const KNOWN = {
   // /training/home 契约里没有这个端点（2026-08-26 已登记）。
   resource_list: '来自 /training/home —— 契约里没有这个端点（2026-08-26 已登记）',
   case_list: '同上',
+  // 成长档案这条链（2026-08-27）。这些列写在教师端 `05 home-school-spec.md` 的
+  // `db_home_school`／`db_home_school_progress`／`db_teacher_eval_home` 上，
+  // `openapi.yaml` 的 149 个操作里一个也没有 —— 承载它们的五条读面都是契约缺口。
+  average_completion: '来自 /home-school/home —— spec 05 的 db_home_school，契约无端点',
+  growth_record_status: '来自 /home-school/home —— spec 05 的 db_home_school_progress，契约无端点',
+  growth_book_status: '同上',
+  parent_task_status: '同上',
+  teacher_message_status: '来自 /home-school/teacher-eval —— spec 05 的 db_teacher_eval_home，契约无端点',
+  // 期次是**班级层**的构造：spec 05 的 db_parent_evaluation 是逐儿一行，没有「一期」
+  // 这个主键。本地契约服务为发起面自造了它，接真服务时要与后端对齐命名。
+  parent_evaluation_round_id: '本地契约服务自造的期次主键；spec 05 只有逐儿的 parent_evaluation_id（2026-08-27 已登记）',
 };
 
 const names = schemaNames();

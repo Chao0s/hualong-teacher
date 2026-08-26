@@ -251,10 +251,18 @@ function checkWxmlFile(file) {
   if (opens !== closes) note(rel(file), `插值括号不配对：${opens} 个 {{，${closes} 个 }}`);
 
   // Unclosed custom/native tags. Self-closing and void forms are excluded.
+  //
+  // Comments are stripped first, and that is not a convenience: a WXML comment is
+  // not markup, so a tag written inside one is prose. Counting it made this check
+  // report a false unclosed tag on any file whose comment named an element — for
+  // example the several pages that record why the prototype's `select` dropdown
+  // has no WXML counterpart (ADR-0017). Found 2026-08-26 while building the
+  // growth-record chain; three real files were flagged, none of them broken.
   const stack = [];
+  const markup = src.replace(/<!--[\s\S]*?-->/g, '');
   const tagRe = /<(\/?)([a-zA-Z][\w-]*)((?:"[^"]*"|'[^']*'|[^>"'])*?)(\/?)>/g;
   let m;
-  while ((m = tagRe.exec(src)) !== null) {
+  while ((m = tagRe.exec(markup)) !== null) {
     const [, slash, name, , selfClose] = m;
     if (selfClose) continue;
     if (slash) {

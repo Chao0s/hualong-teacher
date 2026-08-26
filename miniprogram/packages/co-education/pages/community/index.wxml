@@ -1,0 +1,45 @@
+<view class="hl-page" wx:if="{{ready}}">
+
+  <!-- 任务类别筛选。原型是一个 `<select>`；条数只有三条且取值固定，
+       form-control-spec 的三问第 2 问命中，所以是横排标签，不是滚轮。 -->
+  <view class="cm-filters">
+    <view
+      wx:for="{{filters}}"
+      wx:key="key"
+      class="cm-filter {{item.key === filterValue ? 'cm-filter--on' : ''}}"
+      data-key="{{item.key}}"
+      bindtap="onFilterTap">{{item.label}}</view>
+  </view>
+
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryLoad">重试</text>
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障码 {{errorRequestId}}</text>
+  </view>
+
+  <view class="hl-loading" wx:if="{{loading}}">加载中…</view>
+
+  <view wx:if="{{!loading && items.length === 0 && !errorText}}" class="hl-card hl-empty">
+    当前筛选下暂无家长提交内容
+  </view>
+
+  <view
+    wx:for="{{items}}"
+    wx:key="key"
+    class="cm-card"
+    data-id="{{item.parent_task_id}}"
+    bindtap="onItemTap">
+    <view class="cm-card__avatar">{{item.avatar}}</view>
+    <view class="cm-card__body">
+      <view class="cm-card__head">
+        <text class="cm-card__who">{{item.who}}</text>
+        <text class="cm-card__time">{{item.submitted_label}}</text>
+      </view>
+      <view class="cm-card__task">{{item.task_title}}</view>
+      <view class="cm-card__foot">
+        <text class="cm-card__pill">{{item.type_label}}</text>
+        <text wx:if="{{item.photo_count > 0}}" class="cm-card__photos">{{item.photo_count}} 张照片</text>
+      </view>
+    </view>
+  </view>
+</view>

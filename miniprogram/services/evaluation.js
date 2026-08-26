@@ -443,10 +443,272 @@ async function childRadar(childId) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
+// 成长档案这条链（2026-08-26 按原型建）
+// ══════════════════════════════════════════════════════════════════════════
+//
+// 园方裁定以原型为准，`growth-record.html` 这条链因此收进结构契约（45 -> 52）。
+// 五条读面加两条写入，**契约里一条也没有**：对象定义写在 `05 home-school-spec.md`
+// 里，`openapi.yaml` 的 149 个操作里搜不到。与 `/training/home`、`/home/todos` 同类，
+// 只在本地契约服务上成立，接真服务时必须重对，缺口已逐条登记。
+//
+// 三张进度表的口径出自 spec 05 的同一句话：**草稿一律折算为未完成**。所以下面每一处
+// 都只把终态算作完成，`c1` 与「其余」两分，不给中间态一个说法。
+
+const GROWTH_RECORD_LIST_PATH = '/growth-records';
+const TEACHER_EVAL_PATH = '/home-school/teacher-eval';
+const TEACHER_MESSAGE_PATH = '/home-school/teacher-messages';
+const PARENT_EVAL_PATH = '/home-school/parent-evaluations';
+
+/** 寄语正文上限。原型的 `maxlength` 与 spec 05 的列宽同为 300。 */
+const MESSAGE_TEXT_MAX = 300;
+
+/** 家长评价说明的上限，spec 05 的 `evaluation_prompt` 列宽。 */
+const PROMPT_TEXT_MAX = 1000;
+
+/** 家长评价的两种类型。原型的下拉在这里成了滚轮的选项表（ADR-0017 豁免 1）。 */
+const PARENT_EVAL_TYPES = [
+  { value: 't1', label: '月度评价' },
+  { value: 't2', label: '学期评价' },
+];
+
+/**
+ * 一个二元状态 -> `hl-progress-grid` 的一格。
+ *
+ * 原型用实心绿点与空心红圈表示完成与未完成，**不用文字**，因为一行要放到六列。
+ * `hint` 仍然给出来：一个颜色点对读屏软件是空的，颜色给眼睛、`hint` 给耳朵。
+ */
+function cell(key, done) {
+  return { key, done, hint: done ? '已完成' : '未完成' };
+}
+
+/**
+ * 成长档案页的逐儿进度 —— 原型 `growth-record.html` 的表格。
+ *
+ * 表格本身交给 `hl-progress-grid`：WXML 没有表格元素，而那个组件正是本仓库为这类
+ * 「幼儿 × 状态」网格定下的形状（票据 19），姓名列不随横向滚动滚走、每个点带读屏
+ * 文案。**代价是表头只有一行**：原型把 月度／学期 归在「家长」「教师」两个合并表头
+ * 之下，这里改成六个自足的列名。记在 ADR-0017 里。
+ *
+ * 六列的来源各不相同，所以逐列注明：家长两列来自家长端写入的 `db_parent_evaluation`
+ * （教师端只读得到交没交），教师两列来自 `db_month_eval` 与 `db_term_eval`，综合来自
+ * `db_child_assessment`，成长册来自 `db_growth_book`。
+ */
+const GROWTH_RECORD_COLUMNS = [
+  { key: 'parent_month', label: '家长月度' },
+  { key: 'parent_term', label: '家长学期' },
+  { key: 'teacher_month', label: '教师月度' },
+  { key: 'teacher_term', label: '教师学期' },
+  { key: 'comprehensive', label: '综合' },
+  { key: 'growth_book', label: '成长册' },
+];
+
+async function growthRecordRoster() {
+  const rows = await api.getRoster(GROWTH_RECORD_LIST_PATH);
+  const required = (row) => (row.required_month_count || 0);
+  return rows.map((row) => ({
+    key: String(row.child_id),
+    name: row.child_name,
+    cells: [
+      cell('parent_month', required(row) > 0 && (row.parent_month_complete_count || 0) >= required(row)),
+      cell('parent_term', row.parent_term_status === TERM_DONE),
+      cell('teacher_month', required(row) > 0 && (row.teacher_month_complete_count || 0) >= required(row)),
+      cell('teacher_term', row.teacher_term_status === TERM_DONE),
+      cell('comprehensive', row.comprehensive_assessment_status === TERM_DONE),
+      cell('growth_book', row.growth_book_status === 'h1'),
+    ],
+  }));
+}
+
+/**
+ * 教师评价聚合页的逐儿进度 —— 原型 `teacher-evaluation.html` 的四列表格。
+ *
+ * spec 05 写着这一页 `write_control_count = 0`：只导航与只读展示，所以本函数只有读。
+ */
+const TEACHER_EVAL_COLUMNS = [
+  { key: 'month', label: '本月评价' },
+  { key: 'term', label: '学期评估' },
+  { key: 'comprehensive', label: '综合评估' },
+  { key: 'message', label: '教师寄语' },
+];
+
+async function teacherEvalRoster() {
+  const rows = await api.getRoster(TEACHER_EVAL_PATH);
+  return rows.map((row) => ({
+    key: String(row.child_id),
+    name: row.child_name,
+    cells: [
+      cell('month', row.month_eval_status === TERM_DONE),
+      cell('term', row.term_eval_status === TERM_DONE),
+      cell('comprehensive', row.comprehensive_assessment_status === TERM_DONE),
+      cell('message', row.teacher_message_status === TERM_DONE),
+    ],
+  }));
+}
+
+/**
+ * 寄语页的完成情况，逐儿一行 —— 一列的 `hl-progress-grid`。
+ *
+ * **这一张是可点的**（`tappable`）：已完成的那一格进详情，未完成的把表单定位到这名
+ * 幼儿。组件默认不可点是有理由的（进度页不出现代填入口），这一页是显式要它。
+ */
+const MESSAGE_COLUMNS = [{ key: 'message', label: '教师寄语' }];
+
+async function messageRoster() {
+  const rows = await api.getRoster(TEACHER_MESSAGE_PATH);
+  return rows.map((row) => ({
+    key: String(row.child_id),
+    name: row.child_name,
+    done: row.teacher_message_status === TERM_DONE,
+    cells: [cell('message', row.teacher_message_status === TERM_DONE)],
+  }));
+}
+
+/**
+ * 寄语的收件人选项 —— 原型那个 `<select>` 的内容。
+ *
+ * 「全体幼儿」排在第一位，与原型一致。**已经有寄语的幼儿仍然列出来**：选中他会得到
+ * 一个 409，而那正是要让教师看见的事实（提交后不可修改），静默地把人从名单里拿掉
+ * 反而让人以为是自己看漏了。
+ */
+function messageTargets(roster) {
+  // `hl-picker-row` 的选项形状是 `{ key, label }`，选中值是 key 不是下标。
+  return [{ key: 'all', label: '全体幼儿' }]
+    .concat((roster || []).map((r) => ({ key: r.key, label: r.name })));
+}
+
+/** 寄语正文的拦阻项。空与超长各说各的，不合成一句。 */
+function messageBlockers(draft) {
+  const text = (draft && draft.message_text ? draft.message_text : '').trim();
+  const out = [];
+  if (!text) out.push('请先填写寄语内容');
+  if (text.length > MESSAGE_TEXT_MAX) out.push(`寄语最多 ${MESSAGE_TEXT_MAX} 字`);
+  if (!draft || !draft.child_id) out.push('请选择寄语的对象');
+  return out;
+}
+
+/**
+ * 提交一条寄语。
+ *
+ * **教职工文本，走 ADR-0016 第二行**：预览后发布（`HUMAN_PREVIEW_CONFIRM`），不是家长
+ * 那条批式路径。把关路径由调用方声明后传进来，本函数复核 —— 声明缺席就不发请求。
+ *
+ * 写入是终局的：服务端对已提交的对象回 409，本函数原样透出，不改写成「保存成功」。
+ */
+async function submitMessage({ gates, draft, previewedInFull, confirmed, idempotencyKey }) {
+  moderation.assertGate(gates, {
+    what: '教师寄语',
+    previewedInFull,
+    confirmed,
+    // 寄语只有文字：spec 05 的 `db_teacher_message` 没有 `file_id`，原型的占位符也
+    // 写着「仅支持文字」。所以本次写入不携带图片这一类内容。
+    imageCount: 0,
+  });
+  return api.post(TEACHER_MESSAGE_PATH, {
+    idempotencyKey,
+    body: {
+      // `child_id` 可以是 'all'：一次为全班还没有寄语的幼儿各建一行。
+      child_id: draft.child_id,
+      message_text: draft.message_text.trim(),
+    },
+  });
+}
+
+/** 一条已提交的寄语，只读。 */
+async function messageDetail(childId) {
+  const row = await api.get(`${TEACHER_MESSAGE_PATH}/${childId}`);
+  return {
+    child_id: row.child_id,
+    child_name: row.child_name || '',
+    // 姓名的首字当头像，与原型一致；没有姓名时给一个中性字，不留空。
+    avatar: (row.child_name || '幼').slice(-1),
+    message_text: row.message_text || '',
+    submitted_label: time.formatLong(row.submitted_at),
+  };
+}
+
+/** 已发起的各期家长评价，最近的在前。 */
+async function parentEvalRounds() {
+  const rows = await api.getRoster(PARENT_EVAL_PATH);
+  return rows.map((row) => ({
+    round_id: row.parent_evaluation_round_id,
+    title: `${monthLabel(row.evaluation_period)}${row.evaluation_type === 't2' ? '家长学期评价' : '家长月度评价'}`,
+    mark: `${Number(String(row.evaluation_period).slice(5, 7))}月`,
+    meta: `总体完成 ${row.completion_rate}% · ${row.completed_count}/${row.child_count} 已提交`,
+  }));
+}
+
+/** 一期的完成情况：三个数字加逐儿一行。 */
+async function parentEvalProgress(roundId) {
+  const row = await api.get(`${PARENT_EVAL_PATH}/${roundId}`);
+  return {
+    round_id: row.parent_evaluation_round_id,
+    title: `${monthLabel(row.evaluation_period)} · ${row.evaluation_type === 't2' ? '家长学期评价' : '家长月度评价'}`,
+    prompt: row.evaluation_prompt || '',
+    completed_count: row.completed_count,
+    child_count: row.child_count,
+    completion_rate: row.completion_rate,
+    rows: (row.items || []).map((item) => ({
+      key: String(item.child_id),
+      name: item.child_name,
+      // `p2` 已完成，其余（未开始／进行中／逾期）一律未完成，spec 05 的 completion_map。
+      cells: [{
+        key: 'parent_eval',
+        done: item.evaluation_status === 'p2',
+        hint: item.evaluation_status === 'p2' ? '已提交' : '未提交',
+      }],
+    })),
+  };
+}
+
+/** 家长评价进度那一张表的列，一列。 */
+const PARENT_EVAL_COLUMNS = [{ key: 'parent_eval', label: '家长提交' }];
+
+/** 发起一期家长评价的拦阻项。 */
+function parentEvalBlockers(draft) {
+  const prompt = (draft && draft.evaluation_prompt ? draft.evaluation_prompt : '').trim();
+  const out = [];
+  if (!prompt) out.push('请先填写评价说明');
+  if (prompt.length > PROMPT_TEXT_MAX) out.push(`评价说明最多 ${PROMPT_TEXT_MAX} 字`);
+  if (!draft || !draft.evaluation_type) out.push('请选择评价类型');
+  return out;
+}
+
+/**
+ * 发起一期家长评价。
+ *
+ * 教师写的是**给家长看的说明**，不是家长的答案 —— 那是家长端的内容，在那一端把关。
+ * 但说明本身是教职工文本，会出现在家长的屏幕上，所以同样走预览后发布这条路径。
+ *
+ * `requested_by_teacher_id` 是派生的，客户端不送（§7.3 / DO-NOT-BUILD 8）。
+ */
+async function publishParentEval({ gates, draft, previewedInFull, confirmed, idempotencyKey }) {
+  moderation.assertGate(gates, {
+    what: '家长评价说明', previewedInFull, confirmed, imageCount: 0,
+  });
+  return api.post(PARENT_EVAL_PATH, {
+    idempotencyKey,
+    body: {
+      evaluation_type: draft.evaluation_type,
+      evaluation_period: draft.evaluation_period,
+      evaluation_prompt: draft.evaluation_prompt.trim(),
+    },
+  });
+}
+
+/** 一次逻辑提交一个幂等键（§4.1）。重试复用，改内容重来一个。 */
+function newMessageKey() {
+  return api.uuid();
+}
+
+function newParentEvalKey() {
+  return api.uuid();
+}
+
+// ══════════════════════════════════════════════════════════════════════════
 // 去向
 // ══════════════════════════════════════════════════════════════════════════
 //
-// 路径只在这里说一次，三个页面因此不可能各说各的（services/library.js 的 DESTINATIONS
+// 路径只在这里说一次，页面因此不可能各说各的（services/library.js 的 DESTINATIONS
 // 与 services/co-education.js 的 PAGES 同一条判断）。
 
 const MODULE_ID = 'co-education';
@@ -454,6 +716,18 @@ const PAGES = {
   month: '/packages/evaluation/pages/month/index',
   term: '/packages/evaluation/pages/term/index',
   report: '/packages/evaluation/pages/report/index',
+  growthRecord: '/packages/evaluation/pages/growth-record/index',
+  teacherEval: '/packages/evaluation/pages/teacher-eval/index',
+  message: '/packages/evaluation/pages/message/index',
+  messageDetail: '/packages/evaluation/pages/message/detail',
+  parentEval: '/packages/evaluation/pages/parent-eval/index',
+  parentEvalProgress: '/packages/evaluation/pages/parent-eval/progress',
+  // 成长册在**另一个分包**（`packages/growth-book`），它的路径由 services/growth-book.js
+  // 说了算。成长档案页要给它一道门，而分包规则不许 `packages/evaluation` 里的页面
+  // require 第二个服务模块，所以路径在这里再写一次。**这是有意的重复**，与
+  // services/module-entry.js 里那一行同一个理由：改路径要改两处，而让页面自己拼一条
+  // 路径是三处。真正的去处只有一个页面，两处指的是同一个。
+  book: '/packages/growth-book/pages/create/index',
 };
 
 function openMonth(childId) {
@@ -466,6 +740,46 @@ function openTerm(childId) {
 
 function openReport(childId) {
   guard.navigateTo(`${PAGES.report}?child_id=${childId}`, MODULE_ID);
+}
+
+function openGrowthRecord() {
+  guard.navigateTo(PAGES.growthRecord, MODULE_ID);
+}
+
+function openTeacherEval() {
+  guard.navigateTo(PAGES.teacherEval, MODULE_ID);
+}
+
+function openMessage() {
+  guard.navigateTo(PAGES.message, MODULE_ID);
+}
+
+function openMessageDetail(childId) {
+  guard.navigateTo(`${PAGES.messageDetail}?child_id=${childId}`, MODULE_ID);
+}
+
+function openParentEval() {
+  guard.navigateTo(PAGES.parentEval, MODULE_ID);
+}
+
+function openParentEvalProgress(roundId) {
+  guard.navigateTo(`${PAGES.parentEvalProgress}?round_id=${roundId}`, MODULE_ID);
+}
+
+/** 成长档案页上的第三个入口。目的地在成长册那个分包，见 PAGES.book 上的说明。 */
+function openBook() {
+  guard.navigateTo(PAGES.book, MODULE_ID);
+}
+
+/**
+ * 教师评价页的「综合评估」入口。
+ *
+ * 综合评估报告是**一名幼儿的一份报告**，没有班级层的形态，所以这一条不能不带幼儿就
+ * 直接进报告页。它进的是五维图那张班级聚合页，从那里点一名幼儿才到得了报告 ——
+ * 与量表页内那个入口进的是同一页，路径因此转出 services/assessment，不在这里再写一份。
+ */
+function openFiveChart() {
+  assessment.openFiveChart();
 }
 
 module.exports = {
@@ -500,8 +814,37 @@ module.exports = {
   // 名册。`GET /child-assessments` 本身就是名册型集合，评价链的三页都靠它列幼儿，
   // 不必再问第二个名册端点。
   listChildren: assessment.listChildAssessments,
+  // 成长档案这条链（2026-08-26）
+  MESSAGE_TEXT_MAX,
+  PROMPT_TEXT_MAX,
+  PARENT_EVAL_TYPES,
+  GROWTH_RECORD_COLUMNS,
+  TEACHER_EVAL_COLUMNS,
+  MESSAGE_COLUMNS,
+  PARENT_EVAL_COLUMNS,
+  growthRecordRoster,
+  teacherEvalRoster,
+  messageRoster,
+  messageTargets,
+  messageBlockers,
+  submitMessage,
+  messageDetail,
+  newMessageKey,
+  parentEvalRounds,
+  parentEvalProgress,
+  parentEvalBlockers,
+  publishParentEval,
+  newParentEvalKey,
   // 去向
   openMonth,
   openTerm,
   openReport,
+  openGrowthRecord,
+  openTeacherEval,
+  openMessage,
+  openMessageDetail,
+  openParentEval,
+  openParentEvalProgress,
+  openBook,
+  openFiveChart,
 };

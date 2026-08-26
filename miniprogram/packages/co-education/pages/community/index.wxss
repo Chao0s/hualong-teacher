@@ -1,0 +1,104 @@
+@import "../../shared.wxss";
+
+/* 任务类别筛选 —— 横排标签。原型是一个 `<select>`，但取值只有三条且固定，
+ * form-control-spec 的三问第 2 问命中，横排标签比滚轮少一次点击。 */
+.cm-filters {
+  display: flex;
+  gap: 16rpx;
+  margin-bottom: var(--space-3);
+}
+
+.cm-filter {
+  padding: 12rpx 28rpx;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 24rpx;
+}
+
+.cm-filter--on {
+  border-color: var(--accent);
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  font-weight: 600;
+}
+
+/* 一条提交 —— 原型的 `.moment-card`：左侧头像字，右侧抬头、正文与底行。 */
+.cm-card {
+  display: flex;
+  gap: 20rpx;
+  padding: 28rpx;
+  border-radius: 32rpx;
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.cm-card + .cm-card {
+  margin-top: 20rpx;
+}
+
+.cm-card__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 76rpx;
+  height: 76rpx;
+  border-radius: 24rpx;
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  font-size: 26rpx;
+  font-weight: 700;
+}
+
+.cm-card__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.cm-card__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 20rpx;
+}
+
+.cm-card__who {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.cm-card__time {
+  flex: none;
+  font-size: 22rpx;
+  color: var(--muted);
+}
+
+.cm-card__task {
+  margin-top: 12rpx;
+  font-size: 26rpx;
+  line-height: var(--line-cjk);
+  color: var(--fg);
+}
+
+.cm-card__foot {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-top: 16rpx;
+}
+
+.cm-card__pill {
+  padding: 6rpx 18rpx;
+  border-radius: var(--radius-pill);
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 22rpx;
+}
+
+.cm-card__photos {
+  font-size: 22rpx;
+  color: var(--muted);
+}

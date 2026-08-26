@@ -41,3 +41,87 @@
   line-height: 1.45;
   opacity: 0.9;
 }
+
+/* 分区标题 —— 原型 home-school-common.css 的 `.sec`。 */
+.sec {
+  margin: 36rpx 0 20rpx;
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+/* 快捷入口四卡并排 —— 原型 `.entry-grid`：一行四张，字标在上、标题在下。 */
+.quick {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16rpx;
+}
+
+.quick__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14rpx;
+  padding: 26rpx 8rpx;
+  border-radius: 28rpx;
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+}
+
+/* 字标是两个字（时光／任务／档案／社区），所以是圆角方块不是圆点。 */
+.quick__mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 84rpx;
+  height: 84rpx;
+  border-radius: 26rpx;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.quick__mark--accent { color: var(--accent-dark); background: var(--accent-light); }
+.quick__mark--green  { color: var(--green);       background: var(--green-light); }
+.quick__mark--amber  { color: #a15d00;            background: var(--amber-light); }
+.quick__mark--blue   { color: var(--blue);        background: var(--blue-light); }
+
+.quick__label {
+  font-size: 24rpx;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* 三个数字 —— 原型 `.metric-row`。 */
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16rpx;
+  margin-bottom: var(--space-3);
+}
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6rpx;
+  padding: 24rpx 8rpx;
+  border-radius: 28rpx;
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.metric__value {
+  font-size: 44rpx;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+/* 待提醒是唯一一个「越大越要留意」的数，所以只有它带颜色，与原型一致。 */
+.metric__value--amber {
+  color: var(--amber);
+}
+
+.metric__label {
+  font-size: 22rpx;
+  color: var(--muted);
+}

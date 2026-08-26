@@ -1,0 +1,30 @@
+<view class="hl-page" wx:if="{{ready}}">
+
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryLoad">重试</text>
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障码 {{errorRequestId}}</text>
+  </view>
+
+  <!-- 儿童评价：三个入口，一行三张（spec 05 的 entry_reduction，5 个并为 3 个）。 -->
+  <view class="ev-sec">儿童评价</view>
+  <view class="ev-entry-row">
+    <view
+      wx:for="{{entries}}"
+      wx:key="key"
+      class="ev-entry {{item.primary ? 'ev-entry--primary' : ''}}"
+      data-key="{{item.key}}"
+      bindtap="onEntryTap">{{item.label}}</view>
+  </view>
+
+  <view class="ev-sec">孩子评价进度</view>
+  <view class="hl-loading" wx:if="{{loading}}">加载中…</view>
+  <!-- 读失败时不画表：`hl-progress-grid` 没有行时会说「这个班还没有…」，
+       而读不到与没有幼儿是两件事。 -->
+  <hl-progress-grid
+    wx:if="{{!loading && !errorText}}"
+    columns="{{columns}}"
+    rows="{{rows}}"
+    nameLabel="幼儿"
+    emptyText="这个班还没有幼儿。" />
+</view>

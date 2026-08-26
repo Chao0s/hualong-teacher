@@ -677,6 +677,106 @@ async function taskSubmissions(parentTaskId) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
+// 入口页与社区共育（2026-08-26 按原型建）
+// ══════════════════════════════════════════════════════════════════════════
+//
+// 两条读面，**契约里都没有**：对象定义写在 `05 home-school-spec.md` 里
+// （`db_home_school` 与 `db_home_school_progress`），`openapi.yaml` 的 149 个操作里
+// 搜不到。与 `/training/home`、`/home/todos` 同类，缺口已登记。
+
+const HOME_PATH = '/home-school/home';
+const COMMUNITY_FEED_PATH = '/home-school/community-feed';
+
+/** 入口页与社区共育共用的一张二元状态表（spec 05：h1 已完成／h2 未完成）。 */
+const PROGRESS_DONE = 'h1';
+
+/** 社区共育的任务类别筛选。两个都是查询参数，「全部」表示不加那一条 predicate。 */
+const COMMUNITY_FILTERS = [
+  { value: 'all', label: '全部任务' },
+  { value: 't1', label: '日常任务' },
+  { value: 't2', label: '社区任务' },
+];
+
+const TASK_TYPE_LABEL = { t1: '日常任务', t2: '社区任务' };
+
+/**
+ * 一个二元状态 -> `hl-progress-grid` 的一格。
+ *
+ * 未完成那一边的说法**逐列不同**（未完成／未提交／进行中／未定稿），所以由调用方给：
+ * 组件不拼这句话，拼了就等于假设每一列的说法一样。
+ */
+function progressCell(key, status, undoneHint, doneHint) {
+  const done = status === PROGRESS_DONE;
+  return { key, done, hint: done ? (doneHint || '已完成') : undoneHint };
+}
+
+/**
+ * 入口页的一次聚合读取 —— 一个请求，三个数字加一张逐儿四列的完成度表。
+ *
+ * 原型 `home-school.html` 的「完成度汇总」就是这一块。四列的口径都在 spec 05 的
+ * `db_home_school_progress` 上：在园时光、亲子任务、成长档案、成长册，一律二元。
+ */
+async function homeSchoolHome() {
+  const home = await api.get(HOME_PATH);
+  return {
+    className: home.class_name || '',
+    metrics: [
+      { key: 'child', value: String(home.child_count || 0), label: '班级幼儿', tint: '' },
+      { key: 'average', value: `${home.average_completion || 0}%`, label: '平均完成', tint: '' },
+      // 待提醒是唯一一个「越大越要留意」的数，所以只有它带颜色，与原型一致。
+      { key: 'reminder', value: String(home.reminder_count || 0), label: '待提醒', tint: 'amber' },
+    ],
+    // `hl-progress-grid` 的行形状（票据 19）。WXML 没有表格元素，那个组件就是本仓库
+    // 为「幼儿 × 状态」定下的替代形状：姓名列不随横向滚动滚走，每个点带读屏文案。
+    rows: (home.items || []).map((row) => ({
+      key: String(row.child_id),
+      name: row.child_name,
+      cells: [
+        progressCell('moment', row.moment_status, '未完成'),
+        progressCell('parent_task', row.parent_task_status, '未提交'),
+        progressCell('growth_record', row.growth_record_status, '进行中'),
+        progressCell('growth_book', row.growth_book_status, '未定稿', '已定稿'),
+      ],
+    })),
+  };
+}
+
+/** 入口页完成度表的四列，与上面 `cells` 的下标一一对应。 */
+const HOME_COLUMNS = [
+  { key: 'moment', label: '在园时光' },
+  { key: 'parent_task', label: '亲子任务' },
+  { key: 'growth_record', label: '成长档案' },
+  { key: 'growth_book', label: '成长册' },
+];
+
+/**
+ * 社区共育的动态流 —— 家长对已发布亲子任务的提交。
+ *
+ * DECISIONS B11／E5 拔掉了 `db_community_submission`：这一页读的是亲子任务加它们的
+ * 提交行，按任务类型筛。**家长内容在写下时已经过 ADR-0016 第三行的批式把关**，这里
+ * 是读面，不再把一次关；仍在批次里的那些服务端不给，所以流上每一条都是过了关的。
+ */
+async function communityFeed({ parent_task_type: type } = {}) {
+  const rows = await api.getRoster(COMMUNITY_FEED_PATH, {
+    // 「全部」不是一个值，是不加这一条 predicate，所以这里送 undefined 而不是 'all'。
+    parent_task_type: type && type !== 'all' ? type : undefined,
+  });
+  return rows.map((row) => ({
+    key: `${row.parent_task_id}-${row.child_id}`,
+    parent_task_id: row.parent_task_id,
+    child_id: row.child_id,
+    // 原型的抬头是「某某家长」：这是家长的身份，不是幼儿本人在说话。
+    who: `${row.child_name}家长`,
+    avatar: (row.child_name || '幼').slice(-1),
+    task_title: row.parent_task_title,
+    type_label: TASK_TYPE_LABEL[row.parent_task_type] || '任务',
+    submitted_label: time.formatShort(row.submitted_at),
+    photo_count: (row.file_id || []).length,
+  }));
+}
+
+// ══════════════════════════════════════════════════════════════════════════
 // 去向
 // ══════════════════════════════════════════════════════════════════════════
 //
@@ -689,6 +789,7 @@ const PAGES = {
   momentProgress: '/packages/co-education/pages/moment/progress',
   taskPublish: '/packages/co-education/pages/task/publish',
   taskProgress: '/packages/co-education/pages/task/progress',
+  community: '/packages/co-education/pages/community/index',
 };
 
 /**
@@ -715,6 +816,10 @@ function openTaskPublish() {
 
 function openTaskProgress(parentTaskId) {
   guard.navigateTo(`${PAGES.taskProgress}?parent_task_id=${parentTaskId}`, MODULE_ID);
+}
+
+function openCommunity() {
+  guard.navigateTo(PAGES.community, MODULE_ID);
 }
 
 module.exports = {
@@ -765,9 +870,15 @@ module.exports = {
   listTasks,
   taskDetail,
   taskSubmissions,
+  // 入口页与社区共育（2026-08-26）
+  COMMUNITY_FILTERS,
+  HOME_COLUMNS,
+  homeSchoolHome,
+  communityFeed,
   // 去向
   openMomentPublish,
   openMomentProgress,
   openTaskPublish,
   openTaskProgress,
+  openCommunity,
 };

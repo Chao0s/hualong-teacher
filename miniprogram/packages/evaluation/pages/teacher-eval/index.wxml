@@ -1,0 +1,28 @@
+<view class="hl-page" wx:if="{{ready}}">
+
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryLoad">重试</text>
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障码 {{errorRequestId}}</text>
+  </view>
+
+  <!-- 四个评价入口，两列两行（原型 `.eval-entry-grid`）。 -->
+  <view class="ev-sec">评价入口</view>
+  <view class="ev-entry-row ev-entry-row--two">
+    <view
+      wx:for="{{entries}}"
+      wx:key="key"
+      class="ev-entry {{item.primary ? 'ev-entry--primary' : ''}}"
+      data-key="{{item.key}}"
+      bindtap="onEntryTap">{{item.label}}</view>
+  </view>
+
+  <view class="ev-sec">本班幼儿进度</view>
+  <view class="hl-loading" wx:if="{{loading}}">加载中…</view>
+  <hl-progress-grid
+    wx:if="{{!loading && !errorText}}"
+    columns="{{columns}}"
+    rows="{{rows}}"
+    nameLabel="幼儿"
+    emptyText="这个班还没有幼儿。" />
+</view>

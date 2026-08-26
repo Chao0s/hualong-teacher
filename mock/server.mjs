@@ -797,6 +797,12 @@ const state = {
   nextMomentId: 900,            // POST /moments assigns from here
   nextParentTaskId: 600,        // POST /home-school/parent-tasks assigns from here
   nextChildAssessmentId: 700,   // 首次评分建主记录时从这里取号
+  nextTeacherMessageId: 950,    // POST /home-school/teacher-messages 取号
+  nextParentEvaluationRoundId: 750, // POST /home-school/parent-evaluations 取号
+  // 每一次真正执行的寄语写入与家长评价发起。与 taskCompletions 同一个理由：幂等重放
+  // 在分发层就返回了，处理器根本没跑，所以「重复点击只产生一份」要数服务端做了几次。
+  teacherMessageWrites: [],
+  parentEvaluationPublications: [],
   nextMonthEvalId: 700,         // PUT /home-school/month-evals 首次 upsert 时取号
   nextTermEvalId: 800,          // PUT /children/{id}/term-evaluation 取号
   nextCompilationId: 300,       // POST /teacher/growth-book/compilation 取号
@@ -1907,6 +1913,16 @@ const HAND_WRITTEN_ROLES = [
   [/^\/children\/\d+\/term-evaluation$/, ['teacher']],
   [/^\/growth-records$/, ['teacher']],
   [/^\/children\/\d+\/growth-record$/, ['teacher']],
+  // 成长档案这条链（2026-08-26 按原型建）。**契约里一条也没有** —— 对象定义在
+  // spec 05 里，`openapi.yaml` 的 149 个操作里搜不到。登记在这里是为了让门不至于
+  // 悄悄缺席；缺口本身逐条记在交接里。
+  [/^\/home-school\/home$/, ['teacher']],
+  [/^\/home-school\/teacher-eval$/, ['teacher']],
+  [/^\/home-school\/teacher-messages$/, ['teacher']],
+  [/^\/home-school\/teacher-messages\/\d+$/, ['teacher']],
+  [/^\/home-school\/parent-evaluations$/, ['teacher']],
+  [/^\/home-school\/parent-evaluations\/\d+$/, ['teacher']],
+  [/^\/home-school\/community-feed$/, ['teacher']],
   // 票据 21 的成长册。前八条契约写的就是 teacher；**后两条契约写的是 teacher｜parent**
   // （预览与家长查看共用同一条路径），但本 mock 只服务教师端，登记为 teacher —— 宁可比
   // 契约严：漏登记才是安全缺陷，多登记只是这个 mock 覆盖面窄。
@@ -2231,6 +2247,24 @@ const server = createServer(async (req, res) => {
       getTermEvaluation(req, res, path.split('/')[2]);
     } else if (req.method === 'PUT' && /^\/children\/\d+\/term-evaluation$/.test(path)) {
       putTermEvaluation(req, res, path.split('/')[2], body);
+    } else if (req.method === 'GET' && path === '/home-school/home') {
+      getHomeSchoolHome(req, res);
+    } else if (req.method === 'GET' && path === '/home-school/teacher-eval') {
+      getTeacherEvalHome(req, res);
+    } else if (req.method === 'GET' && path === '/home-school/teacher-messages') {
+      getTeacherMessages(req, res);
+    } else if (req.method === 'POST' && path === '/home-school/teacher-messages') {
+      postTeacherMessage(req, res, body);
+    } else if (req.method === 'GET' && /^\/home-school\/teacher-messages\/\d+$/.test(path)) {
+      getTeacherMessage(req, res, path.split('/')[3]);
+    } else if (req.method === 'GET' && path === '/home-school/parent-evaluations') {
+      getParentEvaluations(req, res);
+    } else if (req.method === 'POST' && path === '/home-school/parent-evaluations') {
+      postParentEvaluation(req, res, body);
+    } else if (req.method === 'GET' && /^\/home-school\/parent-evaluations\/\d+$/.test(path)) {
+      getParentEvaluation(req, res, path.split('/')[3]);
+    } else if (req.method === 'GET' && path === '/home-school/community-feed') {
+      getCommunityFeed(req, res, url);
     } else if (req.method === 'GET' && path === '/growth-records') {
       getGrowthRecords(req, res);
     } else if (req.method === 'GET' && /^\/children\/\d+\/growth-record$/.test(path)) {
@@ -2316,6 +2350,7 @@ export function start({
   TRAINING_FEEDBACK_SNAPSHOT.forEach((row, i) => { TRAINING_FEEDBACKS[i] = { ...row }; });
   resetHomeSchool();
   resetEvaluation();
+  resetGrowthRecordChain();
   resetGrowthBook();
   // resetGrowthBook 把它关回默认（一份也没发布），所以显式的启动选项排在它之后。
   OPTS.layoutPack = layoutPack;
@@ -4186,6 +4221,8 @@ function growthRecordFor(child) {
     teacher_term_status: teacherTerm,
     parent_term_status: 'c2',
     comprehensive_assessment_status: assessmentDone ? 'c1' : 'c2',
+    // 成长册那一列：原型 growth-record.html 的第六列。h1 已定稿／h2 未定稿。
+    growth_book_status: growthBookStatusFor(child.child_id),
     is_term_end: false,
     record_status: record,
   };
@@ -4201,6 +4238,407 @@ function getGrowthRecord(req, res, id) {
   const child = childInScope(id);
   if (!child) return fail(res, 404, 'not_found', '幼儿不存在或不在可见范围内');
   return sendJson(res, 200, growthRecordFor(child));
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// 成长档案这条链（2026-08-26 按原型建）
+// ══════════════════════════════════════════════════════════════════════════
+//
+// 五条读面加两条写入。**契约里一条都没有**，与 `/party/home` 不同：那一条契约有，
+// 只是没人调。这几条的对象定义写在教师端 `05 home-school-spec.md` 里（db_home_school、
+// db_teacher_eval_home、db_teacher_message、db_parent_evaluation[REUSE]），
+// `openapi.yaml` 的 149 个操作里一个也没有。缺口逐条记进交接，接真服务时必须重对。
+//
+// 三张进度表的口径都出自 spec 05 的同一句话：**草稿一律折算为未完成**（二元）。
+// 所以下面每一处判定都只认终态，不认「填了一半」。
+
+/** `db_teacher_message`（spec 05，E1）。提交后永久只读，所以没有 update。 */
+const TEACHER_MESSAGES = [
+  {
+    teacher_message_id: 901,
+    class_id: SCOPE.class_id,
+    teacher_id: TEACHER.teacher_id,
+    child_id: 101,
+    term_id: TERM.term_id,
+    message_text: '小明这学期进步很大，从入园时的害羞到现在能主动举手分享，老师为你骄傲。'
+      + '希望你继续保持好奇心，做勇敢表达的小朋友。',
+    submitted_at: '2026-08-20T16:20:00+08:00',
+  },
+  {
+    teacher_message_id: 902,
+    class_id: SCOPE.class_id,
+    teacher_id: TEACHER.teacher_id,
+    child_id: 106,
+    term_id: TERM.term_id,
+    message_text: '浩然是班里的运动小健将，也越来越懂得照顾同伴。'
+      + '新学期里希望你在安静活动中也能沉下心来，收获更多。',
+    submitted_at: '2026-08-21T09:05:00+08:00',
+  },
+];
+
+const TEACHER_MESSAGE_SNAPSHOT = TEACHER_MESSAGES.map((r) => ({ ...r }));
+
+/**
+ * `db_parent_evaluation` 的**发起面**（spec 05：家长端 canonical，教师端只发起）。
+ *
+ * 教师写的是给家长看的说明（`evaluation_prompt`），家长自己的回答写在家长端、也在
+ * 那一端把关。这里存的是一期一行的发起记录加它的完成情况。
+ */
+const PARENT_EVALUATIONS = [
+  {
+    parent_evaluation_round_id: 701,
+    class_id: SCOPE.class_id,
+    requested_by_teacher_id: TEACHER.teacher_id,
+    evaluation_type: 't1',
+    evaluation_period: '2026-06',
+    evaluation_prompt: '请家长结合本月亲子任务、幼儿在家表现与照片记录，补充孩子的兴趣、生活习惯和成长变化。',
+    published_at: '2026-06-01T09:00:00+08:00',
+    completed_count: 23,
+  },
+  {
+    parent_evaluation_round_id: 702,
+    class_id: SCOPE.class_id,
+    requested_by_teacher_id: TEACHER.teacher_id,
+    evaluation_type: 't1',
+    evaluation_period: '2026-05',
+    evaluation_prompt: '请家长回顾五月的亲子共读，写下孩子最喜欢的一本书和他自己的解释。',
+    published_at: '2026-05-01T09:00:00+08:00',
+    completed_count: 26,
+  },
+  {
+    parent_evaluation_round_id: 703,
+    class_id: SCOPE.class_id,
+    requested_by_teacher_id: TEACHER.teacher_id,
+    evaluation_type: 't1',
+    evaluation_period: '2026-04',
+    evaluation_prompt: '请家长记录孩子在四月里学会的一件自理小事。',
+    published_at: '2026-04-01T09:00:00+08:00',
+    completed_count: 28,
+  },
+];
+
+const PARENT_EVALUATION_SNAPSHOT = PARENT_EVALUATIONS.map((r) => ({ ...r }));
+
+/** 这两张表的可变夹具收回原样。`start()` 每次调用都跑它。 */
+function resetGrowthRecordChain() {
+  TEACHER_MESSAGES.length = TEACHER_MESSAGE_SNAPSHOT.length;
+  TEACHER_MESSAGE_SNAPSHOT.forEach((row, i) => { TEACHER_MESSAGES[i] = { ...row }; });
+  PARENT_EVALUATIONS.length = PARENT_EVALUATION_SNAPSHOT.length;
+  PARENT_EVALUATION_SNAPSHOT.forEach((row, i) => { PARENT_EVALUATIONS[i] = { ...row }; });
+  state.nextTeacherMessageId = 950;
+  state.nextParentEvaluationRoundId = 750;
+  state.teacherMessageWrites.length = 0;
+  state.parentEvaluationPublications.length = 0;
+}
+
+/** 一名幼儿这学期有没有成长册（`h1` 已完成 ／ `h2` 未完成，spec 05 的二元口径）。 */
+function growthBookStatusFor(childId) {
+  const book = GROWTH_BOOKS.find((b) => b.child_id === childId && b.book_status === 'b2');
+  return book ? 'h1' : 'h2';
+}
+
+/** 一名幼儿这学期的教师寄语。缺行等价未完成。 */
+function teacherMessageFor(childId) {
+  return TEACHER_MESSAGES.find((m) => m.child_id === childId) || null;
+}
+
+/**
+ * GET /home-school/home —— 入口页的聚合读取（`db_home_school`，persist=0）。
+ *
+ * 三个数字与逐儿四列状态，全部从活着的夹具现算：完成一次亲子任务或定稿一本成长册，
+ * 这里的数字就会跟着动。spec 05 的算式逐条照做：
+ *   child_count        = COUNT(在园幼儿)
+ *   average_completion = AVG(每名幼儿的完成率)
+ *   reminder_count     = COUNT(需要提醒的幼儿)
+ */
+function homeSchoolProgressFor(child) {
+  // 在园时光：本周有没有被嵌进已发布的场次（h1／h2 二元，见 spec 05）。
+  const inMoment = MOMENTS.some(
+    (m) => m.publish_status === 's3' && (m.child_id || []).includes(child.child_id)
+  );
+  // 亲子任务：最新一期已发布任务里，这名幼儿交了没有。缺行等价未交。
+  const latest = PARENT_TASKS
+    .filter((t) => t.publish_status === 's2' && t.published_at)
+    .sort((a, b) => (a.published_at < b.published_at ? 1 : -1))[0];
+  const submitted = latest
+    ? PARENT_TASK_SUBMISSIONS.some(
+      (s) => s.parent_task_id === latest.parent_task_id
+        && s.child_id === child.child_id
+        && s.submission_status === 'c1'
+    )
+    : false;
+  const record = growthRecordFor(child);
+  const statuses = {
+    moment_status: inMoment ? 'h1' : 'h2',
+    parent_task_status: submitted ? 'h1' : 'h2',
+    growth_record_status: record.record_status === 'c1' ? 'h1' : 'h2',
+    growth_book_status: growthBookStatusFor(child.child_id),
+  };
+  const required = 4;
+  const completed = Object.values(statuses).filter((s) => s === 'h1').length;
+  return {
+    child_id: child.child_id,
+    child_name: child.child_name,
+    ...statuses,
+    required_count: required,
+    completed_count: completed,
+    row_completion_rate: Math.round((completed / required) * 100),
+    reminder_required: completed < required,
+  };
+}
+
+function getHomeSchoolHome(req, res) {
+  const rows = CHILDREN.map(homeSchoolProgressFor);
+  // spec: IF required_count=0, average_completion=0 —— 一个空班不该把这里除爆。
+  const average = rows.length
+    ? Math.round(rows.reduce((sum, r) => sum + r.row_completion_rate, 0) / rows.length)
+    : 0;
+  return sendJson(res, 200, {
+    class_id: SCOPE.class_id,
+    class_name: SCOPE.class_name,
+    child_count: rows.length,
+    average_completion: average,
+    reminder_count: rows.filter((r) => r.reminder_required).length,
+    items: rows,
+  });
+}
+
+/**
+ * GET /home-school/teacher-eval —— 教师评价聚合页（`db_teacher_eval_home`，persist=0）。
+ *
+ * spec 05 写着 `write_control_count = 0`：这一页只导航与只读展示，一个写入控件也没有，
+ * 所以这里只有 GET。四列都按二元口径判：草稿折算为未完成。
+ */
+function teacherEvalRowFor(child) {
+  const month = MONTH_EVALS.find(
+    (r) => r.child_id === child.child_id && r.month_eval_status === 'e3'
+  );
+  const term = TERM_EVALS.find((r) => r.child_id === child.child_id) || null;
+  const assessment = assessmentFor(child.child_id);
+  return {
+    child_id: child.child_id,
+    child_name: child.child_name,
+    month_eval_status: month ? 'c1' : 'c2',
+    term_eval_status: term ? 'c1' : 'c2',
+    comprehensive_assessment_status:
+      assessment && assessmentStatus(assessment) === 'c1' ? 'c1' : 'c2',
+    teacher_message_status: teacherMessageFor(child.child_id) ? 'c1' : 'c2',
+  };
+}
+
+function getTeacherEvalHome(req, res) {
+  return sendJson(res, 200, { items: CHILDREN.map(teacherEvalRowFor) });
+}
+
+/** GET /home-school/teacher-messages —— 名册型完成情况，整取不分页（§3.5）。 */
+function getTeacherMessages(req, res) {
+  return sendJson(res, 200, {
+    items: CHILDREN.map((child) => {
+      const row = teacherMessageFor(child.child_id);
+      return {
+        child_id: child.child_id,
+        child_name: child.child_name,
+        teacher_message_status: row ? 'c1' : 'c2',
+        teacher_message_id: row ? row.teacher_message_id : null,
+      };
+    }),
+  });
+}
+
+/** GET /home-school/teacher-messages/{child_id} —— 一条已提交的寄语，只读。 */
+function getTeacherMessage(req, res, id) {
+  const child = childInScope(id);
+  if (!child) return fail(res, 404, 'not_found', '幼儿不存在或不在可见范围内');
+  const row = teacherMessageFor(child.child_id);
+  // 还没写过与不在范围内，对读者是同一件事：都没有可读的那一行。
+  if (!row) return fail(res, 404, 'not_found', '尚未提交寄语');
+  return sendJson(res, 200, { ...row, child_name: child.child_name });
+}
+
+/**
+ * POST /home-school/teacher-messages —— 写一条寄语。
+ *
+ * **提交即终局**：spec 05 与原型都写着「提交后永久只读」，所以重复提交回 409，
+ * 不是把旧的覆盖掉。教职工文本走 ADR-0016 第二行（预览后发布），把关在客户端声明、
+ * 由服务端记录同意；这个 mock 只验形状与终局性。
+ *
+ * `child_id=all` 是原型上的「全体幼儿」：一次为全班每个**还没有**寄语的幼儿各建一行。
+ * 已经有的不动 —— 覆盖会推翻终局性。
+ */
+function postTeacherMessage(req, res, body) {
+  const text = typeof body.message_text === 'string' ? body.message_text.trim() : '';
+  if (!text) {
+    return fail(res, 422, 'validation_failed', '寄语内容不能为空',
+      { field: 'message_text', rule: 'required' });
+  }
+  if (text.length > 300) {
+    return fail(res, 422, 'validation_failed', '寄语最多 300 字',
+      { field: 'message_text', rule: 'max_len_300' });
+  }
+  // 已经有寄语的一律不进 targets —— 单个与全班都一样。覆盖会悄悄抹掉上一条，
+  // 而教师看到的仍是「提交成功」。空的 targets 在下面变成 409。
+  const targets = (body.child_id === 'all'
+    ? CHILDREN
+    : [childInScope(body.child_id)].filter(Boolean)
+  ).filter((c) => !teacherMessageFor(c.child_id));
+
+  if (!targets.length) {
+    if (body.child_id === 'all') {
+      return fail(res, 409, 'conflict', '全班都已提交寄语，寄语提交后不可修改');
+    }
+    const child = childInScope(body.child_id);
+    if (!child) return fail(res, 404, 'not_found', '幼儿不存在或不在可见范围内');
+    return fail(res, 409, 'conflict', '这名幼儿的寄语已提交，提交后不可修改');
+  }
+
+  const created = targets.map((child) => {
+    const row = {
+      teacher_message_id: state.nextTeacherMessageId,
+      class_id: SCOPE.class_id,
+      teacher_id: TEACHER.teacher_id,
+      child_id: child.child_id,
+      term_id: TERM.term_id,
+      message_text: text,
+      submitted_at: '2026-08-26T17:40:00+08:00',
+    };
+    state.nextTeacherMessageId += 1;
+    TEACHER_MESSAGES.push(row);
+    state.teacherMessageWrites.push({ teacher_message_id: row.teacher_message_id, child_id: row.child_id });
+    return row;
+  });
+
+  return sendJson(res, 201, { items: created.map((r) => ({ ...r })) });
+}
+
+/** GET /home-school/parent-evaluations —— 已发起的各期，最近的在前。 */
+function getParentEvaluations(req, res) {
+  const rows = PARENT_EVALUATIONS
+    .slice()
+    .sort((a, b) => (a.published_at < b.published_at ? 1 : -1))
+    .map((row) => ({
+      ...row,
+      child_count: CHILDREN.length,
+      completion_rate: Math.round((row.completed_count / CHILDREN.length) * 100),
+    }));
+  return sendJson(res, 200, { items: rows });
+}
+
+/**
+ * GET /home-school/parent-evaluations/{id} —— 一期的完成情况，逐儿一行。
+ *
+ * 家长的答案本身不在这里：那是家长端的内容，教师端读的是**交了没有**。
+ */
+function getParentEvaluation(req, res, id) {
+  const round = PARENT_EVALUATIONS.find((r) => r.parent_evaluation_round_id === Number(id));
+  if (!round) return fail(res, 404, 'not_found', '该期家长评价不存在或不在可见范围内');
+  const items = CHILDREN.map((child, idx) => ({
+    child_id: child.child_id,
+    child_name: child.child_name,
+    // 完成的是前 `completed_count` 名 —— 夹具的排法，不是一条业务口径。
+    evaluation_status: idx < round.completed_count ? 'p2' : 'p0',
+  }));
+  return sendJson(res, 200, {
+    ...round,
+    child_count: CHILDREN.length,
+    completion_rate: Math.round((round.completed_count / CHILDREN.length) * 100),
+    items,
+  });
+}
+
+/**
+ * POST /home-school/parent-evaluations —— 发起一期家长评价。
+ *
+ * 教师写的是**给家长看的说明**（`evaluation_prompt`），不是家长的答案。作者字段派生：
+ * `requested_by_teacher_id` 由会话来，客户端不送（§7.3 / DO-NOT-BUILD 8）。
+ */
+function postParentEvaluation(req, res, body) {
+  const type = body.evaluation_type;
+  if (type !== 't1' && type !== 't2') {
+    return fail(res, 422, 'validation_failed', '评价类型不合法',
+      { field: 'evaluation_type', rule: 'one_of_t1_t2' });
+  }
+  const prompt = typeof body.evaluation_prompt === 'string' ? body.evaluation_prompt.trim() : '';
+  if (!prompt) {
+    return fail(res, 422, 'validation_failed', '评价说明不能为空',
+      { field: 'evaluation_prompt', rule: 'required' });
+  }
+  if (prompt.length > 1000) {
+    return fail(res, 422, 'validation_failed', '评价说明最多 1000 字',
+      { field: 'evaluation_prompt', rule: 'max_len_1000' });
+  }
+  const period = body.evaluation_period;
+  if (typeof period !== 'string' || !period) {
+    return fail(res, 422, 'validation_failed', '评价周期不能为空',
+      { field: 'evaluation_period', rule: 'required' });
+  }
+  // `UNIQUE(child_id + evaluation_type + evaluation_period)` 的班级层对应物：
+  // 同一周期同一类型只能发起一次，重发是覆盖，不是新建。
+  const clash = PARENT_EVALUATIONS.find(
+    (r) => r.evaluation_type === type && r.evaluation_period === period
+  );
+  if (clash) return fail(res, 409, 'conflict', '这一期已经发起过了');
+
+  const row = {
+    parent_evaluation_round_id: state.nextParentEvaluationRoundId,
+    class_id: SCOPE.class_id,
+    requested_by_teacher_id: TEACHER.teacher_id,   // 派生
+    evaluation_type: type,
+    evaluation_period: period,
+    evaluation_prompt: prompt,
+    published_at: '2026-08-26T17:45:00+08:00',
+    completed_count: 0,
+  };
+  state.nextParentEvaluationRoundId += 1;
+  PARENT_EVALUATIONS.push(row);
+  state.parentEvaluationPublications.push({ round_id: row.parent_evaluation_round_id });
+  return sendJson(res, 201, { ...row }, {
+    location: `${BASE}/home-school/parent-evaluations/${row.parent_evaluation_round_id}`,
+  });
+}
+
+/**
+ * GET /home-school/community-feed —— 家长提交的动态流。
+ *
+ * DECISIONS B11／E5 拔掉了 `db_community_submission`：这一页读的是**已发布的亲子任务**
+ * （t1｜t2）加它们的提交行，按任务类型筛。两个筛选都是查询参数，不是列 ——「全部」表示
+ * 不加那一条 predicate。
+ *
+ * 家长内容在写下时已经过 ADR-0016 第三行的批式把关；这里是读面，不再把一次关。仍在
+ * 批次里的那些**不出现在流上**：教师读到的每一条都是已经过关的。
+ */
+function getCommunityFeed(req, res, url) {
+  const type = url.searchParams.get('parent_task_type') || 'all';
+  if (!['all', 't1', 't2'].includes(type)) {
+    return fail(res, 422, 'validation_failed', '任务类别不合法',
+      { field: 'parent_task_type', rule: 'one_of_t1_t2' });
+  }
+  const published = PARENT_TASKS.filter(
+    (t) => ['s2', 's3'].includes(t.publish_status)
+      && (type === 'all' || t.parent_task_type === type)
+  );
+  const items = [];
+  for (const task of published) {
+    for (const sub of PARENT_TASK_SUBMISSIONS) {
+      if (sub.parent_task_id !== task.parent_task_id) continue;
+      if (sub.submission_status !== 'c1') continue;
+      // 还在内容安全批次里的不上流：读面只呈现已经过关的内容。
+      if (sub.under_content_check) continue;
+      const child = CHILDREN.find((c) => c.child_id === sub.child_id);
+      if (!child) continue;
+      items.push({
+        parent_task_id: task.parent_task_id,
+        parent_task_title: task.parent_task_title,
+        parent_task_type: task.parent_task_type,
+        child_id: child.child_id,
+        child_name: child.child_name,
+        submitted_at: sub.submitted_at,
+        // 图片按 file_id 给，取图仍要另签 URL（§8.4）。这个 mock 只给张数。
+        file_id: [7100 + child.child_id, 7200 + child.child_id],
+      });
+    }
+  }
+  items.sort((a, b) => (a.submitted_at < b.submitted_at ? 1 : -1));
+  return sendJson(res, 200, { items });
 }
 
 // ── 成长册（票据 21） ───────────────────────────────────────────────────────

@@ -143,3 +143,184 @@
   color: var(--muted);
   line-height: var(--line-cjk);
 }
+
+/* ── 成长档案这条链（2026-08-26 按原型建） ─────────────────────────────────── */
+
+/* 分区标题 —— 原型 home-school-common.css 的 `.sec`，六个页面共用。 */
+.ev-sec {
+  margin: 32rpx 0 20rpx;
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.ev-sec:first-child {
+  margin-top: 0;
+}
+
+/* 入口按钮行。原型的 `.record-entry-row.three` 与 `.eval-entry-grid`：等宽并排，
+ * 只有文字，居中；第一个是主入口，浅绿底加深绿字。 */
+.ev-entry-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20rpx;
+}
+
+.ev-entry-row--two {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.ev-entry {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120rpx;
+  padding: 24rpx 20rpx;
+  border: 1px solid var(--border);
+  border-radius: 32rpx;
+  background: var(--surface);
+  color: var(--fg);
+  font-size: 26rpx;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: center;
+}
+
+/* 原型的主入口用的是绿系（#ecfdf5 底、#047857 字），不是品牌青。照原型。 */
+.ev-entry--primary {
+  border-color: var(--green-light);
+  background: var(--green-light);
+  color: var(--green);
+}
+
+/* 表格下方那行图例。圆点自己说不出话，这一行就是它的说明。 */
+.ev-legend {
+  display: flex;
+  gap: 24rpx;
+  align-items: center;
+  margin-top: var(--space-2);
+  font-size: 22rpx;
+  color: var(--muted);
+}
+
+.ev-legend__item {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.ev-legend__dot {
+  width: 18rpx;
+  height: 18rpx;
+  border-radius: 50%;
+}
+
+.ev-legend__dot--done { background: var(--green); }
+.ev-legend__dot--todo { border: 2rpx solid var(--danger); background: var(--surface); }
+
+/* 计数器。到上限时变红，与 hl-textarea 的既有做法一致。 */
+.ev-counter {
+  margin-top: var(--space-1);
+  font-size: 22rpx;
+  color: var(--muted);
+  text-align: right;
+}
+
+.ev-counter--limit {
+  color: var(--danger);
+}
+
+/* 一期家长评价的一行 —— 原型 `.list-card`：左侧月份标记、中间标题与统计、右侧箭头。 */
+.ev-round {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  padding: 24rpx;
+  border-radius: 28rpx;
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.ev-round + .ev-round {
+  margin-top: 20rpx;
+}
+
+.ev-round__mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 84rpx;
+  height: 84rpx;
+  border-radius: 26rpx;
+  font-size: 26rpx;
+  font-weight: 700;
+}
+
+.ev-round__mark--0 { color: var(--accent-dark); background: var(--accent-light); }
+.ev-round__mark--1 { color: var(--green);       background: var(--green-light); }
+.ev-round__mark--2 { color: var(--blue);        background: var(--blue-light); }
+
+.ev-round__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.ev-round__title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.ev-round__meta {
+  margin-top: 6rpx;
+  font-size: 24rpx;
+  color: var(--muted);
+}
+
+.ev-round__chev {
+  flex: none;
+  color: var(--muted);
+  font-size: 36rpx;
+}
+
+/* 寄语详情的抬头：头像字加姓名与提交时间。 */
+.ev-msg-head {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+}
+
+.ev-msg-head__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 84rpx;
+  height: 84rpx;
+  border-radius: 26rpx;
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  font-size: 30rpx;
+  font-weight: 700;
+}
+
+.ev-msg-head__who {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.ev-msg-head__meta {
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  color: var(--muted);
+}
+
+.ev-msg__text {
+  margin-top: var(--space-3);
+  font-size: 28rpx;
+  line-height: var(--line-cjk);
+  color: var(--fg);
+  white-space: pre-wrap;
+}

@@ -1,0 +1,96 @@
+<view class="hl-page hl-stack" wx:if="{{ready}}">
+
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryLoad">重试</text>
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障码 {{errorRequestId}}</text>
+  </view>
+
+  <!-- ── edit ───────────────────────────────────────────────────────────── -->
+  <block wx:if="{{stage === 'edit'}}">
+    <view class="hl-card hl-stack">
+      <!-- 原型这里是 `<select>`；WXML 没有下拉列表，滚轮是它的对应物。 -->
+      <hl-picker-row
+        label="评价类型"
+        options="{{types}}"
+        value="{{draft.evaluation_type}}"
+        required="{{true}}"
+        bind:pick="onTypePick" />
+
+      <!-- 月份是一行只读说明，不是一个选择位：能挑月份就等于能补写或提前写
+           （与月度评价页同一条判断）。 -->
+      <view>
+        <view class="ev-field__label">评价周期</view>
+        <view class="ev-month__key">{{periodLabel}}</view>
+        <view class="ev-month__hint">周期由系统按当前日期认定，不能更改。</view>
+      </view>
+
+      <view>
+        <view class="ev-field__label">评价说明（最多 {{limits.evaluation_prompt}} 字）</view>
+        <textarea
+          class="ev-textarea"
+          value="{{draft.evaluation_prompt}}"
+          maxlength="{{limits.evaluation_prompt}}"
+          placeholder="请家长结合本月亲子任务、幼儿在家表现与照片记录，补充孩子的兴趣、生活习惯和成长变化。"
+          bindinput="onPromptInput" />
+        <view class="ev-counter {{counterLimit ? 'ev-counter--limit' : ''}}">
+          {{draft.evaluation_prompt.length}}/{{limits.evaluation_prompt}}
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{blockers.length}}" class="hl-card">
+      <view class="ev-field__label">还差这几项才能发布</view>
+      <view wx:for="{{blockers}}" wx:key="*this" class="ev-blockers__item">{{item}}</view>
+    </view>
+
+    <button class="hl-btn hl-btn--block" bindtap="onPreviewTap">预览并发布给家长</button>
+    <view class="ev-notice">这段说明会出现在家长的屏幕上。家长写的评价内容由家长端提交。</view>
+  </block>
+
+  <!-- ── preview ────────────────────────────────────────────────────────── -->
+  <block wx:elif="{{stage === 'preview'}}">
+    <view class="ev-sec">发布前请完整看一遍</view>
+    <scroll-view class="ev-preview" scroll-y bindscrolltolower="onPreviewEnd">
+      <view class="hl-card">
+        <view class="hl-card__meta">{{periodLabel}}</view>
+        <view class="ev-msg__text">{{draft.evaluation_prompt}}</view>
+      </view>
+    </scroll-view>
+
+    <view wx:if="{{!previewedInFull}}" class="ev-notice">请滑到底看完整篇，再发布。</view>
+
+    <button
+      class="hl-btn hl-btn--block"
+      disabled="{{!previewedInFull || submitting}}"
+      bindtap="onConfirmTap">确认发布给家长</button>
+    <button class="hl-btn hl-btn--hollow hl-btn--block" disabled="{{locked}}" bindtap="onBackToEdit">
+      返回修改
+    </button>
+  </block>
+
+  <!-- ── done ───────────────────────────────────────────────────────────── -->
+  <block wx:elif="{{stage === 'done'}}">
+    <view class="hl-card ev-readonly">已发布给家长。家长提交后，进度会出现在下面这一列里。</view>
+    <button class="hl-btn hl-btn--hollow hl-btn--block" bindtap="onWriteAnother">再发一期</button>
+  </block>
+
+  <view class="ev-sec">过往月份进度</view>
+  <view class="hl-loading" wx:if="{{loading}}">加载中…</view>
+  <view wx:if="{{!loading && rounds.length === 0 && !errorText}}" class="hl-card hl-empty">
+    还没有发起过家长评价
+  </view>
+  <view
+    wx:for="{{rounds}}"
+    wx:key="round_id"
+    class="ev-round"
+    data-id="{{item.round_id}}"
+    bindtap="onRoundTap">
+    <view class="ev-round__mark ev-round__mark--{{index % 3}}">{{item.mark}}</view>
+    <view class="ev-round__body">
+      <view class="ev-round__title">{{item.title}}</view>
+      <view class="ev-round__meta">{{item.meta}}</view>
+    </view>
+    <view class="ev-round__chev">›</view>
+  </view>
+</view>

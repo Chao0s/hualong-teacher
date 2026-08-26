@@ -1,0 +1,90 @@
+<view class="hl-page hl-stack" wx:if="{{ready}}">
+
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryLoad">重试</text>
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障码 {{errorRequestId}}</text>
+  </view>
+
+  <view class="hl-loading" wx:if="{{loading}}">加载中…</view>
+
+  <block wx:if="{{!loading}}">
+
+    <!-- ── edit ─────────────────────────────────────────────────────────── -->
+    <block wx:if="{{stage === 'edit'}}">
+      <view class="ev-sec">寄语内容</view>
+      <view class="hl-card hl-stack">
+        <!-- 原型这里是 `<select>`；WXML 没有下拉列表，滚轮是它的对应物
+             （ADR-0017 豁免 1，form-control-spec §2.2）。 -->
+        <hl-picker-row
+          label="添加到"
+          options="{{targets}}"
+          value="{{draft.child_id}}"
+          required="{{true}}"
+          bind:pick="onTargetPick" />
+
+        <view>
+          <view class="ev-field__label">寄语（最多 {{limits.message_text}} 字，仅支持文字）</view>
+          <textarea
+            class="ev-textarea"
+            value="{{draft.message_text}}"
+            maxlength="{{limits.message_text}}"
+            placeholder="写下想对孩子说的话"
+            bindinput="onTextInput" />
+          <view class="ev-counter {{counterLimit ? 'ev-counter--limit' : ''}}">
+            {{draft.message_text.length}}/{{limits.message_text}}
+          </view>
+        </view>
+      </view>
+
+      <view wx:if="{{blockers.length}}" class="hl-card">
+        <view class="ev-field__label">还差这几项才能提交</view>
+        <view wx:for="{{blockers}}" wx:key="*this" class="ev-blockers__item">{{item}}</view>
+      </view>
+
+      <button class="hl-btn hl-btn--block" bindtap="onPreviewTap">预览并提交</button>
+      <view class="ev-notice">寄语提交后永久只读，不能修改。</view>
+    </block>
+
+    <!-- ── preview ──────────────────────────────────────────────────────── -->
+    <block wx:elif="{{stage === 'preview'}}">
+      <view class="ev-sec">提交前请完整看一遍</view>
+      <!-- 绑的是将要发出的那份正文本身，不是另拼一份好看的文字：看过的与发出的
+           必须是同一份，否则「完整预览」就不成其为把关。 -->
+      <scroll-view class="ev-preview" scroll-y bindscrolltolower="onPreviewEnd">
+        <view class="hl-card">
+          <view class="hl-card__meta">{{draft.child_id === 'all' ? '全体幼儿' : ''}}</view>
+          <view class="ev-msg__text">{{draft.message_text}}</view>
+        </view>
+      </scroll-view>
+
+      <view wx:if="{{!previewedInFull}}" class="ev-notice">请滑到底看完整篇，再提交。</view>
+
+      <button
+        class="hl-btn hl-btn--block"
+        disabled="{{!previewedInFull || submitting}}"
+        bindtap="onConfirmTap">确认提交</button>
+      <button class="hl-btn hl-btn--hollow hl-btn--block" disabled="{{locked}}" bindtap="onBackToEdit">
+        返回修改
+      </button>
+    </block>
+
+    <!-- ── done ─────────────────────────────────────────────────────────── -->
+    <block wx:elif="{{stage === 'done'}}">
+      <view class="hl-card ev-readonly">{{doneText}}</view>
+      <button class="hl-btn hl-btn--hollow hl-btn--block" bindtap="onWriteAnother">再写一条</button>
+    </block>
+
+    <view class="ev-sec">完成情况</view>
+    <!-- 这一张是可点的：已完成的一格进详情，未完成的把上面的表单切到这名幼儿。 -->
+    <hl-progress-grid
+      wx:if="{{!errorText}}"
+      columns="{{columns}}"
+      rows="{{rows}}"
+      nameLabel="幼儿"
+      tappable="{{true}}"
+      emptyText="这个班还没有幼儿。"
+      bind:celltap="onCellTap" />
+    <view class="ev-notice">点圆点可查看该幼儿已提交的寄语；未完成则定位到上方填写。</view>
+  </block>
+</view>

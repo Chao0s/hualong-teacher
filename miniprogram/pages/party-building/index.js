@@ -6,8 +6,9 @@
  *
  * 这一页从「三条整宽链接」改成原型 school-affairs.html 的形状（轮播＋三个分区），
  * 同时接上 `GET /party/home` —— 那条聚合端点此前从未被调用过。三个分区的「全部 ›」
- * 仍然走 services/module-entry.js：入口的去向、顺序与拒绝文案只有那一处声明，
- * 这一页不重复一份路由表。
+ * 走 services/party.js 的 `openSection`：去向与角色门只有那一处声明，这一页不重复
+ * 一份路由表。（2026-08-27 之前那三条住在 services/module-entry.js，四个入口页各按
+ * 自己的原型重建之后那个文件退役，去向搬回了本模块的服务。）
  *
  * Thin by the ticket-08 template: it calls the service, setData, and answers
  * taps. It holds no endpoint path, no enum table and no time format — 标签与
@@ -16,10 +17,7 @@
 
 const guard = require('../../utils/guard');
 const party = require('../../services/party');
-const moduleEntry = require('../../services/module-entry');
 const { reportFailure } = require('../../utils/present');
-
-const MODULE_ID = 'party-building';
 
 Page({
   data: {
@@ -87,8 +85,8 @@ Page({
     return party.openStudyFile(e.currentTarget.dataset.id, true);
   },
 
-  /** 分区标题右侧的「全部 ›」。去向由 module-entry 决定，含角色门与拒绝文案。 */
+  /** 分区标题右侧的「全部 ›」。去向与角色门由 services/party.js 说了算。 */
   onEntryTap(e) {
-    moduleEntry.openEntry(MODULE_ID, e.currentTarget.dataset.key);
+    party.openSection(e.currentTarget.dataset.key);
   },
 });

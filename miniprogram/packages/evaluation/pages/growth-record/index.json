@@ -1,5 +1,5 @@
 {
-  "navigationBarTitleText": "家园社共育",
+  "navigationBarTitleText": "儿童成长档案",
   "enablePullDownRefresh": true,
   "usingComponents": {
     "hl-progress-grid": "/components/hl-progress-grid/index"

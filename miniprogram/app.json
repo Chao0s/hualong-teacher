@@ -74,7 +74,8 @@
         "pages/moment/publish",
         "pages/moment/progress",
         "pages/task/publish",
-        "pages/task/progress"
+        "pages/task/progress",
+        "pages/community/index"
       ]
     },
     {
@@ -83,7 +84,13 @@
       "pages": [
         "pages/month/index",
         "pages/term/index",
-        "pages/report/index"
+        "pages/report/index",
+        "pages/growth-record/index",
+        "pages/teacher-eval/index",
+        "pages/message/index",
+        "pages/message/detail",
+        "pages/parent-eval/index",
+        "pages/parent-eval/progress"
       ]
     },
     {

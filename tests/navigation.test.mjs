@@ -105,47 +105,46 @@ test('tabBar pages sit in the main package', () => {
 
 // ── The four entry pages ─────────────────────────────────────────────────────
 
-// 已按各自原型重建的入口页离开这条通用断言，改由自己的测试文件守住版面：党建管理
-// （轮播加三个分区，读 `GET /party/home`，tests/party-home.test.mjs）与综合协调
-// （三节七卡，tests/coordination.test.mjs）。四页全部重建之后 hl-entry-sections 与
-// services/module-entry.js 就没有调用方了，那时连同这条断言一并退役。
-const REBUILT = [
-  'pages/party-building/index',
-  'pages/coordination/index',
-  'pages/training/index',
-]
-const SECTION_ENTRY_PAGES = ENTRY_PAGES.filter(([route]) => !REBUILT.includes(route))
-
-test('each entry page renders its module sections and names its own module', async () => {
-  const c = await signedIn()
-  for (const [route, zh] of SECTION_ENTRY_PAGES) {
-    const page = loadPage(c, `${route}.js`)
-    page.onLoad()
-    assert.ok(page.data.ready, `${zh} 未通过会话门`)
-    assert.ok(page.data.sections.length > 0, `${zh} 没有分区入口`)
-    for (const group of page.data.sections) {
-      assert.ok(group.title, `${zh} 有一个无标题分组`)
-      assert.ok(group.entries.length > 0, `${zh} 的「${group.title}」是空分组`)
-      for (const entry of group.entries) {
-        assert.ok(entry.badge && entry.label, `${zh} 有一条不完整的入口`)
-      }
-    }
-  }
-  // 导航栏标题四页一起守 —— 那一条与版面无关。
+/**
+ * 「四页各画一列分区入口」这条通用断言 2026-08-27 退役。
+ *
+ * 四个入口页此前是同一个形状（`hl-entry-sections` 的整宽列表），所以一条断言管得住
+ * 四页。园方裁定以原型为准之后，四个原型各不相同，四页也就各自重建，版面由各自的
+ * 测试文件守：
+ *   党建管理  tests/party-home.test.mjs（轮播加三个分区）
+ *   综合协调  tests/coordination.test.mjs（三节七卡）
+ *   教研培训  tests/training-home.test.mjs（轮播、三卡、两节推荐）
+ *   家园社共育 tests/co-education-home.test.mjs（四卡加完成度汇总）
+ *
+ * **不要把它改成一条空转的循环留在这里** —— 那看起来像还在守，其实一个目标也没有。
+ * 与版面无关的那一半（导航栏标题）留下，它四页都还成立。
+ */
+test('四个入口页的导航栏标题各是自己的模块名', () => {
   for (const [route, zh] of ENTRY_PAGES) {
     assert.equal(JSON.parse(read(`${route}.json`)).navigationBarTitleText, zh)
   }
 })
 
-test('每一条入口都已落地，且指向 app.json 真的注册过的页面', () => {
-  // 这条原本盯的是「未落地的入口要指名拒绝，不要静默」，而它的目标一路从「填写五大领域
-  // 量表」挪到「月度评价」。票据 20／21 落地了家园社共育第二组的最后四条之后，**已经
-  // 没有下一个未落地的入口了** —— 那条行为断言因此没有目标，改成它现在能证明的更强的一
-  // 条：四个模块的每一条入口都有页面，而且那个页面真的注册过。
-  //
-  // `openEntry` 里的指名拒绝分支仍然留着（下一个模块加入口时它还会用上），由下一条断言
-  // 守住，不要把它当成死代码删掉。
-  const src = read('services/module-entry.js')
+test('四个入口页都过会话门，且都真的读了各自的聚合', async () => {
+  const c = await signedIn()
+  for (const [route, zh] of ENTRY_PAGES) {
+    const page = loadPage(c, `${route}.js`)
+    page.onLoad()
+    assert.ok(page.data.ready, `${zh} 未通过会话门`)
+  }
+})
+
+/**
+ * 每一条服务层声明的去向都指向 app.json 真的注册过的页面。
+ *
+ * 2026-08-27 之前这条只扫 `services/module-entry.js` 一个文件：四个入口页共用那一张
+ * 表。四页各按自己的原型重建之后那个文件退役，去向回到各自的服务模块，所以这里改成
+ * 扫**每一个持有页面路径的服务**。少扫一个文件就等于少守一个模块。
+ *
+ * 指向未注册页面的后果不是报错，是**点了没反应** —— `wx.navigateTo` 对不存在的路径
+ * 静默失败，所以这条断言是这类错误唯一的哨兵。
+ */
+test('每一条服务层声明的去向都指向 app.json 真的注册过的页面', () => {
   const registered = new Set([
     ...(appJson.pages || []),
     ...(appJson.subPackages || []).flatMap(
@@ -153,28 +152,36 @@ test('每一条入口都已落地，且指向 app.json 真的注册过的页面'
     ),
   ])
 
-  const entries = [...src.matchAll(/\{ key: '([\w-]+)'[^\n]*page: (null|'([^']+)')/g)]
-  assert.ok(entries.length >= 12, `入口条数看起来不对：${entries.length}`)
-  for (const [, key, raw, page] of entries) {
-    assert.notEqual(raw, 'null', `入口 ${key} 还没有页面`)
-    assert.ok(registered.has(page.replace(/^\//, '')), `入口 ${key} 指向未注册的页面：${page}`)
+  const services = [
+    'services/party.js', 'services/coordination.js', 'services/training.js',
+    'services/library.js', 'services/assessment.js', 'services/co-education.js',
+    'services/evaluation.js', 'services/growth-book.js', 'services/home.js',
+  ]
+  let seen = 0
+  for (const file of services) {
+    const src = read(file)
+    for (const m of src.matchAll(/'(\/(?:pages|packages)\/[\w\-/]+)'/g)) {
+      const route = m[1].replace(/^\//, '')
+      assert.ok(registered.has(route), `${file} 指向未注册的页面：${m[1]}`)
+      seen += 1
+    }
   }
+  assert.ok(seen >= 25, `扫到的去向太少（${seen}），正则大概失效了`)
 })
 
-test('指名拒绝的分支仍在 —— 下一个模块加入口时它还会用上', () => {
-  const src = read('services/module-entry.js')
-  assert.match(src, /尚未上线/, '拒绝要说出是哪一条')
-  assert.match(src, /if \(!entry\.page\)/, '判据是这一条入口有没有页面')
-})
-
-test('the parent-only screens the prototype offered are absent', () => {
-  const src = read('services/module-entry.js')
-  // home-school.html 的快捷入口有「社区共育」，指向 community-coeducation.html，
-  // 那是家长端页面；成长档案在结构契约里没有页面。两者都不得进教师端入口页。
-  const entryLabels = src.split('\n').filter((l) => l.includes("label: '"))
-  for (const line of entryLabels) {
-    assert.ok(!line.includes('社区共育'), '社区共育 是家长端页面，不属于教师端 45 页')
-    assert.ok(!line.includes('成长档案'), '成长档案 在结构契约里没有对应页面')
+test('教师端的入口里没有家长端页面', () => {
+  // home-school.html 的快捷入口有「社区共育」。它在 2026-08-26 之前被判为家长端页面
+  // 而缺席；园方裁定以原型为准之后，**教师端自己的社区共育页**收进了结构契约
+  // （`CommunityCoedu`），所以现在它必须在，而且必须指向教师端那一页。
+  // 真正的家长端页面（家长写评价、家长上传）仍然一个也不得出现。
+  const src = read('services/co-education.js')
+  assert.match(src, /packages\/co-education\/pages\/community\/index/, '社区共育进教师端自己那一页')
+  // 家长端有自己的 AppID 与自己的页面树；教师端一条去向也不得落在那一侧。判据是
+  // **模块**，不是路径里的字样 —— `parent-eval` 与 `parent-tasks` 都是教师端的页面
+  // （发起一期家长评价、发布亲子任务），名字里的 parent 说的是内容关于谁，不是这
+  // 一页属于谁。所有去向本身是否注册，由上一条断言逐个核。
+  for (const file of ['services/co-education.js', 'services/evaluation.js']) {
+    assert.ok(!read(file).includes('parent-client'), `${file} 指向了家长端那个 AppID`)
   }
 })
 
@@ -205,7 +212,6 @@ test('every route in guard.TAB_PAGES is a real registered tab', () => {
 test('no page or component writes an icon path; hl-icon is the only place', () => {
   const files = [
     'pages/home/index.wxml', 'pages/home/index.js',
-    'components/hl-entry-sections/index.wxml',
     ...ENTRY_PAGES.flatMap(([route]) => [`${route}.wxml`, `${route}.js`]),
   ]
   for (const file of files) {
@@ -240,14 +246,16 @@ test('every icon the client references actually exists on disk', () => {
   const scan = (src) => {
     for (const m of src.matchAll(/name="(icon-\d+)"\s+color="(\w+)"/g)) referenced.add(`${m[1]}-${m[2]}`)
   }
-  scan(read('components/hl-entry-sections/index.wxml'))
   scan(read('pages/home/index.wxml'))
   // The quick entries carry their icon in the service, not the markup.
   for (const m of read('services/home.js').matchAll(/icon: '(icon-\d+)', color: '(\w+)'/g)) {
     referenced.add(`${m[1]}-${m[2]}`)
   }
 
-  assert.ok(referenced.size >= 5, `扫到的图标太少（${referenced.size}），正则大概失效了`)
+  // 4 是首页那四张常用入口卡。`hl-entry-sections` 在 2026-08-27 退役，它那一处
+  // 引用随之消失，所以门槛从 5 降到 4 —— 降的是计数，不是覆盖面：现在扫的是
+  // **所有还在写图标名的地方**。
+  assert.ok(referenced.size >= 4, `扫到的图标太少（${referenced.size}），正则大概失效了`)
   for (const ref of referenced) {
     const file = path.join(MP, 'assets/icons', `${ref}@3x.png`)
     assert.ok(fs.existsSync(file), `引用了不存在的图标：${ref}@3x.png`)
@@ -301,10 +309,7 @@ test('every WXML binding is well formed', () => {
 // ── Structure: what must not be here ─────────────────────────────────────────
 
 test('no entry page carries 观察记录 or a path to the PC后台', () => {
-  const files = [
-    'services/module-entry.js',
-    ...ENTRY_PAGES.flatMap(([route]) => [`${route}.js`, `${route}.wxml`]),
-  ]
+  const files = ENTRY_PAGES.flatMap(([route]) => [`${route}.js`, `${route}.wxml`])
   for (const file of files) {
     const src = read(file)
     assert.ok(!src.includes('观察记录'), `${file}: DO-NOT-BUILD 1`)

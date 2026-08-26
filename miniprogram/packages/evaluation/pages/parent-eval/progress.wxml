@@ -1,0 +1,28 @@
+<view class="hl-page hl-stack" wx:if="{{ready}}">
+
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryLoad">重试</text>
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障码 {{errorRequestId}}</text>
+  </view>
+
+  <view class="hl-loading" wx:if="{{loading}}">加载中…</view>
+
+  <block wx:if="{{round}}">
+    <view class="hl-card">
+      <view class="hl-card__title">{{round.title}}</view>
+      <view class="hl-card__meta">
+        总体完成 {{round.completion_rate}}% · {{round.completed_count}}/{{round.child_count}} 已提交
+      </view>
+      <view class="ev-msg__text">{{round.prompt}}</view>
+    </view>
+
+    <view class="ev-sec">逐名幼儿</view>
+    <hl-progress-grid
+      columns="{{columns}}"
+      rows="{{rows}}"
+      nameLabel="幼儿"
+      emptyText="这个班还没有幼儿。" />
+    <view class="ev-notice">家长写的评价内容由家长端呈现，这里只看交没交。</view>
+  </block>
+</view>

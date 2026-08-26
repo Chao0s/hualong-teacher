@@ -376,8 +376,11 @@ test('the page holds no endpoint path and no transport of its own', () => {
   assert.ok(!requires.includes('../../utils/request'), '页面不直接使用传输层')
   assert.deepEqual(
     requires.filter((r) => r.includes('/services/')).sort(),
-    ['../../services/module-entry', '../../services/party'],
-    '入口页读党建服务与入口表，不读第三个服务模块',
+    ['../../services/party'],
+    // 2026-08-27 之前还有一个 `services/module-entry`，那是四个入口页共用同一种版面
+    // 时的入口表。四页各按原型重建之后它退役了，三条「全部 ›」的去向搬进了党建服务
+    // 自己（`openSection`），所以这一页现在只读一个服务模块。
+    '入口页只读党建服务，不读第二个服务模块',
   )
 })
 

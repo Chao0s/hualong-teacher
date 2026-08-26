@@ -1,10 +1,52 @@
 <view class="hl-page" wx:if="{{ready}}">
-  <!-- 原型 home-school.html 顶部那块渐变头图。 -->
+  <!-- 原型 home-school.html 顶部那块渐变头图。班级名从会话里来，与原型的
+       「大一班 · 本周家园协同」同一格。 -->
   <view class="banner">
-    <view class="banner__eyebrow">本周家园协同</view>
+    <view class="banner__eyebrow">{{className ? className + ' · ' : ''}}本周家园协同</view>
     <view class="banner__title">家园社共育进度一页掌握</view>
-    <view class="banner__desc">集中处理在园时光、亲子任务、月度与学期评价，以及成长册。</view>
+    <view class="banner__desc">集中处理在园时光、亲子任务、成长档案与社区共育提交状态。</view>
   </view>
 
-  <hl-entry-sections sections="{{sections}}" bindtapentry="onEntryTap" />
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryLoad">重试</text>
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障码 {{errorRequestId}}</text>
+  </view>
+
+  <!-- 快捷入口四卡。原型这一区是四张并排卡，与其他模块的整宽列表不同。 -->
+  <view class="sec">快捷入口</view>
+  <view class="quick">
+    <view
+      wx:for="{{quickEntries}}"
+      wx:key="key"
+      class="quick__item"
+      data-key="{{item.key}}"
+      bindtap="onQuickTap">
+      <view class="quick__mark quick__mark--{{item.tint}}">{{item.mark}}</view>
+      <text class="quick__label">{{item.label}}</text>
+    </view>
+  </view>
+
+  <view class="sec">完成度汇总</view>
+
+  <view class="hl-loading" wx:if="{{loading}}">加载中…</view>
+
+  <block wx:if="{{!loading}}">
+    <view class="metrics">
+      <view wx:for="{{metrics}}" wx:key="key" class="metric">
+        <view class="metric__value metric__value--{{item.tint}}">{{item.value}}</view>
+        <view class="metric__label">{{item.label}}</view>
+      </view>
+    </view>
+
+    <!-- 逐儿四列的完成度表。WXML 没有表格元素，`hl-progress-grid` 是本仓库为这类
+         「幼儿 × 状态」网格定下的形状（票据 19）：姓名列不随横向滚动滚走，每个点
+         带读屏文案。读失败时不说「这个班还没有数据」—— 那是在替服务器撒谎。 -->
+    <hl-progress-grid
+      wx:if="{{!errorText}}"
+      columns="{{columns}}"
+      rows="{{rows}}"
+      nameLabel="幼儿"
+      emptyText="这个班还没有幼儿。" />
+  </block>
 </view>
