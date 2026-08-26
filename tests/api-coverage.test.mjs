@@ -94,8 +94,39 @@ async function seedWorld(token) {
   })
   const book = await post('/teacher/growth-book/books', { child_id: roster[0]?.child_id })
 
+  // 量表的编码与版本是契约层的常量，不是可猜的 id。猜错的代价很隐蔽：请求落到
+  // 生成路由上，回一条 `item_id: "sample"` 的假数据，看起来成功，其实手写路由
+  // 一次也没被碰到。走查此前正是这样把 `/scales/c1/v1.0` 当成了通过。
+  const scaleCode = 'guide';
+  const scaleVersion = '1.0'
+  const scale = await get(`/scales/${scaleCode}/${scaleVersion}`)
+  const firstItem = scale?.items?.[0]?.item_id
+
+  // 三条读取端点在「还没开始」时回 404，那是状态不是故障（票据 18）。所以先写，
+  // 再读 —— 走查要问的是端点通不通，不是这个班今天有没有人评过。
+  const child = roster[0]?.child_id
+  if (child && firstItem) {
+    await fetch(`${mock.baseUrl}/children/${child}/child-assessment/items/${firstItem}`, {
+      method: 'PUT', headers: h, body: JSON.stringify({ score: 3 }),
+    })
+  }
+  if (child) {
+    await fetch(`${mock.baseUrl}/children/${child}/term-evaluation`, {
+      method: 'PUT', headers: h, body: JSON.stringify({ eval_text: '走查用学期评价' }),
+    })
+  }
+
   return {
     child_id: roster[0]?.child_id,
+    // 名册上第二个孩子，种子一个字也没写过他 —— 留给「只能提交一次」的那些写入。
+    unseeded_child_id: roster[1]?.child_id,
+    // `POST /moments` 的生成体里 class_id 是 1，那不是本班 —— 服务端因此 422。
+    // 班级来自会话，不是客户端挑的，所以从会话上下文取。
+    class_id: (await get('/auth/session'))?.scope?.class_id,
+    scale_code: scaleCode,
+    scale_version: scaleVersion,
+    item_id: firstItem,
+    tool_item_code: firstItem,
     // 接收要 a1，完成要 a2 —— 同一个参数名，两条路径要两个不同的 id。
     acceptable_task_id: byAssign('a1'),
     completable_task_id: byAssign('a2'),
@@ -109,10 +140,19 @@ async function seedWorld(token) {
   }
 }
 
-/** Per-path overrides, for the params whose right value depends on the verb. */
+/**
+ * Per-path overrides, for the params whose right value depends on the verb.
+ *
+ * The same id cannot be in two states at once. 接收 needs an unaccepted
+ * assignment and 完成 needs an accepted one; the reads need a child who already
+ * has a record and the write needs one who does not, because 学期评价 submits
+ * once. So each of those gets its own subject rather than the walk pretending
+ * one row can be everything.
+ */
 const PATH_ID = {
   'POST /tasks/{task_id}/acceptance': (w) => w.acceptable_task_id,
   'POST /tasks/{task_id}/completion': (w) => w.completable_task_id,
+  'PUT /children/{child_id}/term-evaluation': (w) => w.unseeded_child_id,
 }
 
 /**
@@ -238,6 +278,10 @@ const CONTRACT_BLOCKED_EXPECTED = {
 /**
  * 「还没开始」的 404 —— 票据 18 单独钉过这一条：第一次进来服务端回 404，那是状态，
  * 不是故障。它与范围不符逐字相同，这正是红线 4 要的效果。
+ *
+ * **这张表现在一条也匹配不上**，因为 `seedWorld` 先写后读：走查要问的是端点通不通，
+ * 不是这个班今天有没有人评过。留着是因为这个分类会再出现 —— 下一个加读取端点的人
+ * 会先撞上它，那时把新端点加进来比重新想明白一遍便宜。
  */
 const NOT_STARTED_EXPECTED = {
   'GET /children/{child_id}/term-evaluation': '这名幼儿本学期还没有学期评价',
