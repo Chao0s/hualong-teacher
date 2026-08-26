@@ -154,7 +154,18 @@ describe('平台单次 10 MB 硬上限', () => {
     const commit = c.record.requests.find((r) => r.url.includes('/media/files'))
     assert.ok(cred && commit, '签凭证与落库各一次')
     assert.equal(cred.data.byte_size, 10 * 1024 * 1024)
-    assert.equal(cred.data.usage_key, 'moment_photo')
+
+    // usage_key 不能对着代码断言，要对着权威断言。这条用例原本写死 `moment_photo`,
+    // 而那个值**两个权威里都没有** —— 它是客户端自造的，测试把它一起钉住了，于是
+    // 漂移有了一份看起来很像证据的东西。一个不在集合里的 usage_key 不会当场报错：
+    // 照片上传成功，家长那边看不到，没有任何东西会说出原因。
+    //
+    // 契约的媒体端点只收这三个（`openapi.yaml` 的 usage_key enum），所以断言的是
+    // 「在这三个里面」，不是「等于某个字面量」。换值不会让这条用例变绿又变错。
+    assert.ok(
+      ['main_file', 'inline_media', 'download'].includes(cred.data.usage_key),
+      `usage_key 必须在契约的取值集里，收到 ${cred.data.usage_key}`,
+    )
 
     // §8.1 铁律：字节不经过 API 实例。
     assert.equal(c.record.uploads.length, 1)

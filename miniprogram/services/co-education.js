@@ -89,8 +89,26 @@ const MOMENT_STATUS = {
   s5: '已撤回',
 };
 
-/** `db_file_ref.usage_key` —— 取档要按这张业务表重跑一次授权（§8.4）。 */
-const MOMENT_USAGE_KEY = 'moment_photo';
+/**
+ * `db_file_ref.usage_key` —— 取档要按这张业务表重跑一次授权（§8.4）。
+ *
+ * CORRECTED 2026-08-26 —— 原值是 `moment_photo`，那是客户端自造的，**两个权威里
+ * 都没有**。`db_file_ref.usage_key` 的取值集写在列注释里（`01_schema.sql:528`）：
+ *   attachment｜evidence｜media｜image｜content｜material｜main_file｜inline_media｜
+ *   download｜book_intro｜book_parent｜book_teacher
+ * 契约的媒体端点更窄，只收 `[main_file, inline_media, download]`。
+ *
+ * 一个不在集合里的值不会当场报错，它会存进一张下游没人查得到的行——照片上传成功，
+ * 家长那边看不到，而且没有任何东西会说出原因。
+ *
+ * 选 `inline_media`：在园时光的照片是随正文一起呈现的配图，与 `main_file`（一份
+ * 主文件）和 `download`（供取档）都不是一回事，且它同时在 DDL 与契约的集合里。
+ *
+ * **这一条需要后端确认。** 语义上「在园时光的照片就是内容本身」也说得通，那更接近
+ * `content` 或 `image`——但那两个不在契约的媒体枚举里，客户端选它们会被端点拒。
+ * 记进交接的契约缺口：契约的媒体枚举比 DDL 的取值集窄，中间这段没有归属。
+ */
+const MOMENT_USAGE_KEY = 'inline_media';
 
 /**
  * 一次逻辑发布的幂等键。

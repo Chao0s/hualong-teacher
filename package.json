@@ -13,7 +13,8 @@
     "verify:build": "node tools/verify-build.mjs",
     "check:remote-scripts": "node scripts/check-remote-scripts.mjs",
     "hooks:install": "git config core.hooksPath .githooks",
-    "verify:release": "node tools/verify-build.mjs --release"
+    "verify:release": "node tools/verify-build.mjs --release",
+    "verify:schema": "node tools/schema-conformance.mjs"
   },
   "engines": {
     "node": ">=18"
