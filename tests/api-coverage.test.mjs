@@ -116,8 +116,15 @@ async function seedWorld(token) {
     })
   }
 
+  // `POST /media/files` 要一张真凭证换来的 upload_ticket，不是一个字符串样例。
+  // 契约 §8 的媒体流是三步，这里走前一步把票取出来。
+  const cred = await post('/media/upload-credentials', {
+    usage_key: 'main_file', content_type: 'image/jpeg', byte_size: 1024,
+  })
+
   return {
     child_id: roster[0]?.child_id,
+    upload_ticket: cred?.upload_ticket,
     // 名册上第二个孩子，种子一个字也没写过他 —— 留给「只能提交一次」的那些写入。
     unseeded_child_id: roster[1]?.child_id,
     // `POST /moments` 的生成体里 class_id 是 1，那不是本班 —— 服务端因此 422。
@@ -138,6 +145,53 @@ async function seedWorld(token) {
     section_id: section?.section_id,
     growth_book_id: book?.growth_book_id,
   }
+}
+
+/**
+ * Bodies the generator cannot produce, written by hand.
+ *
+ * Each of these exists because the CONTRACT under-specifies the write, which is
+ * a recorded defect, not a gap in the generator:
+ *
+ *   ResourceWrite / CaseWrite  declare no `required` list at all and type
+ *                              `resource_explain` / `case_intro` as nullable,
+ *                              while the DDL has both NOT NULL
+ *                              (`01_schema.sql:667`, `:718`).
+ *   MomentWrite                the class and the child come from the session's
+ *                              scope, not from a schema default; `1` is nobody.
+ *   ParentTaskWrite            the two scheduled times are on §1.2's whitelist
+ *                              and must carry the +08:00 LITERAL. A generator
+ *                              that emitted one would be guessing at business
+ *                              data, so it deliberately does not.
+ *
+ * Values that depend on the seeded world are left as placeholders and replaced
+ * by `withSeededIds`.
+ */
+const HAND_WRITTEN_BODY = {
+  'POST /library/resources': {
+    resource_type: 'r1',
+    resource_name: '走查用资源',
+    resource_tag: 'g1',
+    resource_explain: '走查用的资源解读',
+  },
+  'POST /library/cases': {
+    case_name: '走查用案例',
+    case_grade: 'k2',
+    case_field: 'f1',
+    case_area: ['a1'],
+    case_intro: '走查用的活动简介',
+    case_trans: '走查用的转化建议',
+  },
+  'POST /moments': {},
+  'POST /home-school/parent-tasks': {
+    parent_task_type: 'p1',
+    parent_task_title: '走查用亲子任务',
+    task_detail: '走查用的任务要求',
+    // §1.2：白名单内的计划时间带字面偏移量提交。`Z` 或其他偏移量是 422，服务端
+    // 不做换算 —— 所以这里写死的就是要发出去的那串字符。
+    start_at: '2026-09-05T18:00:00+08:00',
+    due_at: '2026-09-12T18:00:00+08:00',
+  },
 }
 
 /**
@@ -207,7 +261,9 @@ function requestFor(route, token, seq, world) {
   }
   if (['POST', 'PUT', 'PATCH'].includes(route.method)) {
     init.headers['content-type'] = 'application/json'
-    init.body = JSON.stringify(withSeededIds(route.requestBody || {}, world))
+    const key = `${route.method} ${route.template}`
+    const body = HAND_WRITTEN_BODY[key] || route.requestBody || {}
+    init.body = JSON.stringify(withSeededIds(body, world))
   }
   return init
 }
