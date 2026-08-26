@@ -57,9 +57,122 @@ function buildRoute(op, spec) {
     status: Number(status),
     body: status === '204' ? null : sample(schema, spec, 0),
     requiredQuery: requiredQuery(op, spec),
+    requestBody: requestBodySample(op, spec),
+    requiredHeaders: requiredHeaders(op, spec),
     operationId: op.operationId,
     blockedOn: op.blockedOn,
   };
+}
+
+/**
+ * A request body the contract would accept, built from its own schema.
+ *
+ * Sending `{}` to every write and calling the resulting 422 "expected" measures
+ * nothing: a 422 for a missing NOT NULL column looks exactly like a 422 for a
+ * broken endpoint. Generating the declared shape means a refusal afterwards is
+ * about the STATE, which is the only interesting kind.
+ *
+ * The aim is the MINIMAL legal body, not a maximal one. Required scalars are
+ * filled; required arrays come back empty, because an empty array satisfies the
+ * shape while a generated element has to satisfy rules this function cannot see
+ * — a growth-book widget, for instance, must sit inside a 15 × 24 grid without
+ * crossing a page. A generated element failed validation where `[]` passes, so
+ * the walk was measuring the generator rather than the endpoint.
+ *
+ * PATCH is excluded by the caller: partial update means an empty body is the
+ * most legal body there is.
+ *
+ * @returns {object|null} null when the operation declares no JSON body
+ */
+function requestBodySample(op, spec) {
+  const raw = findOperation(spec, op).requestBody;
+  if (!raw) return null;
+  const body = raw.$ref ? deref(raw.$ref, spec) : raw;
+  let schema = body?.content?.['application/json']?.schema;
+  if (!schema) return null;
+  if (schema.$ref) schema = deref(schema.$ref, spec);
+  if (!schema) return null;
+
+  const merged = flattenForRequired(schema, spec);
+  const props = merged.properties || {};
+  const out = {};
+
+  const declared = merged.required || [];
+
+  // PATCH is a partial update: send what the contract REQUIRES and nothing else.
+  // Filling the rest asks the server to re-set values it already holds. The
+  // required half still matters — `PATCH .../compilation/{id}` requires
+  // `revision`, the optimistic-lock token, and omitting it is a 422.
+  if (op.method === 'PATCH') {
+    for (const key of declared) {
+      if (props[key]) out[key] = minimal(props[key], spec);
+    }
+    return out;
+  }
+
+  if (declared.length) {
+    for (const key of declared) {
+      if (props[key]) out[key] = minimal(props[key], spec);
+    }
+    return out;
+  }
+
+  // Several write schemas declare no `required` at all — `ResourceWrite` and
+  // `CaseWrite` among them — while the columns behind them are NOT NULL. The
+  // contract under-specifies those writes (recorded in HANDOFF.md). Falling back
+  // to "every property the contract types as non-nullable" reconstructs the same
+  // set without this file having to know the DDL: a column the contract refuses
+  // to type as nullable is one the server is entitled to demand.
+  for (const [key, prop] of Object.entries(props)) {
+    if (!isNullable(prop)) out[key] = minimal(prop, spec);
+  }
+  return out;
+}
+
+/** A value that satisfies the shape and asserts nothing more. */
+function minimal(prop, spec) {
+  const resolved = prop && prop.$ref ? deref(prop.$ref, spec) : prop;
+  const type = Array.isArray(resolved?.type) ? resolved.type[0] : resolved?.type;
+  if (type === 'array') return [];
+  return sample(resolved, spec, 0);
+}
+
+/** `type: [string, 'null']` is the contract's way of saying a column is nullable. */
+function isNullable(prop) {
+  if (!prop || !prop.type) return false;
+  return Array.isArray(prop.type) ? prop.type.includes('null') : prop.type === 'null';
+}
+
+/** allOf composition hides `required` under branches; collect both halves. */
+function flattenForRequired(schema, spec, depth = 0) {
+  if (depth > MAX_DEPTH) return schema;
+  if (schema.$ref) return flattenForRequired(deref(schema.$ref, spec) || {}, spec, depth + 1);
+  if (!schema.allOf) return schema;
+  return schema.allOf.reduce((acc, part) => {
+    const piece = flattenForRequired(part, spec, depth + 1);
+    return {
+      properties: { ...acc.properties, ...piece.properties },
+      required: [...(acc.required || []), ...(piece.required || [])],
+    };
+  }, { properties: {}, required: [] });
+}
+
+/**
+ * Headers the contract marks `required` — in practice `Idempotency-Key`.
+ *
+ * §4 makes the key mandatory on the writes whose replay must not double-execute.
+ * Omitting it is a legal refusal, so a walk that omits it is testing its own
+ * omission rather than the endpoint.
+ */
+function requiredHeaders(op, spec) {
+  const item = spec.paths[op.path];
+  const declared = [...(item.parameters || []), ...(findOperation(spec, op).parameters || [])];
+  const names = [];
+  for (const p of declared) {
+    const param = p.$ref ? deref(p.$ref, spec) : p;
+    if (param && param.in === 'header' && param.required) names.push(param.name);
+  }
+  return names;
 }
 
 /**
