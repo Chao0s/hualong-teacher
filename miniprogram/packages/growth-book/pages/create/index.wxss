@@ -1,1 +1,8 @@
 @import "../../shared.wxss";
+
+/* 原型 growth-book.html 的 `.summary-card b`：15px 加粗。只有这一页在用。 */
+.gb-summary__count {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--fg);
+}

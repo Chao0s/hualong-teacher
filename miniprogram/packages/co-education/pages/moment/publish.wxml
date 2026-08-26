@@ -54,7 +54,7 @@
         tests/moments.test.mjs 里逐个字符串扫这个文件。
       -->
       <view class="hl-card">
-        <view class="co-field__label">照片（最多 {{imageLimit}} 张）</view>
+        <view class="co-field__label">添加照片（最多 {{imageLimit}} 张）</view>
         <view class="co-photos">
           <view wx:for="{{draft.file_id}}" wx:key="*this" class="co-photos__item">
             <text class="co-photos__id">照片 {{index + 1}}</text>

@@ -8,9 +8,10 @@
   </view>
 
   <block wx:if="{{!loading && radar}}">
-    <view class="hl-card">
-      <view class="hl-card__title">{{title}}</view>
-      <view wx:if="{{subtitle}}" class="hl-card__meta">{{subtitle}}</view>
+    <!-- 原型 comprehensive-assessment-report.html 的 `.child-card`：满幅渐变、白字。 -->
+    <view class="hl-card as-hero">
+      <view class="as-hero__title">{{title}}</view>
+      <view wx:if="{{subtitle}}" class="as-hero__meta">{{subtitle}}</view>
     </view>
 
     <!--

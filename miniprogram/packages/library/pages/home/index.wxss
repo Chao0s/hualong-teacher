@@ -1,14 +1,70 @@
-.hub {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
+/* 两张入口卡 —— 原型 resource-center.html 的 `.hub-card`。资源卡自上而下由青色
+ * 渐入白色，案例卡由绿色渐入白色；两张卡都带一道细边，不带阴影。 */
+.hub-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
 }
 
-.hub + .hub {
-  margin-top: var(--space-2);
+.hub {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: 232rpx;
+  padding: 28rpx;
+  border: 1px solid var(--border);
+  border-radius: 32rpx;
+  background: var(--surface);
+}
+
+.hub--resource {
+  background: linear-gradient(180deg, var(--accent-light) 0%, var(--surface) 82%);
+}
+
+.hub--case {
+  background: linear-gradient(180deg, var(--green-light) 0%, var(--surface) 82%);
+}
+
+.hub__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.hub__mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72rpx;
+  height: 72rpx;
+  border: 1px solid var(--border);
+  border-radius: 20rpx;
+  background: var(--surface);
+  color: var(--accent);
+  font-size: 28rpx;
+  font-weight: 600;
+  flex: none;
+}
+
+.hub--case .hub__mark {
+  color: var(--green);
 }
 
 .hub__text {
-  flex: 1;
   min-width: 0;
+}
+
+.hub__title {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.hub__desc {
+  margin-top: var(--space-1);
+  font-size: 24rpx;
+  line-height: 1.45;
+  color: var(--muted);
 }

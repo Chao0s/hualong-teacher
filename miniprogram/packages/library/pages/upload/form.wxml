@@ -1,5 +1,13 @@
 <view class="hl-page" wx:if="{{ready}}">
 
+  <!-- 原型 upload-resource.html 顶部的 `.banner`：青色渐变、右上角一枚白色圆环、
+       药丸小标 + 大标题 + 一句说明。 -->
+  <view class="banner">
+    <view class="banner__kicker">提交审核</view>
+    <view class="banner__title">上传资源与案例</view>
+    <view class="banner__desc">选择提交到资源库或案例库，系统会按对应资料标准生成表单，提交后进入审核流程。</view>
+  </view>
+
   <view wx:if="{{errorText}}" class="hl-error">
     {{errorText}}
     <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryLoad">重试</text>
@@ -21,7 +29,12 @@
 
     <!-- 上传目标：二选一。横排标签，2 项且取值固定（form-control-spec.md §1 第 2 问）。
          已经建过的那一条不让换表，理由写在 form.js 的 onTargetTap 里。 -->
-    <view wx:if="{{!contentId}}" class="hl-section-title">上传目标</view>
+    <view wx:if="{{!contentId}}" class="hl-section-title">
+      上传目标
+      <text class="up__aside">二选一</text>
+    </view>
+    <!-- 原型把它画成两张并排的卡（`.target-grid`）。**不复刻**：form-control-spec.md
+         §2.1 已把「上传表单 · 上传目标」定为横排标签，那是票据 13 的定案。 -->
     <view wx:if="{{!contentId}}" class="hl-chips">
       <view
         wx:for="{{targets}}"

@@ -1,0 +1,43 @@
+/*
+ * 渐变头图 —— 原型 home-school.html 的 `.banner`（尺寸来自 home-school-common.css）。
+ *
+ * 与综合协调那块白底说明卡不是同一件东西：那一块是 surface 底加一枚圆形底纹，这一块
+ * 是满幅渐变、白字、文字压在底部。两页的原型本来就画成两样。
+ *
+ * 渐变第三段 #47bcb3 没有对应令牌，这里只取 accent-dark 到 accent 两段 —— 与
+ * comprehensive-assessment-report.html 一族头图的取色一致。白色高光是叠加层不是配色，
+ * 照原型写 rgba。
+ */
+.banner {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 264rpx;
+  padding: var(--space-4);
+  margin-bottom: var(--space-3);
+  border-radius: var(--radius);
+  color: #fff;
+  background:
+    radial-gradient(circle at 82% 18%, rgba(255, 255, 255, 0.28), transparent 28%),
+    linear-gradient(135deg, var(--accent-dark), var(--accent));
+}
+
+.banner__eyebrow {
+  margin-bottom: var(--space-1);
+  font-size: 24rpx;
+  opacity: 0.86;
+}
+
+.banner__title {
+  font-size: 46rpx;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.banner__desc {
+  max-width: 540rpx;
+  margin-top: var(--space-1);
+  font-size: 24rpx;
+  line-height: 1.45;
+  opacity: 0.9;
+}

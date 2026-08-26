@@ -1,13 +1,16 @@
 <view class="hl-page" wx:if="{{ready}}">
 
+  <!-- 原型 home.html 顶部那块 `.banner-img.b1` 渐变头图。票据 08 要求一眼看到姓名、
+       班级与学期，原型这一格放的是标题与副标题 —— 两者占同一格，所以是同一块头图
+       换上票据的内容，不是并排放两个页头。 -->
   <view class="head">
     <view class="head__hello">{{teacherName || '老师'}}，你好</view>
     <view class="head__meta">
       <text wx:if="{{className}}">{{className}}</text>
       <text wx:if="{{termName}}" class="head__term">{{termName}}</text>
     </view>
-    <view wx:if="{{noTerm}}" class="head__noterm">{{termNotice}}</view>
   </view>
+  <view wx:if="{{noTerm}}" class="head__noterm">{{termNotice}}</view>
 
   <view wx:if="{{errorText}}" class="hl-error">
     {{errorText}}
@@ -59,7 +62,10 @@
         class="quick__item {{item.disabled ? 'quick__item--off' : ''}}"
         data-key="{{item.key}}"
         bindtap="onQuickTap">
-        <hl-icon name="{{item.icon}}" color="{{item.color}}" size="52rpx" />
+        <!-- 原型的 `.quick-icon`：图标坐在一块与自身色调同族的圆角底色上。 -->
+        <view class="quick__icon quick__icon--{{item.color}}">
+          <hl-icon name="{{item.icon}}" color="{{item.color}}" size="44rpx" />
+        </view>
         <text class="quick__label">{{item.label}}</text>
       </view>
     </view>

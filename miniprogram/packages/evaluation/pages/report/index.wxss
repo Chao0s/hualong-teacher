@@ -1,1 +1,25 @@
 @import "../../shared.wxss";
+
+/*
+ * 头图卡 —— 原型 comprehensive-assessment-class-report.html 的 `.hero`。
+ *
+ * 原来这一行副标题裸挂在页面底色上，既不是卡也没有标题，与原型差得最远。渐变取
+ * accent-dark 到 accent 两段（原型是 #0f766e 到 #189b91），不另开令牌。
+ */
+.ev-hero {
+  background: linear-gradient(135deg, var(--accent-dark), var(--accent));
+  color: #fff;
+}
+
+.ev-hero__title {
+  font-size: 44rpx;
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+.ev-hero__meta {
+  margin-top: var(--space-1);
+  font-size: 24rpx;
+  line-height: 1.45;
+  opacity: 0.88;
+}

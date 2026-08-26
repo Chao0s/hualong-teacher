@@ -19,7 +19,11 @@
   <view wx:elif="{{!childId}}" class="hl-card ev-notice">选一名幼儿，看他这个学期的整体判断。</view>
 
   <block wx:if="{{childId && !loading && !errorText}}">
-    <view class="hl-card__meta">{{subtitle}}</view>
+    <!-- 原型 comprehensive-assessment-class-report.html 的 `.hero`：满幅渐变、白字。 -->
+    <view class="hl-card ev-hero">
+      <view class="ev-hero__title">综合评估报告</view>
+      <view class="ev-hero__meta">{{subtitle}}</view>
+    </view>
 
     <!--
       一张 A4。比例锁在 210 : 297，格子的像素尺寸由 utils/layout 取整一次后写进内联样式。

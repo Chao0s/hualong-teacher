@@ -16,10 +16,12 @@
   font-weight: 600;
 }
 
+/* 原型 training-list.html 的 `.summary` 用正文色，不是弱化色。 */
 .train__excerpt {
   margin-top: var(--space-2);
-  font-size: 26rpx;
-  color: var(--muted);
+  font-size: 24rpx;
+  line-height: 1.55;
+  color: var(--fg);
   /* 两行足够看出这场讲什么；再多就该点进去读了。 */
   overflow: hidden;
   display: -webkit-box;

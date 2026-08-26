@@ -1,3 +1,10 @@
 <view class="hl-page" wx:if="{{ready}}">
+  <!-- 原型 home-school.html 顶部那块渐变头图。 -->
+  <view class="banner">
+    <view class="banner__eyebrow">本周家园协同</view>
+    <view class="banner__title">家园社共育进度一页掌握</view>
+    <view class="banner__desc">集中处理在园时光、亲子任务、月度与学期评价，以及成长册。</view>
+  </view>
+
   <hl-entry-sections sections="{{sections}}" bindtapentry="onEntryTap" />
 </view>

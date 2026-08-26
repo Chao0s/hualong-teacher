@@ -1,14 +1,23 @@
 <view class="hl-page" wx:if="{{ready}}">
-  <view
-    wx:for="{{entries}}"
-    wx:key="key"
-    class="hl-card hub"
-    data-key="{{item.key}}"
-    bindtap="onEntryTap">
-    <view class="hub__text">
-      <view class="hl-card__title">{{item.title}}</view>
-      <view class="hl-card__meta">{{item.desc}}</view>
+  <!-- 原型 resource-center.html 的 `.hub-row`：两张卡并排，不是两条竖排的行。
+       每张卡自上而下是「图标格 + 箭头」一行，再是标题与说明。 -->
+  <view class="hub-row">
+    <view
+      wx:for="{{entries}}"
+      wx:key="key"
+      class="hub hub--{{item.key}}"
+      data-key="{{item.key}}"
+      bindtap="onEntryTap">
+      <view class="hub__top">
+        <!-- 原型这里是一枚线描图标；本客户端的图标仍是占位图（icon-manifest.json
+             注明），所以沿用入口页与列表页已有的文字标做法。 -->
+        <view class="hub__mark">{{item.key === 'resource' ? '资' : '案'}}</view>
+        <hl-icon name="icon-10" color="muted" size="32rpx" />
+      </view>
+      <view class="hub__text">
+        <view class="hub__title">{{item.title}}</view>
+        <view class="hub__desc">{{item.desc}}</view>
+      </view>
     </view>
-    <hl-icon name="icon-10" color="muted" size="32rpx" />
   </view>
 </view>

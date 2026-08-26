@@ -10,7 +10,9 @@
 
   <block wx:if="{{task && !loading}}">
     <view class="hl-card">
-      <view wx:if="{{task.creator_label}}" class="hl-card__meta">{{task.creator_label}}</view>
+      <!-- 原型 teacher-task-detail.html 把发起方做成标题上方的一枚 `.kicker` 药丸，
+           不是一行灰字。 -->
+      <view wx:if="{{task.creator_label}}" class="detail__kicker">{{task.creator_label}}</view>
       <view class="detail__title">{{task.task_title}}</view>
       <view class="detail__row">
         <text class="hl-pill {{task.assign_status_class}}">{{task.assign_status_label}}</text>
@@ -36,12 +38,17 @@
       <view wx:if="{{task.completed_label}}" class="hl-card__meta">已完成 {{task.completed_label}}</view>
     </view>
 
-    <!-- 入口，不是控件：本页不提交、不编辑、不删除。写入是票据 11。 -->
-    <view
-      class="submit {{submitDisabled ? 'submit--off' : ''}}"
-      bindtap="onSubmitTap">
-      提交材料 / 反馈
+    <!-- 入口，不是控件：本页不提交、不编辑、不删除。写入是票据 11。
+         形态取自原型的 `.submit-card`：青色虚线框的说明卡，卡里才是按钮。 -->
+    <view class="submit-card">
+      <view class="submit-card__title">提交材料 / 反馈</view>
+      <view class="submit-card__desc">教师只需按分工上传照片、记录、说明或反馈。提交后进入管理端审核与汇总。</view>
+      <view
+        class="submit {{submitDisabled ? 'submit--off' : ''}}"
+        bindtap="onSubmitTap">
+        提交材料
+      </view>
+      <view wx:if="{{submitReason}}" class="submit__reason">{{submitReason}}</view>
     </view>
-    <view wx:if="{{submitReason}}" class="submit__reason">{{submitReason}}</view>
   </block>
 </view>

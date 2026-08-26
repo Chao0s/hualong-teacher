@@ -4,16 +4,20 @@
 
 .res {
   display: flex;
+  align-items: stretch;
   gap: var(--space-3);
 }
 
+/* 原型 resource-center.html 的 `.thumb`：58px 宽、随卡片等高、带一道细边。
+   已建版本是 44px 见方的小方块，比原型窄了近一半。 */
 .res__thumb {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 88rpx;
-  height: 88rpx;
-  border-radius: var(--radius-sm);
+  width: 116rpx;
+  min-height: 116rpx;
+  border: 1px solid var(--border);
+  border-radius: 24rpx;
   background: var(--accent-light);
   color: var(--accent-dark);
   font-size: 34rpx;
@@ -33,10 +37,12 @@
   gap: var(--space-2);
 }
 
+/* 原型 resource-center.html 的 `.summary` 用正文色，不是弱化色。 */
 .res__excerpt {
   margin-top: var(--space-2);
-  font-size: 26rpx;
-  color: var(--muted);
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: var(--fg);
   /* 两行足够看出这条讲什么；再多就该点进去读了。 */
   overflow: hidden;
   display: -webkit-box;

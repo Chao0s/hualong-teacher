@@ -2,22 +2,46 @@
   margin-top: var(--space-2);
 }
 
-/* 封面用品牌色铺底，与原型 course-building.html 的 article-cover 同一个位置。 */
+/* 封面 —— 原型 course-building.html 的 `.article-cover`：不是一块纯色，而是
+ * 135° 的青色渐变，右上角压着一枚白色圆环，内容坐在下缘。原型渐变的深端是
+ * #0f766e，最接近的令牌是 --accent-dark。 */
 .cover {
-  background: var(--accent);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 328rpx;
+  padding: 44rpx 36rpx;
+  background: linear-gradient(135deg, var(--accent-dark), var(--accent));
   color: #fff;
 }
 
+.cover::before {
+  content: '';
+  position: absolute;
+  right: 36rpx;
+  top: 36rpx;
+  width: 156rpx;
+  height: 156rpx;
+  border: 28rpx solid rgba(255, 255, 255, 0.16);
+  border-radius: 50%;
+}
+
 .cover__title {
-  font-size: 42rpx;
-  font-weight: 600;
-  line-height: 1.3;
+  position: relative;
+  z-index: 1;
+  font-size: 48rpx;
+  font-weight: 700;
+  line-height: 1.18;
 }
 
 .cover__summary {
+  position: relative;
+  z-index: 1;
   margin-top: var(--space-2);
-  font-size: 26rpx;
-  line-height: var(--line-cjk);
+  font-size: 24rpx;
+  line-height: 1.55;
   /* 白底上的 --muted 在品牌色上读不出来，这里用带透明度的白。 */
   color: rgba(255, 255, 255, 0.9);
 }

@@ -2,18 +2,30 @@
   margin-top: var(--space-2);
 }
 
+/* 筛选面板 —— 原型 case-library.html 的 `.filter-panel`：三行标签共处一张卡。 */
+.filter-panel {
+  padding: var(--space-2) var(--space-2) 0;
+  margin-bottom: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: 24rpx;
+  background: var(--surface);
+}
+
 .kase {
   display: flex;
+  align-items: center;
   gap: var(--space-3);
 }
 
+/* 原型的 `.thumb` 是 68px 见方并带一道细边，已建版本只有 44px。 */
 .kase__thumb {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 88rpx;
-  height: 88rpx;
-  border-radius: var(--radius-sm);
+  width: 136rpx;
+  height: 136rpx;
+  border: 1px solid var(--border);
+  border-radius: 24rpx;
   background: var(--green-light);
   color: var(--green);
   font-size: 34rpx;
@@ -33,10 +45,12 @@
   gap: var(--space-2);
 }
 
+/* 原型 resource-center.html 的 `.summary` 用正文色，不是弱化色。 */
 .kase__excerpt {
   margin-top: var(--space-2);
-  font-size: 26rpx;
-  color: var(--muted);
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: var(--fg);
   /* 两行足够看出这条讲什么；再多就该点进去读了。 */
   overflow: hidden;
   display: -webkit-box;

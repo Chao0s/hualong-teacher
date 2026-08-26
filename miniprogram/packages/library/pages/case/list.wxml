@@ -1,37 +1,41 @@
 <view class="hl-page" wx:if="{{ready}}">
   <!-- 三个维度都是横排标签（form-control-spec.md §2.1）。年级与领域单选 ≤6 项命中
-       第 2 问；活动形式的列是多选数组，命中第 1 问。一个滚轮也没有。 -->
-  <view class="hl-chips">
-    <view class="hl-chips__label">年级</view>
-    <view
-      wx:for="{{gradeOptions}}"
-      wx:key="key"
-      class="hl-chips__item {{item.key === filters.case_grade ? 'hl-chips__item--on' : ''}}"
-      data-field="case_grade"
-      data-key="{{item.key}}"
-      bindtap="onFilterTap">{{item.label}}</view>
-  </view>
+       第 2 问；活动形式的列是多选数组，命中第 1 问。一个滚轮也没有。
+       三行标签装在一张 `.filter-panel` 卡里，与原型 case-library.html 同形：三行
+       松散地浮在背景上时，看不出它们是同一组筛选。 -->
+  <view class="filter-panel">
+    <view class="hl-chips">
+      <view class="hl-chips__label">年级</view>
+      <view
+        wx:for="{{gradeOptions}}"
+        wx:key="key"
+        class="hl-chips__item {{item.key === filters.case_grade ? 'hl-chips__item--on' : ''}}"
+        data-field="case_grade"
+        data-key="{{item.key}}"
+        bindtap="onFilterTap">{{item.label}}</view>
+    </view>
 
-  <view class="hl-chips">
-    <view class="hl-chips__label">五大领域</view>
-    <view
-      wx:for="{{fieldOptions}}"
-      wx:key="key"
-      class="hl-chips__item {{item.key === filters.case_field ? 'hl-chips__item--on' : ''}}"
-      data-field="case_field"
-      data-key="{{item.key}}"
-      bindtap="onFilterTap">{{item.label}}</view>
-  </view>
+    <view class="hl-chips">
+      <view class="hl-chips__label">五大领域</view>
+      <view
+        wx:for="{{fieldOptions}}"
+        wx:key="key"
+        class="hl-chips__item {{item.key === filters.case_field ? 'hl-chips__item--on' : ''}}"
+        data-field="case_field"
+        data-key="{{item.key}}"
+        bindtap="onFilterTap">{{item.label}}</view>
+    </view>
 
-  <view class="hl-chips">
-    <view class="hl-chips__label">活动形式</view>
-    <view
-      wx:for="{{areaOptions}}"
-      wx:key="key"
-      class="hl-chips__item {{item.key === filters.case_area ? 'hl-chips__item--on' : ''}}"
-      data-field="case_area"
-      data-key="{{item.key}}"
-      bindtap="onFilterTap">{{item.label}}</view>
+    <view class="hl-chips">
+      <view class="hl-chips__label">活动形式</view>
+      <view
+        wx:for="{{areaOptions}}"
+        wx:key="key"
+        class="hl-chips__item {{item.key === filters.case_area ? 'hl-chips__item--on' : ''}}"
+        data-field="case_area"
+        data-key="{{item.key}}"
+        bindtap="onFilterTap">{{item.label}}</view>
+    </view>
   </view>
 
   <!-- 上传案例。票据 15 的两个入口之一，另一个是首页的「待上传」待办。 -->

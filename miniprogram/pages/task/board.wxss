@@ -29,11 +29,13 @@
   gap: var(--space-2);
 }
 
+/* 原型 teacher-tasks.html 的 `.summary` 用的是正文色，不是弱化色：它是这张卡上
+   唯一说得清任务要做什么的一句话。 */
 .task__intro {
   margin-top: var(--space-2);
-  font-size: 26rpx;
-  color: var(--muted);
-  line-height: var(--line-cjk);
+  font-size: 24rpx;
+  color: var(--fg);
+  line-height: 1.55;
 }
 
 .task__closed {

@@ -1,1 +1,26 @@
 @import "../../shared.wxss";
+
+/*
+ * 头图卡 —— 原型 comprehensive-assessment-report.html 的 `.child-card`。
+ *
+ * 只有这一页在用，所以不放进分包的 shared.wxss。渐变取 accent-dark 到 accent 两段：
+ * 原型写的是 #0f766e 到 #189b91，后者就是 --accent，前者与 --accent-dark 同一档，
+ * 不另开令牌。
+ */
+.as-hero {
+  background: linear-gradient(135deg, var(--accent-dark), var(--accent));
+  color: #fff;
+}
+
+.as-hero__title {
+  font-size: 44rpx;
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+.as-hero__meta {
+  margin-top: var(--space-1);
+  font-size: 24rpx;
+  line-height: 1.45;
+  opacity: 0.88;
+}
