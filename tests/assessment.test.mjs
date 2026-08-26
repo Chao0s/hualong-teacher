@@ -797,17 +797,29 @@ describe('评价五维图入口页', () => {
     assert.match(c.record.navigations.pop().url, /pages\/radar\/index\?scope=class/)
   })
 
-  test('教研培训入口页的两条入口已经落地，点下去真的跳转', async () => {
+  /**
+   * 量表与五维图此前挂在教研培训入口页的快捷入口上。园方 2026-08-26 裁定以原型为准，
+   * 而原型 training-center.html 的快捷入口只有三张（课程建设／课程资源／教研培训），
+   * 两者因此换了门：量表从首页「质量评估」统计卡进，五维图改成量表页内的入口。
+   * 两条路都要真的通 —— 一个模块的页面进不去，等于没建。
+   */
+  test('量表从首页的质量评估卡进得去', async () => {
     const c = await signedIn()
-    const entry = loadPage(c, 'pages/training/index.js')
-    entry.onLoad()
+    const home = loadPage(c, 'pages/home/index.js')
 
-    for (const [key, expected] of [['scale', 'scale'], ['chart', 'five-chart']]) {
-      entry.onEntryTap({ detail: { key } })
-      const nav = c.record.navigations.pop()
-      assert.ok(nav, `${key} 没有跳转`)
-      assert.match(nav.url, new RegExp(`packages/assessment/pages/${expected}/index`))
-    }
+    home.onTodoTap({ currentTarget: { dataset: { kind: 'assessment' } } })
+    assert.deepEqual(c.record.navigations.pop(),
+      { api: 'navigateTo', url: '/packages/assessment/pages/scale/index' })
+  })
+
+  test('五维图从量表页内进得去，且不必先选幼儿', async () => {
+    const c = await signedIn()
+    const page = await openScale(c, { child_id: 120 })
+
+    page.onFiveChartTap()
+    assert.deepEqual(c.record.navigations.pop(),
+      { api: 'navigateTo', url: '/packages/assessment/pages/five-chart/index' },
+      '进的是本班的五维图聚合页，不带 child_id')
     assert.equal(c.record.toasts.length, 0, '不再是「尚未上线」')
   })
 })

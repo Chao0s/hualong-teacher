@@ -96,6 +96,22 @@
   line-height: var(--line-cjk);
 }
 
+/* 评价五维图的入口卡。它是一条去路，不是一段说明，所以带一枚指向右侧的记号。 */
+.as-chart-entry {
+  position: relative;
+  padding-right: var(--space-6);
+}
+
+.as-chart-entry::after {
+  content: '›';
+  position: absolute;
+  top: 50%;
+  right: var(--space-3);
+  transform: translateY(-50%);
+  color: var(--muted);
+  font-size: 36rpx;
+}
+
 /* ── 预览 ───────────────────────────────────────────────────────────────── */
 
 .as-preview {

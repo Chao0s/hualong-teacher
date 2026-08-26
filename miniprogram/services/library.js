@@ -363,6 +363,7 @@ function downloadCaseWordFile(caseId) {
  */
 const DESTINATIONS = {
   resource: { label: '课程资源库', page: '/packages/library/pages/resource/list' },
+  resourceDetail: { label: '课程资源', page: '/packages/library/pages/resource/detail' },
   case: { label: '课程案例库', page: '/packages/library/pages/case/list' },
   caseDetail: { label: '课程案例', page: '/packages/library/pages/case/detail' },
   upload: { label: '上传资源与案例', page: '/packages/library/pages/upload/form' },
@@ -401,6 +402,17 @@ function open(key, query) {
  */
 function openCase(caseId) {
   open('caseDetail', `case_id=${caseId}`);
+}
+
+/**
+ * 资源详情的跨模块入口，与 `openCase` 一一对应。
+ *
+ * 分包**内部**的两处（资源列表的行、案例详情的关联资源）直接 navigateTo 就够了，它们
+ * 已经在资源库里。这个函数是给分包**外面**的调用方用的 —— 现在是教研培训入口页的推荐
+ * 轮播 —— 因为跨模块要过 `resource-library` 那道门。
+ */
+function openResource(resourceId) {
+  open('resourceDetail', `resource_id=${resourceId}`);
 }
 
 /**
@@ -866,6 +878,7 @@ module.exports = {
   entries,
   open,
   openCase,
+  openResource,
   openUpload,
   // 票据 15 的写入面。
   UPLOAD_TARGETS,

@@ -1551,6 +1551,63 @@ function getCourseIntro(req, res) {
 }
 
 /**
+ * GET /training/home —— 教研培训入口页的聚合读取（`db_training_home`，persist=0）。
+ *
+ * **契约里没有这条路径**，与 `/party/home` 不同：那一条契约有，只是从没人调。这一条
+ * 是缺口，只在本地契约服务上成立，接真服务时必须重对。字段名照 04 training-center-spec.md
+ * 的 method 段落取（`featured`／`resource_list`／`case_list`），好让接线的人对得上。
+ *
+ * 推荐清单是**管理员挑的**（`db_training_recommendation`，p2 只放资源、p3 只放案例），
+ * 不是按教师算的（ADR-0011：没有画像、没有排序信号）。这里用固定的推荐行模拟那张表，
+ * 再 JOIN 资源与案例的夹具——JOIN 的结果就是把两边的列并到一行，所以这里也这么回。
+ *
+ * spec 的三条 method 逐条照做：
+ *   featured      = p2 与 p3 的并集，按 updated_at DESC 取 3，**可混型别、可与下面重复**
+ *   resource_list = p2 JOIN 已发布资源（s3），取 3
+ *   case_list     = p3 JOIN 已发布案例（s3），取 3
+ * 三者为空时各回 `[]`（spec 的 production_*_response）。
+ */
+const TRAINING_RECOMMENDATIONS = [
+  { training_recommendation_id: 401, content_type: 'c1', placement: 'p2', resource_id: 30, case_id: null, updated_at: '2026-07-16T20:00:00+08:00' },
+  { training_recommendation_id: 402, content_type: 'c2', placement: 'p3', resource_id: null, case_id: 120, updated_at: '2026-07-16T18:00:00+08:00' },
+  { training_recommendation_id: 403, content_type: 'c1', placement: 'p2', resource_id: 29, case_id: null, updated_at: '2026-07-16T16:00:00+08:00' },
+  { training_recommendation_id: 404, content_type: 'c2', placement: 'p3', resource_id: null, case_id: 119, updated_at: '2026-07-16T14:00:00+08:00' },
+  { training_recommendation_id: 405, content_type: 'c1', placement: 'p2', resource_id: 28, case_id: null, updated_at: '2026-07-16T12:00:00+08:00' },
+  { training_recommendation_id: 406, content_type: 'c2', placement: 'p3', resource_id: null, case_id: 118, updated_at: '2026-07-16T10:00:00+08:00' },
+  // 指向一条**未发布**的资源：`resource_status=s1`（草稿）。三条 method 都要求
+  // JOIN 已通过的内容，所以它一条也不该出现——少了它，「只收 s3」在一个不过滤的
+  // 实现上也会通过。
+  { training_recommendation_id: 407, content_type: 'c1', placement: 'p2', resource_id: 3, case_id: null, updated_at: '2026-07-16T08:00:00+08:00' },
+  // is_visible=0：管理员取消了推荐。同理，一条也不该出现。
+  { training_recommendation_id: 408, content_type: 'c2', placement: 'p3', resource_id: null, case_id: 117, updated_at: '2026-07-16T06:00:00+08:00', is_visible: false },
+];
+
+const TRAINING_HOME_LIMIT = 3;
+
+function joinRecommendation(rec) {
+  if (rec.is_visible === false) return null;
+  if (rec.content_type === 'c1') {
+    const resource = RESOURCES.find((r) => r.resource_id === rec.resource_id);
+    if (!resource || resource.resource_status !== 's3') return null;
+    return { training_recommendation_id: rec.training_recommendation_id, content_type: 'c1', ...resource };
+  }
+  const kase = CASES.find((c) => c.case_id === rec.case_id);
+  if (!kase || kase.case_status !== 's3') return null;
+  return { training_recommendation_id: rec.training_recommendation_id, content_type: 'c2', ...kase };
+}
+
+function getTrainingHome(req, res) {
+  if (!requireSession(req, res)) return;
+  const active = TRAINING_RECOMMENDATIONS.filter((r) => r.is_visible !== false);
+  const joined = (rows) => rows.map(joinRecommendation).filter(Boolean).slice(0, TRAINING_HOME_LIMIT);
+  sendJson(res, 200, {
+    featured: joined(active),
+    resource_list: joined(active.filter((r) => r.placement === 'p2')),
+    case_list: joined(active.filter((r) => r.placement === 'p3')),
+  });
+}
+
+/**
  * §8.4 / F5 — 签发 30 分钟 bearer 下载短链。
  *
  * 同事务写 `db_content_access_event(link_issued)`：**记录是这一次调用的副作用**，
@@ -1829,9 +1886,11 @@ const HAND_WRITTEN_ROLES = [
   [/^\/trainings\/\d+$/, ['teacher']],
   // 票据 16 的写入面与它的公开回馈流。契约给这两条写的都是 teacher。
   [/^\/trainings\/\d+\/feedback$/, ['teacher']],
-  // 契约**没有**这条路径，连表都没有（见 COURSE_INTRO 的头注）。登记在这里是为了让门
-  // 不至于悄悄缺席 —— 缺口本身是另一个问题，记在交接里。
+  // 契约**没有**这两条路径。`course-intro` 连表都没有（见 COURSE_INTRO 的头注）；
+  // `home` 有 spec 04 的 `db_training_home` 撑着，只是没有登记操作。登记在这里是为了
+  // 让门不至于悄悄缺席 —— 缺口本身是另一个问题，记在交接里。
   [/^\/training\/course-intro$/, ['teacher']],
+  [/^\/training\/home$/, ['teacher']],
   // 票据 18 的五大领域量表与综合评估。契约给这六条写的都是 teacher。
   // `/scales/...` 的正则收全部量表版本，不只收现役那一版：门要覆盖整条路径，处理器
   // 才按版本挑。漏登记是安全缺陷，多登记只是覆盖面窄。
@@ -2101,6 +2160,8 @@ const server = createServer(async (req, res) => {
       postTrainingFeedback(req, res, path.split('/')[2], body);
     } else if (req.method === 'GET' && /^\/trainings\/\d+\/feedback$/.test(path)) {
       getTrainingFeedback(req, res, path.split('/')[2], url);
+    } else if (req.method === 'GET' && path === '/training/home') {
+      getTrainingHome(req, res);
     } else if (req.method === 'GET' && path === '/training/course-intro') {
       getCourseIntro(req, res);
     } else if (req.method === 'GET' && path === '/coordination/documents') {

@@ -1,0 +1,252 @@
+/* 教研培训入口页 —— 逐格对着 screens/training-center.html 转写。
+ *
+ * 换算因子是 tokens.wxss 头注里已经定案的那个：原型宽 390，真实因子 1.923，
+ * 仍用四舍五入的 2，不重算。所以 146px 写成 292rpx，11px 写成 22rpx。
+ *
+ * 颜色只用令牌。原型三条轮播渐变各有三站，令牌层只对得上其中两站：
+ *   b1  #0f766e → #189b91 → #49c3b7   浅青一站没有令牌，用 accent-dark → accent
+ *   b2  #2563eb → #3388fc → #62b7ff   两侧蓝没有令牌，用 blue 与它的深浅近似
+ *   b3  #b45309 → #feaf06 → #f97316   棕色一站没有令牌，用 orange → amber 两站
+ * 缺的站记在这里，不往 tokens.wxss 里加 —— 那是治理文件，加令牌要单独走。
+ */
+
+/* ── 轮播 ──────────────────────────────────────────────────────────────────── */
+
+.banner {
+  height: 292rpx;
+  border-radius: 36rpx;
+  overflow: hidden;
+}
+
+.banner__card {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  position: relative;
+  overflow: hidden;
+  height: 100%;
+  padding: 36rpx;
+  color: #fff;
+}
+
+/* 原型 `.banner::after`：右上角压着半圈白色细环。 */
+.banner__card::after {
+  content: '';
+  position: absolute;
+  top: -68rpx;
+  right: -60rpx;
+  width: 276rpx;
+  height: 276rpx;
+  border: 36rpx solid rgba(255, 255, 255, 0.18);
+  border-radius: 50%;
+}
+
+.banner__card--0 { background: linear-gradient(135deg, var(--accent-dark), var(--accent)); }
+.banner__card--1 { background: linear-gradient(135deg, #2563eb, var(--blue)); }
+.banner__card--2 { background: linear-gradient(135deg, var(--orange), var(--amber)); }
+
+/* `.banner-kicker`：半透明白底的小胶囊，左对齐、不撑满。 */
+.banner__kicker {
+  position: relative;
+  z-index: 1;
+  align-self: flex-start;
+  padding: 6rpx 20rpx;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.18);
+  font-size: 22rpx;
+  font-weight: 700;
+}
+
+.banner__title {
+  position: relative;
+  z-index: 1;
+  width: 520rpx;
+  margin-top: 24rpx;
+  font-size: 44rpx;
+  font-weight: 700;
+  line-height: 1.22;
+}
+
+.banner__desc {
+  position: relative;
+  z-index: 1;
+  width: 520rpx;
+  margin-top: 14rpx;
+  overflow: hidden;
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* 指示点。激活的那个是一条宽条，不是一个大圆点。 */
+.dots {
+  display: flex;
+  justify-content: center;
+  gap: 12rpx;
+  margin: 16rpx 0 4rpx;
+}
+
+.dots__dot {
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: var(--radius-pill);
+  /* 原型的未选中点是 #c9e7e7，令牌层没有这一档浅青，用最接近的分隔线色。 */
+  background: var(--border);
+  transition: width 0.2s ease;
+}
+
+.dots__dot--on {
+  width: 40rpx;
+  background: var(--accent);
+}
+
+/* ── 分区标题 ──────────────────────────────────────────────────────────────── */
+
+.sec {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 40rpx 0 20rpx;
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.sec__more {
+  font-size: 24rpx;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+/* ── 快捷入口三卡 ──────────────────────────────────────────────────────────── */
+
+.quick {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20rpx;
+}
+
+.entry {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  min-height: 224rpx;
+  padding: 26rpx 20rpx;
+  border: 1px solid var(--border);
+  border-radius: 32rpx;
+  background: var(--surface);
+}
+
+.entry__mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 68rpx;
+  height: 68rpx;
+  border-radius: 24rpx;
+  font-size: 26rpx;
+  font-weight: 800;
+}
+
+.entry__mark--accent { color: var(--accent-dark); background: var(--accent-light); }
+.entry__mark--blue   { color: var(--blue);        background: var(--blue-light); }
+.entry__mark--green  { color: var(--green);       background: var(--green-light); }
+
+.entry__title {
+  font-size: 27rpx;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.entry__desc {
+  font-size: 22rpx;
+  line-height: 1.35;
+  color: var(--muted);
+}
+
+/* ── 推荐资源与推荐案例共用的一行 ──────────────────────────────────────────── */
+
+.row {
+  display: flex;
+  gap: 24rpx;
+  padding: 24rpx;
+  border: 1px solid var(--border);
+  border-radius: 28rpx;
+  background: var(--surface);
+}
+
+.row + .row {
+  margin-top: 20rpx;
+}
+
+/* 缩略图是一根竖条，与卡片同高（原型 `.thumb` 只给宽度，靠 stretch 拉满）。 */
+.row__thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 116rpx;
+  border: 1px solid var(--border);
+  border-radius: 24rpx;
+  font-size: 28rpx;
+  font-weight: 800;
+}
+
+.row__thumb--0 { color: var(--accent-dark); background: var(--accent-light); }
+.row__thumb--1 { color: var(--green);       background: var(--green-light); }
+
+.row__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.row__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin-bottom: 10rpx;
+}
+
+/* 标题一行封顶，超出用省略号 —— 两行会把卡撑变形。 */
+.row__name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 30rpx;
+  font-weight: 700;
+}
+
+.row__badge {
+  flex: none;
+  padding: 6rpx 14rpx;
+  border-radius: var(--radius-pill);
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  font-size: 20rpx;
+}
+
+.row__meta {
+  font-size: 24rpx;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+/* 摘要两行封顶（原型的 `-webkit-line-clamp: 2`）。 */
+.row__summary {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: var(--fg);
+}
+
+/* 空态多一句说明：空是常态（园所刚开张时推荐表就是空的），说清楚怎么才会有内容。 */
+.hl-empty__desc {
+  margin-top: var(--space-1);
+  font-size: 24rpx;
+  color: var(--muted);
+}

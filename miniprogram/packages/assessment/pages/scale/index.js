@@ -360,6 +360,15 @@ Page({
   onRadarTap() {
     assessment.openRadar(this.data.childId);
   },
+
+  /**
+   * 评价五维图的入口。原型的教研培训入口页只有三张快捷入口卡，五维图不在其中，
+   * 所以它从这里进（园方 2026-08-26 裁定）。与上面那个按钮不是一回事：那个带着
+   * 当前幼儿去看他自己的雷达图，这个进的是本班的五维图聚合页。
+   */
+  onFiveChartTap() {
+    assessment.openFiveChart();
+  },
 });
 
 /**

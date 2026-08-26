@@ -85,13 +85,16 @@ async function allRows(c, filters = {}) {
 
 // ── 从教研培训入口一次到达 ──────────────────────────────────────────────────
 
+// 入口页 2026-08-26 按原型 training-center.html 重建：整宽链接换成三张快捷入口卡，
+// 事件也从组件的 `detail` 换成了卡片自己的 `dataset`。版面本身由
+// tests/training-home.test.mjs 守住；这里只管「这两条路通不通」。
 describe('两个入口都落地了', () => {
   test('办园理念与课程体系从入口一次到达 —— 中间没有第二层列表', async () => {
     const c = await signedIn()
     const page = loadPage(c, 'pages/training/index.js')
     page.onLoad()
 
-    page.onEntryTap({ detail: { key: 'course' } })
+    page.onQuickTap({ currentTarget: { dataset: { key: 'course' } } })
     assert.deepEqual(c.record.navigations.pop(), { api: 'navigateTo', url: COURSE_PAGE })
     assert.equal(c.record.toasts.length, 0, '不再是「尚未上线」')
   })
@@ -101,7 +104,7 @@ describe('两个入口都落地了', () => {
     const page = loadPage(c, 'pages/training/index.js')
     page.onLoad()
 
-    page.onEntryTap({ detail: { key: 'train' } })
+    page.onQuickTap({ currentTarget: { dataset: { key: 'train' } } })
     assert.deepEqual(c.record.navigations.pop(),
       { api: 'navigateTo', url: '/packages/training/pages/train/list' })
   })

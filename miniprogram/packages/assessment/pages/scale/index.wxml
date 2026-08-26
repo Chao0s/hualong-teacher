@@ -21,6 +21,14 @@
       <view class="hl-card__meta">{{scaleLabel}}</view>
     </view>
 
+    <!-- 评价五维图的入口。原型 training-center.html 的快捷入口只有三张，五维图不在
+         其中（园方 2026-08-26 裁定以原型为准），所以它的门挪到这里：本页是它的上游，
+         填完量表要看图的人本来就在这一页。班级整体那张图也从这里进，不必先选幼儿。 -->
+    <view class="hl-card as-chart-entry" bindtap="onFiveChartTap">
+      <view class="hl-card__title">评价五维图</view>
+      <view class="hl-card__meta">看本班已完成的评价结果</view>
+    </view>
+
     <block wx:if="{{progress}}">
       <view class="hl-card">
         <view class="hl-card__title">{{childName}}</view>

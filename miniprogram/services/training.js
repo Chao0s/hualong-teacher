@@ -57,8 +57,9 @@ const moderation = require('../utils/moderation');
 const { present } = require('../utils/present');
 
 const TRAINING_PATH = '/trainings';
-// 契约里没有这条路径（见头注）。名字刻意不写成 `/trainings/...`：那会看起来像契约的一部分。
+// 契约里没有这两条路径（见头注）。名字刻意不写成 `/trainings/...`：那会看起来像契约的一部分。
 const COURSE_INTRO_PATH = '/training/course-intro';
+const HOME_PATH = '/training/home';
 
 // db_training.training_status —— 三态，s5 终局（F9）。s0 草稿只在管理端存在，教师端的
 // 两条可见范围都不含它；留在表里是因为契约的值域就是三个，删掉会让未知码判定失真。
@@ -304,6 +305,133 @@ async function courseIntro() {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
+// 入口页的聚合读取（2026-08-26 按原型重建）
+// ══════════════════════════════════════════════════════════════════════════
+//
+// 原型 training-center.html 的入口页有三块动态内容：顶部推荐轮播、推荐资源、推荐
+// 案例。它们同出一张管理员维护的推荐表（`db_training_recommendation`，spec 04），
+// **不是按这位教师算出来的** —— 没有画像、没有排序信号（ADR-0011／DO-NOT-BUILD 6）。
+//
+// 三块一次读回，与党建入口页同一条理由：三个请求各自失败会让页面半亮半灭。
+//
+// 枚举表借自资源库与案例库：`resource_tag` 与 `case_field`／`case_grade` 是那两个
+// 模块的列，同一份映射服务两处，这里不抄第二份。
+
+const library = require('./library');
+const kase = require('./case');
+
+/** 一条推荐 -> 一张轮播卡。资源与案例的列不重名，所以按 `content_type` 分支即可。 */
+function decorateFeatured(row) {
+  const isResource = row.content_type === 'c1';
+  const kind = isResource ? '推荐资源' : '推荐案例';
+  const facet = isResource
+    ? (library.RESOURCE_TAG[row.resource_tag] || '')
+    : (kase.CASE_FIELD[row.case_field] || '');
+  return {
+    content_type: row.content_type,
+    // 去向要带的那个 id。两种卡片进的是两个详情页，所以 id 与类型一起走。
+    target_id: isResource ? row.resource_id : row.case_id,
+    // 原型的 `.banner-kicker`：「推荐资源 · 社会」。未知编码只丢掉后半截，不丢整张卡。
+    kicker: facet ? `${kind} · ${facet}` : kind,
+    title: isResource ? row.resource_name : row.case_name,
+    excerpt: (isResource ? row.resource_explain : row.case_intro) || '',
+  };
+}
+
+/**
+ * 一条推荐 -> 一张推荐资源行卡（原型 `.resource-card`）。
+ *
+ * 与资源列表页那张卡**不是同一个形状**：这里多一枚领域徽章、少一枚状态徽章。推荐位
+ * 上的内容按 spec 恒为已通过（s3），状态徽章会是一个恒定值，而恒定值不是信息。
+ */
+function decorateResourceCard(row) {
+  const tag = library.RESOURCE_TAG[row.resource_tag] || '';
+  const grade = (row.grade || []).map((g) => kase.CASE_GRADE[g]).filter(Boolean).join('｜');
+  return {
+    resource_id: row.resource_id,
+    name: row.resource_name,
+    thumb_label: tag || '资',
+    badge: tag || '资源',
+    meta: [library.RESOURCE_TYPE[row.resource_type] || '资料', grade].filter(Boolean).join(' · '),
+    excerpt: row.resource_explain || '',
+  };
+}
+
+/** 一条推荐 -> 一张推荐案例行卡。徽章是年级，与资源那张的领域徽章位置相同。 */
+function decorateCaseCard(row) {
+  const field = kase.CASE_FIELD[row.case_field] || '';
+  const areas = (row.case_area || []).map((a) => kase.CASE_AREA[a]).filter(Boolean).join(' · ');
+  return {
+    case_id: row.case_id,
+    name: row.case_name,
+    thumb_label: field ? field.charAt(0) : '案',
+    badge: kase.CASE_GRADE[row.case_grade] || '案例',
+    meta: [field, areas].filter(Boolean).join(' · '),
+    excerpt: row.case_intro || '',
+  };
+}
+
+/**
+ * 入口页的三张快捷入口卡 —— 原型 training-center.html 的 `.entry-grid`，三张，一行。
+ *
+ * **只有三张，与原型逐字一致。** 五大领域量表与评价五维图此前也挂在这一页；园方
+ * 2026-08-26 裁定以原型为准，两者因此换了门：量表从首页「质量评估」卡进（那条已经
+ * 接通），五维图改成量表页内的入口。结构契约的可达声明随之更新。
+ *
+ * `module` 按**目的地**的模块查，不是出发地：课程资源属资源库，合作园的模块清单里
+ * 只有资源库与案例库，所以这一条对合作园开、另两条对合作园关。
+ */
+const QUICK_ENTRIES = [
+  { key: 'course', mark: '建', label: '课程建设', desc: '课程体系沉淀', tint: 'accent', module: 'teaching-research', page: '/packages/training/pages/course/detail' },
+  { key: 'resource', mark: '资', label: '课程资源', desc: '资源库、案例库', tint: 'blue', module: 'resource-library', page: '/packages/library/pages/home/index' },
+  { key: 'train', mark: '训', label: '教研培训', desc: '研修与反馈', tint: 'green', module: 'teaching-research', page: '/packages/training/pages/train/list' },
+];
+
+/** 三张快捷入口卡，ready to bind。 */
+function quickEntries() {
+  return QUICK_ENTRIES.map((entry) => ({
+    key: entry.key,
+    mark: entry.mark,
+    label: entry.label,
+    desc: entry.desc,
+    tint: entry.tint,
+  }));
+}
+
+/** 点一张快捷入口卡。门按目的地的模块查，拒绝要出声。 */
+function openQuickEntry(key) {
+  const entry = QUICK_ENTRIES.find((q) => q.key === key);
+  if (!entry) return false;
+  return guard.navigateTo(entry.page, entry.module);
+}
+
+/**
+ * 入口页的一次聚合读取 —— 一个请求，三块内容。
+ *
+ * 这条路径**不在契约里**，见本文件头注的契约缺口一段。
+ *
+ * 三块都可能为空（园所刚开张时推荐表是空的），所以每一块都按空数组兜底，页面用长度
+ * 分空态：spec 的空态规则是「顶部推荐为空则整块不画，两个列表为空则各说一句」。
+ */
+async function trainingHome() {
+  const home = await api.get(HOME_PATH);
+  return {
+    featured: (home.featured || []).map(decorateFeatured),
+    resources: (home.resource_list || []).map(decorateResourceCard),
+    cases: (home.case_list || []).map(decorateCaseCard),
+  };
+}
+
+/** 轮播卡的去向：资源进资源详情，案例进案例详情。两个去向都由资源库模块说了算。 */
+function openFeatured(contentType, targetId) {
+  if (contentType === 'c1') {
+    library.openResource(targetId);
+    return;
+  }
+  library.openCase(targetId);
+}
+
+// ══════════════════════════════════════════════════════════════════════════
 // 研修反馈（票据 16）
 // ══════════════════════════════════════════════════════════════════════════
 //
@@ -451,6 +579,10 @@ module.exports = {
   openMaterial,
   copyMeetingLink,
   courseIntro,
+  trainingHome,
+  openFeatured,
+  quickEntries,
+  openQuickEntry,
   feedbackEntry,
   feedbackTooLong,
   buildFeedbackBody,

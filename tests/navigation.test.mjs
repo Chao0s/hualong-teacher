@@ -109,7 +109,11 @@ test('tabBar pages sit in the main package', () => {
 // （轮播加三个分区，读 `GET /party/home`，tests/party-home.test.mjs）与综合协调
 // （三节七卡，tests/coordination.test.mjs）。四页全部重建之后 hl-entry-sections 与
 // services/module-entry.js 就没有调用方了，那时连同这条断言一并退役。
-const REBUILT = ['pages/party-building/index', 'pages/coordination/index']
+const REBUILT = [
+  'pages/party-building/index',
+  'pages/coordination/index',
+  'pages/training/index',
+]
 const SECTION_ENTRY_PAGES = ENTRY_PAGES.filter(([route]) => !REBUILT.includes(route))
 
 test('each entry page renders its module sections and names its own module', async () => {

@@ -190,6 +190,11 @@ const KNOWN = {
   // db_resource.resource_status / db_case.case_status。承载它的 /home/todos
   // 在契约里没有端点（2026-08-24 已登记），所以字段也进不了 149 个操作的模式。
   upload_status: '来自 /home/todos —— 契约里没有这个端点（2026-08-24 已登记）',
+  // db_training_home（04 training-center-spec.md，persist=0 聚合）的两块列表。
+  // 名字取自 spec 的 method 段落（`resource_list` / `case_list`），承载它的
+  // /training/home 契约里没有这个端点（2026-08-26 已登记）。
+  resource_list: '来自 /training/home —— 契约里没有这个端点（2026-08-26 已登记）',
+  case_list: '同上',
 };
 
 const names = schemaNames();

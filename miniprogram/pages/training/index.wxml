@@ -1,3 +1,110 @@
 <view class="hl-page" wx:if="{{ready}}">
-  <hl-entry-sections sections="{{sections}}" bindtapentry="onEntryTap" />
+
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryLoad">重试</text>
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障码 {{errorRequestId}}</text>
+  </view>
+
+  <view class="hl-loading" wx:if="{{loading}}">加载中…</view>
+
+  <!-- 空与失败是两种状态：读失败时两个列表都不说「暂无」，那是在替服务器撒谎。 -->
+  <block wx:if="{{!loading}}">
+
+    <!-- 顶部推荐轮播。一条推荐都没有时整块不画（spec `IF featured_count=0,
+         show_featured=0`），不是画一个空壳。 -->
+    <block wx:if="{{featured.length > 0}}">
+      <swiper
+        class="banner"
+        circular
+        autoplay
+        interval="3600"
+        duration="300"
+        bindchange="onSlideChange">
+        <swiper-item wx:for="{{featured}}" wx:key="target_id">
+          <view
+            class="banner__card banner__card--{{index % 3}}"
+            data-type="{{item.content_type}}"
+            data-id="{{item.target_id}}"
+            bindtap="onFeaturedTap">
+            <text class="banner__kicker">{{item.kicker}}</text>
+            <view class="banner__title">{{item.title}}</view>
+            <view class="banner__desc">{{item.excerpt}}</view>
+          </view>
+        </swiper-item>
+      </swiper>
+      <!-- 指示点自己画：平台的 indicator-dots 只有圆点，原型的激活态是一条宽条。 -->
+      <view class="dots">
+        <view
+          wx:for="{{featured}}"
+          wx:key="target_id"
+          class="dots__dot {{index === slide ? 'dots__dot--on' : ''}}" />
+      </view>
+    </block>
+
+    <view class="sec">快捷入口</view>
+    <view class="quick">
+      <view
+        wx:for="{{quickEntries}}"
+        wx:key="key"
+        class="entry"
+        data-key="{{item.key}}"
+        bindtap="onQuickTap">
+        <view class="entry__mark entry__mark--{{item.tint}}">{{item.mark}}</view>
+        <view class="entry__title">{{item.label}}</view>
+        <view class="entry__desc">{{item.desc}}</view>
+      </view>
+    </view>
+
+    <view class="sec">
+      推荐资源
+      <text class="sec__more" data-key="resource" bindtap="onMoreTap">全部</text>
+    </view>
+    <view wx:if="{{resources.length === 0 && !errorText}}" class="hl-card hl-empty">
+      暂无推荐资源
+      <view class="hl-empty__desc">内容上传、审核通过并设置为推荐后，将显示在这里</view>
+    </view>
+    <view
+      wx:for="{{resources}}"
+      wx:key="resource_id"
+      class="row"
+      data-id="{{item.resource_id}}"
+      bindtap="onResourceTap">
+      <view class="row__thumb row__thumb--0">{{item.thumb_label}}</view>
+      <view class="row__body">
+        <view class="row__top">
+          <text class="row__name">{{item.name}}</text>
+          <text class="row__badge">{{item.badge}}</text>
+        </view>
+        <view class="row__meta">{{item.meta}}</view>
+        <view class="row__summary">{{item.excerpt}}</view>
+      </view>
+    </view>
+
+    <view class="sec">
+      推荐案例
+      <text class="sec__more" data-key="case" bindtap="onMoreTap">全部</text>
+    </view>
+    <view wx:if="{{cases.length === 0 && !errorText}}" class="hl-card hl-empty">
+      暂无推荐案例
+      <view class="hl-empty__desc">内容上传、审核通过并设置为推荐后，将显示在这里</view>
+    </view>
+    <view
+      wx:for="{{cases}}"
+      wx:key="case_id"
+      class="row"
+      data-id="{{item.case_id}}"
+      bindtap="onCaseTap">
+      <view class="row__thumb row__thumb--1">{{item.thumb_label}}</view>
+      <view class="row__body">
+        <view class="row__top">
+          <text class="row__name">{{item.name}}</text>
+          <text class="row__badge">{{item.badge}}</text>
+        </view>
+        <view class="row__meta">{{item.meta}}</view>
+        <view class="row__summary">{{item.excerpt}}</view>
+      </view>
+    </view>
+
+  </block>
 </view>
