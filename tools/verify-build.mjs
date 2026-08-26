@@ -43,6 +43,12 @@ const SUBPACKAGE_SERVICES = {
   // 三个。分开的理由是服务模块边界 —— 量表与研修没有共用的读写面。
   'packages/assessment': 'assessment',
   'packages/co-education': 'co-education',
+  // 评价链（票据 20）与成长册（票据 21）在结构契约上都属 co-education 模块，但**模块与
+  // 分包不是一回事**：一个 tabBar 模块可以带不止一个分包，正如 assessment 借教研培训落门。
+  // 分开的理由与 assessment 相同 —— 服务模块边界：在园时光与亲子任务的读写面和评价链、
+  // 成长册没有一行共用。
+  'packages/evaluation': 'evaluation',
+  'packages/growth-book': 'growth-book',
 };
 
 const findings = [];

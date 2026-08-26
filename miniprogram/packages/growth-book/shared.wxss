@@ -1,0 +1,115 @@
+/**
+ * 成长册两页共用的样式（票据 21）。
+ *
+ * 分包内一份，两页各自 `@import` 它 —— 与 packages/co-education/shared.wxss 同一条理由：
+ * 抄两遍的代价不是行数，是两处慢慢长歪。
+ */
+
+/* ── 勾选面板 ────────────────────────────────────────────────────────────── */
+
+.gb-source__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* 可勾选的那两类。开与关都是同一个控件，它自己说清楚现在是哪一种。 */
+.gb-source__toggle {
+  padding: var(--space-1) var(--space-3);
+  border: 2rpx solid var(--line);
+  border-radius: 999rpx;
+  font-size: 26rpx;
+  color: var(--muted);
+}
+
+.gb-source__toggle--on {
+  border-color: var(--brand);
+  color: var(--brand);
+}
+
+/* 固定书脊。不是一个点不动的勾 —— 那会假装教师有一个他并没有的选择。 */
+.gb-source__fixed {
+  font-size: 26rpx;
+  color: var(--muted);
+}
+
+/* ── 说明与问题 ──────────────────────────────────────────────────────────── */
+
+.gb-notice {
+  margin-top: var(--space-2);
+  font-size: 26rpx;
+  color: var(--muted);
+  line-height: var(--line-cjk);
+}
+
+/* 空来源是一种**状态**：说清楚下一步该做什么，颜色不是红的。 */
+.gb-empty {
+  font-size: 28rpx;
+  color: var(--muted);
+  line-height: var(--line-cjk);
+}
+
+.gb-readonly {
+  font-size: 28rpx;
+  color: var(--muted);
+  line-height: var(--line-cjk);
+}
+
+.gb-problem {
+  margin-top: var(--space-1);
+  font-size: 28rpx;
+  color: var(--danger);
+  line-height: var(--line-cjk);
+}
+
+/* ── A4 版面 ─────────────────────────────────────────────────────────────── */
+/*
+ * 与 packages/evaluation 的 .ev-sheet 是同一套几何（都来自 utils/layout），样式各在
+ * 各的分包里 —— 两个分包共享一份 wxss 会把它拖进主包，而主包只有 2 MB。
+ *
+ * `overflow: hidden` 是承重的：文字再长也只被自己这一个框裁住，绝不会流出去压到隔壁的
+ * 框上。容量由 utils/layout.textCapacity 推导、超了由页面点名说出来，这一行是最后一道。
+ */
+.gb-sheet {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 210 / 297;
+  background: #ffffff;
+  border-radius: 8rpx;
+  overflow: hidden;
+}
+
+.gb-sheet__content {
+  position: absolute;
+}
+
+.gb-widget {
+  position: absolute;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.gb-widget__image {
+  width: 100%;
+  height: 100%;
+}
+
+.gb-widget__text {
+  color: var(--fg);
+  white-space: pre-wrap;
+}
+
+/* ── 翻页 ────────────────────────────────────────────────────────────────── */
+
+.gb-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--space-2);
+}
+
+.gb-pager__label {
+  font-size: 26rpx;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}

@@ -94,9 +94,12 @@ const MODULES = {
       {
         title: '评价与成长册',
         entries: [
-          { key: 'month', badge: '月', label: '月度评价', desc: '按月为每名幼儿填写', screen: 'MonthEval', page: null },
-          { key: 'term', badge: '期', label: '学期评价', desc: '学期末的整体评价', screen: 'TermEval', page: null },
-          { key: 'book', badge: '册', label: '成长册', desc: '生成与预览', screen: 'BookCreate', page: null },
+          { key: 'month', badge: '月', label: '月度评价', desc: '按月为每名幼儿填写', screen: 'MonthEval', page: '/packages/evaluation/pages/month/index' },
+          { key: 'term', badge: '期', label: '学期评价', desc: '学期末的整体评价', screen: 'TermEval', page: '/packages/evaluation/pages/term/index' },
+          // 综合评估报告是只读页。它也从两张表单提交完之后进得去，这一条是直达入口 ——
+          // 报告不是评价的副产品，教师随时要看得到某名幼儿现在的整体判断。
+          { key: 'report', badge: '评', label: '综合评估报告', desc: '量表、雷达图与两级评价汇成一份', screen: 'TermReport', page: '/packages/evaluation/pages/report/index' },
+          { key: 'book', badge: '册', label: '成长册', desc: '生成与预览', screen: 'BookCreate', page: '/packages/growth-book/pages/create/index' },
         ],
       },
     ],

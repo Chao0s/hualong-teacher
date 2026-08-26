@@ -1,0 +1,85 @@
+<view wx:if="{{ready}}" class="hl-page hl-stack">
+  <view wx:if="{{loading}}" class="hl-loading">加载中…</view>
+
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障编号 {{errorRequestId}}</text>
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryLoad">重试</text>
+  </view>
+
+  <block wx:if="{{!loading}}">
+    <!--
+      月份是一行只读说明，不是一个选择位。教师改不了它，所以这里也没有能点的东西 ——
+      做成可选会让人以为客户端能改它。
+    -->
+    <view class="hl-card ev-month">
+      <view class="ev-month__key">{{monthLabel}}</view>
+      <view class="ev-month__hint">月份由系统按当前日期认定，不能更改。</view>
+      <view class="hl-card__meta">{{monthSummary}}</view>
+    </view>
+
+    <view class="hl-card">
+      <hl-child-picker
+        mode="single"
+        label="评价幼儿"
+        children="{{children}}"
+        value="{{childValue}}"
+        required="{{true}}"
+        bind:change="onChildChange" />
+    </view>
+
+    <view wx:if="{{readonly}}" class="hl-card ev-readonly">{{readonlyReason}}</view>
+
+    <block wx:if="{{draft}}">
+      <!-- ── edit ───────────────────────────────────────────────────────── -->
+      <view wx:if="{{stage === 'edit'}}" class="hl-stack">
+        <view class="hl-card">
+          <view class="ev-field__label">评价内容（最多 {{limits.eval_text}} 字）</view>
+          <textarea
+            class="ev-textarea"
+            value="{{draft.eval_text}}"
+            maxlength="{{limits.eval_text}}"
+            disabled="{{readonly}}"
+            placeholder="这个月这名幼儿的具体表现与进步"
+            bindinput="onTextInput" />
+        </view>
+
+        <view wx:if="{{blockers.length}}" class="hl-card ev-blockers">
+          <view class="ev-field__label">还差这几项才能发布</view>
+          <view wx:for="{{blockers}}" wx:key="key" class="ev-blockers__item">{{item.text}}</view>
+        </view>
+
+        <button class="hl-btn hl-btn--block" disabled="{{readonly}}" bindtap="onPreviewTap">预览并发布</button>
+      </view>
+
+      <!-- ── preview ────────────────────────────────────────────────────── -->
+      <view wx:elif="{{stage === 'preview'}}" class="hl-stack">
+        <view class="hl-section-title">发布前请完整看一遍</view>
+        <!-- 绑的是将要发出的请求体本身，不是另拼的一份好看文字。 -->
+        <scroll-view class="ev-preview" scroll-y bindscrolltolower="onPreviewEnd">
+          <view class="hl-card">
+            <view class="hl-card__title">{{preview.childName}} · {{preview.monthLabel}}</view>
+            <view class="hl-card__meta">评价月份 {{preview.body.eval_month}}</view>
+            <view class="ev-preview__text">{{preview.body.eval_text}}</view>
+          </view>
+        </scroll-view>
+
+        <view wx:if="{{!previewedInFull}}" class="ev-notice">请滑到底看完全部内容，之后才能发布。</view>
+
+        <button class="hl-btn hl-btn--block" disabled="{{!previewedInFull || submitting}}" bindtap="onConfirmTap">
+          {{submitting ? '发布中…' : '确认发布'}}
+        </button>
+        <button class="hl-btn hl-btn--hollow hl-btn--block" disabled="{{locked}}" bindtap="onBackToEdit">返回修改</button>
+      </view>
+
+      <!-- ── done ───────────────────────────────────────────────────────── -->
+      <view wx:else class="hl-stack">
+        <view class="hl-card">
+          <view class="hl-card__title">{{childName}} · {{monthLabel}}</view>
+          <view class="ev-preview__text">{{draft.eval_text}}</view>
+        </view>
+        <button class="hl-btn hl-btn--block" bindtap="onReportTap">看综合评估报告</button>
+      </view>
+    </block>
+  </block>
+</view>

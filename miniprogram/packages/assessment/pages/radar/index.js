@@ -20,7 +20,9 @@
  * 同一个数**，这一页一次算术也不做 —— 图上画 3.67 而表里写 3.7，教师会去想那 0.03 是
  * 什么。
  *
- * 唯一的算术是几何：把 1—5 分换成半径。那是像素，不是分数。
+ * 唯一的算术是几何：把 1—5 分换成半径。那是像素，不是分数，而且它不在这一页 ——
+ * `utils/radar-canvas` 的 `drawRadar` 是它唯一的实现，票据 20 的综合评估报告画的是同一
+ * 张图，两个分包各抄一遍就会有两种画法。
  *
  * ── 清屏与倍率 ───────────────────────────────────────────────────────────────
  *
@@ -31,11 +33,8 @@
 
 const guard = require('../../../../utils/guard');
 const assessment = require('../../../../services/assessment');
+const { drawRadar } = require('../../../../utils/radar-canvas');
 const { reportFailure } = require('../../../../utils/present');
-
-// 画布上的留白，CSS 像素。轴末的领域名与数值要放得下，不然会被画布边缘切掉。
-const LABEL_ROOM = 34;
-const LABEL_GAP = 14;
 
 Page({
   data: {
@@ -158,87 +157,3 @@ Page({
     drawRadar(ctx, width, height, radar);
   },
 });
-
-/**
- * 五维雷达图的几何。
- *
- * 半径的映射是 `r = R × 分 / 5`：0 分在圆心，5 分在最外圈。**不用 (v-1)/4** —— 那会把
- * 1 分画成圆心的一个点，而 1 分是「达到 3~4 岁典型水平」，不是「什么都没有」。
- *
- * 五个轴从正上方开始，顺时针，与 `DOMAINS` 的顺序一一对应（健康／语言／社会／科学／艺术）。
- * 半径用 `min(宽, 高)`，所以窄屏与宽屏上五边形都是正的，不会被拉扁。
- */
-function drawRadar(ctx, width, height, radar) {
-  const axes = radar.axes;
-  const count = axes.length;
-  const cx = width / 2;
-  const cy = height / 2;
-  const R = Math.max(10, Math.min(width, height) / 2 - LABEL_ROOM);
-  const step = (Math.PI * 2) / count;
-  const angleAt = (i) => -Math.PI / 2 + i * step;
-  const pointAt = (i, value) => {
-    const r = (R * value) / radar.max;
-    return { x: cx + r * Math.cos(angleAt(i)), y: cy + r * Math.sin(angleAt(i)) };
-  };
-
-  // 底纹：五圈刻度，每圈是一分。刻度线让教师读得出「这个角伸到第几圈」。
-  ctx.strokeStyle = '#dfe6e6';
-  ctx.lineWidth = 1;
-  for (let ring = 1; ring <= radar.max; ring += 1) {
-    ctx.beginPath();
-    for (let i = 0; i < count; i += 1) {
-      const p = pointAt(i, ring);
-      if (i === 0) ctx.moveTo(p.x, p.y);
-      else ctx.lineTo(p.x, p.y);
-    }
-    ctx.closePath();
-    ctx.stroke();
-  }
-
-  // 五条轴线。
-  for (let i = 0; i < count; i += 1) {
-    const p = pointAt(i, radar.max);
-    ctx.beginPath();
-    ctx.moveTo(cx, cy);
-    ctx.lineTo(p.x, p.y);
-    ctx.stroke();
-  }
-
-  // 得分多边形。填充半透明，描边实色 —— 底纹的刻度线要透得出来。
-  ctx.beginPath();
-  for (let i = 0; i < count; i += 1) {
-    const p = pointAt(i, axes[i].value);
-    if (i === 0) ctx.moveTo(p.x, p.y);
-    else ctx.lineTo(p.x, p.y);
-  }
-  ctx.closePath();
-  ctx.fillStyle = 'rgba(24, 155, 145, 0.18)';
-  ctx.fill();
-  ctx.strokeStyle = '#189b91';
-  ctx.lineWidth = 2;
-  ctx.stroke();
-
-  // 顶点。
-  ctx.fillStyle = '#189b91';
-  for (let i = 0; i < count; i += 1) {
-    const p = pointAt(i, axes[i].value);
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  // 轴末的领域名与**数值**。教师要的是数值不是形状，所以数值就写在图上，不只写在表里。
-  // 写的是 `value_label`，与下面那张表逐字相同 —— 服务层给的同一个字符串。
-  ctx.font = '12px sans-serif';
-  ctx.textBaseline = 'middle';
-  ctx.fillStyle = '#3d4a4a';
-  for (let i = 0; i < count; i += 1) {
-    const angle = angleAt(i);
-    const x = cx + (R + LABEL_GAP) * Math.cos(angle);
-    const y = cy + (R + LABEL_GAP) * Math.sin(angle);
-    // 左半边的字右对齐、右半边左对齐，正上下居中：三档就够，五个轴不会互相压。
-    const cos = Math.cos(angle);
-    ctx.textAlign = Math.abs(cos) < 0.1 ? 'center' : (cos > 0 ? 'left' : 'right');
-    ctx.fillText(`${axes[i].name} ${axes[i].value_label}`, x, y);
-  }
-}

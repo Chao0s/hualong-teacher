@@ -1,0 +1,145 @@
+/**
+ * 评价链三页共用的表单、预览与版式样式（票据 20）。
+ *
+ * 为什么是分包内的一份而不是 app.wxss：这些形状目前只有这三页在用，放进主包会让每一个
+ * 客户端都下载它们。分包内共享一份，三页各自 `@import` 它 —— 抄三遍的代价不是行数，
+ * 是三处慢慢长歪。与 packages/co-education/shared.wxss 同一条理由。
+ *
+ * 选择行的尺寸**不在这里**：那一份在 styles/form-rows.wxss，由 app.wxss 统一引入。
+ */
+
+/* ── 月份 ────────────────────────────────────────────────────────────────── */
+
+.ev-month__key {
+  font-size: 40rpx;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+/* 只读说明用弱化的正文色，不用 --danger：教师改不了月份不是一个错误。 */
+.ev-month__hint {
+  margin-top: var(--space-1);
+  font-size: 26rpx;
+  color: var(--muted);
+  line-height: var(--line-cjk);
+}
+
+/* ── 表单字段 ────────────────────────────────────────────────────────────── */
+
+.ev-field__label {
+  font-size: 26rpx;
+  color: var(--muted);
+}
+
+.ev-textarea {
+  width: 100%;
+  min-height: 260rpx;
+  font-size: 30rpx;
+  color: var(--fg);
+  line-height: var(--line-cjk);
+}
+
+.ev-notice {
+  margin-top: var(--space-2);
+  font-size: 26rpx;
+  color: var(--muted);
+  line-height: var(--line-cjk);
+}
+
+/* 只读态是**状态**，不是错误：一行理由，不是一个弹窗，颜色也不是红的。 */
+.ev-readonly {
+  font-size: 28rpx;
+  color: var(--muted);
+  line-height: var(--line-cjk);
+}
+
+.ev-blockers__item {
+  margin-top: var(--space-1);
+  font-size: 28rpx;
+  color: var(--danger);
+  line-height: var(--line-cjk);
+}
+
+/* ── 预览 ────────────────────────────────────────────────────────────────── */
+
+/* 预览必须能滚到底，`bindscrolltolower` 才有落点 —— 那是「完整预览」的判据本身。 */
+.ev-preview {
+  max-height: 60vh;
+}
+
+.ev-preview__text {
+  margin-top: var(--space-2);
+  font-size: 30rpx;
+  color: var(--fg);
+  line-height: var(--line-cjk);
+  white-space: pre-wrap;
+}
+
+/* ── 五大领域结果（学期评价页的只读区）────────────────────────────────────── */
+
+.ev-domain {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--space-2) 0;
+  font-size: 28rpx;
+  color: var(--fg);
+}
+
+.ev-domain__value {
+  font-variant-numeric: tabular-nums;
+  color: var(--brand);
+}
+
+/* ── A4 版面（综合评估报告页）─────────────────────────────────────────────── */
+/*
+ * 一页 A4，比例锁在 210 : 297。格子的像素尺寸由 utils/layout 算出来后写进内联样式 ——
+ * 这里只负责「这是一张纸」与「盒子不许溢出」。
+ *
+ * `overflow: hidden` 是承重的：文字再长也只会被这一个框裁住，绝不会流出去压到隔壁的
+ * 框上。版式规格 §6.5 要求溢出在结构上不可能，容量由 utils/layout.textCapacity 推导，
+ * 超了由页面点名说出来 —— 这一行是最后一道，防的是两者都算漏的情形。
+ */
+.ev-sheet {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 210 / 297;
+  background: #ffffff;
+  border-radius: 8rpx;
+  overflow: hidden;
+}
+
+.ev-sheet__content {
+  position: absolute;
+}
+
+.ev-widget {
+  position: absolute;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.ev-widget__text {
+  font-size: 24rpx;
+  color: var(--fg);
+  line-height: var(--line-cjk);
+  white-space: pre-wrap;
+}
+
+.ev-widget__title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.ev-widget__canvas {
+  width: 100%;
+  height: 100%;
+}
+
+/* 版式有问题的一页不画。这一行是那句说明的样式，不是一个错误提示。 */
+.ev-sheet__problem {
+  margin-top: var(--space-2);
+  font-size: 26rpx;
+  color: var(--muted);
+  line-height: var(--line-cjk);
+}

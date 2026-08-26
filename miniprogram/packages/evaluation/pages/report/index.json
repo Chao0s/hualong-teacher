@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "综合评估报告",
+  "usingComponents": {
+    "hl-child-picker": "/components/hl-child-picker/index"
+  }
+}

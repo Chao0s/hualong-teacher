@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "填写月度评价",
+  "usingComponents": {
+    "hl-child-picker": "/components/hl-child-picker/index"
+  }
+}

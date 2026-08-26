@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "生成成长册",
+  "usingComponents": {
+    "hl-child-picker": "/components/hl-child-picker/index"
+  }
+}

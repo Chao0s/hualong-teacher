@@ -1,0 +1,61 @@
+<view wx:if="{{ready}}" class="hl-page hl-stack">
+  <view wx:if="{{loading}}" class="hl-loading">加载中…</view>
+
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障编号 {{errorRequestId}}</text>
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryLoad">重试</text>
+  </view>
+
+  <view wx:if="{{readonly}}" class="hl-card gb-readonly">{{readonlyReason}}</view>
+
+  <block wx:if="{{!loading}}">
+    <view class="hl-card">
+      <hl-child-picker
+        mode="single"
+        label="为哪名幼儿生成"
+        children="{{children}}"
+        value="{{childValue}}"
+        required="{{true}}"
+        bind:change="onChildChange" />
+    </view>
+
+    <view class="hl-section-title">册子会纳入的内容</view>
+
+    <!--
+      可勾选的只有在园时光与亲子任务；其余是固定书脊，列出并纳入，不给一个点不动的勾。
+    -->
+    <view wx:for="{{panel}}" wx:key="key" class="hl-card gb-source">
+      <view class="gb-source__head">
+        <view class="hl-card__title">{{item.label}}</view>
+        <view wx:if="{{item.selectable}}" class="gb-source__toggle {{item.enabled ? 'gb-source__toggle--on' : ''}}"
+          data-key="{{item.key}}" bindtap="onSourceToggle">{{item.enabled ? '已纳入' : '不纳入'}}</view>
+        <view wx:else class="gb-source__fixed">{{item.fixed_label}}</view>
+      </view>
+      <view class="hl-card__meta">{{item.desc}}</view>
+      <view class="hl-card__meta">{{item.count_label}}</view>
+    </view>
+
+    <!-- 一句说明，不是一份空册子。 -->
+    <view wx:if="{{emptyReason}}" class="hl-card gb-empty">{{emptyReason}}</view>
+    <view wx:else class="hl-card__meta">教师端数得到的内容共 {{itemCount}} 项。</view>
+
+    <block wx:if="{{precheck}}">
+      <view class="hl-section-title">{{childName}} 的预检</view>
+      <view class="hl-card">
+        <view class="hl-card__title">{{precheck.pages_label}}</view>
+        <view wx:if="{{precheck.published}}" class="hl-card__meta">这本已经定稿，家庭已经能看到。</view>
+        <view wx:for="{{precheck.problems}}" wx:key="rule" class="gb-problem">{{item.text}}</view>
+        <view wx:if="{{precheck.blocked_by_class_shared_content}}" class="gb-problem">
+          超限来自班级共享内容，跳过这名幼儿没有用，要先调整班级内容。
+        </view>
+      </view>
+    </block>
+
+    <button
+      class="hl-btn hl-btn--block"
+      disabled="{{!childId || emptyReason || opening}}"
+      bindtap="onPreviewTap">{{opening ? '打开中…' : '预览整本'}}</button>
+    <view class="gb-notice">生成前请先在预览里从头看到尾，确认就在那一页。</view>
+  </block>
+</view>

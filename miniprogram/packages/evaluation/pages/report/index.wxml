@@ -1,0 +1,92 @@
+<view wx:if="{{ready}}" class="hl-page hl-stack">
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障编号 {{errorRequestId}}</text>
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryLoad">重试</text>
+  </view>
+
+  <view class="hl-card">
+    <hl-child-picker
+      mode="single"
+      label="查看哪名幼儿"
+      children="{{children}}"
+      value="{{childValue}}"
+      required="{{true}}"
+      bind:change="onChildChange" />
+  </view>
+
+  <view wx:if="{{loading}}" class="hl-loading">加载中…</view>
+  <view wx:elif="{{!childId}}" class="hl-card ev-notice">选一名幼儿，看他这个学期的整体判断。</view>
+
+  <block wx:if="{{childId && !loading && !errorText}}">
+    <view class="hl-card__meta">{{subtitle}}</view>
+
+    <!--
+      一张 A4。比例锁在 210 : 297，格子的像素尺寸由 utils/layout 取整一次后写进内联样式。
+      每个盒子 overflow: hidden —— 文字再长也只被自己这一个框裁住，不会流出去压到隔壁。
+    -->
+    <view id="sheet" class="ev-sheet">
+      <view
+        wx:if="{{sheet}}"
+        class="ev-sheet__content"
+        style="left:{{sheet.offsetLeft}}px;top:{{sheet.offsetTop}}px;width:{{sheet.width}}px;height:{{sheet.height}}px">
+        <block wx:for="{{sheet.widgets}}" wx:key="key">
+          <view
+            class="ev-widget"
+            style="left:{{item.rect.left}}px;top:{{item.rect.top}}px;width:{{item.rect.width}}px;height:{{item.rect.height}}px">
+            <canvas wx:if="{{item.key === 'radar'}}" id="report-radar" type="2d" class="ev-widget__canvas"></canvas>
+            <view
+              wx:elif="{{item.key === 'title'}}"
+              class="ev-widget__title"
+              style="font-size:{{fontPx * 1.4}}px;line-height:{{lineHeightPx * 1.4}}px">{{item.text}}</view>
+            <view
+              wx:else
+              class="ev-widget__text"
+              style="font-size:{{fontPx}}px;line-height:{{lineHeightPx}}px">{{item.text}}</view>
+          </view>
+        </block>
+      </view>
+    </view>
+
+    <!-- 版式有问题的一页，说出来是哪一条，而不是把重叠画出来让教师自己看。 -->
+    <view wx:if="{{problemTexts.length}}" class="hl-card">
+      <view class="ev-field__label">这一页的版式有问题</view>
+      <view wx:for="{{problemTexts}}" wx:key="*this" class="ev-sheet__problem">{{item}}</view>
+    </view>
+
+    <view wx:if="{{radar && !radar.can_draw}}" class="hl-card ev-notice">{{radar.empty_reason}}</view>
+    <view wx:if="{{!radar}}" class="hl-card ev-notice">这名幼儿的五大领域量表还没有结果。</view>
+
+    <!--
+      学期综合评语在纸下面，不在纸上：500 字的上限按 §6.5.2 反推要 15 × 22 格，
+      那一页就只剩两行给雷达图与领域分了。理由写在 index.js 的 WIDGETS 上方。
+    -->
+    <view class="hl-section-title">学期综合评语</view>
+    <view class="hl-card">
+      <view wx:if="{{term && term.eval_text}}" class="ev-preview__text">{{term.eval_text}}</view>
+      <view wx:else class="ev-notice">这名幼儿的学期综合评语还没有填写。</view>
+    </view>
+
+    <view class="hl-section-title">月度评价</view>
+    <view wx:if="{{!months.length}}" class="hl-card ev-notice">这名幼儿本学期还没有已发布的月度评价。</view>
+    <view wx:for="{{months}}" wx:key="month_eval_id" class="hl-card">
+      <view class="hl-card__title">{{item.month_label}}</view>
+      <view class="hl-card__meta"><text class="hl-pill {{item.status_pill}}">{{item.status_label}}</text></view>
+      <view wx:if="{{item.eval_text}}" class="ev-preview__text">{{item.eval_text}}</view>
+    </view>
+
+    <view class="hl-section-title">成长档案齐备度</view>
+    <view wx:if="{{record}}" class="hl-card">
+      <view class="hl-card__meta"><text class="hl-pill {{record.record_pill}}">{{record.record_label}}</text></view>
+      <view class="ev-domain"><view>{{record.month_label}}</view></view>
+      <view class="ev-domain">
+        <view>学期评价</view>
+        <view class="ev-domain__value">{{record.term_done ? '已完成' : '未完成'}}</view>
+      </view>
+      <view class="ev-domain">
+        <view>五大领域量表</view>
+        <view class="ev-domain__value">{{record.assessment_done ? '已完成' : '未完成'}}</view>
+      </view>
+    </view>
+  </block>
+</view>

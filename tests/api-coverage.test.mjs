@@ -113,6 +113,12 @@ const BUSINESS_REFUSAL_EXPECTED = {
   'POST /trainings/1/feedback': '1 号研修的参与状态是 s2 已取消，只有 s3 已完成才可提交',
   // 票据 19：亲子任务的 NOT NULL 列在契约的 ParentTaskWrite 上是 required。
   'POST /home-school/parent-tasks': '空请求体缺 parent_task_type／parent_task_title／task_detail／start_at',
+  // 票据 20：MonthEvalDraft 的 child_id／eval_month／eval_text 都是 required。
+  'PUT /home-school/month-evals': '空请求体缺 child_id／eval_month／eval_text',
+  // 票据 21：契约的 required 请求体与 required 头。
+  'POST /teacher/growth-book/sections': '空请求体缺 name／anchor_after／anchor_type',
+  'POST /teacher/growth-book/books': '空请求体缺 child_id',
+  'POST /teacher/growth-book/books/1/publication': '契约把 Idempotency-Key 写成 required，广度测试不送头',
 }
 
 // 401／403／404 是门的回答，不是业务的回答。这三个码出现在上表里的路径上，说明门
@@ -134,6 +140,18 @@ const SCOPE_REFUSAL_EXPECTED = {
   'GET /children/1/child-assessment': '1 号幼儿不在本班名册上（§2.3 范围不符即 404）',
   'PUT /children/1/child-assessment/items/1': '同上',
   'GET /children/1/child-assessment/report': '同上',
+  // 票据 20：同一条范围谓词，同一个 404。
+  'GET /children/1/term-evaluation': '1 号幼儿不在本班名册上（§2.3 范围不符即 404）',
+  'PUT /children/1/term-evaluation': '同上',
+  'GET /children/1/growth-record': '同上',
+  // 票据 21：编册、栏目与册的编号都由服务端签发（编册按班按学期、栏目与册按需建立），
+  // 所以 1 号在一个刚起的服务上不存在。范围不符与不存在必须逐字相同（红线 4）。
+  'PATCH /teacher/growth-book/compilation/1': '1 号编册不存在（编号由服务端签发）',
+  'POST /teacher/growth-book/compilation/1/lock': '同上',
+  'PATCH /teacher/growth-book/sections/1': '1 号班级栏目不存在（编号由服务端签发）',
+  'PUT /teacher/growth-book/sections/1/widgets': '同上',
+  'GET /growth-book/books/1/manifest': '1 号成长册不存在（编号由服务端签发）',
+  'GET /growth-book/books/1/pages/1?fingerprint=sample': '同上',
 }
 
 describe('每个教师端操作都回契约声明的成功码', () => {

@@ -1,0 +1,73 @@
+<view wx:if="{{ready}}" class="hl-page hl-stack">
+  <view wx:if="{{loading}}" class="hl-loading">加载中…</view>
+
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障编号 {{errorRequestId}}</text>
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryLoad">重试</text>
+  </view>
+
+  <block wx:if="{{!loading && !errorText}}">
+    <!--
+      没有版式包：一句说明。不画空白页、不编一份版面、不弹错误，确认生成也随之关掉 ——
+      没有完整预览就没有把关的前置，这一条本来就该关。
+    -->
+    <view wx:if="{{!packReleased}}" class="hl-stack">
+      <view class="hl-card gb-empty">{{packReason}}</view>
+      <view class="gb-notice">在版式包发布之前，这本册子还不能生成。</view>
+    </view>
+
+    <block wx:else>
+      <!-- 一张 A4。格坐标来自服务端，像素由 utils/layout 取整一次后写进内联样式。 -->
+      <view id="sheet" class="gb-sheet">
+        <view
+          wx:if="{{page && page.drawable}}"
+          class="gb-sheet__content"
+          style="left:{{page.offsetLeft}}px;top:{{page.offsetTop}}px;width:{{page.width}}px;height:{{page.height}}px">
+          <view
+            wx:for="{{page.widgets}}"
+            wx:key="index"
+            class="gb-widget"
+            style="left:{{item.rect.left}}px;top:{{item.rect.top}}px;width:{{item.rect.width}}px;height:{{item.rect.height}}px">
+            <image
+              wx:if="{{item.kind === 'image' && item.image}}"
+              class="gb-widget__image"
+              src="{{item.image.url}}"
+              mode="aspectFill" />
+            <view
+              wx:elif="{{item.text}}"
+              class="gb-widget__text"
+              style="font-size:{{fontPx}}px;line-height:{{lineHeightPx}}px">{{item.text}}</view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 有问题的一页不画，说出来是哪一条。 -->
+      <view wx:if="{{problemTexts.length}}" class="hl-card">
+        <view class="gb-notice">这一页的版式有问题，所以没有画出来：</view>
+        <view wx:for="{{problemTexts}}" wx:key="*this" class="gb-problem">{{item}}</view>
+      </view>
+
+      <view class="gb-pager">
+        <button class="hl-btn hl-btn--hollow" disabled="{{ordinal <= 1}}" bindtap="onPrevPage">上一页</button>
+        <view class="gb-pager__label">第 {{ordinal}} / {{totalPages}} 页</view>
+        <button class="hl-btn hl-btn--hollow" disabled="{{ordinal >= totalPages}}" bindtap="onNextPage">下一页</button>
+      </view>
+
+      <view wx:if="{{manifest.over_limit}}" class="hl-card gb-problem">
+        整本 {{totalPages}} 页，超过 200 页的硬上限，要先减内容才能生成。
+      </view>
+
+      <view wx:if="{{published}}" class="hl-card gb-empty">
+        这本已经生成，家庭已经能在应用内看到它。生成之后内容永久锁定。
+      </view>
+      <block wx:else>
+        <view wx:if="{{!previewedInFull}}" class="gb-notice">请从头翻到最后一页，之后才能确认生成。</view>
+        <button
+          class="hl-btn hl-btn--block"
+          disabled="{{!previewedInFull || submitting}}"
+          bindtap="onConfirmTap">{{submitting ? '生成中…' : '确认生成'}}</button>
+      </block>
+    </block>
+  </block>
+</view>

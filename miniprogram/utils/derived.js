@@ -49,6 +49,9 @@ const EVENT_TIMESTAMPS = Object.freeze([
   'created_at', 'submitted_at', 'published_at', 'reviewed_at', 'uploaded_at',
   'locked_at', 'applied_at', 'accepted_at', 'completed_at', 'cancelled_at',
   'registered_at', 'consented_at', 'revoked_at', 'started_at', 'finished_at',
+  // `db_month_eval.saved_at`（票据 20）。§1.2 的规则是「白名单以外的每一个 `*_at` 都是
+  // 事件时间戳」，而这张表是这一条第一次在教师端有落点的地方。补进来，不是放宽。
+  'saved_at',
 ]);
 
 const STRIP = new Set([...DERIVED, ...EVENT_TIMESTAMPS]);

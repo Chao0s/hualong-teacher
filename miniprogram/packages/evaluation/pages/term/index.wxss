@@ -1,0 +1,7 @@
+@import "../../shared.wxss";
+
+/* 五维雷达图的画布尺寸。正方，与五边形同形，窄屏上也不会被拉扁。 */
+.ev-term-radar {
+  width: 100%;
+  height: 480rpx;
+}

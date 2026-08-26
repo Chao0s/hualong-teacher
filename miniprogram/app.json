@@ -76,6 +76,23 @@
         "pages/task/publish",
         "pages/task/progress"
       ]
+    },
+    {
+      "root": "packages/evaluation",
+      "name": "evaluation",
+      "pages": [
+        "pages/month/index",
+        "pages/term/index",
+        "pages/report/index"
+      ]
+    },
+    {
+      "root": "packages/growth-book",
+      "name": "growth-book",
+      "pages": [
+        "pages/create/index",
+        "pages/preview/index"
+      ]
     }
   ],
   "preloadRule": {
@@ -93,7 +110,7 @@
     },
     "pages/co-education/index": {
       "network": "all",
-      "packages": ["co-education"]
+      "packages": ["co-education", "evaluation", "growth-book"]
     }
   },
   "window": {

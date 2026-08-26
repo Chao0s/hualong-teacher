@@ -123,20 +123,34 @@ test('each entry page renders its module sections and names its own module', asy
   }
 })
 
-test('an entry whose screen is not built yet is refused by name, not in silence', async () => {
-  const c = await signedIn()
-  // 党建管理与综合协调六条自票据 12 起全部落地；教研培训第一组的三条自票据 14 起、
-  // 第二组的两条自票据 18 起也全部落地，所以这条从「填写五大领域量表」挪到家园社共育
-  // 第二组仍未落地的「月度评价」。落地它的票据同样要把这条挪到下一个仍未落地的入口，
-  // 不要删。
-  const page = loadPage(c, 'pages/co-education/index.js')
-  page.onLoad()
+test('每一条入口都已落地，且指向 app.json 真的注册过的页面', () => {
+  // 这条原本盯的是「未落地的入口要指名拒绝，不要静默」，而它的目标一路从「填写五大领域
+  // 量表」挪到「月度评价」。票据 20／21 落地了家园社共育第二组的最后四条之后，**已经
+  // 没有下一个未落地的入口了** —— 那条行为断言因此没有目标，改成它现在能证明的更强的一
+  // 条：四个模块的每一条入口都有页面，而且那个页面真的注册过。
+  //
+  // `openEntry` 里的指名拒绝分支仍然留着（下一个模块加入口时它还会用上），由下一条断言
+  // 守住，不要把它当成死代码删掉。
+  const src = read('services/module-entry.js')
+  const registered = new Set([
+    ...(appJson.pages || []),
+    ...(appJson.subPackages || []).flatMap(
+      (sub) => (sub.pages || []).map((p) => `${sub.root.replace(/\/$/, '')}/${p}`),
+    ),
+  ])
 
-  const pending = page.data.sections[1].entries.find((e) => e.key === 'month')
-  page.onEntryTap({ detail: { key: pending.key } })
+  const entries = [...src.matchAll(/\{ key: '([\w-]+)'[^\n]*page: (null|'([^']+)')/g)]
+  assert.ok(entries.length >= 12, `入口条数看起来不对：${entries.length}`)
+  for (const [, key, raw, page] of entries) {
+    assert.notEqual(raw, 'null', `入口 ${key} 还没有页面`)
+    assert.ok(registered.has(page.replace(/^\//, '')), `入口 ${key} 指向未注册的页面：${page}`)
+  }
+})
 
-  assert.equal(c.record.navigations.length, 0, '没有跳转')
-  assert.match(c.record.toasts.pop().title, new RegExp(`${pending.label}尚未上线`), '说出了是哪一条')
+test('指名拒绝的分支仍在 —— 下一个模块加入口时它还会用上', () => {
+  const src = read('services/module-entry.js')
+  assert.match(src, /尚未上线/, '拒绝要说出是哪一条')
+  assert.match(src, /if \(!entry\.page\)/, '判据是这一条入口有没有页面')
 })
 
 test('the parent-only screens the prototype offered are absent', () => {

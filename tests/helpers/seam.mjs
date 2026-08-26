@@ -47,6 +47,7 @@ export function loadClient({ baseUrl, wxOptions } = {}) {
     reportFailure: require(path.join(MP, 'utils', 'present.js')).reportFailure,
     listPage: require(path.join(MP, 'utils', 'list-page.js')),
     moderation: require(path.join(MP, 'utils', 'moderation.js')),
+    layout: require(path.join(MP, 'utils', 'layout.js')),
     identity: require(path.join(MP, 'services', 'identity.js')),
     notice: require(path.join(MP, 'services', 'notice.js')),
     kase: require(path.join(MP, 'services', 'case.js')),
@@ -60,6 +61,8 @@ export function loadClient({ baseUrl, wxOptions } = {}) {
     coEdu: require(path.join(MP, 'services', 'co-education.js')),
     training: require(path.join(MP, 'services', 'training.js')),
     assessment: require(path.join(MP, 'services', 'assessment.js')),
+    evaluation: require(path.join(MP, 'services', 'evaluation.js')),
+    growthBook: require(path.join(MP, 'services', 'growth-book.js')),
   }
 }
 

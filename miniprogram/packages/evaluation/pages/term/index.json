@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "填写学期评价",
+  "usingComponents": {
+    "hl-child-picker": "/components/hl-child-picker/index"
+  }
+}

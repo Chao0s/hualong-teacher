@@ -1,0 +1,106 @@
+<view wx:if="{{ready}}" class="hl-page hl-stack">
+  <view wx:if="{{loading}}" class="hl-loading">加载中…</view>
+
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障编号 {{errorRequestId}}</text>
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryLoad">重试</text>
+  </view>
+
+  <block wx:if="{{!loading}}">
+    <view class="hl-card">
+      <hl-child-picker
+        mode="single"
+        label="评价对象"
+        children="{{children}}"
+        value="{{childValue}}"
+        required="{{true}}"
+        bind:change="onChildChange" />
+      <view class="hl-card__meta">{{progressSummary}}</view>
+    </view>
+
+    <view wx:if="{{readonly}}" class="hl-card ev-readonly">{{readonlyReason}}</view>
+
+    <block wx:if="{{draft}}">
+      <!--
+        五大领域的结果，**只读**。这一节里没有任何输入控件：五大领域由 124 题量表逐题
+        打分聚合而来（E6／F17），这里再录一遍就是同一项的第二处入口。
+      -->
+      <view class="hl-card">
+        <view class="hl-card__title">五大领域评价结果</view>
+        <view class="hl-card__meta">来自这名幼儿的五大领域量表，这一页只呈现，不重复录入。</view>
+        <block wx:if="{{radar && radar.can_draw}}">
+          <canvas id="term-radar" type="2d" class="ev-term-radar"></canvas>
+          <view wx:for="{{radar.axes}}" wx:key="code" class="ev-domain">
+            <view>{{item.name}}</view>
+            <view class="ev-domain__value">{{item.value_label}}</view>
+          </view>
+          <view class="ev-domain">
+            <view>全部题项均分</view>
+            <view class="ev-domain__value">{{radar.total_label}}</view>
+          </view>
+        </block>
+        <view wx:elif="{{radar}}" class="ev-notice">{{radar.empty_reason}}</view>
+        <view wx:else class="ev-notice">{{radarHint}}</view>
+      </view>
+
+      <!-- ── edit ───────────────────────────────────────────────────────── -->
+      <view wx:if="{{stage === 'edit'}}" class="hl-stack">
+        <view class="hl-card">
+          <view class="ev-field__label">学期综合评语（最多 {{limits.eval_text}} 字）</view>
+          <textarea
+            class="ev-textarea"
+            value="{{draft.eval_text}}"
+            maxlength="{{limits.eval_text}}"
+            disabled="{{readonly}}"
+            placeholder="这个学期这名幼儿的整体表现、进步与下一步建议"
+            bindinput="onTextInput" />
+        </view>
+
+        <view wx:if="{{blockers.length}}" class="hl-card ev-blockers">
+          <view class="ev-field__label">还差这几项才能提交</view>
+          <view wx:for="{{blockers}}" wx:key="key" class="ev-blockers__item">{{item.text}}</view>
+        </view>
+
+        <button class="hl-btn hl-btn--block" disabled="{{readonly}}" bindtap="onPreviewTap">预览并提交</button>
+      </view>
+
+      <!-- ── preview ────────────────────────────────────────────────────── -->
+      <view wx:elif="{{stage === 'preview'}}" class="hl-stack">
+        <view class="hl-section-title">提交前请完整看一遍</view>
+        <!-- 绑的是将要发出的请求体本身。 -->
+        <scroll-view class="ev-preview" scroll-y bindscrolltolower="onPreviewEnd">
+          <view class="hl-card">
+            <view class="hl-card__title">{{preview.childName}} · 学期综合评语</view>
+            <view class="ev-preview__text">{{preview.body.eval_text}}</view>
+          </view>
+        </scroll-view>
+
+        <view wx:if="{{!previewedInFull}}" class="ev-notice">请滑到底看完全部内容，之后才能提交。</view>
+
+        <button class="hl-btn hl-btn--block" disabled="{{!previewedInFull || submitting}}" bindtap="onConfirmTap">
+          {{submitting ? '提交中…' : '确认提交'}}
+        </button>
+        <button class="hl-btn hl-btn--hollow hl-btn--block" disabled="{{locked}}" bindtap="onBackToEdit">返回修改</button>
+      </view>
+
+      <!-- ── done ───────────────────────────────────────────────────────── -->
+      <view wx:else class="hl-stack">
+        <view class="hl-card">
+          <view class="hl-card__title">{{childName}} · 学期综合评语</view>
+          <view class="ev-preview__text">{{draft.eval_text}}</view>
+        </view>
+        <button class="hl-btn hl-btn--block" bindtap="onReportTap">看综合评估报告</button>
+      </view>
+    </block>
+
+    <view class="hl-section-title">本班完成情况</view>
+    <view wx:for="{{progress}}" wx:key="child_id" class="hl-card">
+      <view class="hl-card__title">{{item.child_name}}</view>
+      <view class="hl-card__meta">
+        <text class="hl-pill {{item.status_pill}}">{{item.status_label}}</text>
+        <text wx:if="{{item.date_label}}"> · {{item.date_label}}</text>
+      </view>
+    </view>
+  </block>
+</view>

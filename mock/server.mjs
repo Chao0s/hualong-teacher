@@ -41,6 +41,10 @@ const ARGV = new Set(process.argv.slice(2));
 const OPTS = {
   startUnbound: ARGV.has('--unbound'),
   noTerm: ARGV.has('--no-term'),
+  // 版式包发布了没有。**默认 false，因为事实就是一份也没发布**（ADR-0015 Follow-ups，
+  // 0／12）。`--layout-pack` 与 `setLayoutPack(true)` 打开一份夹具包，用来验证「有 pack
+  // 时预览排得出来」；关着它验证「没 pack 时诚实降级」。
+  layoutPack: ARGV.has('--layout-pack'),
 };
 
 // ── Fixture data ───────────────────────────────────────────────────────────
@@ -793,6 +797,18 @@ const state = {
   nextMomentId: 900,            // POST /moments assigns from here
   nextParentTaskId: 600,        // POST /home-school/parent-tasks assigns from here
   nextChildAssessmentId: 700,   // 首次评分建主记录时从这里取号
+  nextMonthEvalId: 700,         // PUT /home-school/month-evals 首次 upsert 时取号
+  nextTermEvalId: 800,          // PUT /children/{id}/term-evaluation 取号
+  nextCompilationId: 300,       // POST /teacher/growth-book/compilation 取号
+  nextSectionId: 400,           // POST /teacher/growth-book/sections 取号
+  nextWidgetId: 5000,           // PUT …/sections/{id}/widgets 给新增 widget 取号
+  nextGrowthBookId: 200,        // POST /teacher/growth-book/books 取号
+  // 每一次真正执行的 e1|e2 -> e3、NONE -> c1 与 b1 -> b2。与 taskCompletions 同一个理由：
+  // 幂等重放在分发层就返回了，处理器根本没跑，所以「重复点击只产生一份」要数服务端做了
+  // 几次，不能数客户端发了几个请求。
+  monthEvalPublications: [],
+  termEvalWrites: [],
+  bookPublications: [],
   // child_id -> 一份综合评估。**草稿要真的存得住**：教师填一半退出再进来，读回来的
   // 必须是刚才那些题。所以它活在这里，而不是每次请求现造。
   childAssessments: new Map(),
@@ -1769,6 +1785,27 @@ const HAND_WRITTEN_ROLES = [
   [/^\/children\/\d+\/child-assessment$/, ['teacher']],
   [/^\/children\/\d+\/child-assessment\/items\/[^/]+$/, ['teacher']],
   [/^\/children\/\d+\/child-assessment\/report$/, ['teacher']],
+  // 票据 20 的月度评价、学期评价与成长档案。契约给这六条写的都是 teacher。
+  [/^\/home-school\/month-evals$/, ['teacher']],
+  [/^\/home-school\/month-evals\/\d+\/publication$/, ['teacher']],
+  [/^\/term-evaluations$/, ['teacher']],
+  [/^\/children\/\d+\/term-evaluation$/, ['teacher']],
+  [/^\/growth-records$/, ['teacher']],
+  [/^\/children\/\d+\/growth-record$/, ['teacher']],
+  // 票据 21 的成长册。前八条契约写的就是 teacher；**后两条契约写的是 teacher｜parent**
+  // （预览与家长查看共用同一条路径），但本 mock 只服务教师端，登记为 teacher —— 宁可比
+  // 契约严：漏登记才是安全缺陷，多登记只是这个 mock 覆盖面窄。
+  [/^\/teacher\/growth-book\/compilation$/, ['teacher']],
+  [/^\/teacher\/growth-book\/compilation\/\d+$/, ['teacher']],
+  [/^\/teacher\/growth-book\/compilation\/\d+\/lock$/, ['teacher']],
+  [/^\/teacher\/growth-book\/sections$/, ['teacher']],
+  [/^\/teacher\/growth-book\/sections\/\d+$/, ['teacher']],
+  [/^\/teacher\/growth-book\/sections\/\d+\/widgets$/, ['teacher']],
+  [/^\/teacher\/growth-book\/books$/, ['teacher']],
+  [/^\/teacher\/growth-book\/books\/\d+\/publication$/, ['teacher']],
+  [/^\/teacher\/growth-book\/precheck$/, ['teacher']],
+  [/^\/growth-book\/books\/\d+\/manifest$/, ['teacher']],
+  [/^\/growth-book\/books\/\d+\/pages\/\d+$/, ['teacher']],
   [/^\/auth\/session$/, ['teacher', 'parent', 'admin-pc', 'partner-account']],
 ];
 
@@ -2063,6 +2100,46 @@ const server = createServer(async (req, res) => {
       getChildAssessmentReport(req, res, path.split('/')[2]);
     } else if (req.method === 'PUT' && /^\/children\/\d+\/child-assessment\/items\/[^/]+$/.test(path)) {
       putChildAssessmentItem(req, res, path.split('/')[2], path.split('/')[5], body);
+    } else if (req.method === 'GET' && path === '/home-school/month-evals') {
+      getMonthEvals(req, res, url);
+    } else if (req.method === 'PUT' && path === '/home-school/month-evals') {
+      putMonthEval(req, res, body);
+    } else if (req.method === 'POST' && /^\/home-school\/month-evals\/\d+\/publication$/.test(path)) {
+      postMonthEvalPublication(req, res, path.split('/')[3]);
+    } else if (req.method === 'GET' && path === '/term-evaluations') {
+      getTermEvaluations(req, res);
+    } else if (req.method === 'GET' && /^\/children\/\d+\/term-evaluation$/.test(path)) {
+      getTermEvaluation(req, res, path.split('/')[2]);
+    } else if (req.method === 'PUT' && /^\/children\/\d+\/term-evaluation$/.test(path)) {
+      putTermEvaluation(req, res, path.split('/')[2], body);
+    } else if (req.method === 'GET' && path === '/growth-records') {
+      getGrowthRecords(req, res);
+    } else if (req.method === 'GET' && /^\/children\/\d+\/growth-record$/.test(path)) {
+      getGrowthRecord(req, res, path.split('/')[2]);
+    } else if (req.method === 'POST' && path === '/teacher/growth-book/compilation') {
+      postCompilation(req, res);
+    } else if (req.method === 'POST' && /^\/teacher\/growth-book\/compilation\/\d+\/lock$/.test(path)) {
+      // 这一条必须排在 `/compilation/{id}` 之前：两条正则都匹配得上带编号的路径，
+      // 分发靠的是这里的次序。
+      postCompilationLock(req, res, path.split('/')[4], body);
+    } else if (req.method === 'PATCH' && /^\/teacher\/growth-book\/compilation\/\d+$/.test(path)) {
+      patchCompilation(req, res, path.split('/')[4], body);
+    } else if (req.method === 'POST' && path === '/teacher/growth-book/sections') {
+      postBookSection(req, res, body);
+    } else if (req.method === 'PUT' && /^\/teacher\/growth-book\/sections\/\d+\/widgets$/.test(path)) {
+      putBookWidgets(req, res, path.split('/')[4], body);
+    } else if (req.method === 'PATCH' && /^\/teacher\/growth-book\/sections\/\d+$/.test(path)) {
+      patchBookSection(req, res, path.split('/')[4], body);
+    } else if (req.method === 'GET' && path === '/teacher/growth-book/precheck') {
+      getPrecheck(req, res);
+    } else if (req.method === 'POST' && path === '/teacher/growth-book/books') {
+      postGrowthBook(req, res, body);
+    } else if (req.method === 'POST' && /^\/teacher\/growth-book\/books\/\d+\/publication$/.test(path)) {
+      postGrowthBookPublication(req, res, path.split('/')[4], body);
+    } else if (req.method === 'GET' && /^\/growth-book\/books\/\d+\/manifest$/.test(path)) {
+      getBookManifest(req, res, path.split('/')[3]);
+    } else if (req.method === 'GET' && /^\/growth-book\/books\/\d+\/pages\/\d+$/.test(path)) {
+      getBookPage(req, res, path.split('/')[3], path.split('/')[5], url);
     } else if (!await serveFromContract(req, res, path)) {
       fail(res, 404, 'not_found', `未实现的端点：${req.method} ${path}`);
     }
@@ -2085,9 +2162,12 @@ const server = createServer(async (req, res) => {
  * @param {boolean} [o.unbound]     start with no openid bound (stage-2 flow)
  * @param {boolean} [o.noTerm]      current_term = null (holiday)
  * @param {boolean} [o.quiet=true]  suppress per-request logging
+ * @param {boolean} [o.layoutPack]  发布一份夹具版式包（默认 false —— 事实是 0／12）
  * @returns {Promise<{port:number, baseUrl:string, close:() => Promise<void>}>}
  */
-export function start({ port = 0, unbound = false, noTerm = false, quiet = true } = {}) {
+export function start({
+  port = 0, unbound = false, noTerm = false, quiet = true, layoutPack = false,
+} = {}) {
   OPTS.startUnbound = unbound;
   OPTS.noTerm = noTerm;
   runtime.quiet = quiet;
@@ -2116,6 +2196,10 @@ export function start({ port = 0, unbound = false, noTerm = false, quiet = true 
   TRAINING_FEEDBACKS.length = TRAINING_FEEDBACK_SNAPSHOT.length;
   TRAINING_FEEDBACK_SNAPSHOT.forEach((row, i) => { TRAINING_FEEDBACKS[i] = { ...row }; });
   resetHomeSchool();
+  resetEvaluation();
+  resetGrowthBook();
+  // resetGrowthBook 把它关回默认（一份也没发布），所以显式的启动选项排在它之后。
+  OPTS.layoutPack = layoutPack;
   downloadLinks.clear();
   return new Promise((resolve, reject) => {
     server.once('error', reject);
@@ -2181,6 +2265,9 @@ const DERIVED_KEYS = new Set([
   'requested_by_teacher_id', 'teacher_id',
   'created_at', 'submitted_at', 'published_at', 'reviewed_at', 'uploaded_at',
   'locked_at', 'applied_at', 'accepted_at', 'completed_at', 'cancelled_at',
+  // `db_month_eval.saved_at`（票据 20）。§1.2：白名单以外的每一个 `*_at` 都是事件时间戳，
+  // 服务端设值、客户端提交被静默忽略。
+  'saved_at',
 ]);
 
 function stripDerived(body) {
@@ -3669,6 +3756,868 @@ function getChildAssessmentClassReport(req, res) {
   });
 }
 
+// ── 月度评价与学期评价（票据 20） ───────────────────────────────────────────
+//
+// 月度评价：`NONE|e1|e2 --PUT--> e1 --publication--> e3`。**`e1` 与 `e2` 的分界是 G51 的
+// 未决项**，契约只登记了 `month_eval.publish` 这一条边（`from_state` 写作 `e1|e2`）。这个
+// mock 因此把落内容的那一次统一落成 `e1` —— 那是 G51 两种读法里都成立的一支，而且客户端
+// **不读** e1／e2（对外一律二元：e3 已完成，其余未完成），所以这个选择影响不到被测的行为。
+// 真服务定下分界时改的是这里一行，不是客户端。
+//
+// 学期评价：`NONE --PUT--> c1`，**一次写成**。全库没有为 `db_term_eval` 定义服务端草稿，
+// 所以 `c2` 没有任何写入者 —— 名册左连接时无行即 c2，仅此而已。
+
+// 编号从 1 起，与其余夹具同一条约定：契约巡检（tests/api-coverage.test.mjs）用 `1` 代入
+// 每一个路径参数，夹具里没有 1 号就会把「业务前置拒绝」变成一个看起来像门坏了的 404。
+// 1 号刻意留在**未发布**态，好让 `POST /home-school/month-evals/1/publication` 真的走得通。
+const MONTH_EVALS = [
+  {
+    month_eval_id: 1,
+    teacher_id: TEACHER.teacher_id,
+    class_id: SCOPE.class_id,
+    child_id: 101,
+    eval_month: '2026-07',
+    eval_text: '七月这一份还没发布，留着让发布这条边有一个真实的落点。',
+    file_id: [],
+    month_eval_status: 'e1',
+    saved_at: null,
+    created_at: '2026-07-30T16:00:00+08:00',
+    updated_at: '2026-07-30T16:00:00+08:00',
+  },
+  {
+    month_eval_id: 2,
+    teacher_id: TEACHER.teacher_id,
+    class_id: SCOPE.class_id,
+    child_id: 102,
+    eval_month: '2026-07',
+    eval_text: '七月能主动收拾自己的餐具，午睡后会帮同伴整理被子。',
+    file_id: [],
+    month_eval_status: 'e3',
+    saved_at: '2026-07-31T17:10:00+08:00',
+    created_at: '2026-07-31T16:00:00+08:00',
+    updated_at: '2026-07-31T17:10:00+08:00',
+  },
+];
+
+const MONTH_EVAL_SNAPSHOT = MONTH_EVALS.map((r) => ({ ...r, file_id: r.file_id.slice() }));
+
+/** `db_term_eval`。夹具刻意为空：无行即 c2，测试自己写第一行。 */
+const TERM_EVALS = [];
+
+const MONTH_EVAL_PATTERN = /^\d{4}-\d{2}$/;
+const EVAL_TEXT_MAX = 500;
+
+/** 把这两张表收回原样。`start()` 每次调用都跑它。 */
+function resetEvaluation() {
+  MONTH_EVALS.length = MONTH_EVAL_SNAPSHOT.length;
+  MONTH_EVAL_SNAPSHOT.forEach((row, i) => {
+    MONTH_EVALS[i] = { ...row, file_id: row.file_id.slice() };
+  });
+  TERM_EVALS.length = 0;
+  state.nextMonthEvalId = 700;
+  state.nextTermEvalId = 800;
+  state.monthEvalPublications.length = 0;
+  state.termEvalWrites.length = 0;
+}
+
+/** 只留契约声明的键，其余一律 422。派生键与事件时间戳**先剥再验**（§7.3 的顺序）。 */
+function onlyDeclared(res, rawBody, allowed) {
+  const body = stripDerived(rawBody || {});
+  const extra = Object.keys(body).filter((k) => allowed.indexOf(k) === -1);
+  if (extra.length) {
+    fail(res, 422, 'validation_failed', '请求体含契约未声明的字段',
+      { field: extra[0], rule: 'additionalProperties: false' });
+    return null;
+  }
+  return body;
+}
+
+/**
+ * GET /home-school/month-evals —— 幼儿 × 月份矩阵，游标分页（§3.1）。
+ *
+ * 排序 `eval_month DESC, child_id ASC`（契约的 x-hualong-sort）。**月份栏由已存在记录的
+ * 月份动态生成**，所以这里没有月份清单，只有行。
+ */
+function getMonthEvals(req, res, url) {
+  const filters = {
+    eval_month: url.searchParams.get('eval_month') || null,
+    child_id: url.searchParams.get('child_id') || null,
+  };
+  if (filters.eval_month && !MONTH_EVAL_PATTERN.test(filters.eval_month)) {
+    return fail(res, 422, 'validation_failed', '期间键格式不合法',
+      { field: 'eval_month', rule: 'YYYY-MM' });
+  }
+
+  const rows = MONTH_EVALS
+    .filter((r) => (!filters.eval_month || r.eval_month === filters.eval_month))
+    .filter((r) => (!filters.child_id || r.child_id === Number(filters.child_id)))
+    .sort((a, b) => (a.eval_month === b.eval_month
+      ? a.child_id - b.child_id
+      : (a.eval_month < b.eval_month ? 1 : -1)));
+
+  const limitRaw = url.searchParams.get('limit');
+  const limit = limitRaw === null ? 20 : Number(limitRaw);
+  if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+    return fail(res, 422, 'validation_failed', '分页参数不合法',
+      { field: 'limit', rule: 'between_1_and_100' });
+  }
+
+  let startIndex = 0;
+  const cursor = url.searchParams.get('cursor');
+  if (cursor) {
+    const decoded = decodeCursor(cursor, filters);
+    if (decoded.error) {
+      return fail(res, 400, decoded.error,
+        decoded.error === 'cursor_invalid' ? '翻页游标不可解' : '筛选条件已变，游标失效');
+    }
+    startIndex = rows.findIndex((r) => r.month_eval_id === decoded.key) + 1;
+    if (startIndex <= 0) return fail(res, 400, 'cursor_invalid', '翻页游标不可解');
+  }
+
+  const slice = rows.slice(startIndex, startIndex + limit);
+  const last = slice[slice.length - 1];
+  const hasMore = startIndex + limit < rows.length;
+  return sendJson(res, 200, {
+    items: slice.map((r) => ({ ...r, file_id: r.file_id.slice() })),
+    next_cursor: hasMore && last ? encodeCursor(last.month_eval_id, filters) : null,
+  });
+}
+
+/**
+ * PUT /home-school/month-evals —— 按 `child_id + eval_month` upsert。
+ *
+ * **被 G51 阻断的是状态语义，不是请求体的形状**：`MonthEvalDraft` 已登记且稳定，未决的是
+ * 落 e1 还是 e2、以及 `saved_at` 在哪一步写。见本节头注。
+ */
+function putMonthEval(req, res, rawBody) {
+  if (refuseWithoutTerm(res)) return;
+  const body = onlyDeclared(res, rawBody, ['child_id', 'eval_month', 'eval_text', 'file_id']);
+  if (!body) return;
+
+  // schema 先于范围：缺一个必填字段是请求本身不合法（422），与「这个 id 你看不到」
+  // （404）不是同一个问题。反过来判会把一次拼错的请求说成一次范围拒绝。
+  if (!Number.isInteger(body.child_id)) {
+    return fail(res, 422, 'validation_failed', 'child_id 必填',
+      { field: 'child_id', rule: 'required integer' });
+  }
+  const child = childInScope(body.child_id);
+  if (!child) return fail(res, 404, 'not_found', '幼儿不存在或不在可见范围内');
+  if (!MONTH_EVAL_PATTERN.test(String(body.eval_month || ''))) {
+    return fail(res, 422, 'validation_failed', '期间键格式不合法',
+      { field: 'eval_month', rule: 'YYYY-MM' });
+  }
+  const text = typeof body.eval_text === 'string' ? body.eval_text.trim() : '';
+  if (text.length < 1 || text.length > EVAL_TEXT_MAX) {
+    return fail(res, 422, 'validation_failed', `评价内容 trim 后 1 到 ${EVAL_TEXT_MAX} 字`,
+      { field: 'eval_text', rule: `minLength: 1, maxLength: ${EVAL_TEXT_MAX}` });
+  }
+  const files = body.file_id === undefined ? [] : body.file_id;
+  if (!Array.isArray(files) || files.some((f) => !Number.isInteger(f))) {
+    return fail(res, 422, 'validation_failed', 'file_id 必须是整数数组',
+      { field: 'file_id', rule: 'array of integer' });
+  }
+
+  let row = MONTH_EVALS.find(
+    (r) => r.child_id === child.child_id && r.eval_month === body.eval_month
+  );
+  if (row && row.month_eval_status === 'e3') {
+    // e3 之后永久唯读 —— 契约里没有 e3→e1，也没有 e3→e2。
+    return fail(res, 409, 'state_precondition_failed', '这个月的评价已发布，内容已锁定',
+      { from: 'e3', required: 'e1|e2' });
+  }
+  if (!row) {
+    row = {
+      month_eval_id: state.nextMonthEvalId,
+      teacher_id: TEACHER.teacher_id,   // 派生：永远是会话里的这位教师，不是请求体的
+      class_id: SCOPE.class_id,         // 派生
+      child_id: child.child_id,
+      eval_month: body.eval_month,
+      saved_at: null,
+      created_at: '2026-08-26T16:20:00+08:00',
+    };
+    state.nextMonthEvalId += 1;
+    MONTH_EVALS.push(row);
+  }
+  row.eval_text = text;
+  row.file_id = files.slice();
+  row.month_eval_status = 'e1';
+  row.updated_at = '2026-08-26T16:20:00+08:00';
+  return sendJson(res, 200, { ...row, file_id: row.file_id.slice() });
+}
+
+/** POST /home-school/month-evals/{id}/publication —— `e1|e2 → e3`，教师人工把关。 */
+function postMonthEvalPublication(req, res, id) {
+  if (refuseWithoutTerm(res)) return;
+  const row = MONTH_EVALS.find((r) => r.month_eval_id === Number(id));
+  if (!row) return fail(res, 404, 'not_found', '月度评价不存在或不在可见范围内');
+  if (row.month_eval_status === 'e3') {
+    return fail(res, 409, 'state_precondition_failed', '这个月的评价已发布，内容已锁定',
+      { from: 'e3', required: 'e1|e2' });
+  }
+  row.month_eval_status = 'e3';
+  row.saved_at = '2026-08-26T16:21:00+08:00';
+  row.updated_at = row.saved_at;
+  // 服务端真正执行的一次发布。幂等重放在分发层就返回了，处理器根本没跑，所以这张表不涨。
+  state.monthEvalPublications.push({ month_eval_id: row.month_eval_id, child_id: row.child_id });
+  return sendJson(res, 200, { ...row, file_id: row.file_id.slice() });
+}
+
+/**
+ * GET /term-evaluations —— 名册左连接，**整取不分页**（§3.5），`child_id ASC`。
+ *
+ * **无进行中学期时的读取行为在契约里未定**（G59：§5.4 只管写入）。这个 mock 照常返回
+ * 名册，因为「读不到」与「一个都没填」在界面上是同一句话，而写入那一侧服务端仍独立回
+ * 409 no_active_term。这是 mock 的一种读法，不是契约的结论 —— 已记进交接。
+ */
+function getTermEvaluations(req, res) {
+  return sendJson(res, 200, {
+    items: CHILDREN.map((child) => {
+      const row = TERM_EVALS.find((r) => r.child_id === child.child_id) || null;
+      return {
+        child_id: child.child_id,
+        child_name: child.child_name,
+        term_eval_id: row ? row.term_eval_id : null,
+        term_eval_status: row ? row.term_eval_status : 'c2',
+        submitted_at: row ? row.submitted_at : null,
+      };
+    }),
+  });
+}
+
+/** GET /children/{child_id}/term-evaluation —— **本人**那一列，无行回 404。 */
+function getTermEvaluation(req, res, id) {
+  const child = childInScope(id);
+  if (!child) return fail(res, 404, 'not_found', '幼儿不存在或不在可见范围内');
+  const row = TERM_EVALS.find((r) => r.child_id === child.child_id);
+  if (!row) return fail(res, 404, 'not_found', '这名幼儿本学期还没有学期评价');
+  return sendJson(res, 200, { ...row, file_id: row.file_id.slice() });
+}
+
+/** PUT /children/{child_id}/term-evaluation —— NONE→c1，**一次写成**。 */
+function putTermEvaluation(req, res, id, rawBody) {
+  if (refuseWithoutTerm(res)) return;
+  const child = childInScope(id);
+  if (!child) return fail(res, 404, 'not_found', '幼儿不存在或不在可见范围内');
+
+  const body = onlyDeclared(res, rawBody, ['eval_text', 'file_id']);
+  if (!body) return;
+
+  const text = typeof body.eval_text === 'string' ? body.eval_text.trim() : '';
+  if (text.length < 1 || text.length > EVAL_TEXT_MAX) {
+    return fail(res, 422, 'validation_failed', `学期综合评语 trim 后 1 到 ${EVAL_TEXT_MAX} 字`,
+      { field: 'eval_text', rule: `minLength: 1, maxLength: ${EVAL_TEXT_MAX}` });
+  }
+  const files = body.file_id === undefined ? [] : body.file_id;
+  if (!Array.isArray(files) || files.some((f) => !Number.isInteger(f))) {
+    return fail(res, 422, 'validation_failed', 'file_id 必须是整数数组',
+      { field: 'file_id', rule: 'array of integer' });
+  }
+  if (TERM_EVALS.some((r) => r.child_id === child.child_id)) {
+    // c1 之后没有回头路：契约里没有 c1→c2，也没有第二次提交。
+    return fail(res, 409, 'state_precondition_failed', '这名幼儿的学期评价已提交，内容已锁定',
+      { from: 'c1', required: 'NONE' });
+  }
+
+  const row = {
+    term_eval_id: state.nextTermEvalId,
+    class_id: SCOPE.class_id,           // 派生
+    teacher_id: TEACHER.teacher_id,     // 派生
+    child_id: child.child_id,
+    term_id: TERM.term_id,              // 由当前学期派生，客户端从不提交
+    eval_text: text,
+    file_id: files.slice(),
+    term_eval_status: 'c1',
+    submitted_at: '2026-08-26T16:25:00+08:00',
+  };
+  state.nextTermEvalId += 1;
+  TERM_EVALS.push(row);
+  state.termEvalWrites.push({ term_eval_id: row.term_eval_id, child_id: row.child_id });
+  return sendJson(res, 201, { ...row, file_id: row.file_id.slice() },
+    { location: `${BASE}/children/${child.child_id}/term-evaluation` });
+}
+
+/**
+ * 一名幼儿的成长档案齐备度。
+ *
+ * 四个状态列**由齐备判定派生写入**（`api/action-coverage.tsv` 四行 no-action），所以这里
+ * 现算而不是存一行：存下来就要有人维护它，而没有任何客户端动作直接改它们。
+ */
+function growthRecordFor(child) {
+  const months = MONTH_EVALS.filter(
+    (r) => r.child_id === child.child_id && r.month_eval_status === 'e3'
+  );
+  const term = TERM_EVALS.find((r) => r.child_id === child.child_id) || null;
+  const assessment = assessmentFor(child.child_id);
+  const assessmentDone = Boolean(assessment && assessmentStatus(assessment) === 'c1');
+  // 「截至当前应完成月数」在真服务里按园历算。这个 mock 固定为 1 —— 它是一个夹具值，
+  // 不是一条口径；客户端只显示它，不用它做判断。
+  const required = 1;
+  const teacherTerm = term ? 'c1' : 'c2';
+  const record = months.length >= required && teacherTerm === 'c1' && assessmentDone ? 'c1' : 'c2';
+  return {
+    growth_record_id: 600 + child.child_id,
+    class_id: SCOPE.class_id,
+    child_id: child.child_id,
+    child_name: child.child_name,
+    term_id: TERM.term_id,
+    required_month_count: required,
+    teacher_month_complete_count: months.length,
+    // 家长侧的两列这个 mock 没有数据来源，回 c2 而不是编一个 —— 客户端只读教师侧那三项。
+    parent_month_complete_count: 0,
+    teacher_term_status: teacherTerm,
+    parent_term_status: 'c2',
+    comprehensive_assessment_status: assessmentDone ? 'c1' : 'c2',
+    is_term_end: false,
+    record_status: record,
+  };
+}
+
+/** GET /growth-records —— 名册型，整取不分页（§3.5）。 */
+function getGrowthRecords(req, res) {
+  return sendJson(res, 200, { items: CHILDREN.map(growthRecordFor) });
+}
+
+/** GET /children/{child_id}/growth-record。 */
+function getGrowthRecord(req, res, id) {
+  const child = childInScope(id);
+  if (!child) return fail(res, 404, 'not_found', '幼儿不存在或不在可见范围内');
+  return sendJson(res, 200, growthRecordFor(child));
+}
+
+// ── 成长册（票据 21） ───────────────────────────────────────────────────────
+//
+//   编册   NONE --POST compilation--> e1 --lock--> e2（**单向**）
+//   栏目   NONE --POST sections--> d1 --publication--> d2（版面永久冻结）
+//   册     NONE --POST books--> b1 --publication--> b2（**永久唯读**）
+//
+// **版式包一份也没有发布**（ADR-0015 Follow-ups，0／12），所以 manifest 与逐页读取默认
+// 回 409 加 `details.rule = 'layout_pack_unreleased'`。`setLayoutPack(true)` 打开一份
+// 夹具版式包，好让「有 pack 时预览排得出来」与「没 pack 时诚实降级」两条都测得到。
+
+const LAYOUT_PACK_CODE = 'k2-autumn@0.1.0-fixture';
+
+const compilationState = { row: null };
+
+/** 一本册子。`UNIQUE(child_id, term_id)` —— 一幼儿一学期一本。 */
+const GROWTH_BOOKS = [];
+const BOOK_SECTIONS = [];
+const BOOK_WIDGETS = new Map();   // section_id -> widget[]
+
+function resetGrowthBook() {
+  compilationState.row = null;
+  GROWTH_BOOKS.length = 0;
+  BOOK_SECTIONS.length = 0;
+  BOOK_WIDGETS.clear();
+  OPTS.layoutPack = false;
+  state.nextCompilationId = 300;
+  state.nextSectionId = 400;
+  state.nextWidgetId = 5000;
+  state.nextGrowthBookId = 200;
+  state.bookPublications.length = 0;
+}
+
+/**
+ * 内容指纹 —— roster ＋ 内容。
+ *
+ * 定稿请求必须把预检回的这个值带回来，漂移回 409 且**零写入**：那是「你预检时看到的班，
+ * 和你现在要定稿的班，不是同一个班」的唯一防线（§4 规则 87／86）。
+ */
+function contentFingerprint() {
+  const material = JSON.stringify({
+    roster: CHILDREN.map((c) => c.child_id),
+    enabled: compilationState.row ? compilationState.row.enabled_sections : [],
+    months: MONTH_EVALS.filter((r) => r.month_eval_status === 'e3').map((r) => r.month_eval_id),
+    terms: TERM_EVALS.map((r) => r.term_eval_id),
+    pack: OPTS.layoutPack ? LAYOUT_PACK_CODE : null,
+  });
+  return createHash('sha256').update(material).digest('hex').slice(0, 16);
+}
+
+/** POST /teacher/growth-book/compilation —— 建立或取回，本端点**幂等**。 */
+function postCompilation(req, res) {
+  if (refuseWithoutTerm(res)) return;
+  if (compilationState.row) {
+    return sendJson(res, 200, { ...compilationState.row });
+  }
+  compilationState.row = {
+    compilation_id: state.nextCompilationId,
+    class_id: SCOPE.class_id,
+    term_id: TERM.term_id,
+    // 默认两类都纳入：`enabled_sections` 只存 time、task 与班级自订 section_id（F19）。
+    enabled_sections: ['time', 'task'],
+    compilation_status: 'e1',
+    revision: 1,
+    locked_at: null,
+    locked_by: null,
+  };
+  state.nextCompilationId += 1;
+  return sendJson(res, 201, { ...compilationState.row });
+}
+
+function compilationInScope(res, id) {
+  const row = compilationState.row;
+  if (!row || row.compilation_id !== Number(id)) {
+    fail(res, 404, 'not_found', '编册不存在或不在可见范围内');
+    return null;
+  }
+  return row;
+}
+
+/** PATCH /teacher/growth-book/compilation/{id} —— 改栏目勾选，仅 e1，revision CAS。 */
+function patchCompilation(req, res, id, rawBody) {
+  const row = compilationInScope(res, id);
+  if (!row) return;
+  const body = onlyDeclared(res, rawBody, ['revision', 'enabled_sections']);
+  if (!body) return;
+  if (!Number.isInteger(body.revision)) {
+    return fail(res, 422, 'validation_failed', 'revision 必填',
+      { field: 'revision', rule: 'required integer' });
+  }
+  if (row.compilation_status === 'e2') {
+    return fail(res, 409, 'state_precondition_failed', '编册已锁定，栏目勾选不能再改',
+      { from: 'e2', required: 'e1' });
+  }
+  if (body.revision !== row.revision) {
+    // §5.1：CAS 不符不是「再试一次」，是「你手上那一份已经过期」。
+    return fail(res, 409, 'revision_stale', '内容已被他人修改，请刷新后重试');
+  }
+  const next = body.enabled_sections === undefined ? row.enabled_sections : body.enabled_sections;
+  if (!Array.isArray(next) || next.some((k) => typeof k !== 'string')) {
+    return fail(res, 422, 'validation_failed', 'enabled_sections 必须是字符串数组',
+      { field: 'enabled_sections', rule: 'array of string' });
+  }
+  const known = ['time', 'task'].concat(BOOK_SECTIONS.map((s) => String(s.section_id)));
+  const bad = next.find((k) => known.indexOf(k) === -1);
+  if (bad !== undefined) {
+    // term／comp／message 固定启用、**不进开关**，所以把它们塞进来是一个错，不是一个选择。
+    return fail(res, 422, 'validation_failed', '只有 time、task 与班级自订栏目可以勾选',
+      { field: 'enabled_sections', rule: 'time|task|section_id' });
+  }
+  row.enabled_sections = next.slice();
+  row.revision += 1;
+  return sendJson(res, 200, { ...row });
+}
+
+/** POST /teacher/growth-book/compilation/{id}/lock —— e1→e2，**单向**。 */
+function postCompilationLock(req, res, id, rawBody) {
+  const row = compilationInScope(res, id);
+  if (!row) return;
+  if (!req.headers['idempotency-key']) {
+    return fail(res, 400, 'malformed_request', '本操作的 Idempotency-Key 是必填的');
+  }
+  const body = onlyDeclared(res, rawBody, ['revision']);
+  if (!body) return;
+  if (!Number.isInteger(body.revision)) {
+    return fail(res, 422, 'validation_failed', 'revision 必填',
+      { field: 'revision', rule: 'required integer' });
+  }
+  if (row.compilation_status === 'e2') {
+    return fail(res, 409, 'state_precondition_failed', '编册已锁定', { from: 'e2', required: 'e1' });
+  }
+  if (body.revision !== row.revision) {
+    return fail(res, 409, 'revision_stale', '内容已被他人修改，请刷新后重试');
+  }
+  row.compilation_status = 'e2';
+  row.revision += 1;
+  row.locked_at = '2026-08-26T17:00:00+08:00';
+  row.locked_by = TEACHER.teacher_id;
+  return sendJson(res, 200, { ...row });
+}
+
+/** POST /teacher/growth-book/sections —— 新增班级栏目（NONE→d1）。 */
+function postBookSection(req, res, rawBody) {
+  const body = onlyDeclared(res, rawBody, ['name', 'anchor_after', 'anchor_type']);
+  if (!body) return;
+  if (typeof body.name !== 'string' || !body.name.trim() || body.name.length > 50) {
+    return fail(res, 422, 'validation_failed', '栏目名 1 到 50 字',
+      { field: 'name', rule: 'maxLength: 50' });
+  }
+  if (typeof body.anchor_after !== 'string' || !body.anchor_after) {
+    return fail(res, 422, 'validation_failed', 'anchor_after 必填',
+      { field: 'anchor_after', rule: 'required' });
+  }
+  if (['a1', 'a2', 'a3', 'a4'].indexOf(body.anchor_type) === -1) {
+    return fail(res, 422, 'validation_failed', 'anchor_type 取值不合法',
+      { field: 'anchor_type', rule: 'a1|a2|a3|a4' });
+  }
+  if (!compilationState.row) {
+    return fail(res, 409, 'state_precondition_failed', '本班本学期还没有编册');
+  }
+  const row = {
+    section_id: state.nextSectionId,
+    compilation_id: compilationState.row.compilation_id,
+    name: body.name.trim(),
+    anchor_after: body.anchor_after,
+    anchor_type: body.anchor_type,
+    section_status: 'd1',
+    collection_status: 'c1',
+    collection_started_at: null,
+    published_at: null,
+  };
+  state.nextSectionId += 1;
+  BOOK_SECTIONS.push(row);
+  BOOK_WIDGETS.set(row.section_id, []);
+  return sendJson(res, 201, { ...row });
+}
+
+function sectionInScope(res, id) {
+  const row = BOOK_SECTIONS.find((s) => s.section_id === Number(id));
+  if (!row) {
+    fail(res, 404, 'not_found', '栏目不存在或不在可见范围内');
+    return null;
+  }
+  return row;
+}
+
+/** PATCH /teacher/growth-book/sections/{id} —— 仅 d1。 */
+function patchBookSection(req, res, id, rawBody) {
+  const row = sectionInScope(res, id);
+  if (!row) return;
+  const body = onlyDeclared(res, rawBody, ['name', 'anchor_after', 'anchor_type']);
+  if (!body) return;
+  if (row.section_status !== 'd1') {
+    return fail(res, 409, 'state_precondition_failed', '栏目已发布，版面永久冻结',
+      { from: 'd2', required: 'd1' });
+  }
+  if (body.name !== undefined) row.name = String(body.name).trim();
+  if (body.anchor_after !== undefined) row.anchor_after = String(body.anchor_after);
+  if (body.anchor_type !== undefined) row.anchor_type = body.anchor_type;
+  return sendJson(res, 200, { ...row });
+}
+
+/**
+ * PUT /teacher/growth-book/sections/{id}/widgets —— **整栏目一次提交、一次校验、一次存档**。
+ *
+ * W6 要求服务端自己重跑一次同页 widget 的重叠检测，任一处重叠则**拒绝整个栏目的存档**
+ * —— 前端的标红与置灰只是体验，不是完整性边界。这就是这里是 PUT 整份而不是逐 widget
+ * PATCH 的理由：逐个提交无法表达「整栏目要么全存要么全拒」。
+ */
+function putBookWidgets(req, res, id, rawBody) {
+  const row = sectionInScope(res, id);
+  if (!row) return;
+  const body = onlyDeclared(res, rawBody, ['widgets']);
+  if (!body) return;
+  if (!Array.isArray(body.widgets)) {
+    return fail(res, 422, 'validation_failed', 'widgets 必须是数组',
+      { field: 'widgets', rule: 'array' });
+  }
+  if (row.section_status !== 'd1') {
+    return fail(res, 409, 'state_precondition_failed', '栏目已发布，版面永久冻结',
+      { from: 'd2', required: 'd1' });
+  }
+
+  const problem = widgetProblem(body.widgets);
+  if (problem) {
+    return fail(res, 422, 'validation_failed', '版面校验未通过，整栏目拒绝存档',
+      { field: 'widgets', rule: problem });
+  }
+
+  const saved = body.widgets.map((w) => ({
+    widget_id: Number.isInteger(w.widget_id) ? w.widget_id : nextWidgetId(),
+    page_index: w.page_index,
+    grid_x: w.grid_x,
+    grid_y: w.grid_y,
+    grid_w: w.grid_w,
+    grid_h: w.grid_h,
+    widget_type: w.widget_type,
+    binding_key: w.binding_key,
+    content: w.binding_key === 'literal' ? (w.content || null) : null,
+    config: w.config || null,
+  }));
+  BOOK_WIDGETS.set(row.section_id, saved);
+  return sendJson(res, 200, { widgets: saved.map((w) => ({ ...w })) });
+}
+
+function nextWidgetId() {
+  const id = state.nextWidgetId;
+  state.nextWidgetId += 1;
+  return id;
+}
+
+/**
+ * 服务端的版面重验。回**第一条**问题码，取值与契约的 422 说明逐字相同。
+ *
+ * 硬校验来自 §4 规则 8／9／14：`grid_x ∈ 0..14`、`grid_y ∈ 0..23`、`grid_x+grid_w<=15`、
+ * `grid_y+grid_h<=24`、最小 2 × 2、同页不重叠、`literal` 是唯一可以在 widget 上存
+ * `content` 的绑定。
+ */
+function widgetProblem(widgets) {
+  for (const w of widgets) {
+    if (!Number.isInteger(w.page_index) || w.page_index < 0) return 'cross_page';
+    if (!Number.isInteger(w.grid_w) || !Number.isInteger(w.grid_h)
+      || w.grid_w < 2 || w.grid_h < 2) return 'min_size';
+    if (!Number.isInteger(w.grid_x) || !Number.isInteger(w.grid_y)
+      || w.grid_x < 0 || w.grid_y < 0
+      || w.grid_x + w.grid_w > 15 || w.grid_y + w.grid_h > 24) return 'out_of_grid';
+    if (w.binding_key !== 'literal' && w.content) return 'literal_only_content';
+  }
+  for (let i = 0; i < widgets.length; i += 1) {
+    for (let j = i + 1; j < widgets.length; j += 1) {
+      const a = widgets[i];
+      const b = widgets[j];
+      if (a.page_index !== b.page_index) continue;
+      if (a.grid_x < b.grid_x + b.grid_w && b.grid_x < a.grid_x + a.grid_w
+        && a.grid_y < b.grid_y + b.grid_h && b.grid_y < a.grid_y + a.grid_h) return 'overlap';
+    }
+  }
+  return null;
+}
+
+/** POST /teacher/growth-book/books —— 建立或取回（NONE→b1）。`UNIQUE(child_id, term_id)`。 */
+function postGrowthBook(req, res, rawBody) {
+  if (refuseWithoutTerm(res)) return;
+  const body = onlyDeclared(res, rawBody, ['child_id']);
+  if (!body) return;
+  // schema 先于范围，理由同 putMonthEval。
+  if (!Number.isInteger(body.child_id)) {
+    return fail(res, 422, 'validation_failed', 'child_id 必填',
+      { field: 'child_id', rule: 'required integer' });
+  }
+  const child = childInScope(body.child_id);
+  if (!child) return fail(res, 404, 'not_found', '幼儿不存在或不在可见范围内');
+
+  const existing = GROWTH_BOOKS.find((b) => b.child_id === child.child_id);
+  if (existing) return sendJson(res, 200, { ...existing });
+
+  const row = {
+    growth_book_id: state.nextGrowthBookId,
+    child_id: child.child_id,
+    class_id: SCOPE.class_id,
+    term_id: TERM.term_id,
+    compilation_id: compilationState.row ? compilationState.row.compilation_id : null,
+    book_release_id: 1,
+    // 建册时冻结，**永不回写**。没有版式包时仍然冻结一个码 —— 真服务解析不到 pack 时
+    // 该怎么办是 ADR-0015 Follow-ups 的事，这个 mock 不替它选一种读法，只如实记下它。
+    pack_code: LAYOUT_PACK_CODE,
+    // 不定长内容的版式挑选序列种子（W14）。首次建立后不变。
+    layout_seed: 40 + child.child_id,
+    book_status: 'b1',
+    published_at: null,
+  };
+  state.nextGrowthBookId += 1;
+  GROWTH_BOOKS.push(row);
+  return sendJson(res, 201, { ...row });
+}
+
+/**
+ * GET /teacher/growth-book/precheck —— 全班预检，**零写入**。
+ *
+ * **契约上这条路径没有 `x-hualong-blocked-on`**，但 ADR-0013／§4 规则 93 要求它与
+ * manifest 共用同一个 composer，而那一个是被版式包阻断的。所以真服务的预检在 0／12 的
+ * 今天同样算不出真页数。这个 mock 因此在没有版式包时回一个**占位页数**并如实标注 ——
+ * 那是夹具值，不是口径。差异已记进交接。
+ */
+function getPrecheck(req, res) {
+  const total = OPTS.layoutPack ? LAYOUT_PACK_PAGES.length : 0;
+  return sendJson(res, 200, {
+    content_fingerprint: contentFingerprint(),
+    children: CHILDREN.map((child) => {
+      const book = GROWTH_BOOKS.find((b) => b.child_id === child.child_id) || null;
+      const hasMonth = MONTH_EVALS.some(
+        (r) => r.child_id === child.child_id && r.month_eval_status === 'e3'
+      );
+      const hasTerm = TERM_EVALS.some((r) => r.child_id === child.child_id);
+      const problems = (hasMonth || hasTerm)
+        ? []
+        : [{ rule: 'section_incomplete', section_key: 'term' }];
+      return {
+        child_id: child.child_id,
+        total_pages: total,
+        section_pages: {},
+        problems,
+        publishable: problems.length === 0,
+        blocked_by_class_shared_content: false,
+        book_status: book ? book.book_status : 'b1',
+      };
+    }),
+  });
+}
+
+/** POST /teacher/growth-book/books/{id}/publication —— b1→b2，**永久唯读**，幂等键必填。 */
+function postGrowthBookPublication(req, res, id, rawBody) {
+  if (!req.headers['idempotency-key']) {
+    return fail(res, 400, 'malformed_request', '本操作的 Idempotency-Key 是必填的');
+  }
+  const row = GROWTH_BOOKS.find((b) => b.growth_book_id === Number(id));
+  if (!row) return fail(res, 404, 'not_found', '成长册不存在或不在可见范围内');
+
+  const body = onlyDeclared(res, rawBody, ['content_fingerprint']);
+  if (!body) return;
+  if (typeof body.content_fingerprint !== 'string' || !body.content_fingerprint) {
+    return fail(res, 422, 'validation_failed', 'content_fingerprint 必填',
+      { field: 'content_fingerprint', rule: 'required' });
+  }
+  if (body.content_fingerprint !== contentFingerprint()) {
+    // 零写入。指纹漂移的意思是「你预检时看到的班，和现在要定稿的班不是同一个」。
+    return fail(res, 409, 'fingerprint_drift', '内容在预检之后变过，请重新预检');
+  }
+  if (row.book_status === 'b2') {
+    return fail(res, 409, 'state_precondition_failed', '这本已定稿，永久唯读',
+      { from: 'b2', required: 'b1' });
+  }
+
+  row.book_status = 'b2';
+  row.published_at = '2026-08-26T17:30:00+08:00';
+  // 服务端真正执行的一次 b1 -> b2。幂等重放在分发层就返回了，处理器根本没跑，所以这张
+  // 表不涨 —— 「重复确认只存在一份成长册」要数服务端做了几次。
+  state.bookPublications.push({ growth_book_id: row.growth_book_id, child_id: row.child_id });
+  return sendJson(res, 200, { ...row });
+}
+
+// ── 夹具版式包 ─────────────────────────────────────────────────────────────
+//
+// **一份版式包也没有发布**（ADR-0015 Follow-ups，0／12），所以默认关。打开它是为了让
+// 「有 pack 时预览排得出来、长文本与图片数量变化都不重叠」这一条测得到；关着它是为了让
+// 「没有 pack 时诚实降级」那一条测得到。两条都要有。
+//
+// 固定 spine：`cover → school_intro → title_page → toc[1..k] → body → back_cover`
+// （契约 `getResolvedBookManifest`）。TOC 只列其后的正文，**但 TOC 自身计入 200 页**。
+
+const LAYOUT_PACK_LONG_TEXT = [
+  '这个学期他在集体活动里越来越愿意先说出自己的想法，再听同伴把话讲完。',
+  '搭建区的合作从抢材料变成了先商量分工，遇到塌下来的桥会自己找原因再试一次。',
+  '生活自理上能独立整理床铺与餐具，午睡起床后还会提醒同伴把鞋子摆好。',
+  '语言表达从短句变成了完整的叙述，讲述春游那一天的经过时用上了先、然后、最后。',
+  '建议家庭继续给他一些需要等待与轮流的机会，让规则意识在真实的生活场景里长出来。',
+].join('');
+
+/**
+ * 一页 body 的 widget。**格坐标，`0..14 / 0..23`，两两不重叠，最小 2 × 2。**
+ *
+ * 三种排布刻意不同，好让「图片数量变化时版式不错乱」有真实的差异可断言：
+ * 3 图是三条横幅加一段说明，6 图是两列三行，长文本页是标题加一整块正文。
+ */
+function packBodyPage(kind) {
+  if (kind === 'time-3') {
+    return [
+      { kind: 'image', grid_x: 0, grid_y: 0, grid_w: 15, grid_h: 6, image: packImage(1) },
+      { kind: 'image', grid_x: 0, grid_y: 6, grid_w: 15, grid_h: 6, image: packImage(2) },
+      { kind: 'image', grid_x: 0, grid_y: 12, grid_w: 15, grid_h: 6, image: packImage(3) },
+      { kind: 'text', grid_x: 0, grid_y: 18, grid_w: 15, grid_h: 6, text: '九月的户外活动。' },
+    ];
+  }
+  if (kind === 'time-6') {
+    const out = [];
+    [0, 8, 16].forEach((y, rowIndex) => {
+      [0, 8].forEach((x, colIndex) => {
+        out.push({
+          kind: 'image', grid_x: x, grid_y: y, grid_w: 7, grid_h: 7,
+          image: packImage(rowIndex * 2 + colIndex + 1),
+        });
+      });
+    });
+    return out;
+  }
+  // 'term-text'
+  return [
+    { kind: 'text', grid_x: 0, grid_y: 0, grid_w: 15, grid_h: 2, text: '学期综合评语' },
+    { kind: 'text', grid_x: 0, grid_y: 2, grid_w: 15, grid_h: 22, text: LAYOUT_PACK_LONG_TEXT },
+  ];
+}
+
+/**
+ * 派生图。**尺寸由服务端从版式包几何算出**，客户端不得指定（ADR-0015）；这里回的宽高
+ * 是按 `min(cssWidth × min(dpr, 2), 4096)` 算好的样子，客户端只读不算。
+ */
+function packImage(n) {
+  return {
+    url: `https://example.invalid/derived/${n}.jpg`,
+    expires_at: '2026-08-26T18:00:00+08:00',
+    width_px: 886,
+    height_px: 354,
+  };
+}
+
+const LAYOUT_PACK_PAGES = [
+  { ordinal: 1, folio: null, page_role: 'cover', section_key: null, layout_code: 'cover-1', kind: 'cover' },
+  { ordinal: 2, folio: null, page_role: 'school_intro', section_key: 'intro', layout_code: 'intro-1', kind: 'term-text' },
+  { ordinal: 3, folio: null, page_role: 'title_page', section_key: null, layout_code: 'title-1', kind: 'cover' },
+  { ordinal: 4, folio: 1, page_role: 'toc', section_key: null, layout_code: 'toc-1', kind: 'term-text' },
+  { ordinal: 5, folio: 2, page_role: 'body', section_key: 'time', layout_code: 'time-3', kind: 'time-3' },
+  { ordinal: 6, folio: 3, page_role: 'body', section_key: 'time', layout_code: 'time-6', kind: 'time-6' },
+  { ordinal: 7, folio: 4, page_role: 'body', section_key: 'term', layout_code: 'term-1', kind: 'term-text' },
+  { ordinal: 8, folio: null, page_role: 'back_cover', section_key: null, layout_code: 'back-1', kind: 'cover' },
+];
+
+function packElements(page) {
+  if (page.kind === 'cover') {
+    // 封面整页一张图。占满内容区，仍在 `0..14 / 0..23` 内。
+    return [{ kind: 'image', grid_x: 0, grid_y: 0, grid_w: 15, grid_h: 24, image: packImage(9) }];
+  }
+  return packBodyPage(page.kind);
+}
+
+/** 没有版式包时的那一次拒绝。409 是契约给这两条路径声明过的码，rule 走 §2.2 的 details。 */
+function refuseWithoutPack(res) {
+  if (OPTS.layoutPack) return false;
+  fail(res, 409, 'state_precondition_failed', '没有已发布的版式包可解析',
+    { rule: 'layout_pack_unreleased' });
+  return true;
+}
+
+function bookInScope(res, id) {
+  const row = GROWTH_BOOKS.find((b) => b.growth_book_id === Number(id));
+  if (!row) {
+    fail(res, 404, 'not_found', '成长册不存在或不在可见范围内');
+    return null;
+  }
+  return row;
+}
+
+/** GET /growth-book/books/{id}/manifest —— request-local 解析，**不落表**。 */
+function getBookManifest(req, res, id) {
+  const row = bookInScope(res, id);
+  if (!row) return;
+  if (refuseWithoutPack(res)) return;
+  return sendJson(res, 200, {
+    growth_book_id: row.growth_book_id,
+    fingerprint: contentFingerprint(),
+    book_release_id: row.book_release_id,
+    pack_code: row.pack_code,
+    total_pages: LAYOUT_PACK_PAGES.length,
+    pages: LAYOUT_PACK_PAGES.map((p) => ({
+      ordinal: p.ordinal, folio: p.folio, page_role: p.page_role,
+      section_key: p.section_key, layout_code: p.layout_code,
+    })),
+    // TOC 只列其后的正文，不列封面／园所介绍／扉页／TOC／封底。
+    toc: LAYOUT_PACK_PAGES
+      .filter((p) => p.page_role === 'body')
+      .map((p) => ({ level: 1, title: p.section_key === 'time' ? '在园时光' : '教师综合评估', ordinal: p.ordinal })),
+  });
+}
+
+/** GET /growth-book/books/{id}/pages/{ordinal} —— 按页取内容与派生图，每次重新授权。 */
+function getBookPage(req, res, id, ordinal, url) {
+  const row = bookInScope(res, id);
+  if (!row) return;
+  if (refuseWithoutPack(res)) return;
+
+  const fingerprint = url.searchParams.get('fingerprint');
+  if (!fingerprint) {
+    return fail(res, 422, 'validation_failed', 'fingerprint 必填',
+      { field: 'fingerprint', rule: 'required' });
+  }
+  if (fingerprint !== contentFingerprint()) {
+    return fail(res, 409, 'fingerprint_drift', 'manifest 已变，请重新取一次');
+  }
+  const page = LAYOUT_PACK_PAGES.find((p) => p.ordinal === Number(ordinal));
+  if (!page) return fail(res, 404, 'not_found', '这一页不存在');
+
+  const dprRaw = Number(url.searchParams.get('dpr'));
+  // ADR-0015 决策一：**服务端把它钳到 ≤ 2**。客户端声称 dpr=5 不得让服务端签出一张
+  // 越界的派生图。缺省按 1 处理。
+  const appliedDpr = Math.min(Number.isFinite(dprRaw) && dprRaw >= 1 ? dprRaw : 1, 2);
+
+  return sendJson(res, 200, {
+    ordinal: page.ordinal,
+    folio: page.folio,
+    page_role: page.page_role,
+    layout_code: page.layout_code,
+    applied_dpr: appliedDpr,
+    elements: packElements(page),
+  });
+}
+
 /**
  * Test hook: flip the term live, so "the term resumes and the same page's
  * write entries come back WITHOUT a re-login" is testable against the real
@@ -3732,6 +4681,41 @@ export function classRoster() {
 /** Test hook: the c2 -> c1 综合评估 submissions the server actually executed (票据 18). */
 export function childAssessmentCompletions() {
   return state.childAssessmentCompletions.slice();
+}
+
+/** Test hook: the e1|e2 -> e3 月度评价 publications the server actually executed (票据 20). */
+export function monthEvalPublications() {
+  return state.monthEvalPublications.slice();
+}
+
+/** Test hook: the NONE -> c1 学期评价 rows the server actually created (票据 20). */
+export function termEvalWrites() {
+  return state.termEvalWrites.slice();
+}
+
+/** Test hook: the b1 -> b2 成长册 定稿 the server actually executed (票据 21). */
+export function bookPublications() {
+  return state.bookPublications.slice();
+}
+
+/** Test hook: every 成长册 row, so "只存在一份" is a count of rows not of requests. */
+export function growthBooks() {
+  return GROWTH_BOOKS.map((b) => ({ ...b }));
+}
+
+/**
+ * Test hook: 发布或撤下那份夹具版式包。
+ *
+ * 默认关 —— 事实是一份也没有发布（ADR-0015 Follow-ups，0／12）。打开它才测得到「有 pack
+ * 时预览排得出来」，关着它才测得到「没 pack 时诚实降级」。两条都要有。
+ */
+export function setLayoutPack(released) {
+  OPTS.layoutPack = Boolean(released);
+}
+
+/** Test hook: 夹具版式包的页数，好让测试知道翻到第几页算翻完。 */
+export function layoutPackPageCount() {
+  return LAYOUT_PACK_PAGES.length;
 }
 
 /** Test hook: the 124 scale items the mock serves, so a test can score them all. */
