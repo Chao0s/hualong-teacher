@@ -71,3 +71,71 @@
   font-size: 44rpx;
   font-weight: 600;
 }
+
+/* 分节标题 —— 原型的 `.sec`：16px 粗体，上 20px 下 10px。 */
+.sec {
+  margin: 40rpx 0 20rpx;
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+/* 类目卡网格 —— 原型 `.section-grid`：行政统筹三列，其余两列。 */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20rpx;
+}
+
+.grid--wide {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+/* `.entry-card`：描边卡，字标在上、标题与描述在下，三列时略高一点。 */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  min-height: 212rpx;
+  padding: 24rpx 20rpx;
+  border: 1px solid var(--border);
+  border-radius: 32rpx;
+  background: var(--surface);
+}
+
+.grid--wide .card {
+  min-height: 192rpx;
+  padding: 26rpx 24rpx;
+}
+
+.card__mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 68rpx;
+  height: 68rpx;
+  border-radius: 24rpx;
+  font-size: 26rpx;
+  font-weight: 800;
+}
+
+.card__mark--accent { color: var(--accent-dark); background: var(--accent-light); }
+.card__mark--blue   { color: var(--blue);        background: var(--blue-light); }
+.card__mark--amber  { color: var(--amber);       background: var(--amber-light); }
+.card__mark--danger { color: var(--danger);      background: var(--danger-light); }
+.card__mark--green  { color: var(--green);       background: var(--green-light); }
+.card__mark--orange { color: var(--orange);      background: var(--orange-light); }
+
+/* 标题与描述贴着卡片底部，字标留在顶上（原型的 `justify-content: space-between`）。 */
+.card__title {
+  margin-top: auto;
+  font-size: 27rpx;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.card__desc {
+  font-size: 22rpx;
+  line-height: 1.35;
+  color: var(--muted);
+}

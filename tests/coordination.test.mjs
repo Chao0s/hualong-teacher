@@ -563,20 +563,61 @@ test('the coordination subpackage reads one service module and only one', () => 
   }
 })
 
-test('the coordination entry page now really opens all three lists', async () => {
+/**
+ * 入口页自 2026-08-26 起按原型 comprehensive-coordination.html 建：三节共七张类目
+ * 卡，一类一卡。此前是三条整宽链接（一组一条），所以「点一下到哪里」这件事的粒度
+ * 从组变成了类目，卡片因此带着 `coord_category` 走。
+ */
+const ENTRY_CARDS = [
+  ['c1', 'xz', '政策法规'], ['c2', 'xz', '通知文件'], ['c3', 'xz', '组织架构'],
+  ['c4', 'hq', '安全管理'], ['c5', 'hq', '卫生保健'],
+  ['c6', 'hr', '师德师风'], ['c7', 'hr', '跟岗交流'],
+]
+
+test('入口页是原型的三节七卡，每张卡带着自己的类目进对应列表页', async () => {
   const c = await signedIn()
   const entry = loadPage(c, 'pages/coordination/index.js')
   entry.onLoad()
 
-  for (const g of GROUPS) {
-    entry.onEntryTap({ detail: { key: g.key } })
+  const sections = entry.data.sections
+  assert.deepEqual(sections.map((s) => s.title), ['行政统筹', '后勤保障', '人事管理'])
+  assert.deepEqual(sections.map((s) => s.entries.length), [3, 2, 2], '原型是 3／2／2')
+
+  const flat = sections.flatMap((s) => s.entries)
+  assert.deepEqual(flat.map((e) => e.key), ENTRY_CARDS.map(([key]) => key))
+  for (const entryCard of flat) {
+    assert.ok(entryCard.mark && entryCard.label && entryCard.desc && entryCard.tint,
+      `${entryCard.key} 少了字标、标题、描述或色调`)
+  }
+
+  for (const [key, group, zh] of ENTRY_CARDS) {
+    entry.onEntryTap({ currentTarget: { dataset: { key } } })
     assert.deepEqual(
       c.record.navigations.pop(),
-      { api: 'navigateTo', url: `/${BASE}/${g.key}/list` },
-      `${g.zh}：分包页面不是 tab 页，用 navigateTo`,
+      { api: 'navigateTo', url: `/${BASE}/${group}/list?coord_category=${key}` },
+      `${zh}：分包页面不是 tab 页，用 navigateTo，并把类目带过去`,
     )
   }
   assert.equal(c.record.toasts.length, 0, '已经落地的入口不再说「尚未上线」')
+})
+
+test('带类目进来的列表页停在那一类上，取值不认识时回落到第一类', async () => {
+  const c = await signedIn()
+
+  // 后勤那一页有两类。从入口页点「卫生保健」进来，开场就该是卫生保健。
+  const hq = loadPage(c, `${BASE}/hq/list.js`)
+  await hq.onLoad({ coord_category: 'c5' })
+  assert.equal(hq.data.filters.coord_category, 'c5', '不该还停在第一类上')
+
+  // 无参进入（例如从其他页面直达）仍是第一类。
+  const plain = loadPage(c, `${BASE}/hq/list.js`)
+  await plain.onLoad()
+  assert.equal(plain.data.filters.coord_category, 'c4')
+
+  // 不属于本组的类目是我们自己的失误，不能让它变成服务端的 400。
+  const stray = loadPage(c, `${BASE}/hq/list.js`)
+  await stray.onLoad({ coord_category: 'c1' })
+  assert.equal(stray.data.filters.coord_category, 'c4', '回落到第一类，不发一个必然 400 的请求')
 })
 
 test('a partner account is refused at the route, not at the row', async () => {

@@ -53,6 +53,47 @@ const GROUP_CATEGORIES = {
   hr: ['c6', 'c7'],
 };
 
+const GROUP_PAGE = {
+  xz: '/packages/coordination/pages/xz/list',
+  hq: '/packages/coordination/pages/hq/list',
+  hr: '/packages/coordination/pages/hr/list',
+};
+
+/**
+ * 入口页的三节七卡 —— 原型 comprehensive-coordination.html 的三个 `.section-grid`。
+ *
+ * 一类一卡，与页内标签一一对应：卡片带着 `coord_category` 进列表页，那一页据此
+ * 预选标签。所以「安全管理」进的是后勤那一页并停在安全管理标签上，而不是进去以后
+ * 还要教师再点一次。字标与描述抄原型；`tint` 是原型给每张卡的色调。
+ */
+const ENTRY_SECTIONS = [
+  {
+    title: '行政统筹',
+    wide: false,
+    entries: [
+      { key: 'c1', group: 'xz', mark: '政', label: '政策法规', desc: '政策文件与制度依据', tint: 'accent' },
+      { key: 'c2', group: 'xz', mark: '通', label: '通知文件', desc: '园内通知与文件流转', tint: 'blue' },
+      { key: 'c3', group: 'xz', mark: '组', label: '组织架构', desc: '部门职责与人员分工', tint: 'amber' },
+    ],
+  },
+  {
+    title: '后勤保障',
+    wide: true,
+    entries: [
+      { key: 'c4', group: 'hq', mark: '安', label: '安全管理', desc: '安全巡检、应急预案与记录', tint: 'danger' },
+      { key: 'c5', group: 'hq', mark: '卫', label: '卫生保健', desc: '晨检、消毒与健康提醒', tint: 'green' },
+    ],
+  },
+  {
+    title: '人事管理',
+    wide: true,
+    entries: [
+      { key: 'c6', group: 'hr', mark: '德', label: '师德师风', desc: '学习记录、承诺书与考核材料', tint: 'orange' },
+      { key: 'c7', group: 'hr', mark: '岗', label: '跟岗交流', desc: '跟岗安排、交流记录与反馈', tint: 'blue' },
+    ],
+  },
+];
+
 // db_file_ref.owner_object —— 取档要按这张业务表重跑一次授权（§8.4）。
 const FILE_OWNER = 'db_coord_document';
 
@@ -69,6 +110,38 @@ function categoriesFor(groupKey) {
   const keys = GROUP_CATEGORIES[groupKey];
   if (!keys) throw new Error(`coordination: 未知分组 "${groupKey}"`);
   return keys.map((key) => ({ key, label: CATEGORY_LABEL[key] }));
+}
+
+/** 入口页的三节七卡，ready to bind。标题从 CATEGORY_LABEL 取，不在两处各写一遍。 */
+function entrySections() {
+  return ENTRY_SECTIONS.map((section) => ({
+    title: section.title,
+    wide: section.wide,
+    entries: section.entries.map((entry) => ({
+      key: entry.key,
+      mark: entry.mark,
+      label: CATEGORY_LABEL[entry.key],
+      desc: entry.desc,
+      tint: entry.tint,
+    })),
+  }));
+}
+
+/**
+ * 点一张入口卡：进它那一组的列表页，并把类目带过去。
+ *
+ * 门按模块查（`admin-coordination`），与 module-entry 的做法相同：合作园走不到这个
+ * 模块，拒绝要出声，不能静默。
+ */
+function openEntry(categoryKey) {
+  const entry = ENTRY_SECTIONS
+    .reduce((all, section) => all.concat(section.entries), [])
+    .find((e) => e.key === categoryKey);
+  if (!entry) return false;
+  return guard.navigateTo(
+    `${GROUP_PAGE[entry.group]}?coord_category=${entry.key}`,
+    'admin-coordination',
+  );
 }
 
 /**
@@ -210,6 +283,8 @@ module.exports = {
   CATEGORY_LABEL,
   GROUP_CATEGORIES,
   categoriesFor,
+  entrySections,
+  openEntry,
   listDocuments,
   documentDetail,
   openFile,

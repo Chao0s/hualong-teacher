@@ -31,13 +31,16 @@ Page({
     errorCanRetry: false,
   },
 
-  onLoad() {
+  /** 入口页的卡片带类目进来；无参或不认识的取值都停在第一类（见 xz/list.js）。 */
+  onLoad(query) {
     if (!guard.requireSession()) return;
     const categories = coordination.categoriesFor(GROUP);
+    const asked = query && query.coord_category;
+    const opening = categories.some((c) => c.key === asked) ? asked : categories[0].key;
     this.setData({
       ready: true,
       categories,
-      filters: { coord_category: categories[0].key },
+      filters: { coord_category: opening },
     });
     this.loadFirst();
   },

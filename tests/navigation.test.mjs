@@ -105,10 +105,12 @@ test('tabBar pages sit in the main package', () => {
 
 // ── The four entry pages ─────────────────────────────────────────────────────
 
-// 党建管理已按原型 school-affairs.html 重建：轮播加三个分区，读 `GET /party/home`，
-// 不再是 hl-entry-sections 的三条整宽链接。它的分区、空态与去向由
-// tests/party-home.test.mjs 守住。其余三页的原型形状各不相同，还没有轮到它们。
-const SECTION_ENTRY_PAGES = ENTRY_PAGES.filter(([route]) => route !== 'pages/party-building/index')
+// 已按各自原型重建的入口页离开这条通用断言，改由自己的测试文件守住版面：党建管理
+// （轮播加三个分区，读 `GET /party/home`，tests/party-home.test.mjs）与综合协调
+// （三节七卡，tests/coordination.test.mjs）。四页全部重建之后 hl-entry-sections 与
+// services/module-entry.js 就没有调用方了，那时连同这条断言一并退役。
+const REBUILT = ['pages/party-building/index', 'pages/coordination/index']
+const SECTION_ENTRY_PAGES = ENTRY_PAGES.filter(([route]) => !REBUILT.includes(route))
 
 test('each entry page renders its module sections and names its own module', async () => {
   const c = await signedIn()

@@ -7,5 +7,21 @@
     <view class="banner__mark">协</view>
   </view>
 
-  <hl-entry-sections sections="{{sections}}" bindtapentry="onEntryTap" />
+  <!-- 三节七卡，一类一卡（原型的三个 `.section-grid`）。行政统筹三列，其余两列。 -->
+  <block wx:for="{{sections}}" wx:key="title">
+    <view class="sec">{{item.title}}</view>
+    <view class="grid {{item.wide ? 'grid--wide' : ''}}">
+      <view
+        wx:for="{{item.entries}}"
+        wx:for-item="entry"
+        wx:key="key"
+        class="card"
+        data-key="{{entry.key}}"
+        bindtap="onEntryTap">
+        <view class="card__mark card__mark--{{entry.tint}}">{{entry.mark}}</view>
+        <view class="card__title">{{entry.label}}</view>
+        <view class="card__desc">{{entry.desc}}</view>
+      </view>
+    </view>
+  </block>
 </view>

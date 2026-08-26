@@ -31,13 +31,20 @@ Page({
     errorCanRetry: false,
   },
 
-  onLoad() {
+  /**
+   * 入口页的卡片带着 `coord_category` 进来，那一类就是开场标签；直接进本页（无参）
+   * 则停在第一类。**不认识的取值一律回落到第一类**：真让它进 `filters` 会换来一个
+   * 400，而那是我们自己造的，不是服务端的问题。
+   */
+  onLoad(query) {
     if (!guard.requireSession()) return;
     const categories = coordination.categoriesFor(GROUP);
+    const asked = query && query.coord_category;
+    const opening = categories.some((c) => c.key === asked) ? asked : categories[0].key;
     this.setData({
       ready: true,
       categories,
-      filters: { coord_category: categories[0].key },
+      filters: { coord_category: opening },
     });
     this.loadFirst();
   },
