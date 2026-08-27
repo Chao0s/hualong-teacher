@@ -33,6 +33,7 @@ Page({
 
     stats: [],
     unreadNotice: 0,
+    assessmentId: 0,
     cases: [],
     // Write entries start off and are turned on by the term state, never the
     // other way round.
@@ -104,7 +105,7 @@ Page({
   },
 
   onTodoTap(e) {
-    home.openTodo(e.currentTarget.dataset.kind);
+    home.openTodo(e.currentTarget.dataset.kind, this.data.assessmentId);
   },
 
   onCaseTap(e) {

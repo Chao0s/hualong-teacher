@@ -1,0 +1,112 @@
+<view class="hl-page" wx:if="{{ready}}">
+
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryLoad">重试</text>
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障码 {{errorRequestId}}</text>
+  </view>
+
+  <view class="hl-loading" wx:if="{{loading}}">加载中…</view>
+
+  <block wx:if="{{!loading && summary}}">
+
+    <!-- 顶部摘要 —— 原型 `.summary`：左边一枚进度环，右边等级、题数与进度条。 -->
+    <view class="hl-card qa-sum">
+      <view class="qa-dial">{{summary.percent}}%</view>
+      <view class="qa-sum__right">
+        <view class="qa-sum__lvl">{{summary.level_label}}</view>
+        <view class="qa-sum__count">{{summary.count_label}} · 均分 {{summary.average_label}}</view>
+        <view class="qa-bar">
+          <view class="qa-bar__fill" style="width: {{summary.percent}}%"></view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 原型 `.filters` 的三枚。筛选只影响看得见哪些题，不改数据。 -->
+    <view class="qa-filters">
+      <view
+        wx:for="{{filters}}"
+        wx:key="key"
+        class="qa-chip {{item.key === activeFilter ? 'qa-chip--on' : ''}}"
+        data-key="{{item.key}}"
+        bindtap="onFilterTap">{{item.label}}</view>
+    </view>
+
+    <view wx:if="{{readonly}}" class="hl-card qa-readonly">
+      这份评估已评满 120 题，内容已锁定，不能再修改。
+    </view>
+
+    <!-- 旧评估按它自己那一版解释题文（F17）。版本对不上时说出来，而不是拿新版题文
+         去解释旧作答 —— 那会让教师读到与当初不同的题。 -->
+    <view wx:if="{{staleTool}}" class="hl-card qa-readonly">{{staleReason}}</view>
+
+    <!-- 当前筛选下一题不剩时说一句，不留一片空白。 -->
+    <view wx:if="{{visibleSections.length === 0 && !errorText}}" class="hl-card hl-empty">
+      当前筛选下没有题目
+    </view>
+
+    <!-- 九张一级指标卡，一次只展开一张 —— 120 题铺平没法用。 -->
+    <view wx:for="{{visibleSections}}" wx:key="key" wx:for-item="section" class="hl-card qa-sec">
+      <view class="qa-sec__head" data-key="{{section.key}}" bindtap="onSectionTap">
+        <view class="qa-sec__idx {{section.complete ? 'qa-sec__idx--done' : ''}}">{{section.index}}</view>
+        <view class="qa-sec__name">{{section.name}}</view>
+        <view class="qa-sec__meta">{{section.meta}}</view>
+        <view class="qa-sec__chev">{{openSection === section.key ? '⌃' : '⌄'}}</view>
+      </view>
+
+      <block wx:if="{{openSection === section.key}}">
+        <view wx:for="{{section.items}}" wx:key="code" wx:for-item="ind" class="qa-ind">
+          <view class="qa-ind__head">
+            <text class="qa-ind__code">{{ind.code}}</text>
+            <text class="qa-ind__title">{{ind.title}}</text>
+            <text class="qa-ind__chip {{ind.scored ? 'qa-ind__chip--on' : ''}}">
+              {{ind.scored ? ind.score + ' 分' : '待评'}}
+            </text>
+          </view>
+          <view class="qa-ind__sub">{{ind.sub}}</view>
+
+          <!-- 三档锚点收在一个可展开的小块里：一次读三段字太长，原型也是收着的。 -->
+          <view class="qa-rub" data-code="{{ind.code}}" bindtap="onAnchorTap">
+            {{openAnchors === ind.code ? '收起评分说明' : '展开评分说明'}}
+          </view>
+          <block wx:if="{{openAnchors === ind.code}}">
+            <view wx:for="{{ind.anchors}}" wx:key="level" wx:for-item="anchor" class="qa-anchor">
+              <view class="qa-anchor__lv">{{anchor.level}} 分</view>
+              <view class="qa-anchor__text">{{anchor.text}}</view>
+            </view>
+          </block>
+
+          <!-- 五个打分档。档位与文案都来自题库，页面一个也没写死。 -->
+          <view class="qa-scores">
+            <view
+              wx:for="{{options}}"
+              wx:key="score"
+              wx:for-item="opt"
+              class="qa-sbtn {{ind.score === opt.score ? 'qa-sbtn--on' : ''}} {{readonly ? 'qa-sbtn--off' : ''}}"
+              data-code="{{ind.code}}"
+              data-score="{{opt.score}}"
+              bindtap="onScoreTap">
+              <view class="qa-sbtn__n">{{opt.score}}</view>
+              <view class="qa-sbtn__l">{{opt.label}}</view>
+            </view>
+          </view>
+
+          <!-- 工具自带的规则，不是本客户端发明的：1 分与 5 分要留佐证。 -->
+          <view wx:if="{{ind.evidence_expected}}" class="qa-evi">{{evidenceRule}}</view>
+        </view>
+      </block>
+    </view>
+
+    <!-- 原型 `.footbar` 是吸底条。这里做成文末的一块：小程序页面本身可滚，吸底条会
+         压住最后一道题的打分档。
+         **没有提交按钮**：契约把作答登记成一个动作、两条转移，末题落下那一刻就是
+         完成那一刻。给一个不存在的动作画一扇门比不画更糟。 -->
+    <view class="hl-card qa-foot">
+      <view class="qa-foot__score">
+        <view class="qa-foot__n">{{summary.average_label}}</view>
+        <view class="qa-foot__l">{{summary.count_label}}</view>
+      </view>
+      <view class="qa-foot__hint">评完最后一题即完成，无需另行提交</view>
+    </view>
+  </block>
+</view>

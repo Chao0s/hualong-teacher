@@ -797,6 +797,9 @@ const state = {
   nextMomentId: 900,            // POST /moments assigns from here
   nextParentTaskId: 600,        // POST /home-school/parent-tasks assigns from here
   nextChildAssessmentId: 700,   // 首次评分建主记录时从这里取号
+  // 每一次真正执行的逐题作答。与 taskCompletions 同一个理由：幂等重放在分发层就
+  // 返回了，处理器根本没跑，所以「重复提交只产生一次」要数服务端做了几次。
+  assessmentScores: [],
   nextTeacherMessageId: 950,    // POST /home-school/teacher-messages 取号
   nextParentEvaluationRoundId: 750, // POST /home-school/parent-evaluations 取号
   // 每一次真正执行的寄语写入与家长评价发起。与 taskCompletions 同一个理由：幂等重放
@@ -1709,15 +1712,16 @@ function getDownload(req, res, linkId) {
  */
 function getTodos(req, res) {
   if (!requireSession(req, res)) return;
-  const done = CHILDREN.filter((c) => {
-    const row = assessmentFor(c.child_id);
-    return row && assessmentStatus(row) === 'c1';
-  }).length;
   sendJson(res, 200, {
     upload_status: HOME_UPLOAD_STATUS,
     pending_task_count: TASKS.filter((t) => ['a1', 'a2'].includes(t.assign.assign_status)).length,
-    completed_count: done,
-    required_count: CHILDREN.length,
+    // 评 = **办园质量评估**（`db_assessment`，120 题），不是幼儿综合评估。首页那张卡
+    // 指的一直是它（spec 的 `home.todo.assessment.badge.denominator`）。
+    assessment_completed_count: assessmentCompletedCount(ASSESSMENTS[0].assessment_id),
+    assessment_required_count: QUALITY_REQUIRED_COUNT,
+    // 那张卡是**带着既有 assessment_id 跳转的**（契约原话），所以聚合里给出编号。
+    // 契约没有创建端点，客户端也就不该在没有编号时自己开一份。
+    assessment_id: ASSESSMENTS[0].assessment_id,
     unread_notice_count: NOTICES.filter((n) => !n.read_at).length,
   });
 }
@@ -1916,6 +1920,11 @@ const HAND_WRITTEN_ROLES = [
   // 成长档案这条链（2026-08-26 按原型建）。**契约里一条也没有** —— 对象定义在
   // spec 05 里，`openapi.yaml` 的 149 个操作里搜不到。登记在这里是为了让门不至于
   // 悄悄缺席；缺口本身逐条记在交接里。
+  // 办园质量评估。**契约里有这三条**（listAssessments／getAssessment／
+  // scoreAssessmentItem），手写是因为生成路由回的样本拼不出一份评估。
+  [/^\/assessments$/, ['teacher']],
+  [/^\/assessments\/\d+$/, ['teacher']],
+  [/^\/assessments\/\d+\/items\/[^/]+$/, ['teacher']],
   [/^\/home-school\/home$/, ['teacher']],
   [/^\/home-school\/teacher-eval$/, ['teacher']],
   [/^\/home-school\/teacher-messages$/, ['teacher']],
@@ -2247,6 +2256,12 @@ const server = createServer(async (req, res) => {
       getTermEvaluation(req, res, path.split('/')[2]);
     } else if (req.method === 'PUT' && /^\/children\/\d+\/term-evaluation$/.test(path)) {
       putTermEvaluation(req, res, path.split('/')[2], body);
+    } else if (req.method === 'GET' && path === '/assessments') {
+      getAssessments(req, res);
+    } else if (req.method === 'GET' && /^\/assessments\/\d+$/.test(path)) {
+      getAssessment(req, res, path.split('/')[2]);
+    } else if (req.method === 'PUT' && /^\/assessments\/\d+\/items\/[^/]+$/.test(path)) {
+      putAssessmentItem(req, res, path.split('/')[2], path.split('/')[4], body);
     } else if (req.method === 'GET' && path === '/home-school/home') {
       getHomeSchoolHome(req, res);
     } else if (req.method === 'GET' && path === '/home-school/teacher-eval') {
@@ -2351,6 +2366,7 @@ export function start({
   resetHomeSchool();
   resetEvaluation();
   resetGrowthRecordChain();
+  resetQuality();
   resetGrowthBook();
   // resetGrowthBook 把它关回默认（一份也没发布），所以显式的启动选项排在它之后。
   OPTS.layoutPack = layoutPack;
@@ -3679,6 +3695,166 @@ const GUIDE_SCALE = JSON.parse(
 
 const SCALE_CODE = 'guide';
 const SCALE_VERSION = '1.0';
+
+// ══════════════════════════════════════════════════════════════════════════
+// 办园质量评估（`db_assessment`）
+// ══════════════════════════════════════════════════════════════════════════
+//
+// **与上面那份五大领域量表是两件不同的量具，别混。**
+//
+//   办园质量评估  评的是园所：9 个一级指标、30 个小节、120 题。表是 `db_assessment`
+//                 与 `db_assessment_item`。首页那张「质量评估」卡指的一直是它，
+//                 角标分母是这 120。
+//   五大领域量表  评的是**一名幼儿**：5 个领域、124 题，表是 `db_child_assessment`。
+//
+// ── 三条端点都在契约里，别再发明第四条 ────────────────────────────────────
+//
+//   `GET /assessments`                                listAssessments
+//   `GET /assessments/{id}`                           getAssessment（Assessment + items）
+//   `PUT /assessments/{id}/items/{tool_item_code}`    scoreAssessmentItem
+//
+// 手写它们是因为生成路由只会回样本，拼不出一份评估。契约同时说明了两件**没有**的事：
+//
+//   **没有创建端点。** `NONE→s1` 没有任何决议指定谁建、何时建、`assessment_scope`
+//   与 `assessment_period` 从哪来 —— 契约原话「本端点不创建评估」，并注明教师端唯一
+//   的按钮是带着既有 `assessment_id` 跳转的。所以这里的夹具**预先摆好一份**，不提供
+//   建的路径；那个缺口是后端的候选缺口，不是客户端能补的。
+//
+//   **没有提交端点。** 提交这个动作不存在：评完末一题即 s3（登记的两条转移是
+//   `assessment.score_item` s1→s2 与 `assessment.score_item.complete` s2→s3）。
+//
+// 题文也不在这里：契约写着「题文不随作答复制，客户端按 `tool_code + tool_version`
+// 从版本化代码资产解析」，所以题库随客户端发版，本响应只回 `tool_item_code` 与作答。
+
+const QUALITY_CODE = 'school-quality-120';
+const QUALITY_VERSION = '1.0.0';
+const QUALITY_REQUIRED_COUNT = 120;
+
+/**
+ * `db_assessment` 一行加它的 `db_assessment_item`。
+ *
+ * **夹具预先摆好一份**，理由见上：契约里没有创建端点，而教师端那张卡是带着既有
+ * `assessment_id` 跳转的。一份空的（一题未评，s1）正是首页角标要显示 `0/120` 的状态。
+ */
+const ASSESSMENTS = [
+  {
+    assessment_id: 401,
+    class_id: SCOPE.class_id,
+    teacher_id: TEACHER.teacher_id,
+    // 评的是园所，所以是 a3。`a4=child` 已由 B4 拔除 —— 幼儿用的不是这份工具。
+    assessment_scope: 'a3',
+    assessment_period: '2026-08',
+    tool_code: QUALITY_CODE,
+    tool_version: QUALITY_VERSION,
+    submitted_at: null,
+  },
+];
+
+const ASSESSMENT_SNAPSHOT = ASSESSMENTS.map((r) => ({ ...r }));
+
+/** assessment_id -> Map(tool_item_code -> { score, note, file_id }) */
+const assessmentItems = new Map();
+
+function resetQuality() {
+  ASSESSMENTS.length = ASSESSMENT_SNAPSHOT.length;
+  ASSESSMENT_SNAPSHOT.forEach((row, i) => { ASSESSMENTS[i] = { ...row }; });
+  assessmentItems.clear();
+  state.assessmentScores.length = 0;
+}
+
+function itemsOf(id) {
+  if (!assessmentItems.has(id)) assessmentItems.set(id, new Map());
+  return assessmentItems.get(id);
+}
+
+/** `completed_count` = 有 1—5 分的题项数（契约原话）。 */
+function assessmentCompletedCount(id) {
+  return [...itemsOf(id).values()].filter((i) => i.score >= 1 && i.score <= 5).length;
+}
+
+/**
+ * `assessment_status` 由 `completed_count` **派生**，请求体里没有它。
+ * 一题未评 s1，评了一部分 s2，评满 s3（01 home-spec.md 的 method 段）。
+ */
+function assessmentStatusOf(id) {
+  const done = assessmentCompletedCount(id);
+  if (done === 0) return 's1';
+  return done < QUALITY_REQUIRED_COUNT ? 's2' : 's3';
+}
+
+/** 契约的 `Assessment`：进度与状态派生，题文一个字也不回。 */
+function toAssessment(row) {
+  return {
+    ...row,
+    required_count: QUALITY_REQUIRED_COUNT,
+    completed_count: assessmentCompletedCount(row.assessment_id),
+    assessment_status: assessmentStatusOf(row.assessment_id),
+  };
+}
+
+/** GET /assessments —— 本人的评估列表，`assessment_period DESC, assessment_id DESC`。 */
+function getAssessments(req, res) {
+  const items = ASSESSMENTS
+    .slice()
+    .sort((a, b) => (a.assessment_period === b.assessment_period
+      ? b.assessment_id - a.assessment_id
+      : (a.assessment_period < b.assessment_period ? 1 : -1)))
+    .map(toAssessment);
+  return sendJson(res, 200, { items, next_cursor: null });
+}
+
+/** GET /assessments/{id} —— 契约的 `AssessmentDetail`：Assessment 加已作答的题项。 */
+function getAssessment(req, res, id) {
+  const row = ASSESSMENTS.find((r) => r.assessment_id === Number(id));
+  if (!row) return fail(res, 404, 'not_found', '这份评估不存在或不在可见范围内');
+  return sendJson(res, 200, {
+    ...toAssessment(row),
+    items: [...itemsOf(row.assessment_id).entries()].map(([code, i]) => ({
+      tool_item_code: code,
+      score: i.score,
+      note: i.note,
+      file_id: i.file_id.slice(),
+    })),
+  });
+}
+
+/**
+ * PUT /assessments/{id}/items/{tool_item_code} —— 逐题作答。
+ *
+ * 一个动作，两条已登记转移：首题 s1→s2，末题 s2→s3。**没有单独的提交动作**，
+ * 所以评满那一刻就是完成那一刻。回的是该次评估的最新进度（契约的 `Assessment`）。
+ *
+ * 题号必须是这件工具真有的一条。**服务端不校验题文**——题文是客户端按
+ * `tool_code + tool_version` 解析的代码资产，这里只认代码格式。
+ */
+function putAssessmentItem(req, res, id, code, body) {
+  const row = ASSESSMENTS.find((r) => r.assessment_id === Number(id));
+  if (!row) return fail(res, 404, 'not_found', '这份评估不存在或不在可见范围内');
+  if (assessmentStatusOf(row.assessment_id) === 's3' && !itemsOf(row.assessment_id).has(code)) {
+    return fail(res, 409, 'conflict', '这份评估已评满，不能再加题');
+  }
+  if (!/^I\d{3}$/.test(code)) {
+    return fail(res, 404, 'not_found', '没有这道题');
+  }
+
+  const score = body.score;
+  if (!Number.isInteger(score) || score < 1 || score > 5) {
+    return fail(res, 422, 'validation_failed', '打分必须是 1 到 5',
+      { field: 'score', rule: 'between_1_and_5' });
+  }
+  const note = typeof body.note === 'string' ? body.note.trim() : '';
+  if (note.length > 300) {
+    return fail(res, 422, 'validation_failed', '评价记录最多 300 字',
+      { field: 'note', rule: 'max_len_300' });
+  }
+  // 佐证材料走 `db_file_ref(owner_object='db_assessment_item', usage_key='evidence')`，
+  // `db_assessment_item` 本身没有 file_id 列 —— 契约原话。这里只记引用。
+  const files = Array.isArray(body.file_id) ? body.file_id : [];
+
+  itemsOf(row.assessment_id).set(code, { score, note, file_id: files });
+  state.assessmentScores.push({ assessment_id: row.assessment_id, tool_item_code: code });
+  return sendJson(res, 200, toAssessment(row));
+}
 
 /** 124 条题项，四层层级拍平 —— 层级不落表，靠 `item_id` 前缀逐级截断（§2.6）。 */
 const SCALE_ITEMS = Object.freeze(

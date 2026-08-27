@@ -70,6 +70,10 @@ const SUBPACKAGE_SERVICES = {
   // tabBar 模块可以带不止一个分包，`preloadRule` 上写着 library／training／assessment
   // 三个。分开的理由是服务模块边界 —— 量表与研修没有共用的读写面。
   'packages/assessment': 'assessment',
+  // 办园质量评估（2026-08-27）。与 packages/assessment 是**两件不同的量具**：那个评
+  // 一名幼儿的五大领域（124 题），这个评园所（9 个一级指标、120 题）。读写面没有一行
+  // 共用，所以是两个分包两个服务，不是一个分包塞两套。
+  'packages/quality': 'quality',
   'packages/co-education': 'co-education',
   // 评价链（票据 20）与成长册（票据 21）在结构契约上都属 co-education 模块，但**模块与
   // 分包不是一回事**：一个 tabBar 模块可以带不止一个分包，正如 assessment 借教研培训落门。

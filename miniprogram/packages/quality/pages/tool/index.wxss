@@ -1,0 +1,336 @@
+/* 办园质量评估 —— 逐格对着 screens/assessment-tool.html 转写。换算因子 2（票据 01）。
+ *
+ * 原型的进度环是 `conic-gradient`。这里也用它，但**不靠它传信息**：环里写着百分数，
+ * 右侧还有一条进度条说同一件事。哪台设备的渲染器不认这个渐变，读数与进度条照旧成立。
+ */
+
+/* ── 顶部摘要 ─────────────────────────────────────────────────────────────── */
+
+.qa-sum {
+  display: flex;
+  align-items: center;
+  gap: 28rpx;
+  padding: 28rpx 32rpx;
+  border-radius: 32rpx;
+}
+
+/* 原型 `.dial`：58px 的环。 */
+.qa-dial {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 116rpx;
+  height: 116rpx;
+  border-radius: 50%;
+  border: 8rpx solid var(--accent-light);
+  color: var(--accent-dark);
+  font-size: 26rpx;
+  font-weight: 800;
+}
+
+.qa-sum__right {
+  flex: 1;
+  min-width: 0;
+}
+
+.qa-sum__lvl {
+  font-size: 30rpx;
+  font-weight: 800;
+  color: var(--fg);
+}
+
+.qa-sum__count {
+  margin: 6rpx 0 14rpx;
+  font-size: 23rpx;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+/* 原型 `.bar`：6px 高的胶囊槽。 */
+.qa-bar {
+  height: 12rpx;
+  border-radius: var(--radius-pill);
+  background: var(--border);
+  overflow: hidden;
+}
+
+.qa-bar__fill {
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  transition: width 0.2s ease;
+}
+
+/* ── 筛选 ─────────────────────────────────────────────────────────────────── */
+
+.qa-filters {
+  display: flex;
+  gap: 14rpx;
+  margin: 20rpx 0;
+}
+
+/* 原型 `.chip`：描边胶囊，选中时换成品牌色底。 */
+.qa-chip {
+  padding: 12rpx 26rpx;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.qa-chip--on {
+  border-color: var(--accent);
+  background: var(--accent-light);
+  color: var(--accent-dark);
+}
+
+.qa-readonly {
+  font-size: 28rpx;
+  color: var(--muted);
+  line-height: var(--line-cjk);
+}
+
+/* ── 一级指标卡 ───────────────────────────────────────────────────────────── */
+
+.qa-sec {
+  padding: 0;
+}
+
+.qa-sec + .qa-sec {
+  margin-top: 20rpx;
+}
+
+/* 原型 `.sec-head`：序号方块、名称、已评计数、一枚箭头。 */
+.qa-sec__head {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 28rpx;
+}
+
+.qa-sec__idx {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 52rpx;
+  height: 52rpx;
+  border-radius: 16rpx;
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  font-size: 24rpx;
+  font-weight: 800;
+}
+
+/* 这一节评满时换成绿的：九张卡扫一眼就知道还剩哪几张。 */
+.qa-sec__idx--done {
+  background: var(--green-light);
+  color: var(--green);
+}
+
+.qa-sec__name {
+  flex: 1;
+  min-width: 0;
+  font-size: 29rpx;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.qa-sec__meta {
+  flex: none;
+  font-size: 22rpx;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.qa-sec__chev {
+  flex: none;
+  color: var(--muted);
+  font-size: 24rpx;
+}
+
+/* ── 一道题 ───────────────────────────────────────────────────────────────── */
+
+/* 原型 `.ind`：卡中卡，自己带一条描边。 */
+.qa-ind {
+  margin: 0 28rpx 20rpx;
+  padding: 24rpx;
+  border: 1px solid var(--border);
+  border-radius: 24rpx;
+}
+
+.qa-ind__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 16rpx;
+}
+
+/* 题号用等宽数字，120 行才对得齐。 */
+.qa-ind__code {
+  flex: none;
+  font-size: 20rpx;
+  font-weight: 800;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.8;
+}
+
+.qa-ind__title {
+  flex: 1;
+  min-width: 0;
+  font-size: 26rpx;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.qa-ind__chip {
+  flex: none;
+  padding: 6rpx 18rpx;
+  border-radius: var(--radius-pill);
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 22rpx;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.qa-ind__chip--on {
+  background: var(--accent-light);
+  color: var(--accent-dark);
+}
+
+.qa-ind__sub {
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: var(--muted);
+}
+
+/* ── 评分说明（三档锚点） ─────────────────────────────────────────────────── */
+
+.qa-rub {
+  margin-top: 16rpx;
+  font-size: 22rpx;
+  font-weight: 700;
+  color: var(--accent-dark);
+}
+
+.qa-anchor {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 12rpx;
+  font-size: 23rpx;
+  line-height: var(--line-cjk);
+  color: var(--muted);
+}
+
+.qa-anchor__lv {
+  flex: none;
+  width: 72rpx;
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+
+.qa-anchor__text {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── 五个打分档 ───────────────────────────────────────────────────────────── */
+
+/* 原型 `.scores`：五等分一行，每格上数字下文案。 */
+.qa-scores {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12rpx;
+  margin-top: 20rpx;
+}
+
+.qa-sbtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4rpx;
+  padding: 16rpx 4rpx;
+  border: 1px solid var(--border);
+  border-radius: 20rpx;
+  background: var(--surface);
+}
+
+.qa-sbtn--on {
+  border-color: var(--accent);
+  background: var(--accent-light);
+}
+
+.qa-sbtn--off {
+  opacity: 0.5;
+}
+
+.qa-sbtn__n {
+  font-size: 28rpx;
+  font-weight: 800;
+  color: var(--fg);
+}
+
+.qa-sbtn--on .qa-sbtn__n {
+  color: var(--accent-dark);
+}
+
+/* 五个档的文案是「不适宜／及格／一般／良好／优秀」，最长三个字，20rpx 放得下。 */
+.qa-sbtn__l {
+  font-size: 20rpx;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* 佐证提示 —— 原型 `.evi-hint`：红字红底，因为它是工具的硬要求，不是一句建议。 */
+.qa-evi {
+  margin-top: 20rpx;
+  padding: 16rpx 20rpx;
+  border-radius: 18rpx;
+  background: var(--danger-light);
+  color: var(--danger);
+  font-size: 22rpx;
+  font-weight: 700;
+  line-height: var(--line-cjk);
+}
+
+/* ── 合计与提交 ───────────────────────────────────────────────────────────── */
+
+.qa-foot {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  margin-top: 24rpx;
+  padding: 24rpx 28rpx;
+}
+
+.qa-foot__score {
+  flex: 1;
+  min-width: 0;
+}
+
+.qa-foot__n {
+  font-size: 40rpx;
+  font-weight: 800;
+  color: var(--accent-dark);
+}
+
+.qa-foot__l {
+  margin-top: 4rpx;
+  font-size: 22rpx;
+  color: var(--muted);
+}
+
+/* 原型这里是一颗「保存」按钮。契约里没有保存也没有提交这个动作 —— 拨一次就存一次，
+ * 末题落下即完成。所以这一格是一句说明，不是一颗按不动的按钮。 */
+.qa-foot__hint {
+  flex: none;
+  max-width: 320rpx;
+  font-size: 22rpx;
+  line-height: 1.45;
+  color: var(--muted);
+  text-align: right;
+}

@@ -100,24 +100,49 @@
         "pages/create/index",
         "pages/preview/index"
       ]
+    },
+    {
+      "root": "packages/quality",
+      "name": "quality",
+      "pages": [
+        "pages/tool/index"
+      ]
     }
   ],
   "preloadRule": {
     "pages/party-building/index": {
       "network": "all",
-      "packages": ["party"]
+      "packages": [
+        "party"
+      ]
     },
     "pages/coordination/index": {
       "network": "all",
-      "packages": ["coordination"]
+      "packages": [
+        "coordination"
+      ]
     },
     "pages/training/index": {
       "network": "all",
-      "packages": ["library", "training", "assessment"]
+      "packages": [
+        "library",
+        "training",
+        "assessment"
+      ]
     },
     "pages/co-education/index": {
       "network": "all",
-      "packages": ["co-education", "evaluation", "growth-book"]
+      "packages": [
+        "co-education",
+        "evaluation",
+        "growth-book"
+      ]
+    },
+    "pages/home/index": {
+      "packages": [
+        "quality"
+      ],
+      "network": "all"
     }
   },
   "window": {

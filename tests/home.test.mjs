@@ -49,9 +49,11 @@ test('首页 aggregates the four regions, each ready to bind', async () => {
   assert.equal(upload.badge, '待审核', 'the latest upload record status, mapped, never the raw code')
   // 01 home-spec.md line 90: 显示「待处理 N」, and the fixture holds 10 a1/a2 assigns.
   assert.equal(task.badge, '待处理 10')
-  // Numerator/denominator per ui=home.todo.assessment.badge.*; a fresh mock has
-  // no completed child assessment, and the fixture class holds 28 children.
-  assert.equal(assessment.badge, '0/28')
+  // 分母是**办园质量评估那件工具的题数**（120），不是班上的幼儿数：
+  // `ui=home.todo.assessment.badge.denominator` 指的是 `db_assessment.required_count`，
+  // 而那是 `school-quality-120@1.0.0` 的题项数。2026-08-27 之前这里钉的是 0/28，
+  // 因为那张卡被接到了五大领域量表 —— 两件不同的量具。
+  assert.equal(assessment.badge, '0/120')
   for (const s of view.stats) {
     assert.ok(s.mark && s.title, 'every card carries its mark and title')
   }
@@ -179,11 +181,19 @@ test('every tappable region on 首页 either navigates or gives a reason', async
     { api: 'navigateTo', url: '/packages/library/pages/upload/form' },
     '待上传进上传表单，且不带目标类型 —— 待办行上没有一列说得出是资源还是案例')
 
-  // The third stat card (2026-08-26 redesign): 质量评估 reaches the scale form,
-  // the built counterpart of the prototype's assessment-tool.html.
+  // 第三张统计卡进的是**办园质量评估**（9 个一级指标、120 题），不是五大领域量表
+  // （评一名幼儿、124 题）。01 home-spec.md 的 btn_assessment 指的一直是前者；
+  // 后者是这张卡在它自己那一页没建成时的权宜去向。
+  // 契约：「教师端唯一的按钮是**带着既有 assessment_id 跳转的**」，所以这张卡带编号。
+  // 没有编号时不跳，而是说一句 —— 契约里没有创建端点，客户端不替谁开一份。
+  await page.load()
   page.onTodoTap({ currentTarget: { dataset: { kind: 'assessment' } } })
   assert.deepEqual(c.record.navigations.pop(),
-    { api: 'navigateTo', url: '/packages/assessment/pages/scale/index' })
+    { api: 'navigateTo', url: '/packages/quality/pages/tool/index?assessment_id=401' })
+
+  c.home.openTodo('assessment', 0)
+  assert.equal(c.record.navigations.length, 0, '没有编号就不跳')
+  assert.match(c.record.toasts.pop().title, /还没有质量评估/, '并且说出原因')
 })
 
 // ── Structure: what must not be here ─────────────────────────────────────────

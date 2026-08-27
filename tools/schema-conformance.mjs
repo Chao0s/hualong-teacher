@@ -77,6 +77,10 @@ const CLIENT_OWN = [
   /^parent_task$/, /^moment$/, /^message$/, /^month$/, /^term$/, /^upload$/,
   // 页面路由参数，同 content_id：`?round_id=701` 不是 API 查询参数。
   /^round_id$/,
+  // 办园质量评估的佐证提示（2026-08-27）。它由**分数**当场算出来（1 分或 5 分要留
+  // 佐证，是题库 `scoring.evidence` 的规则），一次也不上线：契约的
+  // `AssessmentItemWrite` 只有 score／note／file_id 三个键。
+  /^evidence_expected$/,
 ];
 const isClientOwn = (name) => CLIENT_OWN.some((re) => re.test(name));
 

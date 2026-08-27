@@ -29,6 +29,7 @@ const guard = require('../utils/guard');
 // for what JavaScript allows.
 const kase = require('./case');
 const library = require('./library');
+const quality = require('./quality');
 
 const TODOS_PATH = '/home/todos';
 
@@ -100,11 +101,19 @@ async function loadStats() {
         key: 'assessment',
         mark: '评',
         title: '质量评估',
-        badge: `${agg.completed_count}/${agg.required_count}`,
+        // 分母是**办园质量评估那件工具的题数**（120），不是班上的幼儿数。
+        // 01 home-spec.md 的 `home.todo.assessment.badge.denominator` 指的是
+        // `db_assessment.required_count`，而那是 `school-quality-120@1.0.0` 的题项数。
+        // 2026-08-27 之前这里数的是幼儿，因为那张卡被接到了五大领域量表 —— 两件不同
+        // 的量具，见 services/quality.js 的头注。
+        badge: `${agg.assessment_completed_count}/${agg.assessment_required_count}`,
         badge_class: 'stat__badge--info',
       },
     ],
     unreadNotice: agg.unread_notice_count || 0,
+    // 那张卡是**带着既有 assessment_id 跳转的**（契约原话）。没有编号就没得跳 ——
+    // 契约里没有创建端点，客户端不替谁开一份。
+    assessmentId: agg.assessment_id || 0,
   };
 }
 
@@ -122,11 +131,11 @@ async function loadStats() {
  * badge rides on the db_home aggregate, and the rows live on 通知列表页.
  */
 async function load() {
-  const [{ stats, unreadNotice }, cases] = await Promise.all([
+  const [{ stats, unreadNotice, assessmentId }, cases] = await Promise.all([
     loadStats(),
     kase.recommendedForHome(),
   ]);
-  return { stats, unreadNotice, cases };
+  return { stats, unreadNotice, assessmentId, cases };
 }
 
 /** 常用入口, ready to bind. `disabled` is the holiday's visible half. */
@@ -182,17 +191,20 @@ function openCaseList() {
  * A 待办事项 stat card leads to its own surface: 传 opens the upload form
  * (ticket 15 — same form, same service write path as the 案例库 entry, and
  * **不带目标类型**：没有一列说得出这条待办是资源还是案例，替它猜一个，教师十次里
- * 有五次要改回来)；评 opens the scale form, the built counterpart of the
- * prototype's assessment-tool.html；办 and anything unknown lead to 任务进度看板
+ * 有五次要改回来)；评 opens 办园质量评估, which is what `01 home-spec.md` has
+ * always meant by that card；办 and anything unknown lead to 任务进度看板
  * (ticket 10) — the neutral destination.
  */
-function openTodo(kind) {
+function openTodo(kind, assessmentId) {
   if (kind === 'upload') {
     library.openUpload();
     return;
   }
   if (kind === 'assessment') {
-    guard.navigateTo('/packages/assessment/pages/scale/index', 'teaching-research');
+    // 办园质量评估，不是五大领域量表 —— 两件不同的量具，见 services/quality.js 的
+    // 头注。2026-08-27 之前这里接的是量表，那是这张卡从没建成过它自己那一页时的
+    // 权宜，卡上写着「质量评估」却打开评一名幼儿的表。
+    quality.open(assessmentId);
     return;
   }
   guard.navigateTo('/pages/task/board', 'home');

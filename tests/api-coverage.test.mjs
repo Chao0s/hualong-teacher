@@ -116,6 +116,11 @@ async function seedWorld(token) {
     })
   }
 
+  // 办园质量评估：契约里没有创建端点（原话「本端点不创建评估」），所以走查用的是
+  // 夹具预先摆好的那一份，编号从列表读。题号形如 `I001` —— 五大领域量表那套
+  // `H1-1-1` 是另一件量具的，混用会撞 404。
+  const assessments = (await get('/assessments'))?.items || []
+
   // `POST /media/files` 要一张真凭证换来的 upload_ticket，不是一个字符串样例。
   // 契约 §8 的媒体流是三步，这里走前一步把票取出来。
   const cred = await post('/media/upload-credentials', {
@@ -133,7 +138,9 @@ async function seedWorld(token) {
     scale_code: scaleCode,
     scale_version: scaleVersion,
     item_id: firstItem,
-    tool_item_code: firstItem,
+    assessment_id: assessments[0]?.assessment_id,
+    // 这件工具的题号，不是量表的。两条路径共用这个占位名，取值却必须各是各的。
+    tool_item_code: 'I001',
     // 接收要 a1，完成要 a2 —— 同一个参数名，两条路径要两个不同的 id。
     acceptable_task_id: byAssign('a1'),
     completable_task_id: byAssign('a2'),

@@ -63,6 +63,7 @@ export function loadClient({ baseUrl, wxOptions } = {}) {
     assessment: require(path.join(MP, 'services', 'assessment.js')),
     evaluation: require(path.join(MP, 'services', 'evaluation.js')),
     growthBook: require(path.join(MP, 'services', 'growth-book.js')),
+    quality: require(path.join(MP, 'services', 'quality.js')),
   }
 }
 

@@ -803,13 +803,27 @@ describe('评价五维图入口页', () => {
    * 两者因此换了门：量表从首页「质量评估」统计卡进，五维图改成量表页内的入口。
    * 两条路都要真的通 —— 一个模块的页面进不去，等于没建。
    */
-  test('量表从首页的质量评估卡进得去', async () => {
+  /**
+   * 2026-08-27 更正：首页那张「质量评估」卡进的**不是**这一页。
+   *
+   * 它进办园质量评估（`packages/quality`，9 个一级指标、120 题，评的是园所）。
+   * 五大领域量表评的是一名幼儿的 124 题，是另一件量具。此前把卡接到这里，是因为
+   * 办园质量评估那一页从没建过。
+   *
+   * 那么量表自己从哪进？教研培训入口页按原型只有三张快捷卡，量表不在其中；它现在
+   * 的门是**家园社共育 → 儿童成长档案 → 教师评价 → 综合评估**那一条链，以及五维图
+   * 页上逐名幼儿的入口。这条断言守的就是「它仍然进得去」。
+   */
+  test('量表仍然进得去 —— 从五维图页选一名未评完的幼儿', async () => {
     const c = await signedIn()
-    const home = loadPage(c, 'pages/home/index.js')
+    const page = loadPage(c, 'packages/assessment/pages/five-chart/index.js')
+    page.onLoad()
+    await page.load()
 
-    home.onTodoTap({ currentTarget: { dataset: { kind: 'assessment' } } })
-    assert.deepEqual(c.record.navigations.pop(),
-      { api: 'navigateTo', url: '/packages/assessment/pages/scale/index' })
+    const draft = page.data.rows.find((r) => !r.done)
+    assert.ok(draft, '夹具里要有一名还没评完的幼儿')
+    page.onChildTap({ currentTarget: { dataset: { childId: draft.child_id } } })
+    assert.match(c.record.navigations.pop().url, /pages\/scale\/index\?child_id=/)
   })
 
   test('五维图从量表页内进得去，且不必先选幼儿', async () => {
