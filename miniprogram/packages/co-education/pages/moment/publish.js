@@ -69,6 +69,12 @@ Page({
     // 选照片时就地说的那句话（10 MB、张数上限）。不是一次服务故障。
     photoNotice: '',
     picking: false,
+    // 缩略图（原型 `.photo-thumb`）。刚选的那几张用本机临时路径，不必先传完再看；
+    // 从服务端读回来的草稿则逐张现签地址（§4 规则 1，没有可直接访问的地址）。
+    photos: [],
+    // 原型那块统计：已勾选几人、占全班几成。**不是自己数出来的口径** ——
+    // 分子是草稿里勾了几个，分母是本班名册的人数，两者都在手上。
+    coverage: { selected: 0, total: 0, rate: 0 },
 
     saving: false,
     submitting: false,
@@ -113,6 +119,8 @@ Page({
         children: roster.children,
         draft,
       });
+      // 名册读回来之后分母才知道，所以这一句排在 setData 之后。
+      this.setData({ coverage: this.coverageOf(draft) });
     } catch (err) {
       reportFailure(this, err, { loading: false });
     }
@@ -124,6 +132,13 @@ Page({
   },
 
   // ── 表单 ──────────────────────────────────────────────────────────────────
+
+  /** 勾了几个、占全班几成。整数百分比，不四舍五入到小数 —— 原型上就是整数。 */
+  coverageOf(draft) {
+    const total = (this.data.children || []).length;
+    const selected = ((draft || {}).child_id || []).length;
+    return { selected, total, rate: total ? Math.round((selected / total) * 100) : 0 };
+  },
 
   onTextInput(e) {
     this.patchDraft(e.currentTarget.dataset.field, e.detail.value);
@@ -148,6 +163,7 @@ Page({
     const draft = { ...this.data.draft, [field]: value };
     this.setData({
       draft,
+      coverage: this.coverageOf(draft),
       blockers: [],
       previewedInFull: false,
       confirmed: false,
@@ -199,6 +215,10 @@ Page({
       }
       this.setData({ picking: false });
       this.patchDraft('file_id', (this.data.draft.file_id || []).concat(ids));
+      // 本机路径直接当缩略图：这几张就在手机上，没必要绕一趟签名。
+      this.setData({
+        photos: this.data.photos.concat(ids.map((id, i) => ({ file_id: id, url: picked[i].path }))),
+      });
     } catch (err) {
       reportFailure(this, err, { picking: false });
     }
@@ -207,7 +227,18 @@ Page({
   onRemovePhoto(e) {
     const fileId = Number(e.currentTarget.dataset.fileId);
     this.patchDraft('file_id', (this.data.draft.file_id || []).filter((id) => id !== fileId));
-    this.setData({ photoNotice: '' });
+    this.setData({
+      photoNotice: '',
+      photos: this.data.photos.filter((p) => p.file_id !== fileId),
+    });
+  },
+
+  /** 点开一张缩略图看大图。地址已经在手上，这一步不跑网络。 */
+  onPhotoTap(e) {
+    const index = Number(e.currentTarget.dataset.index) || 0;
+    const urls = this.data.photos.map((p) => p.url);
+    if (!urls.length) return;
+    wx.previewImage({ urls, current: urls[index] });
   },
 
   // ── 预览与发布 ────────────────────────────────────────────────────────────

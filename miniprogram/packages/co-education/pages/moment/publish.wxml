@@ -57,28 +57,60 @@
         -->
         <view class="co-field co-field--photos">
           <view class="co-field__label">添加照片（最多 {{imageLimit}} 张）</view>
+          <!-- 原型 `.photo-row`：一排方格，第一格是虚线描边的「＋ 添加」，其余是缩略图。
+               2026-08-27 改回原型 —— 此前每张是一行「照片 1 ／ 移除」的文字。 -->
           <view class="co-photos">
-            <view wx:for="{{draft.file_id}}" wx:key="*this" class="co-photos__item">
-              <text class="co-photos__id">照片 {{index + 1}}</text>
-              <view
-                wx:if="{{!readonly}}"
-                class="co-photos__remove"
-                data-file-id="{{item}}"
-                bindtap="onRemovePhoto">移除</view>
-            </view>
             <view
               wx:if="{{!readonly && draft.file_id.length < imageLimit}}"
               class="co-photos__add"
-              bindtap="onPickPhotos">{{picking ? '上传中…' : '＋ 添加照片'}}</view>
+              bindtap="onPickPhotos">
+              <text class="co-photos__plus">＋</text>
+              <text>{{picking ? '上传中…' : '添加'}}</text>
+            </view>
+            <view wx:for="{{photos}}" wx:key="file_id" wx:for-index="pi" class="co-photos__item">
+              <image
+                class="co-photos__img"
+                src="{{item.url}}"
+                mode="aspectFill"
+                data-index="{{pi}}"
+                bindtap="onPhotoTap" />
+              <view
+                wx:if="{{!readonly}}"
+                class="co-photos__remove"
+                data-file-id="{{item.file_id}}"
+                bindtap="onRemovePhoto">移除</view>
+            </view>
           </view>
           <view wx:if="{{photoNotice}}" class="co-notice">{{photoNotice}}</view>
+        </view>
+      </view>
+
+      <!-- 原型「本次涉及幼儿」那一节：左边两行字，右边一个大百分比，下面一条进度条，
+           再下面一张一行的小表。2026-08-27 补建 —— 此前只有勾选网格，没有这块统计。 -->
+      <view class="hl-card">
+        <view class="co-cover">
+          <view class="co-cover__text">
+            <view class="co-cover__title">本次涉及幼儿</view>
+            <view class="co-cover__hint">已勾选 {{coverage.selected}} / {{coverage.total}} 人</view>
+          </view>
+          <text class="co-cover__rate">{{coverage.rate}}%</text>
+        </view>
+        <view class="co-cover__bar">
+          <view class="co-cover__fill" style="width:{{coverage.rate}}%"></view>
+        </view>
+        <view class="co-cover__row">
+          <text class="co-cover__cell co-cover__cell--name">{{className}}</text>
+          <text class="co-cover__cell">{{coverage.selected}}人</text>
+          <text class="co-cover__cell">
+            <text class="hl-pill {{coverage.rate >= 80 ? 'hl-pill--ok' : 'hl-pill--info'}}">{{coverage.rate}}%</text>
+          </text>
         </view>
       </view>
 
       <view class="hl-card">
         <hl-child-picker
           mode="multi"
-          label="本次涉及幼儿"
+          label="幼儿名单"
           class-name="{{className}}"
           children="{{children}}"
           value="{{draft.child_id}}"

@@ -309,6 +309,47 @@ function decorateMoment(row) {
   };
 }
 
+/**
+ * 把一则在园时光的照片签成可以直接绑到 `<image src>` 的地址。
+ *
+ * 原型「全部活动」那一页的照片网格就是这些（园方 2026-08-27 裁定：图片区照画）。
+ * **一张图一次签名** —— 契约 §4 规则 1 原话：本端点回 `file_id`，取图必须逐次走
+ * `GET /media/files/{file_id}/url`，每次重验 caretaker／current class／s3，
+ * 且**不提供下载、存相簿、分享、离线相簿或收藏**。
+ *
+ * 签不出来的那一张就不画：一个裂图比少一张图更难看懂。
+ */
+async function signMomentPhotos(fileIds, momentId) {
+  const signed = await Promise.all((fileIds || []).map(async (fileId) => {
+    try {
+      const res = await api.get(`/media/files/${fileId}/url`, {
+        query: { owner_object: 'db_moment', owner_id: momentId },
+      });
+      return { file_id: fileId, url: res.url };
+    } catch (err) {
+      return null;
+    }
+  }));
+  return signed.filter(Boolean);
+}
+
+/**
+ * 一页「全部活动」（原型 `home-school-moment-feed.html`）。
+ *
+ * 与 `listMoments` 的差别只有一处：这一页要**真的把照片画出来**，所以逐则签好地址。
+ * 代价说明白：一页 20 则、每则最多 9 张，最坏情况是 180 次签名请求。原型一屏只有三则，
+ * 真实一周也就三五则，所以这不是一个会失控的数 —— 但它确实随条数线性增长，
+ * 换成批量端点要先改契约（§8.4 现在没有批量取档）。
+ */
+async function listMomentFeed({ cursor, limit } = {}) {
+  const page = await api.getPage(MOMENT_PATH, { cursor, limit, publish_status: 's3' });
+  const items = await Promise.all(page.items.map(async (row) => ({
+    ...decorateMoment(row),
+    photos: await signMomentPhotos(row.file_id, row.moment_id),
+  })));
+  return { items, nextCursor: page.nextCursor };
+}
+
 /** 一页在园时光，`moment_date DESC, moment_id DESC`（§3.1 游标分页）。 */
 async function listMoments({ week_key: weekKey, publish_status: status, cursor, limit } = {}) {
   const page = await api.getPage(MOMENT_PATH, {
@@ -841,6 +882,7 @@ module.exports = {
   withdrawMoment,
   restoreMoment,
   listMoments,
+  listMomentFeed,
   momentWeeklyCoverage,
   previousWeekKeys,
   momentProgressMatrix,

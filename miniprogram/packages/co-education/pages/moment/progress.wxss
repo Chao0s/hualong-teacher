@@ -1,1 +1,19 @@
 @import "../../shared.wxss";
+
+/* 原型 `.sec`：区标题在左，一个「更多」链接在右。 */
+.co-sec {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.co-sec__more {
+  flex: none;
+  font-size: 24rpx;
+  font-weight: 400;
+  color: var(--accent-dark);
+}

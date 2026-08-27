@@ -71,6 +71,7 @@
       "pages": [
         "pages/moment/publish",
         "pages/moment/progress",
+        "pages/moment/feed",
         "pages/task/publish",
         "pages/task/progress",
         "pages/community/index"

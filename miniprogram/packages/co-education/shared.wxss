@@ -112,19 +112,33 @@
   margin-top: var(--space-2);
 }
 
+/* 原型 `.photo`：一排 74px 见方的格。缩略图那几格铺满图，「＋ 添加」那一格是虚线描边。 */
 .co-photos__item,
 .co-photos__add {
+  position: relative;
   width: 164rpx;
-  height: 144rpx;
+  height: 148rpx;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: var(--space-1);
   border-radius: var(--radius-sm);
+  overflow: hidden;
   background: var(--bg);
   font-size: 24rpx;
   color: var(--muted);
+}
+
+.co-photos__img {
+  width: 100%;
+  height: 100%;
+}
+
+/* 原型的加号是单独一行大字，说明在它下面。 */
+.co-photos__plus {
+  font-size: 40rpx;
+  line-height: 1;
 }
 
 .co-photos__add {
@@ -137,8 +151,16 @@
   color: var(--fg);
 }
 
+/* 「移除」压在缩略图右下角：格子被图铺满了，它没有别的地方可站。 */
 .co-photos__remove {
-  color: var(--danger);
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  padding: 6rpx 12rpx;
+  border-radius: var(--radius-sm) 0 0 0;
+  background: rgba(26, 25, 22, 0.6);
+  color: #fff;
+  font-size: 20rpx;
 }
 
 /* ── 预览 ────────────────────────────────────────────────────────────────── */
@@ -193,3 +215,70 @@
 
 .co-legend__dot--done { background: var(--green); }
 .co-legend__dot--todo { background: var(--border); }
+
+/* ── 本次涉及幼儿的覆盖统计 —— 原型 home-school-moment-publish.html ────────── */
+
+.co-cover {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+}
+
+.co-cover__text {
+  flex: 1;
+  min-width: 0;
+}
+
+.co-cover__title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.co-cover__hint {
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: var(--muted);
+}
+
+/* 原型 `#selectedPercent`：20px 主色大字。 */
+.co-cover__rate {
+  flex: none;
+  color: var(--accent);
+  font-size: 40rpx;
+  font-weight: 700;
+}
+
+/* 原型 `.progress-line .bar`。 */
+.co-cover__bar {
+  height: 12rpx;
+  margin-top: 20rpx;
+  border-radius: var(--radius-pill);
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.co-cover__fill {
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+}
+
+/* 原型那张一行的小表。WXSS 没有 table，铺成三列（ADR-0017 豁免）。 */
+.co-cover__row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 20rpx;
+  margin-top: 24rpx;
+  padding-top: 20rpx;
+  border-top: 1px solid var(--border);
+  font-size: 24rpx;
+  color: var(--muted);
+}
+
+.co-cover__cell--name {
+  color: var(--fg);
+  font-weight: 600;
+}

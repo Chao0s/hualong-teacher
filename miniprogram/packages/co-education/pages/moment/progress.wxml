@@ -8,6 +8,19 @@
   </view>
 
   <block wx:if="{{!loading}}">
+    <!-- 原型 home-school-moments.html 顶部：一枚整宽的「发布活动」，下面一句说明。
+         2026-08-27 补建 —— 此前这一页只能从格子里点进发布表单，没有整体入口。 -->
+    <view class="hl-card">
+      <button class="hl-btn hl-btn--block" bindtap="onPublishTap">发布活动</button>
+      <view class="co-summary__gap">按集体活动发布，可补充地点、观察实录、分析和图片。</view>
+    </view>
+
+    <!-- 原型 `.sec`：区标题在左，「全部活动」在右。 -->
+    <view class="co-sec">
+      <text>本周上传进度</text>
+      <text class="co-sec__more" bindtap="onFeedTap">全部活动</text>
+    </view>
+
     <view class="hl-card">
       <view class="hl-card__title">{{className}} 在园时光发布进度</view>
       <view class="co-summary">{{summary}}</view>

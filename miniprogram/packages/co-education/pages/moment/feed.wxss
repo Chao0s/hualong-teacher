@@ -1,0 +1,145 @@
+/* 在园时光 · 全部活动 —— 逐格对着 screens/home-school-moment-feed.html 与
+ * home-school-common.css 转写。换算因子 2（票据 01）。 */
+
+/* 原型顶部那句提示：11px 灰字。 */
+.feed__hint {
+  padding: 4rpx 4rpx 20rpx;
+  font-size: 22rpx;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+/* 原型 `.moment-card`：两列（40px 字标列 ＋ 正文），行间一条细线，不是一行一张卡。 */
+.moment {
+  display: flex;
+  gap: 20rpx;
+  padding: 28rpx 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.moment__side {
+  flex: none;
+  width: 80rpx;
+}
+
+/* 原型 `.avatar`：38px 圆角方，浅青底深青字。原型给三种色（青／绿／琥珀）循环，
+ * 那是静态示例里区分三条的手法，不是与数据有关的规则，所以这里只取第一种。 */
+.moment__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 76rpx;
+  height: 76rpx;
+  border-radius: 24rpx;
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.moment__body {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 原型 `.moment-head`：标题在左、日期在右，基线对齐。 */
+.moment__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.moment__title {
+  flex: 1;
+  min-width: 0;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.moment__date {
+  flex: none;
+  font-size: 22rpx;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.moment__text {
+  margin-top: 14rpx;
+  font-size: 26rpx;
+  line-height: 1.55;
+  color: var(--fg);
+}
+
+/* 原型 `.photo-grid`：三列，格间 6px；只有两张时铺成两列。 */
+.moment__photos {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12rpx;
+  margin-top: 20rpx;
+}
+
+.moment__photos--two {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+/* 原型 `.feed-photo`：最矮 74px，圆角 10px。 */
+.moment__photo {
+  width: 100%;
+  height: 148rpx;
+  border-radius: 20rpx;
+  background: var(--bg);
+}
+
+/* 原型 `.moment-foot`：一行两端对齐，左边一句灰字，右边一枚描边药丸。 */
+.moment__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  margin-top: 16rpx;
+}
+
+.moment__meta {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 22rpx;
+  color: var(--muted);
+}
+
+/* 原型 `.add-material`：描边药丸，主色字。 */
+.moment__add {
+  flex: none;
+  padding: 10rpx 20rpx;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--accent);
+  font-size: 22rpx;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* 点了办不成的那一句写在列表下面。原型没有这一行 —— 原型的按钮办得成。 */
+.feed__notice {
+  padding: var(--space-3) 0;
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.feed__more {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--accent-dark);
+  font-size: 26rpx;
+  text-align: center;
+}

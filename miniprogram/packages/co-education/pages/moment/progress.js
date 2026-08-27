@@ -111,6 +111,16 @@ Page({
     coEdu.openMomentPublish({ childId: rowKey, weekKey: colKey });
   },
 
+  /** 原型顶部那一枚。不带幼儿与周次 —— 那是从格子里点进来时才有的上下文。 */
+  onPublishTap() {
+    coEdu.openMomentPublish({});
+  },
+
+  /** 原型 `.sec` 右侧的「全部活动」。 */
+  onFeedTap() {
+    wx.navigateTo({ url: '/packages/co-education/pages/moment/feed' });
+  },
+
   onBackTap() {
     wx.navigateBack();
   },

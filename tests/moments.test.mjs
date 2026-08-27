@@ -22,6 +22,7 @@ const read = (rel) => fs.readFileSync(path.join(MP, rel), 'utf8')
 
 const PUBLISH = 'packages/co-education/pages/moment/publish.js'
 const PROGRESS = 'packages/co-education/pages/moment/progress.js'
+const FEED = 'packages/co-education/pages/moment/feed.js'
 
 let mock
 
@@ -736,5 +737,111 @@ describe('没有进行中的学期时', () => {
     } finally {
       setNoTerm(false)
     }
+  })
+})
+
+// ── 全部活动（2026-08-27 补建）─────────────────────────────────────────────
+//
+// 这一页此前整页没有，连 home-school-moments.html 上通往它的「全部活动」链接也没有。
+// 端点一直在契约里，是单纯漏建。
+
+describe('全部活动', () => {
+  test('只读已发布的那些，照片逐张现签地址', async () => {
+    const c = await signedIn()
+    const page = loadPage(c, FEED)
+    page.onLoad()
+    await page.loadFirst()
+    assert.ok(page.data.items.length > 0, '读到了活动')
+
+    // onLoad 自己也读了一次且不返回 promise，所以数请求前先清一次记录。
+    c.record.requests.length = 0
+    await page.loadFirst()
+    const listed = c.record.requests.filter((r) => /\/moments\?/.test(r.url))
+    assert.equal(listed.length, 1, '列表读一次')
+    assert.match(listed[0].url, /publish_status=s3/, '全部活动只列已发布的')
+
+    // §4 规则 1：本端点回 file_id，取图必须逐次签名，响应里没有可直接访问的地址。
+    const signed = c.record.requests.filter((r) => r.url.includes('/media/files/'))
+    const photoCount = page.data.items.reduce((n, m) => n + m.photos.length, 0)
+    assert.equal(signed.length >= photoCount, true, '每张图都签过一次')
+    for (const r of signed) {
+      assert.match(r.url, /owner_object=db_moment/, 'owner 首先是授权参数')
+    }
+  })
+
+  test('照片只在 App 内预览 —— 没有下载、存相簿、分享或收藏', () => {
+    // 只看标记与代码，不看注释 —— 头注里写着「不提供下载、存相簿、分享或收藏」，
+    // 那句话该留着。
+    const strip = (src) => src.replace(/<!--[\s\S]*?-->/g, '').replace(/\/\*[\s\S]*?\*\//g, '')
+    const wxml = strip(read('packages/co-education/pages/moment/feed.wxml'))
+    const js = strip(read('packages/co-education/pages/moment/feed.js'))
+    for (const word of ['下载', '保存到相册', '分享', '收藏']) {
+      assert.ok(!wxml.includes(word), `全部活动出现了「${word}」`)
+      assert.ok(!js.includes(word), `全部活动出现了「${word}」`)
+    }
+    assert.ok(!js.includes('saveImageToPhotosAlbum'), '§4 规则 1：不存相簿')
+    assert.match(js, /previewImage/, '只在 App 内预览')
+  })
+
+  test('「＋ 加入成长册」点得下去，但一个请求也不发', async () => {
+    const c = await signedIn()
+    const page = loadPage(c, FEED)
+    page.onLoad()
+    await page.loadFirst()
+
+    const wxml = read('packages/co-education/pages/moment/feed.wxml')
+    assert.match(wxml, /\+ 加入成长册/, '原型那一枚在')
+
+    const before = c.record.requests.length
+    page.onAddToBookTap()
+    // 契约里没有「把一则在园时光收进成长资料」的动作，所以这一枚办不成，只说明原因。
+    assert.equal(c.record.requests.length, before, '一个请求也没发')
+    assert.ok(page.data.notice, '点了要说为什么')
+    assert.equal(c.record.toasts.length, 0, '就地写出来，不弹窗')
+  })
+
+  test('这一页不出现观察记录，也不通往 PC后台', () => {
+    for (const ext of ['.js', '.wxml']) {
+      const src = read(`packages/co-education/pages/moment/feed${ext}`)
+      assert.ok(!src.includes('观察记录'), `${ext}: DO-NOT-BUILD 1`)
+      assert.ok(!src.includes('PC后台'), `${ext}: DO-NOT-BUILD 2`)
+      assert.ok(!src.includes('/admin/'), `${ext}: DO-NOT-BUILD 2`)
+    }
+  })
+
+  test('发布进度页有原型顶部那枚「发布活动」与右侧的「全部活动」', async () => {
+    const c = await signedIn()
+    const page = loadPage(c, PROGRESS)
+    page.onLoad()
+    await page.load()
+
+    page.onFeedTap()
+    assert.equal(c.record.navigations.pop().url, '/packages/co-education/pages/moment/feed')
+
+    page.onPublishTap()
+    assert.match(c.record.navigations.pop().url, /\/packages\/co-education\/pages\/moment\/publish/)
+  })
+})
+
+describe('发布页照原型', () => {
+  test('照片是缩略图，不是一行文字', () => {
+    const wxml = read('packages/co-education/pages/moment/publish.wxml')
+    assert.match(wxml, /class="co-photos__img"/, '原型 `.photo-thumb` 是图')
+    assert.equal(wxml.includes('照片 {{index + 1}}'), false, '此前那行文字已经退役')
+  })
+
+  test('覆盖统计随勾选实时变，分母是本班名册', async () => {
+    const c = await signedIn()
+    const page = await openPublish(c)
+
+    const total = page.data.children.length
+    assert.equal(page.data.coverage.total, total, '分母是名册人数')
+
+    page.onChildrenChange({ detail: { childIds: page.data.children.slice(0, 2).map((k) => k.child_id) } })
+    assert.equal(page.data.coverage.selected, 2)
+    assert.equal(page.data.coverage.rate, Math.round((2 / total) * 100))
+
+    page.onChildrenChange({ detail: { childIds: [] } })
+    assert.equal(page.data.coverage.rate, 0, '一个也没勾时是 0，不是 NaN')
   })
 })

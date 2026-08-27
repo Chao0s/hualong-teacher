@@ -1,0 +1,64 @@
+<view wx:if="{{ready}}" class="hl-page">
+  <!-- 原型顶部那句提示，逐字照抄。 -->
+  <view class="feed__hint">点动态右下角的「+ 加入成长册」可将其加入成长资料；加入后会作为成长册「在园时光」栏目的内容（全班共用）。</view>
+
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障编号 {{errorRequestId}}</text>
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryList">重试</text>
+  </view>
+
+  <view wx:if="{{loadingFirst}}" class="hl-loading">加载中…</view>
+
+  <block wx:if="{{!loadingFirst}}">
+    <!-- 空与失败是两种状态：读失败时不说「暂无」。 -->
+    <view wx:if="{{items.length === 0 && !errorText}}" class="hl-card hl-empty">本班还没有发布过活动</view>
+
+    <!-- 原型 `.moment-card`：左边一列字标，右边一列正文。 -->
+    <view wx:for="{{items}}" wx:key="moment_id" class="moment">
+      <view class="moment__side">
+        <view class="moment__avatar">时</view>
+      </view>
+      <view class="moment__body">
+        <view class="moment__head">
+          <text class="moment__title">{{item.moment_title}}</text>
+          <text class="moment__date">{{item.moment_date}}</text>
+        </view>
+        <view wx:if="{{item.excerpt}}" class="moment__text">{{item.excerpt}}</view>
+
+        <!-- 原型 `.photo-grid`：三列；只有两张时铺成两列。照片逐张现签地址
+             （§4 规则 1），签不出来的那一张不画。 -->
+        <view
+          wx:if="{{item.photos.length > 0}}"
+          class="moment__photos {{item.photos.length === 2 ? 'moment__photos--two' : ''}}">
+          <image
+            wx:for="{{item.photos}}"
+            wx:for-item="photo"
+            wx:for-index="pi"
+            wx:key="file_id"
+            class="moment__photo"
+            src="{{photo.url}}"
+            mode="aspectFill"
+            data-moment="{{item.moment_id}}"
+            data-index="{{pi}}"
+            bindtap="onPhotoTap" />
+        </view>
+
+        <view class="moment__foot">
+          <!-- 原型这一行写「涉及 24/28 人 · 18 位家长已查看」。**后半句不画** ——
+               契约的 `Moment` 里没有「多少位家长已查看」这样一列，也没有派生字段。
+               班级人数同样不在这个端点上，所以前半句只报涉及人数。票据 27。 -->
+          <view class="moment__meta">涉及 {{item.child_count}} 人</view>
+          <view class="moment__add" bindtap="onAddToBookTap">+ 加入成长册</view>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{notice}}" class="feed__notice">{{notice}}</view>
+
+    <view
+      wx:if="{{!exhausted && items.length > 0}}"
+      class="feed__more"
+      bindtap="onMoreTap">{{loadingMore ? '加载中…' : '加载更多'}}</view>
+  </block>
+</view>
