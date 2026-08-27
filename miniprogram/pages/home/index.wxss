@@ -71,6 +71,9 @@
   gap: 20rpx;
 }
 
+/* 首页族的卡**既没有描边也没有投影**（原型 `.todo-card`／`.quick-item`／
+ * `.resource-card` 三者都只有白底与圆角）。二级页的卡才有那条 1px 描边，
+ * 所以这里把 `hl-card` 的描边撤掉 —— 撤的是描边，不是把投影加回来。 */
 .stat {
   display: flex;
   flex-direction: column;
@@ -78,6 +81,7 @@
   gap: 18rpx;
   min-height: 224rpx;
   padding: 30rpx 16rpx 26rpx;
+  border: none;
   border-radius: 32rpx;
   text-align: center;
 }
@@ -136,7 +140,6 @@
   padding: 30rpx 8rpx;
   border-radius: var(--radius);
   background: var(--surface);
-  box-shadow: var(--shadow-soft);
   text-align: center;
   color: var(--fg);
 }
@@ -193,6 +196,7 @@
   gap: 18rpx;
 }
 
+/* 同上：原型 `.resource-card` 没有描边。 */
 .case {
   display: flex;
   flex-direction: column;
@@ -200,6 +204,7 @@
   min-width: 0;
   min-height: 184rpx;
   padding: 20rpx 16rpx;
+  border: none;
 }
 
 .case__thumb {

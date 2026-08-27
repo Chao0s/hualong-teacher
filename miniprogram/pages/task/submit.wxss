@@ -35,8 +35,8 @@
   max-height: 640rpx;
   padding: var(--space-3);
   border-radius: var(--radius);
+  /* 预览框与量表、评价链的预览框同一个形态：白底圆角，不描边也不投影。 */
   background: var(--surface);
-  box-shadow: var(--shadow-soft);
 }
 
 .submit__preview-text {

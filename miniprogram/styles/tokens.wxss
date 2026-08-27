@@ -70,7 +70,18 @@ page,
   --space-5: 48rpx;
   --space-6: 64rpx;
 
-  --shadow-soft: 0 2rpx 16rpx rgba(26, 25, 22, 0.06);
+  /*
+   * 投影只有这一枚，而且它有出处。
+   *
+   * 2026-08-27 更正。此前这里是 `--shadow-soft: 0 2rpx 16rpx rgba(26,25,22,.06)`，
+   * **那个值是迁移时自己发明的，原型里从没有过** —— 56 个原型一个 shadow 令牌都没定义，
+   * 97 张内容卡是 1px 描边，只有 4 处有投影，而那 4 处都是浮层。发明的那一枚被 `.hl-card`
+   * 用着，于是每一个二级页面的每一张卡都浮着一层原型上没有的影子。
+   *
+   * 这一枚是转写的：`growth-book-viewer.css` 的 `.page`，`0 10px 26px rgba(0,0,0,.16)`
+   * 按因子 2 换算。它描述的是**一张纸浮在底色上**，成长册预览翻页要靠它，别处不要用。
+   */
+  --shadow-sheet: 0 20rpx 52rpx rgba(0, 0, 0, 0.16);
 
   /* Type. PingFang SC is the system Chinese face on iOS; Android falls through
    * to its own sans. CJK line-height stays >= 1.7 per the design brief. */

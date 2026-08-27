@@ -237,8 +237,8 @@
   gap: 24rpx;
   padding: 24rpx;
   border-radius: 28rpx;
+  /* 原型 home-school-common.css 的 `.list-card` 是裸卡：白底圆角，无描边也无投影。 */
   background: var(--surface);
-  box-shadow: var(--shadow-soft);
 }
 
 .ev-round + .ev-round {

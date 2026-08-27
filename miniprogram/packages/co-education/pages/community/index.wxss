@@ -30,8 +30,9 @@
   gap: 20rpx;
   padding: 28rpx;
   border-radius: 32rpx;
+  /* 原型 `.moment-card` 是白色列表容器里用 border-bottom 分隔的一行，不是一张浮起来
+   * 的卡。这里保留卡的形态（小程序里一条条卡更好点），但去掉投影 —— 原型全篇没有投影。 */
   background: var(--surface);
-  box-shadow: var(--shadow-soft);
 }
 
 .cm-card + .cm-card {

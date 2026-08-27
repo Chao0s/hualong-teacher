@@ -29,11 +29,22 @@ view, text, button, input, textarea, scroll-view {
 
 /* ── Card ───────────────────────────────────────────────────────────────── */
 
+/*
+ * 内容卡 —— 一条 1px 描边，**没有投影**。
+ *
+ * 2026-08-27 更正。此前是「投影、无描边」，而 56 个原型里 97 张内容卡是描边，只有 4 张
+ * 带投影 —— 那 4 张都是浮层（吸底操作条、弹层），不是卡。设计系统那一份
+ * `component-showcase.html` 也把 `.entry-card`／`.case-card` 画成
+ * `border: 1px solid var(--border)`。
+ *
+ * 这一处是全 app 每一页都在用的类，所以那个投影出现在每一个二级页面上，也是园方看到的
+ * 「二级页面排版都不对」的根源。改这一处，四十来页一起回到原型。
+ */
 .hl-card {
   background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: var(--space-3);
-  box-shadow: var(--shadow-soft);
 }
 
 .hl-card__title {

@@ -76,10 +76,10 @@
   aspect-ratio: 210 / 297;
   background: #ffffff;
   /* 原型 growth-book-viewer.css 的 `.page`：圆角 12px，并且托着一层投影 —— 一张纸浮在
-     底色上，不是一块贴在底色上的白。原型的投影比 --shadow-soft 重得多，令牌里没有那一
-     档，取最接近的这一枚。 */
+     底色上，不是一块贴在底色上的白。那一枚投影现在有自己的令牌（`--shadow-sheet`，
+     由这一条规则转写而来），全客户端只有这一处用得上它。 */
   border-radius: 24rpx;
-  box-shadow: var(--shadow-soft);
+  box-shadow: var(--shadow-sheet);
   overflow: hidden;
 }
 

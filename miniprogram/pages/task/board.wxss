@@ -1,3 +1,10 @@
+/* 待办任务 —— 逐格对着 screens/teacher-tasks.html 转写。换算因子 2（票据 01）。
+ *
+ * 原型把当前与历史做成两节堆叠的 `.sec` 标题，标题右侧带一个计数（「2项」）。这里是
+ * 两区切分标签：**计数取不到** —— 游标分页没有总数（契约 §3.1／DO-NOT-BUILD 11），
+ * 而两条各自翻页的列表叠在一页上比切换更糟。已登记在 ADR-0017。
+ */
+
 .scopes {
   display: flex;
   gap: var(--space-2);
@@ -18,21 +25,57 @@
   font-weight: 600;
 }
 
-.hl-card + .hl-card {
-  margin-top: var(--space-2);
+/* 原型 `.task-card`：16px 圆角、14px 内边距；`.task-list` 的行距是 10px。 */
+.task {
+  padding: 28rpx;
+  border-radius: 32rpx;
 }
 
+.hl-card + .hl-card {
+  margin-top: 20rpx;
+}
+
+/* 原型 `.top`：标题与状态徽章一行，徽章顶对齐、不换行。 */
 .task__row {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--space-2);
+  gap: 20rpx;
 }
 
-/* 原型 teacher-tasks.html 的 `.summary` 用的是正文色，不是弱化色：它是这张卡上
-   唯一说得清任务要做什么的一句话。 */
+/* 原型 `.title` 是 15px/750，比通用的 `.hl-card__title`（16px/600）小一档、重一档。 */
+.task__title {
+  flex: 1;
+  min-width: 0;
+  font-size: 30rpx;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--fg);
+}
+
+/* 原型 `.status` 比通用胶囊小得多：10px、800 字重、4px 8px 内边距。 */
+.task__status {
+  flex: none;
+  padding: 8rpx 16rpx;
+  border-radius: var(--radius-pill);
+  font-size: 20rpx;
+  font-weight: 800;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+/* 原型 `.meta`：12px 灰字，与标题隔 7px。 */
+.task__meta {
+  margin-top: 14rpx;
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+/* 原型 `.summary` 用的是正文色，不是弱化色：它是这张卡上唯一说得清任务要做什么的
+   一句话，与 `.meta` 的灰字分工不同。 */
 .task__intro {
-  margin-top: var(--space-2);
+  margin-top: 16rpx;
   font-size: 24rpx;
   color: var(--fg);
   line-height: 1.55;
@@ -43,3 +86,10 @@
   font-size: 24rpx;
   color: var(--danger);
 }
+
+/*
+ * 原型每张卡底部还有一行三枚描边小标签（`.foot .pill`，如「背景信息／分工要求／
+ * 时间节点」）。**本端不画**：`db_task` 没有任何一列存这组标签，逐卡还不一样，
+ * 编不出来。而且原型第二张卡那三枚里有一枚是「观察记录」—— 那是 DO-NOT-BUILD 1
+ * 明令不得出现的词。缺口记在票据 27。
+ */

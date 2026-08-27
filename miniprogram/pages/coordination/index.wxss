@@ -7,7 +7,8 @@
   margin-bottom: var(--space-4);
   border-radius: var(--radius);
   background: var(--surface);
-  box-shadow: var(--shadow-soft);
+  /* 原型 `.banner` 是 1px 描边，不是投影。 */
+  border: 1px solid var(--border);
 }
 
 /* 原型右下角那枚浅色圆。它只是底纹，压在文字下面。 */

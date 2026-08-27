@@ -65,7 +65,6 @@
   padding: 26rpx 8rpx;
   border-radius: 28rpx;
   background: var(--surface);
-  box-shadow: var(--shadow-soft);
 }
 
 /* 字标是两个字（时光／任务／档案／社区），所以是圆角方块不是圆点。 */
@@ -107,7 +106,6 @@
   padding: 24rpx 8rpx;
   border-radius: 28rpx;
   background: var(--surface);
-  box-shadow: var(--shadow-soft);
 }
 
 .metric__value {

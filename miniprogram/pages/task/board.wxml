@@ -29,11 +29,13 @@
       class="hl-card task"
       data-id="{{item.task_id}}"
       bindtap="onTap">
+      <!-- 标题与状态徽章的字号在原型上都比通用类小一档，所以这一页用自己的两个类
+           （见 board.wxss），不套 `hl-card__title` 与 `hl-pill`。 -->
       <view class="task__row">
-        <text class="hl-card__title">{{item.task_title}}</text>
-        <text class="hl-pill {{item.status_class}}">{{item.status_label}}</text>
+        <text class="task__title">{{item.task_title}}</text>
+        <text class="task__status {{item.status_class}}">{{item.status_label}}</text>
       </view>
-      <view class="hl-card__meta">
+      <view class="task__meta">
         截止 {{item.due_label}}
         <text wx:if="{{item.creator_label}}"> · {{item.creator_label}}</text>
       </view>
