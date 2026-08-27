@@ -67,6 +67,15 @@ Page({
     return this.loadFirst();
   },
 
+  /** 原型顶部那两张入口卡。个人档案自成一个分包，路径写全。 */
+  onProfileTap() {
+    wx.navigateTo({ url: '/packages/profile/pages/mine/index' });
+  },
+
+  onMineTap() {
+    wx.navigateTo({ url: '/packages/training/pages/mine/list' });
+  },
+
   onTap(e) {
     const { id } = e.currentTarget.dataset;
     wx.navigateTo({ url: `/packages/training/pages/train/detail?training_id=${id}` });

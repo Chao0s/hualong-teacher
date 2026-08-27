@@ -712,6 +712,38 @@ const TRAINING_FEEDBACK_SNAPSHOT = TRAINING_FEEDBACKS.map((f) => ({ ...f }));
 // 报名渗进下一个，两边都是对的却一起变红。
 const TRAINING_PARTICIPATION_SNAPSHOT = TRAININGS.map((t) => t.my_participation_status);
 
+// db_teacher_profile ＋ db_teacher_credential —— 教师专业档案（G45 已拍板：申请制）。
+// 逐格照 screens/teacher-profile.html 的取值，只是编码化：原型写「一级」「本科」「主班」。
+const TEACHER_PROFILE = {
+  teacher_id: 12,
+  professional_title: '一级',
+  education_level: 'e3',
+  job_role: 'j1',
+  career_summary: null,
+  // 契约把这两列标了 x-hualong-blocked-on: G45 —— 原型的「教龄 8 年」「在园 5 年」
+  // 在任何一张表里都没有列。服务端回 null，客户端按 null 不画那两行。
+  first_taught_at: null,
+  joined_school_at: null,
+};
+
+const TEACHER_CREDENTIALS = [
+  { credential_id: 601, credential_type: 'c1', credential_name: '本科学历证书 · 心理学',
+    credential_level: null, file_id: 9601, file_name: '本科学历证书 · 心理学.pdf' },
+  { credential_id: 602, credential_type: 'c1', credential_name: '硕士学历证书 · 学前教育学',
+    credential_level: null, file_id: 9602, file_name: '硕士学历证书 · 学前教育学.pdf' },
+  { credential_id: 603, credential_type: 'c2', credential_name: '幼儿园教师资格证',
+    credential_level: null, file_id: 9603, file_name: '幼儿园教师资格证.pdf' },
+  { credential_id: 604, credential_type: 'c2', credential_name: '普通话水平测试二级甲等证书',
+    credential_level: null, file_id: 9604, file_name: '普通话水平测试二级甲等证书.pdf' },
+  { credential_id: 605, credential_type: 'c3', credential_name: '区级课程案例一等奖',
+    credential_level: 'l2', file_id: 9605, file_name: '区级课程案例一等奖.pdf' },
+  { credential_id: 606, credential_type: 'c3', credential_name: '园本课程资源共建优秀教师',
+    credential_level: 'l1', file_id: 9606, file_name: '园本课程资源共建优秀教师.pdf' },
+];
+
+// 修改申请。开服时是空的：夹具里没有待审申请，页面因此不显示那一行提示。
+const PROFILE_CHANGES = [];
+
 /**
  * 办园理念与课程体系的图文。
  *
@@ -1900,6 +1932,9 @@ const HAND_WRITTEN_ROLES = [
   [/^\/trainings\/\d+$/, ['teacher']],
   // 票据 16 的写入面与它的公开回馈流。契约给这两条写的都是 teacher。
   // 2026-08-27 按原型补建的报名入口。契约给这两条写的就是 teacher。
+  [/^\/teacher-profile$/, ['teacher']],
+  [/^\/teacher-profile\/changes$/, ['teacher']],
+  [/^\/training-participations$/, ['teacher']],
   [/^\/trainings\/\d+\/registration$/, ['teacher']],
   [/^\/trainings\/\d+\/registration-cancellation$/, ['teacher']],
   [/^\/trainings\/\d+\/feedback$/, ['teacher']],
@@ -2184,6 +2219,14 @@ const server = createServer(async (req, res) => {
       postLibrarySubmission(req, res, 'case', path.split('/')[3]);
     } else if (req.method === 'POST' && /^\/library\/cases\/\d+\/withdrawal$/.test(path)) {
       postLibraryWithdrawal(req, res, 'case', path.split('/')[3]);
+    } else if (req.method === 'GET' && path === '/teacher-profile') {
+      getTeacherProfile(req, res);
+    } else if (req.method === 'GET' && path === '/teacher-profile/changes') {
+      getProfileChanges(req, res, url);
+    } else if (req.method === 'POST' && path === '/teacher-profile/changes') {
+      postProfileChange(req, res, body);
+    } else if (req.method === 'GET' && path === '/training-participations') {
+      getMyParticipations(req, res, url);
     } else if (req.method === 'GET' && path === '/trainings') {
       getTrainings(req, res, url);
     } else if (req.method === 'GET' && /^\/trainings\/\d+$/.test(path)) {
@@ -2375,6 +2418,7 @@ export function start({
   TRAINING_FEEDBACKS.length = TRAINING_FEEDBACK_SNAPSHOT.length;
   TRAINING_FEEDBACK_SNAPSHOT.forEach((row, i) => { TRAINING_FEEDBACKS[i] = { ...row }; });
   TRAININGS.forEach((t, i) => { t.my_participation_status = TRAINING_PARTICIPATION_SNAPSHOT[i]; });
+  PROFILE_CHANGES.length = 0;
   resetHomeSchool();
   resetEvaluation();
   resetGrowthRecordChain();
@@ -2733,6 +2777,138 @@ function postLibraryWithdrawal(req, res, kindKey, id) {
 }
 
 // ── 研修反馈（票据 16） ─────────────────────────────────────────────────────
+
+/**
+ * GET /training-participations — 「我的研修」。
+ *
+ * §4 规则 21：只查本人 participation，**是活动列表的子集，不是第二份活动表**，所以每一行
+ * 内嵌一整张 `TrainingCard`。夹具里参与过的就是 `my_participation_status` 非空的那些。
+ */
+function getMyParticipations(req, res, url) {
+  if (!requireSession(req, res)) return;
+
+  const limitRaw = url.searchParams.get('limit');
+  const limit = limitRaw === null ? 20 : Number(limitRaw);
+  if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+    return fail(res, 422, 'validation_failed', '分页参数不合法',
+      { field: 'limit', rule: 'between_1_and_100' });
+  }
+
+  const mine = TRAININGS.filter((t) => t.my_participation_status);
+  const filters = {};
+  let startIndex = 0;
+  const cursor = url.searchParams.get('cursor');
+  if (cursor) {
+    const decoded = decodeCursor(cursor, filters);
+    if (decoded.error) {
+      return fail(res, 400, decoded.error,
+        decoded.error === 'cursor_invalid' ? '翻页游标不可解' : '筛选条件已变，游标失效');
+    }
+    startIndex = mine.findIndex((t) => t.training_id === decoded.key) + 1;
+    if (startIndex <= 0) return fail(res, 400, 'cursor_invalid', '翻页游标不可解');
+  }
+
+  const slice = mine.slice(startIndex, startIndex + limit);
+  const last = slice[slice.length - 1];
+  const hasMore = startIndex + limit < mine.length;
+  sendJson(res, 200, {
+    items: slice.map((t) => ({
+      training_participation_id: 8000 + t.training_id,
+      training_id: t.training_id,
+      participation_status: t.my_participation_status,
+      registered_at: '2026-08-20T09:00:00+08:00',
+      cancelled_at: t.my_participation_status === 's2' ? '2026-08-21T09:00:00+08:00' : null,
+      completed_at: t.my_participation_status === 's3' ? '2026-08-22T18:00:00+08:00' : null,
+      training: toTrainingCard(t),
+    })),
+    next_cursor: hasMore && last ? encodeCursor(last.training_id, filters) : null,
+  });
+}
+
+/**
+ * GET /teacher-profile — 本人专业档案与证书清单（G45：申请制，读得到、改不了）。
+ *
+ * 姓名与任教班级**不在这里** —— 它们随会话上下文下发，是名册权威持有的身份字段。
+ */
+function getTeacherProfile(req, res) {
+  if (!requireSession(req, res)) return;
+  const pending = PROFILE_CHANGES.find((c) => c.change_status === 's2') || null;
+  sendJson(res, 200, {
+    ...TEACHER_PROFILE,
+    credentials: TEACHER_CREDENTIALS.map((c) => ({ ...c })),
+    pending_change: pending ? { ...pending } : null,
+  });
+}
+
+/** GET /teacher-profile/changes — 本人已提交的申请，最新在前。 */
+function getProfileChanges(req, res, url) {
+  if (!requireSession(req, res)) return;
+  const limitRaw = url.searchParams.get('limit');
+  const limit = limitRaw === null ? 20 : Number(limitRaw);
+  if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+    return fail(res, 422, 'validation_failed', '分页参数不合法',
+      { field: 'limit', rule: 'between_1_and_100' });
+  }
+  const rows = PROFILE_CHANGES.slice().reverse().slice(0, limit);
+  sendJson(res, 200, { items: rows.map((c) => ({ ...c })), next_cursor: null });
+}
+
+/**
+ * POST /teacher-profile/changes — 提交修改申请（NONE -> s2）。
+ *
+ * **直接到 s2，不经 s1**：教师端不留草稿，一次提交即待审（契约 v0.6）。
+ * 同一名教师同时最多一份 s2 —— 已有待审时回 409，不产生第二份。
+ */
+function postProfileChange(req, res, rawBody) {
+  if (!requireSession(req, res)) return;
+  if (refuseWithoutTerm(res)) return;
+  if (PROFILE_CHANGES.some((c) => c.change_status === 's2')) {
+    return fail(res, 409, 'state_precondition_failed', '上一份修改申请还在审核中，通过或驳回后才能再提交');
+  }
+
+  const body = stripDerived(rawBody);
+  const extra = Object.keys(body).find((k) => k !== 'change_payload' && k !== 'credential_ids');
+  if (extra) {
+    return fail(res, 422, 'validation_failed', '填写内容不符合要求',
+      { field: extra, rule: 'additional_properties_not_allowed' });
+  }
+  const payload = body.change_payload;
+  if (!payload || typeof payload !== 'object') {
+    return fail(res, 422, 'validation_failed', '填写内容不符合要求',
+      { field: 'change_payload', rule: 'required' });
+  }
+  const allowed = ['professional_title', 'education_level', 'job_role', 'credentials'];
+  const badKey = Object.keys(payload).find((k) => allowed.indexOf(k) === -1);
+  if (badKey) {
+    return fail(res, 422, 'validation_failed', '填写内容不符合要求',
+      { field: `change_payload.${badKey}`, rule: 'additional_properties_not_allowed' });
+  }
+  for (const one of payload.credentials || []) {
+    if (!one.credential_name || String(one.credential_name).trim() === '') {
+      return fail(res, 422, 'validation_failed', '填写内容不符合要求',
+        { field: 'credentials.credential_name', rule: 'required' });
+    }
+    if (String(one.credential_name).length > 150) {
+      return fail(res, 422, 'validation_failed', '填写内容不符合要求',
+        { field: 'credentials.credential_name', rule: 'max_length_150' });
+    }
+    if (!one.file_id) {
+      return fail(res, 422, 'validation_failed', '填写内容不符合要求',
+        { field: 'credentials.file_id', rule: 'required' });
+    }
+  }
+
+  const row = {
+    teacher_profile_change_id: 700 + PROFILE_CHANGES.length,
+    change_status: 's2',
+    change_payload: payload,
+    credential_ids: body.credential_ids || null,
+    submitted_at: '2026-08-27T10:00:00+08:00',
+    applied_at: null,
+  };
+  PROFILE_CHANGES.push(row);
+  return sendJson(res, 201, { ...row });
+}
 
 /**
  * POST /trainings/{training_id}/registration — 报名／恢复报名（→ s1）。
@@ -5456,6 +5632,16 @@ export function librarySubmissions() {
 }
 
 /** Test hook: the training-feedback rows the server actually created (票据 16). */
+/**
+ * 教师档案的修改申请。
+ *
+ * 提交一份就会留一份 s2，而「同时最多一份 s2」是服务端的前置 —— 同一个测试文件里的
+ * 前一条用例会挡住后一条。给测试一把还原的钥匙，与 `setNoTerm` 同一个理由。
+ */
+export function resetProfileChanges() {
+  PROFILE_CHANGES.length = 0;
+}
+
 export function trainingFeedbackWrites() {
   return state.trainingFeedbackWrites.slice();
 }

@@ -61,6 +61,11 @@ const moderation = require('../utils/moderation');
 const { present } = require('../utils/present');
 
 const TRAINING_PATH = '/trainings';
+const PARTICIPATION_PATH = '/training-participations';
+
+// `db_training_participation.participation_status`。s2 **不完成** —— 有效结束时只有仍 s1
+// 的列自动转 s3（F9），所以「已取消」不会自己变成「已完成」。
+const PARTICIPATION_LABEL = { s1: '已报名', s2: '已取消报名', s3: '已完成' };
 // 契约里没有这两条路径（见头注）。名字刻意不写成 `/trainings/...`：那会看起来像契约的一部分。
 const COURSE_INTRO_PATH = '/training/course-intro';
 const HOME_PATH = '/training/home';
@@ -140,6 +145,37 @@ function decorateCard(row) {
 async function listTrainings({ phase, cursor, limit } = {}) {
   const page = await api.getPage(TRAINING_PATH, { cursor, limit, phase });
   return { items: page.items.map(decorateCard), nextCursor: page.nextCursor };
+}
+
+/**
+ * 「我的研修」的一行（原型 `my-training.html` 的 `.card`）。
+ *
+ * 契约的 `TrainingParticipation` 内嵌一整张 `TrainingCard`，所以这里不再去读第二遍研修 ——
+ * §4 规则 21 原话：「我的研修」是活动列表的子集，不是第二份活动表。
+ *
+ * 原型每张卡底部两枚小标：材料份数与参与状态。材料份数**卡片形状里没有**（`TrainingCard`
+ * 不带 `file_refs`），所以只画参与状态那一枚。缺口记在票据 27。
+ */
+function decorateParticipation(row) {
+  const card = row.training || {};
+  return {
+    training_id: row.training_id,
+    // 已撤回的研修仍留在报名记录里，但点不进去（原型最后那张卡就没有链接）。
+    withdrawn: card.training_status === 's5',
+    training_title: card.training_title || '',
+    time_label: card.start_at ? time.formatShort(card.start_at) : '',
+    phase_label: TRAINING_PHASE[card.training_phase] || '未知阶段',
+    phase_pill: PHASE_PILL[card.training_phase] || 'hl-pill--unknown',
+    meta_label: metaLabel(card),
+    excerpt: card.excerpt || '',
+    participation_label: PARTICIPATION_LABEL[row.participation_status] || '未知状态',
+  };
+}
+
+/** One page of 我的研修, newest first (§3.1). */
+async function listMyParticipations({ cursor, limit } = {}) {
+  const page = await api.getPage(PARTICIPATION_PATH, { cursor, limit });
+  return { items: page.items.map(decorateParticipation), nextCursor: page.nextCursor };
 }
 
 /** 材料的一行。 */
@@ -639,6 +675,7 @@ module.exports = {
   FEEDBACK_TEXT_MAX,
   phaseFilters,
   listTrainings,
+  listMyParticipations,
   trainingDetail,
   openMaterial,
   copyMeetingLink,

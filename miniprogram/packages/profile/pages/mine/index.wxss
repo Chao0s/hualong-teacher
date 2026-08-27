@@ -1,0 +1,392 @@
+/* 教师个人档案 —— 逐格对着 screens/teacher-profile.html 转写。换算因子 2（票据 01）。 */
+
+.hl-card + .hl-card {
+  margin-top: var(--space-2);
+}
+
+/* 上一份申请还在审时的那一行。它不是错误，所以不用告警色。 */
+.pending {
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: var(--accent-dark);
+  background: var(--accent-light);
+  border-color: var(--accent-light);
+}
+
+/* 原型 `.chunk`：一节一张卡，内边距 15px。 */
+.chunk {
+  padding: 30rpx;
+  border-radius: 32rpx;
+}
+
+.sec {
+  margin-bottom: 24rpx;
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+/* ── 基本履历 —— 原型 `.hard-layout` ──────────────────────────────────────── */
+
+.hard {
+  display: flex;
+  gap: 24rpx;
+}
+
+/* 原型 `.photo`：一块占位方，宽 84px、高 108px。真照片没有落点 —— `db_teacher` 与
+ * `db_teacher_profile` 都没有头像列，所以这里就是一块占位，不去凑一个。 */
+.photo {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 168rpx;
+  height: 216rpx;
+  border: 1px solid var(--border);
+  border-radius: 24rpx;
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 22rpx;
+  text-align: center;
+}
+
+.fields {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 原型 `.field`：标签在左固定宽，取值在右。 */
+.field {
+  display: flex;
+  gap: 16rpx;
+  padding: 10rpx 0;
+  font-size: 26rpx;
+  line-height: 1.5;
+}
+
+.field__label {
+  flex: none;
+  width: 144rpx;
+  color: var(--muted);
+}
+
+.field__value {
+  flex: 1;
+  min-width: 0;
+  color: var(--fg);
+}
+
+/* ── 资质与荣誉 —— 原型 `.soft-block` ────────────────────────────────────── */
+
+.soft + .soft {
+  margin-top: 28rpx;
+}
+
+.soft__head {
+  margin-bottom: 16rpx;
+  font-size: 26rpx;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.soft__none {
+  font-size: 24rpx;
+  color: var(--muted);
+}
+
+/* 原型 `.item`：描边行，左列名称与标签，右列两枚文字按钮。 */
+.item {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 20rpx;
+  border: 1px solid var(--border);
+  border-radius: 24rpx;
+}
+
+.item + .item {
+  margin-top: 16rpx;
+}
+
+.item__text {
+  flex: 1;
+  min-width: 0;
+}
+
+.item__title {
+  font-size: 26rpx;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--fg);
+}
+
+.item__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: 10rpx;
+}
+
+/* 原型 `.badge`：浅底小标；奖项那一枚另一个色。 */
+.badge {
+  padding: 6rpx 16rpx;
+  border-radius: var(--radius-pill);
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 22rpx;
+  font-weight: 700;
+}
+
+.badge--award {
+  background: var(--accent-light);
+  color: var(--accent-dark);
+}
+
+.item__acts {
+  display: flex;
+  flex: none;
+  gap: 20rpx;
+}
+
+.item__act {
+  color: var(--accent-dark);
+  font-size: 24rpx;
+  font-weight: 800;
+}
+
+/* ── 编辑弹层 —— 原型 `.sheet-mask` ＋ `.sheet` ──────────────────────────── */
+
+.sheet {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 30;
+  padding: 120rpx 28rpx 48rpx;
+  background: rgba(26, 25, 22, 0.34);
+}
+
+.panel {
+  max-height: 100%;
+  padding: 32rpx;
+  border-radius: 36rpx;
+  background: var(--surface);
+  overflow-y: auto;
+}
+
+.panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24rpx;
+  margin-bottom: 24rpx;
+}
+
+.panel__title {
+  font-size: 32rpx;
+  font-weight: 800;
+  color: var(--fg);
+}
+
+.panel__close {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 40rpx;
+  line-height: 1;
+}
+
+/* 原型 `.form-row`：标签一行，控件一行。 */
+.form__row + .form__row {
+  margin-top: 22rpx;
+}
+
+.form__label {
+  margin-bottom: 12rpx;
+  font-size: 24rpx;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.input {
+  width: 100%;
+  padding: 22rpx 24rpx;
+  border: 1px solid var(--border);
+  border-radius: 24rpx;
+  background: var(--surface);
+  font-size: 26rpx;
+  color: var(--fg);
+}
+
+/* 原型 `.readback`：比输入框更暗的底色，本身就在说「这一格不能填」。 */
+.readback {
+  padding: 22rpx 24rpx;
+  border: 1px solid var(--border);
+  border-radius: 24rpx;
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 26rpx;
+  font-weight: 700;
+}
+
+/* 横排标签进了白卡，要自己带一圈描边 —— 通用样式的底色是白。 */
+.panel .hl-chips {
+  padding-bottom: 0;
+}
+
+.panel .hl-chips__item {
+  border: 1px solid var(--border);
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.panel .hl-chips__item--on {
+  border-color: var(--accent);
+}
+
+.note {
+  margin-top: 16rpx;
+  font-size: 22rpx;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.notice {
+  margin-top: 16rpx;
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: var(--danger);
+}
+
+/* ── 证书与奖项 —— 原型 `.edit-group` ────────────────────────────────────── */
+
+.group {
+  margin-top: 28rpx;
+  padding-top: 24rpx;
+  border-top: 1px solid var(--border);
+}
+
+.group__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  margin-bottom: 20rpx;
+}
+
+.group__title {
+  font-size: 26rpx;
+  font-weight: 800;
+  color: var(--fg);
+}
+
+.group__add {
+  flex: none;
+  padding: 12rpx 22rpx;
+  border-radius: var(--radius-pill);
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  font-size: 24rpx;
+  font-weight: 800;
+}
+
+/* 原型 `.material-row`：一行一份证书，四格竖排，右上角一枚「删除」。 */
+.cred {
+  padding: 24rpx;
+  border: 1px solid var(--border);
+  border-radius: 26rpx;
+  background: var(--bg);
+}
+
+.cred + .cred {
+  margin-top: 20rpx;
+}
+
+.cred__head {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12rpx;
+}
+
+.cred__remove {
+  color: var(--danger);
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+/* 原型 `.material-file` 是 `<input type=file>`；小程序没有这个控件，换成一条矮框
+ * 加一枚按钮（ADR-0017 的强制偏离）。 */
+.upload {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  min-height: 80rpx;
+  padding: 0 22rpx;
+  border: 1px solid var(--border);
+  border-radius: 24rpx;
+  background: var(--surface);
+}
+
+.upload__note {
+  font-size: 22rpx;
+  color: var(--muted);
+}
+
+.upload__btn {
+  flex: none;
+  padding: 14rpx 22rpx;
+  border-radius: var(--radius-pill);
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  font-size: 24rpx;
+  font-weight: 800;
+}
+
+/* ── 预览与提交 ──────────────────────────────────────────────────────────── */
+
+/* 预览要能读到底，所以它是一块定高的滚动区：读到底才解锁「提交审核」。 */
+.preview {
+  max-height: 480rpx;
+  margin-top: 24rpx;
+  padding: 24rpx;
+  border: 1px solid var(--border);
+  border-radius: 24rpx;
+  background: var(--bg);
+}
+
+.preview__line {
+  font-size: 26rpx;
+  line-height: 1.8;
+  color: var(--fg);
+}
+
+.preview__end {
+  margin-top: 16rpx;
+  font-size: 22rpx;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* 原型 `.sheet-actions`：两枚并排。 */
+.panel__actions {
+  display: flex;
+  gap: 20rpx;
+  margin-top: 28rpx;
+}
+
+.panel__btn {
+  flex: 1;
+  min-width: 0;
+}
+
+.panel__btn--off {
+  opacity: 0.5;
+}

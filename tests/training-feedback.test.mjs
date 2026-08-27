@@ -71,8 +71,11 @@ describe('反馈入口的位置', () => {
   test('办园理念与研修列表两页一个反馈入口也没有', () => {
     for (const base of ['packages/training/pages/course/detail', 'packages/training/pages/train/list']) {
       const wxml = read(`${base}.wxml`)
+      // 2026-08-27：研修列表补了原型的「我的档案」两张入口卡，其中一张的说明写着
+      // 「参与记录、提交材料与研修成果」—— 那是描述，不是入口。所以只扫能点的元素。
+      const tappable = (wxml.match(/<[^>]*bind\w*tap="[^"]*"[^>]*>[^<]*/g) || []).join(' | ')
       for (const word of ['反馈', '评论', '提交']) {
-        assert.ok(!wxml.includes(word), `${base}.wxml 出现了反馈入口「${word}」`)
+        assert.ok(!tappable.includes(word), `${base}.wxml 出现了反馈入口「${word}」`)
       }
       assert.ok(!wxml.includes('<textarea'), `${base}.wxml 出现了输入框`)
     }

@@ -627,8 +627,12 @@ describe('三个页面只读，且不通往 PC后台', () => {
   test('办园理念与研修列表两页都没有任何写入控件', () => {
     for (const base of READ_ONLY_BASES) {
       const wxml = read(`${base}.wxml`)
+      // 2026-08-27：研修列表补了原型的「我的档案」两张入口卡，其中一张的说明写着
+      // 「参与记录、提交材料与研修成果」—— **那是描述，不是控件**。所以这条不再逐词
+      // 扫全文，只扫**能点的那些元素**：写入面必然带一个 bind/catch 处理器或一个控件。
+      const tappable = (wxml.match(/<[^>]*bind\w*tap="[^"]*"[^>]*>[^<]*/g) || []).join(' | ')
       for (const word of ['提交', '反馈', '评论', '评分', '报名', '上传', '新建', '编辑', '删除']) {
-        assert.ok(!wxml.includes(word), `${base}.wxml 出现了写入入口「${word}」`)
+        assert.ok(!tappable.includes(word), `${base}.wxml 出现了写入入口「${word}」`)
       }
       // 控件本身也不能有：一个没有文案的输入框同样是写入面。
       for (const tag of ['<input', '<textarea', '<form', '<button', '<checkbox', '<radio', '<switch', '<slider']) {

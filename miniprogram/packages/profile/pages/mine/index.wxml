@@ -1,0 +1,263 @@
+<view class="hl-page" wx:if="{{ready}}">
+
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryLoad">重试</text>
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障码 {{errorRequestId}}</text>
+  </view>
+
+  <view wx:if="{{loading}}" class="hl-loading">加载中…</view>
+
+  <block wx:if="{{profile && !loading}}">
+
+    <!-- 上一次改的还在审时说一声。不说这句，教师会以为没提交上去，于是再提一次。 -->
+    <view wx:if="{{profile.pending_label}}" class="hl-card pending">
+      上一份修改申请{{profile.pending_label}}，管理员通过后才会更新到下面的档案里。
+    </view>
+
+    <!-- 原型 `.chunk` 一「基本履历」：左边一块照片位，右边七行字段。 -->
+    <view class="hl-card chunk">
+      <view class="sec">基本履历</view>
+      <view class="hard">
+        <view class="photo">教师照片</view>
+        <view class="fields">
+          <view class="field">
+            <view class="field__label">姓名</view>
+            <view class="field__value">{{profile.teacher_name || '—'}}</view>
+          </view>
+          <view class="field">
+            <view class="field__label">任教班级</view>
+            <view class="field__value">{{profile.class_label || '—'}}</view>
+          </view>
+          <view class="field">
+            <view class="field__label">岗位</view>
+            <view class="field__value">{{profile.job_role_label || '—'}}</view>
+          </view>
+          <view class="field">
+            <view class="field__label">职称</view>
+            <view class="field__value">{{profile.professional_title || '—'}}</view>
+          </view>
+          <!-- 原型这里还有「首次任教（教龄 8 年）」与「本园任职（在园 5 年）」两行。
+               那两列在任何一张表里都没有，契约标了 x-hualong-blocked-on: G45，服务端回
+               null —— 空就不画，不摆一个「—」冒充有这一格。 -->
+          <view wx:if="{{profile.first_taught_label}}" class="field">
+            <view class="field__label">首次任教</view>
+            <view class="field__value">{{profile.first_taught_label}}</view>
+          </view>
+          <view wx:if="{{profile.joined_school_label}}" class="field">
+            <view class="field__label">本园任职</view>
+            <view class="field__value">{{profile.joined_school_label}}</view>
+          </view>
+          <view class="field">
+            <view class="field__label">最高学历</view>
+            <view class="field__value">{{profile.education_label || '—'}}</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 原型 `.chunk` 二「资质与荣誉」：两个 `.soft-block`，各带一个小标题。 -->
+    <view class="hl-card chunk">
+      <view class="sec">资质与荣誉</view>
+
+      <view class="soft">
+        <view class="soft__head">资格证书</view>
+        <view wx:if="{{profile.certificates.length === 0}}" class="soft__none">暂无资格证书</view>
+        <view wx:for="{{profile.certificates}}" wx:key="credential_id" class="item">
+          <view class="item__text">
+            <view class="item__title">{{item.file_name}}</view>
+            <view class="item__badges">
+              <text class="badge">{{item.type_label}}</text>
+              <text wx:if="{{item.level_label}}" class="badge">{{item.level_label}}</text>
+            </view>
+          </view>
+          <view class="item__acts">
+            <text class="item__act" data-id="{{item.file_id}}" data-name="{{item.file_name}}" bindtap="onOpenFile">预览</text>
+            <text class="item__act" data-id="{{item.file_id}}" data-name="{{item.file_name}}" bindtap="onOpenFile">下载</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="soft">
+        <view class="soft__head">专业奖项</view>
+        <view wx:if="{{profile.awards.length === 0}}" class="soft__none">暂无专业奖项</view>
+        <view wx:for="{{profile.awards}}" wx:key="credential_id" class="item">
+          <view class="item__text">
+            <view class="item__title">{{item.file_name}}</view>
+            <view class="item__badges">
+              <text wx:if="{{item.level_label}}" class="badge badge--award">{{item.level_label}}</text>
+            </view>
+          </view>
+          <view class="item__acts">
+            <text class="item__act" data-id="{{item.file_id}}" data-name="{{item.file_name}}" bindtap="onOpenFile">预览</text>
+            <text class="item__act" data-id="{{item.file_id}}" data-name="{{item.file_name}}" bindtap="onOpenFile">下载</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 原型把「编辑」放在导航栏右上角。小程序的导航栏不接自定义按钮（除非整条自绘），
+         所以它落在这里 —— ADR-0017 的强制偏离，形态换了，位置跟着换。 -->
+    <view wx:if="{{!editing}}" class="hl-btn hl-btn--block" bindtap="onEditTap">编辑</view>
+  </block>
+
+  <!-- ── 编辑弹层（原型 `.sheet`）──────────────────────────────────────────
+       教师改的是**一份申请**，不是档案本身：G45 已拍板走申请制，提交后进管理端 t3
+       审核队列，通过了才落 canonical。按钮上写的就是「提交审核」。 -->
+  <view wx:if="{{editing}}" class="sheet" bindtap="onCancelTap">
+    <view class="panel" catchtap="onPanelTap">
+      <view class="panel__head">
+        <view class="panel__title">提交个人档案修改</view>
+        <view class="panel__close" bindtap="onCancelTap">×</view>
+      </view>
+
+      <!-- 姓名与任教班级只读回显。原型自己的注释写着理由：两者都是名册权威持有的身份
+           字段，留着控件等于让教师给自己改授权边界。 -->
+      <view class="form__row">
+        <view class="form__label">姓名</view>
+        <view class="readback">{{profile.teacher_name || '—'}}</view>
+      </view>
+      <view class="form__row">
+        <view class="form__label">任教班级</view>
+        <view class="readback">{{profile.class_label || '—'}}</view>
+      </view>
+
+      <!-- 原型这三处是 `<select>`。WXML 没有下拉列表，取值固定且 6 个以内，按
+           form-control-spec.md §1 第 2 问取横排标签。 -->
+      <view class="form__row">
+        <view class="form__label">岗位</view>
+        <view class="hl-chips">
+          <view
+            wx:for="{{options.job_role}}"
+            wx:key="key"
+            class="hl-chips__item {{item.key === draft.job_role ? 'hl-chips__item--on' : ''}}"
+            data-field="job_role"
+            data-key="{{item.key}}"
+            bindtap="onChipTap">{{item.label}}</view>
+        </view>
+      </view>
+
+      <view class="form__row">
+        <view class="form__label">职称</view>
+        <input
+          class="input"
+          value="{{draft.professional_title}}"
+          maxlength="50"
+          placeholder="如：一级"
+          data-field="professional_title"
+          bindinput="onTextInput" />
+      </view>
+
+      <view class="form__row">
+        <view class="form__label">最高学历</view>
+        <view class="hl-chips">
+          <view
+            wx:for="{{options.education_level}}"
+            wx:key="key"
+            class="hl-chips__item {{item.key === draft.education_level ? 'hl-chips__item--on' : ''}}"
+            data-field="education_level"
+            data-key="{{item.key}}"
+            bindtap="onChipTap">{{item.label}}</view>
+        </view>
+      </view>
+
+      <view class="note">姓名与任教班级由园方名册维护，如需更正请联系园所管理员。</view>
+
+      <!-- 原型 `.edit-group`：证书与奖项，可增可删，每行四格。 -->
+      <view class="group">
+        <view class="group__head">
+          <view class="group__title">证书与奖项文件</view>
+          <view class="group__add" bindtap="onAddCredential">＋ 新增证书</view>
+        </view>
+
+        <view wx:for="{{draft.credentials}}" wx:key="key" wx:for-index="ci" class="cred">
+          <view class="cred__head">
+            <view class="cred__remove" data-index="{{ci}}" bindtap="onRemoveCredential">删除</view>
+          </view>
+
+          <view class="form__row">
+            <view class="form__label">文件类型</view>
+            <view class="hl-chips">
+              <view
+                wx:for="{{options.credential_type}}"
+                wx:for-item="opt"
+                wx:key="key"
+                class="hl-chips__item {{opt.key === item.credential_type ? 'hl-chips__item--on' : ''}}"
+                data-index="{{ci}}"
+                data-field="credential_type"
+                data-key="{{opt.key}}"
+                bindtap="onCredentialChipTap">{{opt.label}}</view>
+            </view>
+          </view>
+
+          <!-- 原型的「类别」下拉是双用的：选「学历证书」时列 本科／硕士／博士，其余时列
+               园级…国家级。前者不在 `credential_level` 的枚举里 —— 学历层级的落点是上面
+               那个「最高学历」（缺口 G37）。所以学历证书这一行不画类别。 -->
+          <view wx:if="{{item.credential_type !== 'c1'}}" class="form__row">
+            <view class="form__label">等级类别</view>
+            <view class="hl-chips">
+              <view
+                wx:for="{{options.credential_level}}"
+                wx:for-item="opt"
+                wx:key="key"
+                class="hl-chips__item {{opt.key === item.credential_level ? 'hl-chips__item--on' : ''}}"
+                data-index="{{ci}}"
+                data-field="credential_level"
+                data-key="{{opt.key}}"
+                bindtap="onCredentialChipTap">{{opt.label}}</view>
+            </view>
+          </view>
+
+          <view class="form__row">
+            <view class="form__label">文件名称</view>
+            <input
+              class="input"
+              value="{{item.credential_name}}"
+              maxlength="150"
+              placeholder="如：幼儿园教师资格证"
+              data-index="{{ci}}"
+              data-field="credential_name"
+              bindinput="onCredentialInput" />
+          </view>
+
+          <view class="form__row">
+            <view class="form__label">上传原文件</view>
+            <view class="upload">
+              <text class="upload__note">{{item.file_id ? '已选择' : '未选择文件'}}</text>
+              <view wx:if="{{uploadingAt !== ci}}" class="upload__btn" data-index="{{ci}}" bindtap="onPickFile">选择文件</view>
+              <text wx:else class="upload__note">上传中…</text>
+            </view>
+          </view>
+        </view>
+
+        <view class="note">每份文件都需要填写文件类型、文件名称，并上传对应原文件。文件标签用于后续档案分析，原文件用于审核留存。</view>
+      </view>
+
+      <view wx:if="{{notice}}" class="notice">{{notice}}</view>
+
+      <!-- 完整预览＋明确发布：教职工文本走 ADR-0016 的 HUMAN_PREVIEW_CONFIRM。
+           一枚「提交审核」承不起这条把关，所以先预览、读到底再确认。 -->
+      <block wx:if="{{stage === 'edit'}}">
+        <view class="panel__actions">
+          <view class="hl-btn hl-btn--hollow panel__btn" bindtap="onCancelTap">取消</view>
+          <view class="hl-btn panel__btn" bindtap="onPreviewTap">预览</view>
+        </view>
+        <view class="note">提交前必须完整预览。预览里的内容就是提交的内容，提交后不能修改。</view>
+      </block>
+
+      <block wx:if="{{stage === 'preview'}}">
+        <scroll-view class="preview" scroll-y="true" bindscrolltolower="onPreviewEnd">
+          <view wx:for="{{preview.lines}}" wx:key="*this" class="preview__line">{{item}}</view>
+          <view class="preview__end">—— 以上是全部内容 ——</view>
+        </scroll-view>
+        <view wx:if="{{!previewedInFull}}" class="note">请读到最后一行，再确认提交。</view>
+        <view class="panel__actions">
+          <view class="hl-btn hl-btn--hollow panel__btn" bindtap="onBackToEdit">返回修改</view>
+          <view
+            class="hl-btn panel__btn {{previewedInFull ? '' : 'panel__btn--off'}}"
+            bindtap="onConfirmTap">{{submitting ? '提交中…' : '提交审核'}}</view>
+        </view>
+      </block>
+    </view>
+  </view>
+</view>

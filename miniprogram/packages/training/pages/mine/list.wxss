@@ -29,8 +29,9 @@
   -webkit-line-clamp: 2;
 }
 
-/* ── 我的档案入口 —— 原型 `.profile-grid` ────────────────────────────────── */
+/* ── 我的研修（2026-08-27）───────────────────────────────────────────────── */
 
+/* 原型 `.sec`：16px 粗体。 */
 .sec {
   margin: 0 0 20rpx;
   font-size: 32rpx;
@@ -38,30 +39,29 @@
   color: var(--fg);
 }
 
-/* 原型：两列等宽，格间 10px。 */
-.entry {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20rpx;
-  margin-bottom: 28rpx;
+/* 原型 `.foot .pill`：一排描边小标。 */
+.train__foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: 18rpx;
 }
 
-.entry__card {
-  padding: 24rpx;
+.train__pill {
+  padding: 8rpx 18rpx;
   border: 1px solid var(--border);
-  border-radius: 28rpx;
-  background: var(--surface);
-}
-
-.entry__title {
-  font-size: 28rpx;
-  font-weight: 700;
-  color: var(--fg);
-}
-
-.entry__desc {
-  margin-top: 10rpx;
+  border-radius: var(--radius-pill);
   font-size: 22rpx;
-  line-height: 1.4;
   color: var(--muted);
+}
+
+.more {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--accent-dark);
+  font-size: 26rpx;
+  text-align: center;
 }

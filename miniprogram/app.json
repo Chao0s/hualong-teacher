@@ -52,7 +52,8 @@
       "pages": [
         "pages/course/detail",
         "pages/train/list",
-        "pages/train/detail"
+        "pages/train/detail",
+        "pages/mine/list"
       ]
     },
     {
@@ -104,6 +105,13 @@
       "pages": [
         "pages/tool/index"
       ]
+    },
+    {
+      "root": "packages/profile",
+      "name": "profile",
+      "pages": [
+        "pages/mine/index"
+      ]
     }
   ],
   "preloadRule": {
@@ -124,7 +132,8 @@
       "packages": [
         "library",
         "training",
-        "assessment"
+        "assessment",
+        "profile"
       ]
     },
     "pages/co-education/index": {

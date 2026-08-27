@@ -1,0 +1,48 @@
+<view class="hl-page" wx:if="{{ready}}">
+  <!-- 原型 `.sec`：这一页只有一节，「报名记录」。 -->
+  <view class="sec">报名记录</view>
+
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryList">重试</text>
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障码 {{errorRequestId}}</text>
+  </view>
+
+  <view wx:if="{{loadingFirst}}" class="hl-loading">加载中…</view>
+
+  <block wx:if="{{!loadingFirst}}">
+    <!-- 空与失败是两种状态：读失败时不说「暂无」。 -->
+    <view wx:if="{{items.length === 0 && !errorText}}" class="hl-card hl-empty">
+      还没有报名记录，去研修列表看看
+    </view>
+
+    <!-- 原型 `.card`：标题与阶段徽章一行，下面时间地点、摘要，底部一排小标。 -->
+    <view
+      wx:for="{{items}}"
+      wx:key="training_id"
+      class="hl-card train"
+      data-id="{{item.training_id}}"
+      data-withdrawn="{{item.withdrawn}}"
+      bindtap="onTap">
+      <view class="train__top">
+        <text class="hl-card__title">{{item.training_title}}</text>
+        <text class="hl-pill {{item.phase_pill}}">{{item.phase_label}}</text>
+      </view>
+      <view class="hl-card__meta">
+        <text class="train__time">{{item.time_label}}</text>
+        <text wx:if="{{item.meta_label}}">{{item.meta_label}}</text>
+      </view>
+      <view wx:if="{{item.excerpt}}" class="train__excerpt">{{item.excerpt}}</view>
+      <!-- 原型底部两枚小标：材料份数与参与状态。材料份数在卡片形状里没有
+           （`TrainingCard` 不带 `file_refs`），所以只画参与状态那一枚。票据 27。 -->
+      <view class="train__foot">
+        <text class="train__pill">{{item.participation_label}}</text>
+      </view>
+    </view>
+
+    <view
+      wx:if="{{!exhausted && items.length > 0}}"
+      class="more"
+      bindtap="onMoreTap">{{loadingMore ? '加载中…' : '加载更多'}}</view>
+  </block>
+</view>

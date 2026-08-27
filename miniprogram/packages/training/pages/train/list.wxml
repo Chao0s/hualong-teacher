@@ -1,4 +1,18 @@
 <view class="hl-page" wx:if="{{ready}}">
+  <!-- 原型 training-list.html 顶部那一节「我的档案」：两张并排的入口卡。
+       2026-08-27 补建 —— 此前整节没有，教师因此无处进个人档案与我的研修。 -->
+  <view class="sec">我的档案</view>
+  <view class="entry">
+    <view class="entry__card" bindtap="onProfileTap">
+      <view class="entry__title">个人档案</view>
+      <view class="entry__desc">教龄、学历、证书与专业发展记录</view>
+    </view>
+    <view class="entry__card" bindtap="onMineTap">
+      <view class="entry__title">我的研修</view>
+      <view class="entry__desc">参与记录、提交材料与研修成果</view>
+    </view>
+  </view>
+
   <!-- 最新／历史是两区切分，不是自由筛选。横排标签（form-control-spec.md §2.1）。 -->
   <view class="hl-chips">
     <view class="hl-chips__label">研修</view>

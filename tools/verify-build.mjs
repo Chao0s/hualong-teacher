@@ -74,6 +74,9 @@ const SUBPACKAGE_SERVICES = {
   // 一名幼儿的五大领域（124 题），这个评园所（9 个一级指标、120 题）。读写面没有一行
   // 共用，所以是两个分包两个服务，不是一个分包塞两套。
   'packages/quality': 'quality',
+  // 教师个人档案（2026-08-27，G45 拍板后补建）。它自成一个分包而不是塞进 packages/training，
+  // 理由还是服务模块边界：档案与研修没有共用的读写面，入口在研修列表上只是导航关系。
+  'packages/profile': 'teacher-profile',
   'packages/co-education': 'co-education',
   // 评价链（票据 20）与成长册（票据 21）在结构契约上都属 co-education 模块，但**模块与
   // 分包不是一回事**：一个 tabBar 模块可以带不止一个分包，正如 assessment 借教研培训落门。
