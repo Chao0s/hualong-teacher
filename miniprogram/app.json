@@ -30,11 +30,8 @@
       "name": "coordination",
       "pages": [
         "pages/xz/list",
-        "pages/xz/detail",
         "pages/hq/list",
-        "pages/hq/detail",
-        "pages/hr/list",
-        "pages/hr/detail"
+        "pages/hr/list"
       ]
     },
     {

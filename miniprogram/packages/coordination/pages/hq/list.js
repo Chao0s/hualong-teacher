@@ -13,6 +13,7 @@
 const guard = require('../../../../utils/guard');
 const coordination = require('../../../../services/coordination');
 const { createListMethods } = require('../../../../utils/list-page');
+const { present } = require('../../../../utils/present');
 
 const GROUP = 'hq';
 
@@ -29,6 +30,15 @@ Page({
     errorText: '',
     errorRequestId: '',
     errorCanRetry: false,
+
+    // 详情弹层（原型 `.sheet`）。列表的错误与弹层的错误分开存，两者说的不是一回事。
+    sheetOpen: false,
+    sheetLoading: false,
+    sheetError: '',
+    sheetErrorRequestId: '',
+    documentId: 0,
+    doc: null,
+    downloading: false,
   },
 
   /** 入口页的卡片带类目进来；无参或不认识的取值都停在第一类（见 xz/list.js）。 */
@@ -74,7 +84,70 @@ Page({
   },
 
   onTap(e) {
-    const { id } = e.currentTarget.dataset;
-    wx.navigateTo({ url: `/packages/coordination/pages/hq/detail?document_id=${id}` });
+    return this.openSheet(Number(e.currentTarget.dataset.id));
+  },
+
+  /**
+   * 打开详情弹层。
+   *
+   * 每次打开都重读一次：契约 §4 规则 20 说「成功打开写一笔 viewed，重复成功重复
+   * 计数」—— 缓存起来只读一次，那笔计数就丢了。
+   */
+  async openSheet(documentId) {
+    if (!documentId) return;
+    this.setData({
+      sheetOpen: true, sheetLoading: true, doc: null,
+      sheetError: '', sheetErrorRequestId: '', documentId,
+    });
+    try {
+      const row = await coordination.documentDetail(documentId);
+      this.setData({ doc: row, sheetLoading: false });
+    } catch (err) {
+      // 弹层里的失败留在弹层里：整页的错误横幅说的是列表读不到，两回事。
+      const shown = present(err);
+      this.setData({
+        sheetLoading: false,
+        sheetError: shown.message,
+        sheetErrorRequestId: shown.requestId || '',
+      });
+    }
+  },
+
+  onSheetClose() {
+    this.setData({ sheetOpen: false, doc: null, sheetError: '', documentId: 0 });
+  },
+
+  /** 面板自己吃掉点击，只有遮罩关闭 —— 与原型一致。 */
+  onPanelTap() {},
+
+  /**
+   * 卡片右列的「下载」。
+   *
+   * 列表项（`CoordDocumentCard`）**不带附件**，附件只在详情里，所以这一枚先读一次
+   * 详情再打开主文件。多一次请求，换教师少一步 —— 原型的卡上就有这一枚。
+   */
+  async onDownloadTap(e) {
+    const documentId = Number(e.currentTarget.dataset.id);
+    if (!documentId || this.data.downloading) return;
+    this.setData({ downloading: true });
+    try {
+      const row = await coordination.documentDetail(documentId);
+      const main = (row.files || []).find((f) => f.usage_key === 'main_file') || (row.files || [])[0];
+      if (!main) {
+        wx.showToast({ title: '这份资料没有附件', icon: 'none' });
+        return;
+      }
+      await coordination.openFile(documentId, main);
+    } catch (err) {
+      wx.showToast({ title: present(err).message, icon: 'none' });
+    } finally {
+      this.setData({ downloading: false });
+    }
+  },
+
+  /** 取档每次现签一个短时 URL（§8.4）。打不开时的说明由服务层统一给。 */
+  onOpenFile(e) {
+    const { file } = e.currentTarget.dataset;
+    return coordination.openFile(this.data.documentId, file);
   },
 });

@@ -161,6 +161,8 @@ function toFileRow(ref) {
   return {
     file_id: ref.file_id,
     file_name: ref.file_name,
+    // 卡片上的「下载」要在这一串里挑出主文件，所以原始的 usage_key 也一并带出。
+    usage_key: ref.usage_key,
     usage_label: USAGE_LABEL[ref.usage_key] || '附件',
   };
 }

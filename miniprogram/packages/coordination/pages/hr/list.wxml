@@ -24,20 +24,17 @@
     <!-- 空与失败是两种状态：读失败时不说「暂无」，那是把读不到说成没有东西可读。 -->
     <view wx:if="{{items.length === 0 && !errorText}}" class="hl-card hl-empty">暂无资料</view>
 
-    <!-- 原型 `.doc-card`：左列**只有标题与摘要**，右列放操作。
-         发布日期、部门与生效日期不在卡上 —— 原型把它们放在详情的那行灰字里
-         （`.preview-meta`），卡上留白正是让标题与摘要读得快。 -->
-    <view
-      wx:for="{{items}}"
-      wx:key="document_id"
-      class="doc"
-      data-id="{{item.document_id}}"
-      bindtap="onTap">
-      <view class="doc__main">
+    <!-- 原型 `.doc-card`：左列**只有标题与摘要**，右列两枚等宽按钮（详情、下载）。
+         发布日期、部门与生效日期不在卡上 —— 原型把它们放在弹层的那行灰字里。 -->
+    <view wx:for="{{items}}" wx:key="document_id" class="doc">
+      <view class="doc__main" data-id="{{item.document_id}}" bindtap="onTap">
         <view class="doc__title">{{item.document_title}}</view>
         <view wx:if="{{item.excerpt}}" class="doc__excerpt">{{item.excerpt}}</view>
       </view>
-      <view class="doc__btn">详情</view>
+      <view class="doc__acts">
+        <view class="doc__btn doc__btn--primary" data-id="{{item.document_id}}" bindtap="onTap">详情</view>
+        <view class="doc__btn" data-id="{{item.document_id}}" bindtap="onDownloadTap">下载</view>
+      </view>
     </view>
 
     <!-- 原型 `.load-more`：一枚显式按钮，读完就收起来。 -->
@@ -46,4 +43,52 @@
       class="more"
       bindtap="onMoreTap">{{loadingMore ? '加载中…' : '加载更多'}}</view>
   </block>
+
+  <!--
+    文件详情 —— **同页弹层，不是另一个页面**（原型 `.sheet` ＋ `.preview`）。
+
+    三份权威里两份说弹层：原型画的是弹层，API 契约 §4 规则 20 明写「教师点卡片后在
+    同页 sheet 看完整正文……**不增独立详情页**」。源流程图那一票更旧，园方 2026-08-27
+    裁定按前两者办，结构契约随之删掉 XZDetail／HQDetail／HRDetail 三个 screen。
+  -->
+  <view wx:if="{{sheetOpen}}" class="sheet" bindtap="onSheetClose">
+    <!-- 点面板本身不关闭：`catchtap` 拦住冒泡，与原型只在遮罩上关闭一致。 -->
+    <view class="preview" catchtap="onPanelTap">
+      <view wx:if="{{sheetLoading}}" class="hl-loading">加载中…</view>
+
+      <view wx:if="{{sheetError}}" class="hl-error">
+        {{sheetError}}
+        <text wx:if="{{sheetErrorRequestId}}" class="hl-error__id">故障码 {{sheetErrorRequestId}}</text>
+      </view>
+
+      <block wx:if="{{doc && !sheetLoading}}">
+        <view class="preview__head">
+          <view class="preview__title">{{doc.document_title}}</view>
+          <view class="preview__close" bindtap="onSheetClose">×</view>
+        </view>
+        <!-- 原型 `.preview-meta` 是一行灰字：类目 · 发布于 日期 · 生效日期。 -->
+        <view class="preview__meta">
+          <text>{{doc.category_label}}</text>
+          <text> · 发布于 {{doc.published_label}}</text>
+          <text wx:if="{{doc.department_label}}"> · {{doc.department_label}}</text>
+          <text wx:if="{{doc.effective_label}}"> · 生效日期：{{doc.effective_label}}</text>
+        </view>
+        <view class="preview__body">{{doc.document_content}}</view>
+
+        <view class="preview__attach-title">附件</view>
+        <!-- 原型 `.attachment-row`：描边窄行，「主文件 · 文件名」在左，「下载」在右。
+             小程序没有文件系统下载，这一枚落到 wx.openDocument／previewImage
+             （契约 §8.4 现签短时 URL）—— 文案照原型，能力是平台给得出的那一种。 -->
+        <view
+          wx:for="{{doc.files}}"
+          wx:key="file_id"
+          class="preview__attach"
+          data-file="{{item}}"
+          bindtap="onOpenFile">
+          <text>{{item.usage_label}} · {{item.file_name}}</text>
+          <text class="preview__attach-act">下载</text>
+        </view>
+      </block>
+    </view>
+  </view>
 </view>

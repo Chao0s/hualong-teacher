@@ -386,35 +386,45 @@ test('the published time is shown as written — no timezone arithmetic anywhere
   )
 })
 
-test('out-of-scope and gone read identically, with no retry, on all three detail pages', async () => {
+/**
+ * 2026-08-27：详情从三个独立页面改成**同页弹层**（原型 `.sheet`，API 契约 §4
+ * 规则 20 也明写「不增独立详情页」）。下面这些用例的主题一条没变，落点从
+ * `detail.js` 换成 `list.js` 的 `openSheet`／`onOpenFile`。
+ */
+
+/** 打开某一类下的文件弹层。 */
+async function openDoc(c, group, documentId) {
+  const page = loadPage(c, `${BASE}/${group}/list.js`)
+  page.onLoad({})
+  await page.openSheet(documentId)
+  return page
+}
+
+test('out-of-scope and gone read identically, with no retry, in all three sheets', async () => {
   for (const g of GROUPS) {
     const c = await signedIn()
-    const page = loadPage(c, `${BASE}/${g.key}/detail.js`)
+    const page = await openDoc(c, g.key, 999999)
 
-    await page.load(999999)
-    assert.match(page.data.errorText, /不存在|不在可见范围/, `${g.zh}：措辞不区分两种情形`)
-    assert.equal(page.data.errorCanRetry, false, `${g.zh}：重试改变不了任何事`)
+    assert.match(page.data.sheetError, /不存在|不在可见范围/, `${g.zh}：措辞不区分两种情形`)
+    assert.equal(page.data.doc, null, `${g.zh}：读不到就没有正文`)
+    assert.equal(page.data.sheetOpen, true, `${g.zh}：弹层留着，理由写在里面`)
   }
 })
 
-test('a missing id is refused before any request leaves', async () => {
+test('弹层里的失败不冒充列表读不到', async () => {
   const c = await signedIn()
-  const page = loadPage(c, `${BASE}/hq/detail.js`)
-  const before = c.record.requests.length
+  const page = await openDoc(c, 'hq', 999999)
 
-  page.onLoad({})
-  assert.equal(c.record.requests.length, before, '缺编号不发请求')
-  assert.ok(page.data.errorText, '说清楚缺什么')
-  assert.equal(page.data.errorCanRetry, false, '重试同一个 URL 不会有别的结果')
+  assert.ok(page.data.sheetError, '弹层自己说')
+  assert.equal(page.data.errorText, '', '整页的错误横幅不动 —— 列表本身读到了')
+  assert.ok(page.data.items.length > 0, '列表照常在')
 })
 
 // ── 附件 ─────────────────────────────────────────────────────────────────────
 
 test('opening a document signs a fresh short-lived URL, per tap, with its owner', async () => {
   const c = await signedIn()
-  const page = loadPage(c, `${BASE}/xz/detail.js`)
-  page.onLoad({ document_id: 1 })
-  await page.load(1)
+  const page = await openDoc(c, 'xz', 1)
 
   const file = page.data.doc.files.find((f) => f.file_name.endsWith('.pdf'))
   await page.onOpenFile({ currentTarget: { dataset: { file } } })
@@ -434,9 +444,8 @@ test('opening a document signs a fresh short-lived URL, per tap, with its owner'
 
 test('an image attachment is previewed, not downloaded as a document', async () => {
   const c = await signedIn()
-  const page = loadPage(c, `${BASE}/xz/detail.js`)
   // 第 4 条挂了一张配图（id % 4 === 0）。
-  await page.load(4)
+  const page = await openDoc(c, 'xz', 4)
 
   const image = page.data.doc.files.find((f) => f.file_name.endsWith('.jpg'))
   assert.ok(image, '夹具里要有一张配图')
@@ -448,8 +457,7 @@ test('an image attachment is previewed, not downloaded as a document', async () 
 
 test('an attachment WeChat cannot open says so in Chinese, and does not waste a signature', async () => {
   const c = await signedIn()
-  const page = loadPage(c, `${BASE}/xz/detail.js`)
-  await page.load(154)
+  const page = await openDoc(c, 'xz', 154)
 
   const zip = page.data.doc.files.find((f) => f.file_name.endsWith('.zip'))
   assert.ok(zip, '夹具里要有一份微信打不开的格式')
@@ -466,8 +474,7 @@ test('an attachment WeChat cannot open says so in Chinese, and does not waste a 
 
 test('a download that fails still reaches the teacher as a sentence', async () => {
   const c = await signedIn()
-  const page = loadPage(c, `${BASE}/hr/detail.js`)
-  await page.load(2)
+  const page = await openDoc(c, 'hr', 2)
   const file = page.data.doc.files[0]
 
   c.control.downloadFails = true
@@ -482,8 +489,7 @@ test('a download that fails still reaches the teacher as a sentence', async () =
 
 test('a refused signature is presented in Chinese, not swallowed', async () => {
   const c = await signedIn()
-  const page = loadPage(c, `${BASE}/hq/detail.js`)
-  await page.load(3)
+  const page = await openDoc(c, 'hq', 3)
   const file = page.data.doc.files[0]
 
   answerOnce({
@@ -502,7 +508,6 @@ test('no coordination screen carries an upload, create or edit control', () => {
   const files = ['services/coordination.js']
   for (const g of GROUPS) {
     files.push(`${BASE}/${g.key}/list.js`, `${BASE}/${g.key}/list.wxml`)
-    files.push(`${BASE}/${g.key}/detail.js`, `${BASE}/${g.key}/detail.wxml`)
   }
   for (const file of files) {
     const src = read(file)
@@ -527,18 +532,24 @@ test('the prototype carousel is not built', () => {
 
 // ── 分包边界 ─────────────────────────────────────────────────────────────────
 
-test('all six screens live in the coordination subpackage, and no tab page followed them in', () => {
+test('三个清单页都在综合协调分包里，没有 tab 页跟进来', () => {
   const sub = (appJson.subPackages || []).find((s) => s.root === 'packages/coordination')
   assert.ok(sub, '综合协调分包必须在 app.json 里声明')
 
+  // 2026-08-27：详情改成同页弹层，三个 detail 页退役 —— 分包里只剩三个清单页。
+  assert.deepEqual(sub.pages.slice().sort(),
+    ['pages/hq/list', 'pages/hr/list', 'pages/xz/list'],
+    '分包里只有三个清单页，一个详情页也不剩')
+
   for (const g of GROUPS) {
-    for (const leaf of ['list', 'detail']) {
-      const route = `${BASE}/${g.key}/${leaf}`
-      assert.ok(sub.pages.includes(`pages/${g.key}/${leaf}`), `分包缺 pages/${g.key}/${leaf}`)
-      assert.ok(!appJson.pages.includes(route), `${route} 同时登记在主包，编译会拒绝`)
-      for (const ext of ['.js', '.json', '.wxml']) {
-        assert.ok(fs.existsSync(path.join(MP, route + ext)), `${route} 缺 ${ext}`)
-      }
+    const route = `${BASE}/${g.key}/list`
+    assert.ok(!appJson.pages.includes(route), `${route} 同时登记在主包，编译会拒绝`)
+    for (const ext of ['.js', '.json', '.wxml']) {
+      assert.ok(fs.existsSync(path.join(MP, route + ext)), `${route} 缺 ${ext}`)
+    }
+    for (const ext of ['.js', '.json', '.wxml', '.wxss']) {
+      assert.ok(!fs.existsSync(path.join(MP, `${BASE}/${g.key}/detail${ext}`)),
+        `${g.key}/detail${ext} 还在 —— 退役的页面要连文件一起走`)
     }
   }
 
@@ -556,13 +567,11 @@ test('the subpackage is preloaded from its own navigation entry', () => {
 
 test('the coordination subpackage reads one service module and only one', () => {
   for (const g of GROUPS) {
-    for (const leaf of ['list', 'detail']) {
-      const src = read(`${BASE}/${g.key}/${leaf}.js`)
-      const requires = [...src.matchAll(/require\('([^']+)'\)/g)].map((m) => m[1])
-      const services = requires.filter((r) => r.includes('/services/'))
-      assert.deepEqual(services, ['../../../../services/coordination'],
-        `${g.key}/${leaf} 引用了综合协调以外的服务模块`)
-    }
+    const src = read(`${BASE}/${g.key}/list.js`)
+    const requires = [...src.matchAll(/require\('([^']+)'\)/g)].map((m) => m[1])
+    const services = requires.filter((r) => r.includes('/services/'))
+    assert.deepEqual(services, ['../../../../services/coordination'],
+      `${g.key}/list 引用了综合协调以外的服务模块`)
   }
 })
 

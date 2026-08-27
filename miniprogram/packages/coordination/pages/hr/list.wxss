@@ -77,20 +77,6 @@
   -webkit-line-clamp: 2;
 }
 
-/* 原型 `.doc-actions .primary`「详情」。原型右列另有一颗「下载」，导出下载不建
- * （ADR-0017），所以这一列只剩一颗，占满整列。高度 32px、圆角 9px 照抄。 */
-.doc__btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 64rpx;
-  border-radius: var(--radius-sm);
-  background: var(--accent);
-  color: #fff;
-  font-size: 24rpx;
-  font-weight: 700;
-}
-
 /* 原型 `.load-more`：整宽、描边、圆角，读完就不再画。 */
 .more {
   margin-top: var(--space-3);
@@ -101,4 +87,133 @@
   color: var(--accent-dark);
   font-size: 26rpx;
   text-align: center;
+}
+
+/* ── 详情弹层 —— 原型 `.sheet` ＋ `.preview` ─────────────────────────────── */
+
+/* 原型 `.sheet`：整屏遮罩，上留 84px 让出导航栏，面板自上而下铺开。 */
+.sheet {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 30;
+  padding: 168rpx 28rpx 48rpx;
+  background: rgba(26, 25, 22, 0.34);
+}
+
+.preview {
+  max-height: 100%;
+  padding: 32rpx;
+  border-radius: 36rpx;
+  background: var(--surface);
+  overflow-y: auto;
+}
+
+.preview__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24rpx;
+}
+
+.preview__title {
+  flex: 1;
+  min-width: 0;
+  font-size: 34rpx;
+  font-weight: 800;
+  line-height: 1.35;
+  color: var(--fg);
+}
+
+/* 原型 `.close`：32px 圆钮，页面底色，无边框。 */
+.preview__close {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 40rpx;
+  line-height: 1;
+}
+
+.preview__meta {
+  margin-top: 16rpx;
+  font-size: 24rpx;
+  color: var(--muted);
+}
+
+/* 原型 `.preview-body`：正文与抬头之间隔一条分隔线，行高 1.75。 */
+.preview__body {
+  margin-top: 28rpx;
+  padding-top: 28rpx;
+  border-top: 1px solid var(--border);
+  font-size: 26rpx;
+  line-height: 1.75;
+  color: var(--fg);
+  white-space: pre-wrap;
+}
+
+.preview__attach-title {
+  margin-top: 32rpx;
+  font-size: 26rpx;
+  font-weight: 800;
+  color: var(--fg);
+}
+
+/* 原型 `.attachment-row`：描边窄行，两端对齐。 */
+.preview__attach {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  margin-top: 16rpx;
+  padding: 20rpx;
+  border: 1px solid var(--border);
+  border-radius: 20rpx;
+  font-size: 24rpx;
+  color: var(--fg);
+}
+
+.preview__attach-act {
+  flex: none;
+  color: var(--accent-dark);
+  font-weight: 800;
+}
+
+/* ── 卡片右列的两枚按钮 —— 原型 `.doc-actions` ───────────────────────────── */
+
+.doc__main {
+  min-width: 0;
+}
+
+/* 原型：两枚等宽，各 32px 高，间距 6px。左边那枚是实心主色。 */
+.doc__acts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12rpx;
+}
+
+.doc__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 64rpx;
+  border: 1px solid var(--border);
+  border-radius: 18rpx;
+  background: var(--surface);
+  color: var(--fg);
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.doc__btn--primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
 }
