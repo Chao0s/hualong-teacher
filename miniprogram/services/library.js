@@ -49,6 +49,7 @@ const { present } = require('../utils/present');
 // `case` is a reserved word; the module is named for what it holds, the binding
 // for what JavaScript allows（services/home.js 已是这个写法）。
 const kase = require('./case');
+const identity = require('./identity');
 
 const RESOURCE_PATH = '/library/resources';
 const CASE_PATH = '/library/cases';
@@ -883,6 +884,20 @@ module.exports = {
   // 票据 15 的写入面。
   UPLOAD_TARGETS,
   LIMITS,
+  /**
+   * 上传人的姓名与班级，只读回显。
+   *
+   * 原型 `upload-resource.html` 那一节自己的注释写着：「上传人信息**不再是表单**……
+   * 改为只读回显」——原先那里是两个 `select`（GAPS.md G24 记的死控件），拿掉的是
+   * 控件，不是这一节。教师要看得见自己这次以谁的身份、哪个班在传。
+   *
+   * §6.4：`scope` 只作显示用。显示班级名正是它许可的用法，把它写回请求体才不是 ——
+   * 作者字段由服务端派生，客户端一个也不送（§7.3 / DO-NOT-BUILD 8）。
+   *
+   * 转出而不是让页面 require 第二个服务模块：分包规则只许一个（票据 12），
+   * 与 co-education 转出 media、evaluation 转出 radarModel 是同一条。
+   */
+  uploaderIdentity: identity.homeIdentity,
   MAX_UPLOAD_BYTES,
   uploadOptions,
   resourcePickerOptions,

@@ -27,25 +27,59 @@
     <!-- 只读态：假期，或这一条不在草稿里。理由就地写出，不做成会拒绝人的按钮。 -->
     <view wx:if="{{readonly}}" class="hl-card hl-empty">{{readonlyReason}}</view>
 
-    <!-- 上传目标：二选一。横排标签，2 项且取值固定（form-control-spec.md §1 第 2 问）。
-         已经建过的那一条不让换表，理由写在 form.js 的 onTargetTap 里。 -->
-    <view wx:if="{{!contentId}}" class="hl-section-title">
-      上传目标
-      <text class="up__aside">二选一</text>
-    </view>
-    <!-- 原型把它画成两张并排的卡（`.target-grid`）。**不复刻**：form-control-spec.md
-         §2.1 已把「上传表单 · 上传目标」定为横排标签，那是票据 13 的定案。 -->
-    <view wx:if="{{!contentId}}" class="hl-chips">
-      <view
-        wx:for="{{targets}}"
-        wx:key="key"
-        class="hl-chips__item {{item.key === target ? 'hl-chips__item--on' : ''}}"
-        data-key="{{item.key}}"
-        bindtap="onTargetTap">{{item.label}}</view>
+    <!--
+      上传目标：二选一，**两张并排的卡**（原型 `.target-grid`）。
+
+      2026-08-27 改回原型。此前是横排标签，援引的是 form-control-spec.md §2.1 ——
+      那条定案立在「原型只是视觉参照」的时期。园方 2026-08-26 裁定以原型为准，而这里
+      不只是形状之争：每张卡带一句说明（本土材料、解读、获取与转化 ／ 活动案例、年级
+      领域与关联资源），那是标签放不下的信息，教师正是靠它分辨该投哪个库。
+
+      已经建过的那一条不让换表，理由写在 form.js 的 onTargetTap 里。
+    -->
+    <view wx:if="{{!contentId}}" class="hl-card up__chunk">
+      <view class="up__head">
+        <view class="up__sec">上传目标</view>
+        <view class="up__hint">二选一</view>
+      </view>
+      <view class="up__targets">
+        <view
+          wx:for="{{targets}}"
+          wx:key="key"
+          class="up__target {{item.key === target ? 'up__target--on' : ''}}"
+          data-key="{{item.key}}"
+          bindtap="onTargetTap">
+          <view class="up__target-mark">{{item.key === 'resource' ? '资' : '案'}}</view>
+          <view class="up__target-name">{{item.label}}</view>
+          <view class="up__target-desc">{{item.desc}}</view>
+        </view>
+      </view>
     </view>
 
-    <!-- 上传人信息由会话派生，不做成两个可填的框（GAPS.md G24：那是死控件，
-         而且等于让客户端供一个服务端必须自己拥有的值）。 -->
+    <!--
+      上传人信息 —— **只读回显，不是表单**。
+
+      原型这一节自己的注释写着「上传人信息不再是表单……改为只读回显」：原先那里是两个
+      `select`，GAPS.md G24 记它们是死控件，拿掉的是**控件**，不是这一节。2026-08-27
+      之前这里整节缺席，那是删过头了 —— 教师看不见自己这次以谁的身份、哪个班在传。
+
+      §6.4：`scope` 只作显示用，显示班级名正是它许可的用法。作者字段由服务端派生，
+      客户端一个也不送（§7.3 / DO-NOT-BUILD 8），所以这两格没有 `name`，也不进请求体。
+    -->
+    <view class="hl-card up__chunk">
+      <view class="up__sec up__sec--solo">上传人信息</view>
+      <view class="up__profile">
+        <view class="up__field">
+          <view class="up__label">姓名</view>
+          <view class="up__readback">{{uploader.teacherName || '—'}}</view>
+        </view>
+        <view class="up__field">
+          <view class="up__label">班级</view>
+          <view class="up__readback">{{uploader.className || '—'}}</view>
+        </view>
+      </view>
+      <view class="up__note">由登录信息自动带入，不可修改。</view>
+    </view>
 
     <block wx:if="{{target === 'resource'}}">
       <!-- 原型 `.section-head` 的区头右侧带一句提示，与「上传目标 · 二选一」同形。 -->

@@ -306,7 +306,7 @@ test('提交成功后看板与详情的状态立即更新，无需手工刷新',
 
   const board = loadPage(c, 'pages/task/board.js')
   board.onLoad()
-  await board.loadFirst()
+  await board.loadAll()
   board.onShow()
 
   const submit = await openSubmit(c, 13)
@@ -319,16 +319,15 @@ test('提交成功后看板与详情的状态立即更新，无需手工刷新',
   assert.equal(detail.data.task.assign_status_label, '已完成')
   assert.ok(detail.data.task.completed_label, '完成时间也一并出现')
 
-  // 看板默认筛的是「当前任务」（a1／a2）。提交完成后 13 号就不属于当前了，
-  // 它要从这一屏消失并出现在历史里 —— 这才是「立即更新」，不是原地换个文案。
+  // 看板是两节堆叠（当前任务／历史任务）。提交完成后 13 号就不属于当前了，
+  // 它要从上一节消失并出现在下一节 —— 这才是「立即更新」，不是原地换个文案。
   await board.onShow()
-  assert.equal(board.data.items.find((r) => r.task_id === 13), undefined,
-    '已完成的任务不再留在当前任务里')
+  const at = (key) => board.data.sections.find((s) => s.key === key).items
+  assert.equal(at('current').find((r) => r.task_id === 13), undefined,
+    '已完成的任务不再留在当前任务这一节里')
 
-  board.setData({ activeScope: 'history', filters: { scope: 'history' } })
-  await board.loadFirst()
-  const row = board.data.items.find((r) => r.task_id === 13)
-  assert.equal(row.status_label, '已完成', '它出现在历史任务里，同样不必手工刷新')
+  const row = at('history').find((r) => r.task_id === 13)
+  assert.equal(row.status_label, '已完成', '它出现在历史任务那一节里，同样不必手工刷新')
 })
 
 test('首次 onShow 不重复发一次请求', async () => {

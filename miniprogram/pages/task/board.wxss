@@ -1,28 +1,34 @@
 /* 待办任务 —— 逐格对着 screens/teacher-tasks.html 转写。换算因子 2（票据 01）。
  *
- * 原型把当前与历史做成两节堆叠的 `.sec` 标题，标题右侧带一个计数（「2项」）。这里是
- * 两区切分标签：**计数取不到** —— 游标分页没有总数（契约 §3.1／DO-NOT-BUILD 11），
- * 而两条各自翻页的列表叠在一页上比切换更糟。已登记在 ADR-0017。
+ * 两节堆叠，与原型一致。计数只在这一节读完时才报：游标分页没有总数
+ * （契约 §3.1／DO-NOT-BUILD 11），所以取不到的是**那个数**，不是这个版面 ——
+ * 2026-08-27 之前这一页把两节换成了三枚筛选标签，那是把版面一并否掉了。
  */
 
-.scopes {
+/* 原型 `.sec`：16px/750，上 18px 下 10px，计数靠右。 */
+.sec {
   display: flex;
-  gap: var(--space-2);
-  padding: var(--space-2) 0 var(--space-1);
+  align-items: center;
+  justify-content: space-between;
+  margin: 36rpx 0 20rpx;
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--fg);
 }
 
-.scopes__item {
-  padding: 10rpx var(--space-3);
-  border-radius: var(--radius-pill);
-  background: var(--surface);
-  color: var(--muted);
-  font-size: 26rpx;
-}
-
-.scopes__item--on {
-  background: var(--accent-light);
-  color: var(--accent-dark);
+/* 原型 `.hint`：12px 灰字。 */
+.sec__hint {
+  font-size: 24rpx;
   font-weight: 600;
+  color: var(--muted);
+}
+
+/* 这一节还没读完时的入口。原型没有它 —— 原型是静态的三条，不必翻页。 */
+.sec__more {
+  padding: var(--space-3);
+  color: var(--accent-dark);
+  font-size: 26rpx;
+  text-align: center;
 }
 
 /* 原型 `.task-card`：16px 圆角、14px 内边距；`.task-list` 的行距是 10px。 */

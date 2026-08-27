@@ -70,23 +70,41 @@ test('已取消 is shown apart from the teacher own status, not instead of it', 
   assert.ok(cancelled.status_label, '教师自己那一行的状态仍然显示')
 })
 
-test('changing the filter throws the old cursor away and reloads from the top', async () => {
+/**
+ * 2026-08-27：看板改回原型的**两节堆叠**（当前任务／历史任务），此前是三枚筛选标签。
+ * 「换筛选丢游标」那条断言因此没有目标了 —— 现在没有筛选可换，两节各持各的游标。
+ * 它守的那件事换了个形状留下来：**两节读的不是同一批，而且各自的游标互不相干**。
+ */
+test('两节各读各的，游标互不相干', async () => {
   const c = await signedIn()
   const page = loadPage(c, 'pages/task/board.js')
   page.onLoad()
-  await page.loadFirst()
+  await page.loadAll()
 
-  const firstScope = page.data.items.map((r) => r.task_id)
-  assert.ok(page.data.items.length > 0)
+  const [current, history] = page.data.sections
+  assert.equal(current.key, 'current')
+  assert.equal(history.key, 'history')
+  assert.ok(current.items.length > 0, '当前任务这一节有内容')
 
-  page.onScopeTap({ currentTarget: { dataset: { scope: 'history' } } })
-  await page.loadFirst()
+  const ids = (s) => s.items.map((r) => r.task_id)
+  for (const id of ids(current)) {
+    assert.ok(!ids(history).includes(id), `任务 ${id} 同时出现在两节里`)
+  }
+})
 
-  assert.equal(page.data.activeScope, 'history')
-  assert.deepEqual(page.data.filters, { scope: 'history' })
-  assert.equal(page.data.cursor, null, '换筛选后游标从头开始')
-  const secondScope = page.data.items.map((r) => r.task_id)
-  assert.notDeepEqual(secondScope, firstScope, '两个筛选返回的不是同一批')
+test('计数只在这一节读完时才报 —— 游标分页没有总数', async () => {
+  const c = await signedIn()
+  const page = loadPage(c, 'pages/task/board.js')
+  page.onLoad()
+  await page.loadAll()
+
+  for (const section of page.data.sections) {
+    if (section.exhausted) {
+      assert.equal(section.countLabel, `${section.items.length}项`, '读完了才报数')
+    } else {
+      assert.equal(section.countLabel, '', '没读完就不报 —— 报一个已加载数冒充总数更糟')
+    }
+  }
 })
 
 test('a cursor from one filter is refused under another, and the page self-heals', async () => {
@@ -102,18 +120,26 @@ test('a cursor from one filter is refused under another, and the page self-heals
   )
 })
 
-test('the board pages to the end and then stops asking', async () => {
+test('一节翻到底就不再问 —— 游标为空是结束的唯一信号', async () => {
   const c = await signedIn()
   const page = loadPage(c, 'pages/task/board.js')
   page.onLoad()
-  page.setData({ activeScope: '', filters: {} })
-  await page.loadFirst()
-  while (!page.data.exhausted) await page.loadMore()
+  await page.loadAll()
+
+  const key = 'current'
+  const at = () => page.data.sections.find((s) => s.key === key)
+  let guardCount = 0
+  while (!at().exhausted && guardCount < 20) {
+    // eslint-disable-next-line no-await-in-loop
+    await page.onMoreTap({ currentTarget: { dataset: { key } } })
+    guardCount += 1
+  }
+  assert.ok(at().exhausted, '这一节翻到了底')
 
   const sent = c.record.requests.length
-  await page.loadMore()
-  await page.loadMore()
-  assert.equal(c.record.requests.length, sent, '游标为空即结束')
+  await page.onMoreTap({ currentTarget: { dataset: { key } } })
+  await page.onMoreTap({ currentTarget: { dataset: { key } } })
+  assert.equal(c.record.requests.length, sent, '到底之后一个请求也不再发')
 })
 
 // ── The detail ───────────────────────────────────────────────────────────────

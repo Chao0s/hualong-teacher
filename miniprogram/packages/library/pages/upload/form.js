@@ -51,6 +51,8 @@ Page({
 
     target: 'resource',
     targets: library.UPLOAD_TARGETS,
+    // 上传人只读回显。§6.4：scope 只作显示用 —— 显示，不是提交。
+    uploader: library.uploaderIdentity(),
     options: {},
     limits: library.LIMITS,
     // 「关联资源」滚轮的取值，只有案例表单要，所以只在案例表单打开时读。

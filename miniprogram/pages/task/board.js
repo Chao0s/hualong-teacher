@@ -4,35 +4,45 @@
  * Read-only (ticket 10). The teacher's own tasks and where each one stands, so
  * "what do I do first" is answerable without opening anything.
  *
- * Thin by the ticket-08 template, and the first page to use the filter channel
- * added in ticket 09: `filters` goes into every fetchPage call, and changing it
- * reloads from the top because §3.3 binds a cursor to the filter set it was
- * issued under.
+ * ── 版面：两节堆叠，不是筛选标签（2026-08-27 改回原型） ─────────────────────
+ *
+ * 原型 `teacher-tasks.html` 把当前与历史画成**两节堆叠**，每节标题右侧带一个计数
+ * （「当前任务 2项」）。此前这一页做成了三枚筛选标签，理由是「游标分页没有总数，
+ * 那个计数取不到」——**那个理由只否掉计数，不否掉版面**，而我把版面也一并换了。
+ *
+ * 现在两节都在，计数**只在这一节确实读完时才报**（`exhausted`）。没读完就不报数，
+ * 而不是报一个「目前加载了几条」冒充总数 —— 契约 §3.1 不给总数正是因为那个数会与
+ * 实际翻出来的页数不一致，客户端更不该自己造一个。
  */
 
 const guard = require('../../utils/guard');
 const task = require('../../services/task');
-const { createListMethods } = require('../../utils/list-page');
+const { reportFailure } = require('../../utils/present');
 
-// 当前 / 历史 mirrors the prototype's two groups. 全部 is the unfiltered read.
-const SCOPES = [
-  { key: 'current', label: '当前任务' },
-  { key: 'history', label: '历史任务' },
-  { key: '', label: '全部' },
+// 原型的两节，次序即显示次序。
+const SECTIONS = [
+  { key: 'current', title: '当前任务' },
+  { key: 'history', title: '历史任务' },
 ];
+
+/** 一节的初始形状。两节各自翻页，所以游标与到底标记都是每节一份。 */
+function emptySection(def) {
+  return {
+    key: def.key,
+    title: def.title,
+    items: [],
+    cursor: null,
+    exhausted: false,
+    loading: true,
+    // 读完才报数；没读完这一格是空串，不是一个冒充总数的数字。
+    countLabel: '',
+  };
+}
 
 Page({
   data: {
     ready: false,
-    scopes: SCOPES,
-    activeScope: 'current',
-    filters: { scope: 'current' },
-
-    items: [],
-    cursor: null,
-    loadingFirst: true,
-    loadingMore: false,
-    exhausted: false,
+    sections: SECTIONS.map(emptySection),
     errorText: '',
     errorRequestId: '',
     errorCanRetry: false,
@@ -41,41 +51,88 @@ Page({
   onLoad() {
     if (!guard.requireSession()) return;
     this.setData({ ready: true });
-    this.loadFirst();
+    this.loadAll();
   },
 
   /**
    * 从详情或提交页返回时重读（票据 11）。onLoad 先于 onShow，所以第一次 onShow
    * 只做记号，不重复发一次请求。
+   *
+   * 两节一起重读：提交完成后那条任务要从「当前任务」消失、在「历史任务」出现，
+   * 只重读一节看得见一半。
    */
   onShow() {
     if (!this.entered) {
       this.entered = true;
       return;
     }
-    return this.loadFirst();
+    return this.loadAll();
   },
 
   onPullDownRefresh() {
-    this.loadFirst().then(() => wx.stopPullDownRefresh());
+    this.loadAll().then(() => wx.stopPullDownRefresh());
   },
 
-  onReachBottom() {
-    this.loadMore();
+  /** 两节同时读第一页。一节失败即整页报错：半张看板比一张空看板更容易误读。 */
+  async loadAll() {
+    this.setData({
+      sections: SECTIONS.map(emptySection),
+      errorText: '',
+      errorRequestId: '',
+      errorCanRetry: false,
+    });
+    try {
+      const pages = await Promise.all(
+        SECTIONS.map((def) => task.listPage({ scope: def.key })),
+      );
+      this.setData({
+        sections: SECTIONS.map((def, i) => this.settle(emptySection(def), pages[i])),
+      });
+    } catch (err) {
+      reportFailure(this, err, {
+        sections: SECTIONS.map((def) => ({ ...emptySection(def), loading: false })),
+      });
+    }
   },
 
-  ...createListMethods({ fetchPage: task.listPage }),
+  /** 把一页并进一节。`nextCursor` 为空是**结束的唯一信号**（DO-NOT-BUILD 11）。 */
+  settle(section, page) {
+    const items = section.items.concat(page.items);
+    const exhausted = !page.nextCursor;
+    return {
+      ...section,
+      items,
+      cursor: page.nextCursor,
+      exhausted,
+      loading: false,
+      countLabel: exhausted ? `${items.length}项` : '',
+    };
+  },
 
-  /**
-   * §3.3: the old cursor belongs to the old filter set. Setting `filters` and
-   * reloading from the top is the whole mechanism — loadFirst drops the cursor
-   * itself, so there is nothing to remember here.
-   */
-  onScopeTap(e) {
-    const { scope } = e.currentTarget.dataset;
-    if (scope === this.data.activeScope) return;
-    this.setData({ activeScope: scope, filters: { scope } });
-    this.loadFirst();
+  /** 某一节的「加载更多」。只有那一节没读完时才画得出来。 */
+  async onMoreTap(e) {
+    const { key } = e.currentTarget.dataset;
+    const index = this.data.sections.findIndex((s) => s.key === key);
+    const section = this.data.sections[index];
+    if (!section || section.loading || section.exhausted) return;
+
+    this.patch(index, { loading: true });
+    try {
+      const page = await task.listPage({ scope: key, cursor: section.cursor });
+      this.patch(index, this.settle(this.data.sections[index], page));
+    } catch (err) {
+      this.patch(index, { loading: false });
+      reportFailure(this, err, {});
+    }
+  },
+
+  patch(index, patch) {
+    const sections = this.data.sections.map((s, i) => (i === index ? { ...s, ...patch } : s));
+    this.setData({ sections });
+  },
+
+  onRetryLoad() {
+    this.loadAll();
   },
 
   onTap(e) {

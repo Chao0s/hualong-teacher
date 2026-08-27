@@ -515,13 +515,22 @@ describe('选择位按已定案的控件形态实现', () => {
 
   test('其余选择位全是横排标签，一个滚轮也没有', () => {
     const wxml = read('packages/library/pages/upload/form.wxml')
-    // 六个枚举位：资源格式、资源分类、适用年级、案例年级、五大领域、活动形式，
-    // 外加上传目标。全部走 hl-chips —— 判据的结果，不是遗漏。
+    // 六个枚举位：资源格式、资源分类、适用年级、案例年级、五大领域、活动形式。
+    // 全部走 hl-chips —— 判据的结果，不是遗漏。
     for (const field of ['resource_type', 'resource_tag', 'grade', 'case_grade', 'case_field', 'case_area']) {
       assert.match(wxml, new RegExp(`data-field="${field}"`), `${field} 应当是一行标签`)
     }
-    assert.equal((wxml.match(/class="hl-chips"/g) || []).length, 8,
-      '七个选择位加一行已选资源标签')
+    assert.equal((wxml.match(/class="hl-chips"/g) || []).length, 7,
+      '六个枚举位加一行已选资源标签')
+
+    // 上传目标不在其中：2026-08-27 改回原型的**两张卡**（字标＋名称＋一句说明）。
+    // 此前它也是一行标签，援引的是 form-control-spec.md §2.1 —— 那条定案立在
+    //「原型只是视觉参照」的时期，园方裁定以原型为准之后不再成立。
+    assert.match(wxml, /class="up__targets"/, '上传目标是两张卡')
+    assert.match(wxml, /up__target-desc/, '每张卡带一句说明，原型上就有')
+
+    // 这条测试真正守的事：整张表里一个滚轮也没有（资源多选那处除外，另有测试）。
+    assert.equal((wxml.match(/<picker/g) || []).length, 0, '没有 picker 滚轮')
   })
 })
 

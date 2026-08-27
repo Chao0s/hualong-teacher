@@ -1,30 +1,30 @@
 <view class="hl-page" wx:if="{{ready}}">
 
-  <view class="scopes">
-    <view
-      wx:for="{{scopes}}"
-      wx:key="key"
-      class="scopes__item {{item.key === activeScope ? 'scopes__item--on' : ''}}"
-      data-scope="{{item.key}}"
-      bindtap="onScopeTap">
-      {{item.label}}
-    </view>
-  </view>
-
   <view wx:if="{{errorText}}" class="hl-error">
     {{errorText}}
-    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryList">重试</text>
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryLoad">重试</text>
     <text wx:if="{{errorRequestId}}" class="hl-error__id">故障码 {{errorRequestId}}</text>
   </view>
 
-  <view wx:if="{{loadingFirst}}" class="hl-loading">加载中…</view>
+  <!-- 两节堆叠 —— 原型 teacher-tasks.html 的 `.sec` ＋ `.task-list`。 -->
+  <block wx:for="{{sections}}" wx:key="key" wx:for-item="section">
 
-  <block wx:if="{{!loadingFirst}}">
+    <view class="sec">
+      {{section.title}}
+      <!-- 计数只在这一节确实读完时才报。没读完就不报 —— 游标分页没有总数，
+           报一个「已加载几条」冒充总数比不报更糟。 -->
+      <text wx:if="{{section.countLabel}}" class="sec__hint">{{section.countLabel}}</text>
+    </view>
+
+    <view wx:if="{{section.loading && section.items.length === 0}}" class="hl-loading">加载中…</view>
+
     <!-- 空与失败是两种状态：读失败时不说「暂无」。 -->
-    <view wx:if="{{items.length === 0 && !errorText}}" class="hl-card hl-empty">暂无任务</view>
+    <view
+      wx:if="{{!section.loading && section.items.length === 0 && !errorText}}"
+      class="hl-card hl-empty">暂无{{section.title}}</view>
 
     <view
-      wx:for="{{items}}"
+      wx:for="{{section.items}}"
       wx:key="task_id"
       class="hl-card task"
       data-id="{{item.task_id}}"
@@ -43,7 +43,10 @@
       <view class="task__intro">{{item.task_intro}}</view>
     </view>
 
-    <view wx:if="{{loadingMore}}" class="hl-loading">加载更多…</view>
-    <view wx:if="{{exhausted && items.length > 0}}" class="hl-loading">没有更多了</view>
+    <view
+      wx:if="{{!section.exhausted && section.items.length > 0}}"
+      class="sec__more"
+      data-key="{{section.key}}"
+      bindtap="onMoreTap">{{section.loading ? '加载中…' : '加载更多'}}</view>
   </block>
 </view>

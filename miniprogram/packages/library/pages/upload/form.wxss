@@ -164,3 +164,127 @@
   line-height: 1.6;
   color: var(--muted);
 }
+
+/* ── 分节卡与上传目标（2026-08-27 改回原型） ──────────────────────────────── */
+
+/* 原型 `.chunk`：**一节一张卡**，标题与它的字段同在一张白卡里，卡与卡之间隔 10px。
+ * 此前是「分区标题浮在底色上、每个字段各一张卡」，那是本仓库自己的排法。 */
+.up__chunk {
+  padding: 30rpx;
+  border-radius: 32rpx;
+}
+
+.up__chunk + .up__chunk {
+  margin-top: 20rpx;
+}
+
+/* 原型 `.section-head`：标题在左，一句提示在右。 */
+.up__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24rpx;
+}
+
+.up__sec {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+/* 没有右侧提示时，标题自己要补回那段下边距。 */
+.up__sec--solo {
+  margin-bottom: 24rpx;
+}
+
+.up__hint {
+  font-size: 24rpx;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+/* 原型 `.target-grid`：两张并排的卡，各带字标、名称与一句说明。 */
+.up__targets {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16rpx;
+}
+
+.up__target {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  min-height: 164rpx;
+  padding: 22rpx;
+  border: 1px solid var(--border);
+  border-radius: 28rpx;
+  background: var(--surface);
+}
+
+.up__target--on {
+  border-color: var(--accent);
+  background: var(--accent-light);
+}
+
+.up__target-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 18rpx;
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  font-size: 24rpx;
+  font-weight: 800;
+}
+
+/* 选中时卡底已是浅青，字标再用浅青就糊在一起了，翻成实心。 */
+.up__target--on .up__target-mark {
+  background: var(--accent);
+  color: #fff;
+}
+
+.up__target-name {
+  font-size: 28rpx;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.up__target-desc {
+  font-size: 22rpx;
+  line-height: 1.35;
+  color: var(--muted);
+}
+
+/* ── 上传人信息（只读回显） ───────────────────────────────────────────────── */
+
+/* 原型 `.profile`：姓名与班级两格并排。 */
+.up__profile {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16rpx;
+}
+
+.up__field {
+  min-width: 0;
+}
+
+/* 原型 `.readback`：比输入框更暗的底色，本身就在说「这一格不能填」。
+ * `#f2f6f6` 令牌层没有这一档，用页面底色 —— 它在白卡上同样显得凹下去。 */
+.up__readback {
+  padding: 22rpx 24rpx;
+  border: 1px solid var(--border);
+  border-radius: 24rpx;
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 26rpx;
+  font-weight: 700;
+}
+
+.up__note {
+  margin-top: 16rpx;
+  font-size: 22rpx;
+  line-height: 1.45;
+  color: var(--muted);
+}
