@@ -1,4 +1,9 @@
-/* 上传表单（票据 15）。选择行与横排标签的尺寸在 styles/form-rows.wxss，本页不重写。 */
+/* 上传表单（票据 15）。选择行与横排标签的尺寸在 styles/form-rows.wxss，本页不重写。
+ *
+ * 2026-08-27 逐格对着 screens/upload-resource.html 重排。换算因子 2（票据 01）。
+ * 原型 `#fbfdfd`（输入框底色）在令牌层没有对应档，这里用 `--surface`：白卡上区分
+ * 输入框靠的是那一圈描边，不是那 1% 的灰。缺口记在票据 27。
+ */
 
 .hl-card + .hl-card {
   margin-top: var(--space-2);
@@ -59,19 +64,6 @@
   color: rgba(255, 255, 255, 0.92);
 }
 
-/* 区头右侧那句提示 —— 原型 `.section-head` 的 `.hint` 靠右站。 */
-.hl-section-title {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.up__aside {
-  font-size: 24rpx;
-  font-weight: 400;
-  color: var(--muted);
-}
-
 .up__state {
   display: flex;
   flex-direction: column;
@@ -88,87 +80,9 @@
   line-height: 1.6;
 }
 
-.up__field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
+/* ── 分节卡 ───────────────────────────────────────────────────────────────── */
 
-.up__label {
-  font-size: 28rpx;
-  color: var(--fg);
-}
-
-/* 必填星号跟在标签之后，与选择行同一条规则（form-control-spec.md §3）。 */
-.up__req {
-  color: var(--danger);
-}
-
-.up__limit {
-  margin-left: var(--space-2);
-  font-size: 24rpx;
-  color: var(--muted);
-}
-
-.up__input {
-  min-height: 72rpx;
-  font-size: 30rpx;
-  color: var(--fg);
-}
-
-.up__area {
-  width: 100%;
-  min-height: 160rpx;
-  font-size: 28rpx;
-  line-height: 1.7;
-  color: var(--fg);
-}
-
-.up__file {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-
-.up__file-name {
-  flex: 1;
-  min-width: 0;
-  font-size: 30rpx;
-  color: var(--fg);
-}
-
-.up__file-note {
-  font-size: 26rpx;
-  color: var(--muted);
-}
-
-.up__file-btn {
-  padding: var(--space-1) var(--space-3);
-  border-radius: var(--radius-pill);
-  background: var(--accent-light);
-  color: var(--accent-dark);
-  font-size: 26rpx;
-}
-
-/* 缺项、超长与文件说明共用一种形态：它们都是「你现在还不能提交，原因是这个」。 */
-.up__notice {
-  padding: var(--space-2) 0;
-  font-size: 26rpx;
-  line-height: 1.6;
-  color: var(--danger);
-}
-
-.up__hint {
-  padding: var(--space-2) 0;
-  font-size: 24rpx;
-  line-height: 1.6;
-  color: var(--muted);
-}
-
-/* ── 分节卡与上传目标（2026-08-27 改回原型） ──────────────────────────────── */
-
-/* 原型 `.chunk`：**一节一张卡**，标题与它的字段同在一张白卡里，卡与卡之间隔 10px。
- * 此前是「分区标题浮在底色上、每个字段各一张卡」，那是本仓库自己的排法。 */
+/* 原型 `.chunk`：**一节一张卡**，标题与它的字段同在一张白卡里，卡与卡之间隔 10px。 */
 .up__chunk {
   padding: 30rpx;
   border-radius: 32rpx;
@@ -197,11 +111,14 @@
   margin-bottom: 24rpx;
 }
 
+/* 区头右侧那句提示，与页尾那句说明同一种形态：灰、小、不抢。 */
 .up__hint {
   font-size: 24rpx;
   line-height: 1.45;
   color: var(--muted);
 }
+
+/* ── 上传目标 ─────────────────────────────────────────────────────────────── */
 
 /* 原型 `.target-grid`：两张并排的卡，各带字标、名称与一句说明。 */
 .up__targets {
@@ -266,10 +183,6 @@
   gap: 16rpx;
 }
 
-.up__field {
-  min-width: 0;
-}
-
 /* 原型 `.readback`：比输入框更暗的底色，本身就在说「这一格不能填」。
  * `#f2f6f6` 令牌层没有这一档，用页面底色 —— 它在白卡上同样显得凹下去。 */
 .up__readback {
@@ -287,4 +200,160 @@
   font-size: 22rpx;
   line-height: 1.45;
   color: var(--muted);
+}
+
+/* ── 材料表单 ─────────────────────────────────────────────────────────────── */
+
+/* 原型 `.form`：一列，字段之间 11px。 */
+.up__form {
+  display: flex;
+  flex-direction: column;
+  gap: 22rpx;
+}
+
+.up__field {
+  min-width: 0;
+}
+
+/* 原型 `.field label`：12px／750，与控件隔 6px。字数上限靠右（原型 `.limit` 是
+ * `float:right`，这里用 `margin-left:auto`，WXSS 的浮动在 flex 行里不生效）。 */
+.up__label {
+  display: flex;
+  align-items: baseline;
+  margin-bottom: 12rpx;
+  font-size: 24rpx;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.up__req {
+  margin-left: 4rpx;
+  color: var(--danger);
+}
+
+.up__limit {
+  margin-left: auto;
+  font-size: 22rpx;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+/* 原型 `.input` 与 `.textarea` 是同一套描边框，只有高度不同。 */
+.up__input,
+.up__area {
+  width: 100%;
+  padding: 22rpx 24rpx;
+  border: 1px solid var(--border);
+  border-radius: 24rpx;
+  background: var(--surface);
+  font-size: 26rpx;
+  color: var(--fg);
+}
+
+.up__area {
+  min-height: 156rpx;
+  line-height: 1.55;
+}
+
+/* 原型 `.image-box`：一条矮框，左边说选没选，右边一枚药丸按钮。 */
+.up__imagebox {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  min-height: 80rpx;
+  padding: 0 22rpx;
+  border: 1px solid var(--border);
+  border-radius: 24rpx;
+  background: var(--surface);
+}
+
+.up__imagenote {
+  font-size: 22rpx;
+  color: var(--muted);
+}
+
+/* 原型 `.mini-btn`：封面与 Word 附件两处共用。 */
+.up__mini {
+  flex: none;
+  padding: 16rpx 22rpx;
+  border-radius: var(--radius-pill);
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  font-size: 24rpx;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+/* 原型 `.upload-row`：名称与说明在左，按钮在右。 */
+.up__row {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 22rpx;
+  border: 1px solid var(--border);
+  border-radius: 24rpx;
+  background: var(--surface);
+}
+
+.up__row-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.up__row-name {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.up__row-note {
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+/* 横排标签进了白卡，就要自己带一圈描边 —— 通用样式的底色是白，白卡上看不见。
+ * 原型的 `.chip` 本来就是描边的，这里补的是同一件事。 */
+.up__form .hl-chips {
+  padding-bottom: 0;
+}
+
+.up__form .hl-chips__item {
+  border: 1px solid var(--border);
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.up__form .hl-chips__item--on {
+  border-color: var(--accent);
+}
+
+/* 关联资源的滚轮行也在白卡里，同样要描边才分得出边界。 */
+.up__form .hl-pick-row {
+  border: 1px solid var(--border);
+  border-radius: 24rpx;
+}
+
+/* ── 页尾 ─────────────────────────────────────────────────────────────────── */
+
+/* 原型 `.actions`：保存草稿与提交审核并排，各占一半。 */
+.up__actions {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 8rpx;
+}
+
+.up__action {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 缺项、超长与文件说明共用一种形态：它们都是「你现在还不能提交，原因是这个」。 */
+.up__notice {
+  padding: var(--space-2) 0;
+  font-size: 26rpx;
+  line-height: 1.6;
+  color: var(--danger);
 }

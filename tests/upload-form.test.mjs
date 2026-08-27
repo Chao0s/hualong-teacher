@@ -538,6 +538,106 @@ describe('选择位按已定案的控件形态实现', () => {
 //
 // LAST in this file: it flips the server's term off and back on again.
 
+// ── 版面：逐格对着 screens/upload-resource.html ──────────────────────────────
+//
+// 2026-08-27 加。园方逐页核对原型时报了这一页：字段次序、封面位置、Word 附件与
+// 保存草稿都对不上。这一套盯的是**次序与归属**，不是像素。
+
+describe('材料表单照原型排', () => {
+  test('整张表在一张卡里，不是一个字段一张卡', () => {
+    const wxml = read('packages/library/pages/upload/form.wxml')
+    // 原型 `.chunk` 三张：上传目标、上传人信息、材料表单。
+    assert.equal((wxml.match(/up__chunk/g) || []).length, 3, '三张分节卡，不多不少')
+    assert.match(wxml, /class="up__form"/, '材料字段共处一张卡')
+    // 字段自己不再是卡：`hl-card up__field` 这种组合应当一处也没有。
+    assert.equal((wxml.match(/hl-card up__field/g) || []).length, 0)
+  })
+
+  test('资源表单的字段次序与原型一致，封面紧跟名称', () => {
+    const wxml = read('packages/library/pages/upload/form.wxml')
+    const branch = wxml.slice(
+      wxml.indexOf(`<block wx:if="{{target === 'resource'}}">`),
+      wxml.indexOf(`<block wx:if="{{target === 'case'}}">`),
+    )
+    assert.ok(branch.length > 0, '取到了资源那一支')
+    const order = ['资源名称', '封面图片', '资源标签', '资源格式', '适用年级', '资源解读', '资源获取', '资源转化']
+    let at = -1
+    for (const label of order) {
+      const next = branch.indexOf(label)
+      assert.ok(next > at, `${label} 排在上一格之后`)
+      at = next
+    }
+  })
+
+  test('封面与 Word 附件在表单里，不在页尾另起一节', () => {
+    const wxml = read('packages/library/pages/upload/form.wxml')
+    assert.ok(wxml.indexOf('up__imagebox') < wxml.indexOf('资源标签'), '封面在标签之前')
+    assert.ok(wxml.indexOf('Word附件') > wxml.indexOf('资源转化'), 'Word 附件在正文之后')
+    assert.equal(wxml.includes('封面与详案'), false, '页尾那一节已经并进表单')
+    // 两张表的副标题不同，与原型一致。
+    assert.match(wxml, /资源说明、授权材料或整理文档/)
+    assert.match(wxml, /活动详案、反思或图文案例文档/)
+  })
+
+  test('课程应用那一行不画 —— 契约没有这个字段', () => {
+    // 原型的资源表单上有「课程应用」，从资源反挂一个案例。ResourceWrite 没有这个键，
+    // db_resource 也没有 case_id（B3 拔掉了关联表）。画一个写不出去的控件更糟。
+    // 只看标记，不看注释 —— 注释里写着「为什么不画」，那句话该留着。
+    const markup = read('packages/library/pages/upload/form.wxml').replace(/<!--[\s\S]*?-->/g, '')
+    assert.equal(markup.includes('课程应用'), false)
+  })
+})
+
+describe('保存草稿与提交审核是两步', () => {
+  test('保存草稿只建到 s1，不进审核队列', async () => {
+    const c = await signedIn()
+    const page = fillCase(await openForm(c, { target: 'case' }))
+
+    await page.onSaveDraftTap()
+
+    assert.equal(page.data.saving, false)
+    assert.ok(page.data.contentId > 0, '草稿已经建出来了')
+    assert.equal(page.data.status, 's1')
+    assert.equal(sentTo(c, '/submission').length, 0, '一条提交审核的请求也没发')
+    assert.equal(page.data.readonly, false, '草稿还能接着改')
+  })
+
+  test('连点两下保存只留一条草稿 —— 复用同一个幂等键', async () => {
+    const c = await signedIn()
+    const page = fillCase(await openForm(c, { target: 'case' }))
+
+    await page.onSaveDraftTap()
+    const first = page.data.contentId
+    await page.onSaveDraftTap()
+
+    assert.equal(page.data.contentId, first, '第二次是 PATCH 同一条，不是新建第二条')
+    assert.equal(sentTo(c, '/library/cases').filter((r) => r.method === 'POST').length, 1)
+  })
+
+  test('第一次保存要填齐，之后才零存整取', async () => {
+    const c = await signedIn()
+    const page = await openForm(c, { target: 'case' })
+    page.onTextInput({ currentTarget: { dataset: { field: 'case_name' } }, detail: { value: '只写了名字' } })
+
+    // db_case 的正文列都是 NOT NULL，POST 少一个就是 422 —— 所以缺项在本机就拦下，
+    // 一个请求也不发。这不是本端加的规矩，是那张表建不出半条记录。
+    const before = c.record.requests.length
+    await page.onSaveDraftTap()
+    assert.equal(c.record.requests.length, before, '缺项时一个请求也没发')
+    assert.ok(page.data.missing.length > 0, '缺哪几项就地列出')
+    assert.equal(page.data.contentId, 0)
+
+    // 填齐之后建出来；再改一格保存走 PATCH，不再要求填齐。
+    fillCase(page)
+    await page.onSaveDraftTap()
+    assert.ok(page.data.contentId > 0)
+
+    page.onTextInput({ currentTarget: { dataset: { field: 'case_trans' } }, detail: { value: '改一句' } })
+    await page.onSaveDraftTap()
+    assert.equal(sentTo(c, '/library/cases').filter((r) => r.method === 'PATCH').length, 1)
+  })
+})
+
 describe('没有进行中的学期时', () => {
   test('上传表单是只读说明，不是一句错误', async () => {
     setNoTerm(true)

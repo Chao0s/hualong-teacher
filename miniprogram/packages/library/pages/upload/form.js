@@ -78,6 +78,7 @@ Page({
     fileNotice: '',
 
     submitting: false,
+    saving: false,
     withdrawing: false,
     // 一次逻辑提交的幂等键，生成一次、重发复用（§4.2）。
     attemptKeys: null,
@@ -290,7 +291,67 @@ Page({
     }
   },
 
-  // ── 提交 ──────────────────────────────────────────────────────────────────
+  // ── 保存与提交 ────────────────────────────────────────────────────────────
+
+  /**
+   * 保存草稿（原型 `.actions` 的左键）。
+   *
+   * 草稿停在 s1，**不进审核队列**。它与提交是契约切开的两步（`resource.create` 与
+   * `resource.submit`），不是同一件事的两种说法，所以这里只走第一步。
+   *
+   * **第一次保存要填齐，之后可以零存整取。** 这不是本端的选择：`db_resource` 与
+   * `db_case` 的正文列都是 NOT NULL 且无默认值，`POST` 少一个就是 422；建出来之后
+   * `PATCH` 是部分更新，改一格存一格。所以缺项只在还没建出这条时拦。
+   *
+   * 首次保存复用 `attemptKeys.create`，连点两下不会留下两条草稿（§4.2）。
+   * 把关路径照旧声明：草稿里也可能已经带了封面图片。
+   */
+  async onSaveDraftTap() {
+    if (this.data.readonly || this.data.saving || this.data.submitting) return;
+
+    const missing = this.data.contentId ? [] : library.missingFields(this.data.target, this.data.draft);
+    const tooLong = library.tooLong(this.data.target, this.data.draft);
+    if (missing.length || tooLong.length) {
+      this.setData({ missing, tooLong, errorText: '', errorRequestId: '', errorCanRetry: false });
+      return;
+    }
+
+    const attemptKeys = this.data.attemptKeys || library.newAttemptKeys();
+    this.setData({ saving: true, attemptKeys, missing: [], tooLong: [], errorText: '', errorRequestId: '', errorCanRetry: false });
+
+    try {
+      if (this.data.contentId) {
+        await library.updateDraft({
+          target: this.data.target,
+          gates: GATE_PATHS,
+          contentId: this.data.contentId,
+          draft: this.data.draft,
+        });
+      } else {
+        const created = await library.createDraft({
+          target: this.data.target,
+          gates: GATE_PATHS,
+          draft: this.data.draft,
+          idempotencyKey: attemptKeys.create,
+        });
+        this.setData({
+          contentId: created[this.data.target === 'case' ? 'case_id' : 'resource_id'],
+          status: 's1',
+          statusLabel: library.CONTENT_STATUS.s1,
+          statusPill: 'hl-pill--info',
+        });
+      }
+      this.setData({ saving: false });
+      wx.showToast({ title: '已保存草稿', icon: 'none' });
+    } catch (err) {
+      this.setData({ saving: false });
+      if (err instanceof moderation.ModerationError) {
+        this.setData({ errorText: err.message, errorRequestId: '', errorCanRetry: false });
+        return;
+      }
+      reportFailure(this, err, {});
+    }
+  },
 
   /**
    * 提交审核。
@@ -299,7 +360,7 @@ Page({
    * `utils/moderation` 在网络出口之前断言把关路径；最后才是两次真正的调用。
    */
   async onSubmitTap() {
-    if (this.data.readonly || this.data.submitting || this.data.submitted) return;
+    if (this.data.readonly || this.data.submitting || this.data.saving || this.data.submitted) return;
 
     const missing = library.missingFields(this.data.target, this.data.draft);
     const tooLong = library.tooLong(this.data.target, this.data.draft);
