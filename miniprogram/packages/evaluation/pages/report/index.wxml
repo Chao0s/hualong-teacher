@@ -63,7 +63,7 @@
 
     <!--
       学期综合评语在纸下面，不在纸上：500 字的上限按 §6.5.2 反推要 15 × 22 格，
-      那一页就只剩两行给雷达图与领域分了。理由写在 index.js 的 WIDGETS 上方。
+      那一页就只剩两行给五维雷达图与领域分了。理由写在 index.js 的 WIDGETS 上方。
     -->
     <view class="hl-section-title">学期综合评语</view>
     <view class="hl-card">

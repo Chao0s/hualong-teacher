@@ -1,35 +1,48 @@
-/* 头图 —— 原型 party-activity-detail.html 的 `.cover`。 */
+/* 活动介绍页 —— 逐格对着 screens/party-activity-detail.html 转写。
+ * 换算因子 2，字重按入口页的先例落到 700。原型正文色 #3d3b36 令牌层没有这一档，用 --fg。 */
+
+/* 头图 —— 原型 `.cover`：定高 150px，标题压在渐变块的下沿。 */
 .cover {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
   min-height: 300rpx;
-  padding: var(--space-4);
-  border-radius: var(--radius);
+  padding: 36rpx;
+  border-radius: 32rpx;
   background: linear-gradient(135deg, #2563eb, #65b7ff);
   color: #fff;
 }
 
 .cover__title {
   font-size: 42rpx;
-  font-weight: 600;
-  line-height: 1.4;
+  font-weight: 700;
+  line-height: 1.25;
 }
 
 .cover__sub {
-  margin-top: var(--space-1);
+  margin-top: 12rpx;
   font-size: 24rpx;
   opacity: 0.9;
 }
 
+/* 原型 `.card` 之间是 12px。附件那一族卡沿用全站的 .hl-card 规格，所以内边距与
+ * 圆角只写在正文卡上，不写在这条通用规则里。 */
 .hl-card {
-  margin-top: var(--space-2);
+  margin-top: 24rpx;
 }
 
-/* 「标签｜值」一行 —— 原型的 `.row`，标签列定宽，值靠左对齐成一列。 */
+/* 原型 `.card`：内边距 15px，圆角 16px。 */
+.detail__card {
+  padding: 30rpx;
+  border-radius: 32rpx;
+}
+
+/* 「标签｜值」一行 —— 原型的 `.row`，标签列定宽 72px，值靠左对齐成一列。 */
 .row {
   display: flex;
-  font-size: 28rpx;
+  gap: var(--space-2);
+  font-size: 26rpx;
+  line-height: 1.5;
 }
 
 .row__label {
@@ -47,12 +60,12 @@
 .section__title {
   margin-bottom: var(--space-2);
   font-size: 30rpx;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--fg);
 }
 
 .detail__body {
-  font-size: 30rpx;
+  font-size: 26rpx;
   line-height: var(--line-cjk);
   color: var(--fg);
   white-space: pre-wrap;

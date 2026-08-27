@@ -22,18 +22,10 @@
     <view class="hl-section-title">活动转化</view>
     <view class="hl-card detail__body">{{kase.case_trans}}</view>
 
-    <!-- 自评、他评与活动反思在这份文档里：db_case 没有这三列，契约的 Case schema
-         也没有，原型同样把它们排在 Word 详案的第七、八、九节。 -->
-    <block wx:if="{{kase.word_file_id}}">
-      <view class="hl-section-title">详案</view>
-      <view class="hl-card detail__file" bindtap="onDownload">
-        <text class="hl-card__title">查看详案</text>
-        <view class="hl-card__meta">含活动目标、流程、延伸，以及自评、他评与活动反思</view>
-        <view class="hl-card__meta">链接 30 分钟内有效，过期请重新打开</view>
-      </view>
-    </block>
-
-    <view class="hl-section-title">关联的课程资源</view>
+    <!-- 原型 case-detail.html 的次序：活动简介、活动转化、关联资源，最后才是下载详案。
+         节名也取原型的「关联资源」，与 pages/upload/form.wxml 那一行标签、与
+         01 home-spec.md 的 `ui=case_detail.related_resource` 同名。 -->
+    <view class="hl-section-title">关联资源</view>
     <view wx:if="{{kase.related_resources.length === 0}}" class="hl-card hl-empty">暂无关联资源</view>
     <view
       wx:for="{{kase.related_resources}}"
@@ -48,5 +40,16 @@
       </view>
       <hl-icon name="icon-10" color="muted" size="32rpx" />
     </view>
+
+    <!-- 自评、他评与活动反思在这份文档里：db_case 没有这三列，契约的 Case schema
+         也没有，原型同样把它们排在 Word 详案的第七、八、九节。 -->
+    <block wx:if="{{kase.word_file_id}}">
+      <view class="hl-section-title">详案</view>
+      <view class="hl-card detail__file" bindtap="onDownload">
+        <text class="hl-card__title">查看详案</text>
+        <view class="hl-card__meta">含活动目标、流程、延伸，以及自评、他评与活动反思</view>
+        <view class="hl-card__meta">链接 30 分钟内有效，过期请重新打开</view>
+      </view>
+    </block>
   </block>
 </view>

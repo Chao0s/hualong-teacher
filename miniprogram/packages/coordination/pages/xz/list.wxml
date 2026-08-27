@@ -9,6 +9,9 @@
       bindtap="onCategoryTap">{{item.label}}</view>
   </view>
 
+  <!-- 分区标题 —— 原型 coordination-file-list.html 第 66 行的 `.sec`「全部文件」。 -->
+  <view class="sec">全部文件</view>
+
   <view wx:if="{{errorText}}" class="hl-error">
     {{errorText}}
     <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryList">重试</text>
@@ -21,19 +24,23 @@
     <!-- 空与失败是两种状态：读失败时不说「暂无」，那是把读不到说成没有东西可读。 -->
     <view wx:if="{{items.length === 0 && !errorText}}" class="hl-card hl-empty">暂无资料</view>
 
+    <!-- 原型 `.doc-card`：左列标题与摘要，右列 104px 放操作。 -->
     <view
       wx:for="{{items}}"
       wx:key="document_id"
-      class="hl-card doc"
+      class="doc"
       data-id="{{item.document_id}}"
       bindtap="onTap">
-      <text class="hl-card__title">{{item.document_title}}</text>
-      <view class="hl-card__meta doc__meta">
-        <text>{{item.published_label}}</text>
-        <text wx:if="{{item.department_label}}">{{item.department_label}}</text>
-        <text wx:if="{{item.effective_label}}">生效 {{item.effective_label}}</text>
+      <view class="doc__main">
+        <view class="doc__title">{{item.document_title}}</view>
+        <view class="doc__meta">
+          <text>{{item.published_label}}</text>
+          <text wx:if="{{item.department_label}}">{{item.department_label}}</text>
+          <text wx:if="{{item.effective_label}}">生效 {{item.effective_label}}</text>
+        </view>
+        <view wx:if="{{item.excerpt}}" class="doc__excerpt">{{item.excerpt}}</view>
       </view>
-      <view wx:if="{{item.excerpt}}" class="doc__excerpt">{{item.excerpt}}</view>
+      <view class="doc__btn">详情</view>
     </view>
 
     <view wx:if="{{loadingMore}}" class="hl-loading">加载更多…</view>

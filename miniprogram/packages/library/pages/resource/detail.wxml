@@ -23,18 +23,14 @@
     <view class="hl-section-title">资源获取</view>
     <view class="hl-card detail__body">{{resource.resource_access}}</view>
 
-    <view class="hl-section-title">资源转化建议</view>
+    <!-- 原型 resource-detail.html 与 01 home-spec.md 的列名都叫「资源转化」，
+         不叫「资源转化建议」。 -->
+    <view class="hl-section-title">资源转化</view>
     <view class="hl-card detail__body">{{resource.resource_trans}}</view>
 
-    <block wx:if="{{resource.word_file_id}}">
-      <view class="hl-section-title">详案</view>
-      <view class="hl-card detail__file" bindtap="onDownload">
-        <text class="hl-card__title">下载详案</text>
-        <view class="hl-card__meta">链接 30 分钟内有效，过期请重新下载</view>
-      </view>
-    </block>
-
-    <view class="hl-section-title">关联的课程案例</view>
+    <!-- 原型的第四节叫「课程应用」，紧接在资源转化之后，是这一页的最后一节。
+         详案因此排在它后面 —— 原型这一页没有详案，案例详情页把下载排在关联之后。 -->
+    <view class="hl-section-title">课程应用</view>
     <view wx:if="{{resource.related_cases.length === 0}}" class="hl-card hl-empty">暂无关联案例</view>
     <view
       wx:for="{{resource.related_cases}}"
@@ -49,5 +45,13 @@
       </view>
       <hl-icon name="icon-10" color="muted" size="32rpx" />
     </view>
+
+    <block wx:if="{{resource.word_file_id}}">
+      <view class="hl-section-title">详案</view>
+      <view class="hl-card detail__file" bindtap="onDownload">
+        <text class="hl-card__title">下载详案</text>
+        <view class="hl-card__meta">链接 30 分钟内有效，过期请重新下载</view>
+      </view>
+    </block>
   </block>
 </view>

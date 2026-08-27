@@ -46,30 +46,33 @@
             </view>
           </view>
         </picker>
-      </view>
 
-      <!--
-        照片。**只有图片入口，一个视频入口也没有**（DO-NOT-BUILD 12）：这里没有
-        视频标签、没有取景组件、没有任何通往视频的按钮。负向断言在
-        tests/moments.test.mjs 里逐个字符串扫这个文件。
-      -->
-      <view class="hl-card">
-        <view class="co-field__label">添加照片（最多 {{imageLimit}} 张）</view>
-        <view class="co-photos">
-          <view wx:for="{{draft.file_id}}" wx:key="*this" class="co-photos__item">
-            <text class="co-photos__id">照片 {{index + 1}}</text>
+        <!--
+          照片与名称、评语同在一张卡里（原型 home-school-moment-publish.html 的
+          `.chunk.form-card` 一节收下三者）。
+
+          **只有图片入口，一个视频入口也没有**（DO-NOT-BUILD 12）：这里没有
+          视频标签、没有取景组件、没有任何通往视频的按钮。负向断言在
+          tests/moments.test.mjs 里逐个字符串扫这个文件。
+        -->
+        <view class="co-field co-field--photos">
+          <view class="co-field__label">添加照片（最多 {{imageLimit}} 张）</view>
+          <view class="co-photos">
+            <view wx:for="{{draft.file_id}}" wx:key="*this" class="co-photos__item">
+              <text class="co-photos__id">照片 {{index + 1}}</text>
+              <view
+                wx:if="{{!readonly}}"
+                class="co-photos__remove"
+                data-file-id="{{item}}"
+                bindtap="onRemovePhoto">移除</view>
+            </view>
             <view
-              wx:if="{{!readonly}}"
-              class="co-photos__remove"
-              data-file-id="{{item}}"
-              bindtap="onRemovePhoto">移除</view>
+              wx:if="{{!readonly && draft.file_id.length < imageLimit}}"
+              class="co-photos__add"
+              bindtap="onPickPhotos">{{picking ? '上传中…' : '＋ 添加照片'}}</view>
           </view>
-          <view
-            wx:if="{{!readonly && draft.file_id.length < imageLimit}}"
-            class="co-photos__add"
-            bindtap="onPickPhotos">{{picking ? '上传中…' : '＋ 添加照片'}}</view>
+          <view wx:if="{{photoNotice}}" class="co-notice">{{photoNotice}}</view>
         </view>
-        <view wx:if="{{photoNotice}}" class="co-notice">{{photoNotice}}</view>
       </view>
 
       <view class="hl-card">

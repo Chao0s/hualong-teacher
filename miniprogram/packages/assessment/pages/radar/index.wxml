@@ -14,6 +14,11 @@
       <view wx:if="{{subtitle}}" class="as-hero__meta">{{subtitle}}</view>
     </view>
 
+    <!-- 原型 comprehensive-assessment-report.html 与班级报告都在图上方立了这一行小标题。
+         原型写的是「五大领域雷达图」，术语表把那个说法列为禁用变体，改用规范词。
+         不写成「五大领域五维雷达图」：五维说的就是五大领域，两个一起写是同一件事说两遍。 -->
+    <view class="hl-section-title">五维雷达图</view>
+
     <!--
       图。**没有得分时不渲染画布**，换成一句说明 —— 空画布上那个塌成一点的五边形
       比什么都不画更容易被读成「这孩子五项全是最低分」（票据 18 验收项 8）。

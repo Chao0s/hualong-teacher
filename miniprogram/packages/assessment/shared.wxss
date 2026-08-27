@@ -11,27 +11,33 @@
 
 /* ── 名册行 ─────────────────────────────────────────────────────────────── */
 
+/* 原型 growth-comprehensive-assessment.html 的 `.student`：一名幼儿一张卡，姓名与进度
+ * 上下叠成一列，状态徽章靠右。这张卡由页面挂 `hl-card`，这里只排里面的三样。 */
 .as-row {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3) 0;
+  gap: var(--space-2);
 }
 
 .as-row + .as-row {
-  border-top: 1px solid var(--border);
+  margin-top: var(--space-2);
+}
+
+.as-row__who {
+  flex: 1;
+  min-width: 0;
 }
 
 .as-row__name {
-  flex: none;
-  width: 160rpx;
-  font-size: 30rpx;
+  font-size: 28rpx;
+  font-weight: 600;
   color: var(--fg);
 }
 
 .as-row__progress {
-  flex: 1;
-  font-size: 26rpx;
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  line-height: 1.35;
   color: var(--muted);
 }
 

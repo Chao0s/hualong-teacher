@@ -28,6 +28,7 @@
       <view class="brand__thumb">品</view>
       <view class="brand__text">
         <text class="hl-card__title">{{item.brand_title}}</text>
+        <!-- 原型 `.meta` 是一行灰字，没有一格是彩色的。 -->
         <view class="hl-card__meta brand__meta">
           <text>{{item.published_label}}</text>
           <!-- 标签是可空列，服务层拼好一行；没有标签就不渲染这一格。 -->

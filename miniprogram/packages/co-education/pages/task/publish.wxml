@@ -12,18 +12,25 @@
   <block wx:if="{{!loading && draft}}">
     <!-- ── edit ───────────────────────────────────────────────────────── -->
     <view wx:if="{{stage === 'edit'}}" class="hl-stack">
-      <view class="hl-card">
-        <view class="co-field__label">任务类型</view>
-        <view class="hl-chips">
-          <view
-            wx:for="{{types}}"
-            wx:key="key"
-            class="hl-chips__item {{draft.parent_task_type === item.key ? 'hl-chips__item--on' : ''}}"
-            data-key="{{item.key}}"
-            bindtap="onTypeTap">{{item.label}}</view>
+      <!--
+        任务类型。原型 parent-task-publish.html 把它排成两张并列的卡，每张卡除了类型名
+        还写一句这类任务是什么（`.task-type` 的 `strong` 与 `span`）。这一句是教师选型的
+        依据，横排标签放不下它，所以这里照原型排成两张卡。
+      -->
+      <view class="hl-section-title">任务类型</view>
+      <view class="co-types">
+        <view
+          wx:for="{{types}}"
+          wx:key="key"
+          class="co-type {{draft.parent_task_type === item.key ? 'co-type--on' : ''}}"
+          data-key="{{item.key}}"
+          bindtap="onTypeTap">
+          <view class="co-type__name">{{item.label}}</view>
+          <view class="co-type__desc">{{item.desc}}</view>
         </view>
       </view>
 
+      <view class="hl-section-title">任务信息</view>
       <view class="hl-card">
         <view class="co-field">
           <view class="co-field__label">任务名称</view>
@@ -120,7 +127,8 @@
 
       <button class="hl-btn hl-btn--block" disabled="{{readonly}}" bindtap="onPreviewTap">预览并发布</button>
 
-      <view wx:if="{{tasks.length}}" class="hl-section-title">本班任务</view>
+      <!-- 原型 parent-tasks.html 的 `.sec 历史任务`：已发过的任务列在发布区下面。 -->
+      <view wx:if="{{tasks.length}}" class="hl-section-title">历史任务</view>
       <view wx:for="{{tasks}}" wx:key="parent_task_id" class="hl-card">
         <view class="hl-card__title">{{item.parent_task_title}}</view>
         <view class="hl-card__meta">{{item.type_label}} · {{item.start_label}} 起 · {{item.due_label}}</view>

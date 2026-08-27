@@ -1,10 +1,13 @@
-.hl-card + .hl-card {
-  margin-top: var(--space-2);
+/* 整篇图文是**一张卡**（原型 `.article`）：封面贴着卡的上沿，正文在下面。所以这张卡
+ * 自己不留内边距，内边距由封面与正文各自承担。原型的圆角是 20px（40rpx），比令牌的
+ * --radius 大一档；不新增令牌，取最接近的那一个。 */
+.course__article {
+  overflow: hidden;
+  padding: 0;
 }
 
-/* 封面 —— 原型 course-building.html 的 `.article-cover`：不是一块纯色，而是
- * 135° 的青色渐变，右上角压着一枚白色圆环，内容坐在下缘。原型渐变的深端是
- * #0f766e，最接近的令牌是 --accent-dark。 */
+/* 封面 —— 原型 `.article-cover`：不是一块纯色，而是 135° 的青色渐变，右上角压着一枚
+ * 白色圆环，内容坐在下缘。原型渐变的深端是 #0f766e，最接近的令牌是 --accent-dark。 */
 .cover {
   position: relative;
   overflow: hidden;
@@ -28,9 +31,21 @@
   border-radius: 50%;
 }
 
+/* 原型 `.article-kicker`：全大写、加宽字距的一行英文栏目名，压在标题上方。 */
+.cover__kicker {
+  position: relative;
+  z-index: 1;
+  font-size: 22rpx;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.8);
+}
+
 .cover__title {
   position: relative;
   z-index: 1;
+  margin-top: var(--space-2);
   font-size: 48rpx;
   font-weight: 700;
   line-height: 1.18;
@@ -46,21 +61,66 @@
   color: rgba(255, 255, 255, 0.9);
 }
 
-.course__lead {
-  font-size: 30rpx;
-  line-height: var(--line-cjk);
+/* 正文区 —— 原型 `.article-body` 的 18px 16px 16px，三个方向都取最接近的令牌。 */
+.course__body {
+  padding: var(--space-4);
 }
 
-.course__body {
+.course__lead {
   font-size: 28rpx;
   line-height: var(--line-cjk);
+  font-weight: 500;
+}
+
+/* 小标题 —— 原型 `.article h2` 前面那一枚 4px × 16px 的圆头竖条。全局的
+ * .hl-section-title 没有它，也不该为这一页改动，所以这一条只属于本页。 */
+.course__h2 {
+  display: flex;
+  align-items: center;
+  margin: var(--space-4) 0 var(--space-2);
+  font-size: 34rpx;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--fg);
+}
+
+.course__h2::before {
+  content: '';
+  flex: none;
+  width: 8rpx;
+  height: 32rpx;
+  margin-right: var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+}
+
+/* 原型 `.intro`：小标题下的一段引子，比条目正文重，比弱化色深。原型写的是 #3b4545，
+ * 落在 --fg 与 --muted 之间，取 --fg。 */
+.course__intro {
+  font-size: 26rpx;
+  line-height: var(--line-cjk);
+  color: var(--fg);
+}
+
+/* 条目 —— 原型 `.domain-item` / `.flow-item` 共有的那只带框小盒子。原型的底色是
+ * #fbfdfd，与 --surface 同一档，不另开令牌。 */
+.course__item {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.course__item-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.course__item-body {
+  margin-top: 6rpx;
+  font-size: 24rpx;
+  line-height: 1.6;
   color: var(--muted);
-}
-
-.course__body + .course__item {
-  margin-top: var(--space-3);
-}
-
-.course__item + .course__item {
-  margin-top: var(--space-3);
 }

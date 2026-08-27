@@ -2,6 +2,16 @@
   margin-top: var(--space-2);
 }
 
+/* 分区标题 —— 原型 resource-library.html 的 `.sec`：16px/700 正文色，外边距 18px 0 10px。
+   pages/training/index.wxss 已有同名同形的一份，那一页的原型写的是 20px，所以上外边距
+   是 40rpx；这一页照本页原型取 36rpx。 */
+.sec {
+  margin: 36rpx 0 20rpx;
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--fg);
+}
+
 .res {
   display: flex;
   align-items: stretch;

@@ -2,21 +2,33 @@
   margin-top: var(--space-2);
 }
 
+/* 原型 `.kicker`：徽章在标题上方自成一行，不与标题争同一行的宽度。 */
 .detail__top {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.detail__title {
+  margin-top: var(--space-2);
+  font-size: 40rpx;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--fg);
+}
+
+/* 原型 `.sec` 右侧那句灰色小注：说明这一节能做什么，不是一个可点的东西。 */
+.detail__sec {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
 }
 
-.detail__title {
-  font-size: 38rpx;
-  font-weight: 600;
-  color: var(--fg);
-}
-
-.detail__status {
-  margin-top: var(--space-2);
+.detail__sec-hint {
+  font-size: 24rpx;
+  font-weight: 400;
+  color: var(--muted);
 }
 
 .detail__notice {
@@ -31,32 +43,72 @@
   white-space: pre-wrap;
 }
 
+/* 原型 `.file`：一行材料是同一张卡里的一行，行与行之间一条细线，最后一行不带线。 */
 .detail__file {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+}
+
+.detail__file + .detail__file {
+  border-top: 1px solid var(--border);
+}
+
+.detail__file-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 26rpx;
+  font-weight: 600;
+  line-height: 1.35;
   color: var(--accent-dark);
 }
 
-.meeting__hint {
+/* 原型 `.action`：材料类型是一枚描边小标，不是正文。 */
+.detail__file-usage {
+  flex: none;
+  padding: 6rpx 18rpx;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  font-size: 22rpx;
+  color: var(--muted);
+}
+
+.meeting__title {
   font-size: 26rpx;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+/* 原型 `.meeting-url`：链接原文印出来，长链接在任意字符处折行。 */
+.meeting__url {
+  margin-top: var(--space-1);
+  font-size: 22rpx;
+  line-height: 1.45;
+  color: var(--accent-dark);
+  word-break: break-all;
+}
+
+.meeting__hint {
+  margin-top: var(--space-1);
+  font-size: 22rpx;
+  line-height: 1.5;
   color: var(--muted);
 }
 
 .meeting__row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
+  justify-content: center;
   margin-top: var(--space-2);
-}
-
-.meeting__title {
-  flex: 1;
-  min-width: 0;
-  font-size: 30rpx;
-  color: var(--fg);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
 }
 
 .meeting__copy {
-  color: var(--accent-dark);
+  color: var(--fg);
   font-size: 26rpx;
   font-weight: 600;
 }
@@ -117,6 +169,15 @@
   opacity: 0.5;
 }
 
+/* 原型 `.feedback`：一条回馈是同一张卡里的一行，行与行之间一条细线。 */
+.fb__row {
+  padding: var(--space-2) 0;
+}
+
+.fb__row + .fb__row {
+  border-top: 1px solid var(--border);
+}
+
 .fb__who {
   display: flex;
   align-items: center;
@@ -124,9 +185,20 @@
   gap: var(--space-2);
 }
 
+.fb__teacher {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.fb__time {
+  font-size: 22rpx;
+  color: var(--muted);
+}
+
 .fb__said {
-  margin-top: var(--space-2);
-  font-size: 28rpx;
-  line-height: 1.7;
+  margin-top: var(--space-1);
+  font-size: 24rpx;
+  line-height: 1.55;
   color: var(--fg);
 }

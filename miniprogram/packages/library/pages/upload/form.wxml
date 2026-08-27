@@ -48,7 +48,11 @@
          而且等于让客户端供一个服务端必须自己拥有的值）。 -->
 
     <block wx:if="{{target === 'resource'}}">
-      <view class="hl-section-title">资源库材料</view>
+      <!-- 原型 `.section-head` 的区头右侧带一句提示，与「上传目标 · 二选一」同形。 -->
+      <view class="hl-section-title">
+        资源库材料
+        <text class="up__aside">资源标准表单</text>
+      </view>
 
       <view class="hl-chips">
         <view class="hl-chips__label">资源格式 <text class="up__req">*</text></view>
@@ -133,7 +137,10 @@
     </block>
 
     <block wx:if="{{target === 'case'}}">
-      <view class="hl-section-title">案例库材料</view>
+      <view class="hl-section-title">
+        案例库材料
+        <text class="up__aside">案例标准表单</text>
+      </view>
 
       <view class="hl-card up__field">
         <view class="up__label">案例名称 <text class="up__req">*</text><text class="up__limit">≤{{limits.case_name}}字</text></view>

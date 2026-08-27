@@ -9,30 +9,44 @@
   <view wx:if="{{loading}}" class="hl-loading">加载中…</view>
 
   <block wx:if="{{task && !loading}}">
+    <!-- 原型 teacher-task-detail.html 的第一块 `.chunk`：抬头与「任务说明」同在一张卡里，
+         抬头下压一条分隔线，说明分成若干个带小标题的 `.block`。 -->
     <view class="hl-card">
-      <!-- 原型 teacher-task-detail.html 把发起方做成标题上方的一枚 `.kicker` 药丸，
-           不是一行灰字。 -->
-      <view wx:if="{{task.creator_label}}" class="detail__kicker">{{task.creator_label}}</view>
-      <view class="detail__title">{{task.task_title}}</view>
-      <view class="detail__row">
-        <text class="hl-pill {{task.assign_status_class}}">{{task.assign_status_label}}</text>
-        <text class="hl-card__meta">截止 {{task.due_label}}</text>
+      <view class="detail__head">
+        <!-- 原型把发起方做成标题上方的一枚 `.kicker` 药丸，不是一行灰字。 -->
+        <view wx:if="{{task.creator_label}}" class="detail__kicker">{{task.creator_label}}</view>
+        <view class="detail__title">{{task.task_title}}</view>
+        <view class="detail__row">
+          <text class="hl-pill {{task.assign_status_class}}">{{task.assign_status_label}}</text>
+          <text class="hl-card__meta">截止 {{task.due_label}}</text>
+        </view>
+        <view class="detail__intro">{{task.task_intro}}</view>
       </view>
-      <view class="detail__intro">{{task.task_intro}}</view>
+
+      <view class="detail__chunk-title">任务说明</view>
+      <!-- 原型这一块有三个 `.block`：背景信息、分工要求、时间节点。本端只有分工一列，
+           其余两块没有对应字段，就不摆一个空盒子。 -->
+      <view class="detail__label">分工要求</view>
+      <view class="detail__text">{{task.task_division}}</view>
     </view>
 
-    <view class="hl-section-title">分工要求</view>
-    <view class="hl-card detail__division">{{task.task_division}}</view>
-
-    <view class="hl-section-title">已提交材料</view>
-    <view wx:if="{{task.files.length === 0}}" class="hl-card hl-empty">暂无材料</view>
-    <view wx:for="{{task.files}}" wx:key="file_id" class="hl-card detail__file">
-      <text class="hl-card__title">{{item.file_name}}</text>
-      <view class="hl-card__meta">{{item.size_label}}</view>
-    </view>
-
-    <view class="hl-section-title">进度</view>
+    <!-- 原型第二块 `.chunk`「任务附件」：标题在卡里，附件是逐行分隔的 `.attach-row`，
+         不是一行一张卡。这里的 file_refs 就是任务自带的附件（spec ui=task_detail.attachment）。 -->
     <view class="hl-card">
+      <view class="detail__chunk-title">任务附件</view>
+      <view wx:if="{{task.files.length === 0}}" class="detail__none">暂无附件</view>
+      <view wx:for="{{task.files}}" wx:key="file_id" class="detail__attach">
+        <view class="detail__file-name">{{item.file_name}}</view>
+        <view class="detail__file-meta">{{item.size_label}}</view>
+      </view>
+    </view>
+
+    <!-- 原型第三块 `.chunk` 是「任务操作」的两颗按钮；本页不做写入（票据 11），同一位置
+         上留的是进度。三项全空时整块不出现 —— 一张只有标题的空卡是在说这里本该有东西。 -->
+    <view
+      wx:if="{{task.progress_label || task.accepted_label || task.completed_label}}"
+      class="hl-card">
+      <view class="detail__chunk-title">任务进度</view>
       <view wx:if="{{task.progress_label}}" class="hl-card__meta">{{task.progress_label}}</view>
       <view wx:if="{{task.accepted_label}}" class="hl-card__meta">已接收 {{task.accepted_label}}</view>
       <view wx:if="{{task.completed_label}}" class="hl-card__meta">已完成 {{task.completed_label}}</view>

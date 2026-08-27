@@ -1,88 +1,110 @@
+/* 资料详情页 —— 逐格对着 screens/party-study-detail.html 转写。
+ * 换算因子 2，字重按入口页的先例落到 700。原型正文色 #3d3b36 在令牌层没有对应的一档
+ * （--fg 太黑、--muted 太浅），正文一律用 --fg，缺的这一档记在这里。 */
+
 .hl-card + .hl-card {
   margin-top: var(--space-2);
 }
 
-/* 原型的类型徽章是红系，与党建学习的色标一致（party-study-detail.html `.badge`）。 */
+/* 原型 `.doc`：整页只有这一张卡，内边距与圆角都比通用卡宽一档。 */
+.detail {
+  padding: 32rpx;
+  border-radius: 32rpx;
+}
+
+/* 原型的类型徽章是红系，与党建学习的色标一致（`.badge`）。 */
 .detail__type {
+  padding: 10rpx 18rpx;
   background: var(--danger-light);
   color: var(--danger);
+  font-size: 22rpx;
+  font-weight: 700;
 }
 
 .detail__title {
-  margin-top: var(--space-2);
-  font-size: 38rpx;
-  font-weight: 600;
-  line-height: 1.5;
+  margin-top: 24rpx;
+  font-size: 40rpx;
+  font-weight: 700;
+  line-height: 1.28;
   color: var(--fg);
 }
 
 .detail__meta {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-2);
+  margin-top: var(--space-2);
+  font-size: 24rpx;
 }
 
-/* 「文件预览」框 —— 原型 `.preview`。底色比卡片略浅一档在小程序上看不出来，
- * 所以只留边框，不写死一个 #fafcfc。 */
+/* 「文件预览」框 —— 原型 `.preview`。底色 #fafcfc 比卡片只浅一档，令牌层没有这一档，
+ * 在手机上也看不出来，所以只留边框，不写死一个近白的色值。 */
 .preview {
-  margin-top: var(--space-3);
-  padding: var(--space-3);
+  margin-top: 28rpx;
+  padding: 28rpx;
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  border-radius: 24rpx;
 }
 
 .preview__title {
   font-size: 28rpx;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--fg);
 }
 
 .preview__body {
   margin-top: var(--space-2);
-  font-size: 30rpx;
+  font-size: 26rpx;
   line-height: var(--line-cjk);
   color: var(--fg);
   white-space: pre-wrap;
 }
 
 .video {
-  margin-top: var(--space-3);
+  margin-top: 28rpx;
   padding-top: var(--space-3);
   border-top: 1px solid var(--border);
 }
 
 .video__title {
-  font-size: 28rpx;
-  font-weight: 600;
+  font-size: 26rpx;
+  font-weight: 700;
   color: var(--fg);
 }
 
 .video__hint {
-  margin-top: var(--space-1);
-  font-size: 26rpx;
+  margin-top: 6rpx;
+  font-size: 22rpx;
   color: var(--muted);
 }
 
+/* 原型 `.video-link`：定高一行，名字左、动作右。 */
 .video__row {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  min-height: 80rpx;
   margin-top: var(--space-2);
-  padding: var(--space-2);
+  padding: 20rpx 24rpx;
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  border-radius: 24rpx;
 }
 
 .video__name {
   flex: 1;
   min-width: 0;
-  font-size: 28rpx;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 26rpx;
+  font-weight: 700;
   color: var(--fg);
 }
 
 .video__copy {
-  margin-left: var(--space-2);
-  color: var(--accent-dark);
-  font-size: 26rpx;
-  font-weight: 600;
+  margin-left: 20rpx;
+  color: var(--accent);
+  font-size: 24rpx;
+  font-weight: 700;
   flex: none;
 }

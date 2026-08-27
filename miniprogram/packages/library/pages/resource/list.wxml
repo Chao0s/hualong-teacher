@@ -1,7 +1,10 @@
 <view class="hl-page" wx:if="{{ready}}">
-  <!-- 两个维度都是横排标签（form-control-spec.md §2.1）。单选，≤6 项，一眼看全。 -->
+  <!-- 两个维度都是横排标签（form-control-spec.md §2.1）。单选，≤6 项，一眼看全。
+       原型 resource-library.html 的 `.sec`：衣食住行艺是资源库的主轴，原型把它写成一条
+       分区标题，不是标签行里的一个小字标签。年级不在这一份原型里，它是契约的第二个筛选
+       维度，仍用行内标签，与 case-library.html 的筛选行同形。 -->
+  <view class="sec">衣食住行艺分类</view>
   <view class="hl-chips">
-    <view class="hl-chips__label">衣食住行艺分类</view>
     <view
       wx:for="{{tagOptions}}"
       wx:key="key"

@@ -18,22 +18,83 @@
   font-weight: 600;
 }
 
-.hl-card + .hl-card {
+/* 分区标题 —— 原型 `.sec`：16px 粗体。原型的上边距 18px 量自导航栏；这里上方是
+ * 类目标签，`.cat` 的 padding-bottom 已经把这段距离让出来了，不再重复加。 */
+.sec {
+  margin: 0 0 20rpx;
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+/* 文件卡 —— 原型 `.doc-card`：两列，右列固定 104px（208rpx），卡片最矮 82px。
+ * 描边卡不带投影，与入口页的类目卡同一种做法。内边距原型是 11px 12px，取最接近的
+ * --space-3（24rpx）。 */
+.doc {
+  display: grid;
+  grid-template-columns: 1fr 208rpx;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 164rpx;
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.doc + .doc {
   margin-top: var(--space-2);
 }
 
+/* 左列要能被压窄，两行截断才生效（原型 `.doc-title { min-width: 0 }`）。 */
+.doc__main {
+  min-width: 0;
+}
+
+.doc__title {
+  font-size: 28rpx;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--fg);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+/* 原型的卡片只有标题与摘要。发布日期与部门是服务层专为列表行算好的字段，留在这里，
+ * 字号跟着摘要走，不撑高卡片。 */
 .doc__meta {
   display: flex;
   gap: var(--space-2);
+  margin-top: var(--space-1);
+  font-size: 22rpx;
+  color: var(--muted);
 }
 
+/* 原型 `.doc-summary`：11px 灰字，行高 1.45。 */
 .doc__excerpt {
-  margin-top: var(--space-2);
-  font-size: 26rpx;
+  margin-top: var(--space-1);
+  font-size: 22rpx;
+  line-height: 1.45;
   color: var(--muted);
   /* 两行足够看出这条讲什么；再多就该点进去读了。 */
   overflow: hidden;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+}
+
+/* 原型 `.doc-actions .primary`「详情」。原型右列另有一颗「下载」，导出下载不建
+ * （ADR-0017），所以这一列只剩一颗，占满整列。高度 32px、圆角 9px 照抄。 */
+.doc__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 64rpx;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: #fff;
+  font-size: 24rpx;
+  font-weight: 700;
 }

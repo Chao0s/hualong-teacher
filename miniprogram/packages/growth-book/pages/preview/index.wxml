@@ -48,10 +48,11 @@
         <view wx:for="{{problemTexts}}" wx:key="*this" class="gb-problem">{{item}}</view>
       </view>
 
+      <!-- 原型 growth-book-view.html 的 `.controls`：两颗方形翻页键夹着页码。 -->
       <view class="gb-pager">
-        <button class="hl-btn hl-btn--hollow" disabled="{{ordinal <= 1}}" bindtap="onPrevPage">上一页</button>
+        <button class="gb-pager__nav" aria-label="上一页" disabled="{{ordinal <= 1}}" bindtap="onPrevPage">‹</button>
         <view class="gb-pager__label">第 {{ordinal}} / {{totalPages}} 页</view>
-        <button class="hl-btn hl-btn--hollow" disabled="{{ordinal >= totalPages}}" bindtap="onNextPage">下一页</button>
+        <button class="gb-pager__nav" aria-label="下一页" disabled="{{ordinal >= totalPages}}" bindtap="onNextPage">›</button>
       </view>
 
       <view wx:if="{{manifest.over_limit}}" class="hl-card gb-problem">

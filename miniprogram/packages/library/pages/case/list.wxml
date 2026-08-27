@@ -41,6 +41,11 @@
   <!-- 上传案例。票据 15 的两个入口之一，另一个是首页的「待上传」待办。 -->
   <view class="hl-btn hl-btn--block" bindtap="onUploadTap">上传课程案例</view>
 
+  <!-- 原型 case-library.html 的 `.sec`：筛选面板与清单之间有一条分区标题。原型右侧还有
+       一个条数（「9 个案例」），这里不摆：游标分页下 `items.length` 只是已读到的那几页，
+       把它当总数写出来就是在骗人。 -->
+  <view class="sec">案例清单</view>
+
   <view wx:if="{{errorText}}" class="hl-error">
     {{errorText}}
     <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryList">重试</text>

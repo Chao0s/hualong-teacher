@@ -8,15 +8,15 @@
   <view wx:if="{{loading}}" class="hl-loading">加载中…</view>
 
   <block wx:if="{{train && !loading}}">
+    <!-- 原型 training-detail.html 的 `.head`：阶段徽章是压在标题**上方**的一枚小记号
+         （`.kicker`），不是与标题并排的一列。 -->
     <view class="hl-card detail">
       <view class="detail__top">
-        <text class="detail__title">{{train.training_title}}</text>
         <text class="hl-pill {{train.phase_pill}}">{{train.phase_label}}</text>
+        <!-- 已发布是常态，不挂徽章；已撤回才挂，因为它改变了这一页有什么。 -->
+        <text wx:if="{{train.status_label}}" class="hl-pill {{train.status_pill}}">{{train.status_label}}</text>
       </view>
-      <!-- 已发布是常态，不挂徽章；已撤回才挂，因为它改变了这一页有什么。 -->
-      <view wx:if="{{train.status_label}}" class="detail__status">
-        <text class="hl-pill {{train.status_pill}}">{{train.status_label}}</text>
-      </view>
+      <view class="detail__title">{{train.training_title}}</view>
       <!-- 研修时间：服务端给什么钟点就是什么钟点，客户端不换算（§1.2）。 -->
       <view class="hl-card__meta">开始 {{train.start_label}}</view>
       <view wx:if="{{train.end_label}}" class="hl-card__meta">结束 {{train.end_label}}</view>
@@ -29,31 +29,40 @@
     <view class="hl-section-title">研修通知</view>
     <view class="hl-card detail__body">{{train.training_content}}</view>
 
+    <!-- 研修材料排在线上会议**之前**，与原型同序。 -->
+    <view class="hl-section-title detail__sec">
+      研修材料<text class="detail__sec-hint">预览 / 下载</text>
+    </view>
+    <!-- 研修材料全部可选，不强制主文件（F9）：一份也没有的研修照常显示。
+         原型把所有材料排进**同一张卡**，行与行之间只有一条细线，不是一行一张卡。 -->
+    <view wx:if="{{train.materials.length === 0}}" class="hl-card hl-empty">暂无研修材料</view>
+    <view wx:else class="hl-card">
+      <view
+        wx:for="{{train.materials}}"
+        wx:key="file_id"
+        class="detail__file"
+        data-id="{{item.file_id}}"
+        data-name="{{item.file_name}}"
+        bindtap="onOpenMaterial">
+        <text class="detail__file-name">{{item.file_name}}</text>
+        <text class="detail__file-usage">{{item.usage_label}}</text>
+      </view>
+    </view>
+
     <block wx:if="{{train.meeting}}">
-      <view class="hl-section-title">线上会议</view>
+      <view class="hl-section-title detail__sec">
+        线上会议<text class="detail__sec-hint">复制后打开</text>
+      </view>
       <view class="hl-card">
-        <!-- 外部会议，小程序不内嵌打开，只提供复制（F9）。 -->
+        <!-- 外部会议，小程序不内嵌打开，只提供复制（F9）。原型把链接原文也印出来。 -->
+        <view class="meeting__title">{{train.meeting.title}}</view>
+        <view class="meeting__url">{{train.meeting.url}}</view>
         <view class="meeting__hint">外部会议链接，请复制到浏览器或会议 App 打开。</view>
         <view class="meeting__row" bindtap="onCopyMeeting">
-          <text class="meeting__title">{{train.meeting.title}}</text>
-          <text class="meeting__copy">复制链接</text>
+          <text class="meeting__copy">复制会议链接</text>
         </view>
       </view>
     </block>
-
-    <view class="hl-section-title">研修材料</view>
-    <!-- 研修材料全部可选，不强制主文件（F9）：一份也没有的研修照常显示。 -->
-    <view wx:if="{{train.materials.length === 0}}" class="hl-card hl-empty">暂无研修材料</view>
-    <view
-      wx:for="{{train.materials}}"
-      wx:key="file_id"
-      class="hl-card detail__file"
-      data-id="{{item.file_id}}"
-      data-name="{{item.file_name}}"
-      bindtap="onOpenMaterial">
-      <text class="hl-card__title">{{item.file_name}}</text>
-      <view class="hl-card__meta">{{item.usage_label}}</view>
-    </view>
 
     <!-- ── 我的反馈（票据 16）─────────────────────────────────────────────
          整个教研培训模块唯一的写入点。入口关着的时候是一行说明，不是一个会当面
@@ -106,15 +115,18 @@
       <view class="fb__reason">已提交，等待审核通过后会出现在下面的公开反馈里。</view>
     </view>
 
-    <!-- 公开回馈流：只有已公开的那些，且活动仍在（F9）。 -->
+    <!-- 公开回馈流：只有已公开的那些，且活动仍在（F9）。
+         原型把回馈排进**同一张卡**，行与行之间只有一条细线。 -->
     <view class="hl-section-title">公开反馈</view>
     <view wx:if="{{feedbacks.length === 0 && !loadingFeedback}}" class="hl-card hl-empty">暂无公开反馈</view>
-    <view wx:for="{{feedbacks}}" wx:key="feedback_id" class="hl-card">
-      <view class="fb__who">
-        <text class="hl-card__title">{{item.teacher_name}}</text>
-        <text class="hl-card__meta">{{item.time_label}}</text>
+    <view wx:else class="hl-card">
+      <view wx:for="{{feedbacks}}" wx:key="feedback_id" class="fb__row">
+        <view class="fb__who">
+          <text class="fb__teacher">{{item.teacher_name}}</text>
+          <text class="fb__time">{{item.time_label}}</text>
+        </view>
+        <view class="fb__said">{{item.feedback_text}}</view>
       </view>
-      <view class="fb__said">{{item.feedback_text}}</view>
     </view>
     <view wx:if="{{feedbackCursor}}" class="hl-btn hl-btn--hollow hl-btn--block" bindtap="onMoreFeedback">
       {{loadingFeedback ? '加载中…' : '加载更多'}}

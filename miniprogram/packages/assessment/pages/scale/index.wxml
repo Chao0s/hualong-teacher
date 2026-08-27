@@ -41,6 +41,8 @@
 
       <!-- ── fill ───────────────────────────────────────────────────────── -->
       <block wx:if="{{stage === 'fill' || stage === 'done'}}">
+        <!-- 原型 comprehensive-assessment-form.html 在题目上方立了这一行小标题。 -->
+        <view class="hl-section-title">领域打分</view>
         <!-- 领域切换：横排标签（五项，取值固定，三问第 2 问命中）。 -->
         <view class="hl-chips">
           <view class="hl-chips__label">领域</view>

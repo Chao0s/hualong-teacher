@@ -2,6 +2,14 @@
   margin-top: var(--space-2);
 }
 
+/* 分区标题 —— 原型 case-library.html 的 `.sec`：16px/700 正文色，外边距 18px 0 10px。 */
+.sec {
+  margin: 36rpx 0 20rpx;
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--fg);
+}
+
 /* 筛选面板 —— 原型 case-library.html 的 `.filter-panel`：三行标签共处一张卡。 */
 .filter-panel {
   padding: var(--space-2) var(--space-2) 0;

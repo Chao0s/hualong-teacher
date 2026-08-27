@@ -15,18 +15,20 @@
       <button class="hl-btn hl-btn--hollow hl-btn--block" bindtap="onClassRadarTap">班级五维雷达图</button>
     </view>
 
-    <view class="hl-card">
-      <view class="hl-section-title">本班幼儿</view>
-      <view
-        wx:for="{{rows}}"
-        wx:key="child_id"
-        class="as-row"
-        data-child-id="{{item.child_id}}"
-        bindtap="onChildTap">
+    <!-- 原型 growth-comprehensive-assessment.html 的 `个人进度`：一名幼儿一张卡，
+         姓名与进度上下叠成一列，状态徽章靠右。不是一张卡里的一串行。 -->
+    <view class="hl-section-title">个人进度</view>
+    <view
+      wx:for="{{rows}}"
+      wx:key="child_id"
+      class="hl-card as-row"
+      data-child-id="{{item.child_id}}"
+      bindtap="onChildTap">
+      <view class="as-row__who">
         <view class="as-row__name">{{item.child_name}}</view>
         <view class="as-row__progress">{{item.progress_label}}</view>
-        <view class="hl-pill {{item.status_pill}}">{{item.status_label}}</view>
       </view>
+      <view class="hl-pill {{item.status_pill}}">{{item.status_label}}</view>
     </view>
   </block>
 </view>

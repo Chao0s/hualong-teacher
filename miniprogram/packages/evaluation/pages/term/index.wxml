@@ -94,7 +94,8 @@
       </view>
     </block>
 
-    <view class="hl-section-title">本班完成情况</view>
+    <!-- 原型 teacher-term-evaluation.html 的 `.sec 完成情况`。 -->
+    <view class="hl-section-title">完成情况</view>
     <view wx:for="{{progress}}" wx:key="child_id" class="hl-card">
       <view class="hl-card__title">{{item.child_name}}</view>
       <view class="hl-card__meta">

@@ -1,31 +1,38 @@
-/* 摘要卡 —— 原型 party-brand-list.html 的 `.summary`，绿系。 */
+/* 品牌建设列表页 —— 逐格对着 screens/party-brand-list.html 转写。
+ * 换算因子 2，字重按入口页的先例落到 700，卡片外框沿用 .hl-card 的投影。 */
+
+/* 摘要卡 —— 原型 `.summary`，绿系。 */
 .summary {
-  padding: var(--space-4);
-  margin-bottom: var(--space-4);
-  border-radius: var(--radius);
+  padding: 36rpx;
+  margin-bottom: 36rpx;
+  border-radius: 32rpx;
   background: linear-gradient(135deg, #2f855a, var(--green), #88c35a);
   color: #fff;
 }
 
 .summary__title {
   font-size: 40rpx;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .summary__desc {
-  margin-top: var(--space-1);
+  margin-top: 12rpx;
   font-size: 24rpx;
   opacity: 0.9;
 }
 
+/* 原型 `.grid` 的 gap 是 10px。 */
 .hl-card + .hl-card {
-  margin-top: var(--space-2);
+  margin-top: 20rpx;
 }
 
+/* 原型 `.card` 比学习与活动的一行宽松：内边距 14px，圆角 16px。 */
 .brand {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: 24rpx;
+  padding: 28rpx;
+  border-radius: 32rpx;
 }
 
 /* 原型的缩略块比学习与活动的色块大一档（54px 对 38px）。 */
@@ -35,11 +42,11 @@
   justify-content: center;
   width: 108rpx;
   height: 108rpx;
-  border-radius: var(--radius-sm);
+  border-radius: 28rpx;
   background: var(--green-light);
   color: var(--green);
   font-size: 36rpx;
-  font-weight: 600;
+  font-weight: 700;
   flex: none;
 }
 
@@ -48,14 +55,21 @@
   min-width: 0;
 }
 
+/* 原型 `.title` 在这一页没有 nowrap：品牌主题名比文件名长，允许折行。 */
+.brand__text .hl-card__title {
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
 .brand__meta {
   display: flex;
   gap: var(--space-2);
+  margin-top: 10rpx;
+  font-size: 22rpx;
 }
 
 .brand__tags {
   flex: 1;
-  color: var(--accent-dark);
   /* 标签多的一条不换行撑高卡片；点进去就看得全。 */
   overflow: hidden;
   white-space: nowrap;

@@ -1,3 +1,9 @@
+/* 原型 `.chunk` 的 margin-bottom 是 10px；令牌里最接近的是 --space-2。分区标题原本
+   替这几张卡让出了间距，标题收进卡里之后要自己补上。 */
+.hl-card + .hl-card {
+  margin-top: var(--space-2);
+}
+
 /* 发起方：原型的 `.kicker`，一枚青色药丸。 */
 .detail__kicker {
   display: inline-flex;
@@ -24,20 +30,69 @@
   margin-top: var(--space-2);
 }
 
-.detail__intro,
-.detail__division {
+.detail__intro {
+  margin-top: var(--space-2);
+  font-size: 28rpx;
+  color: var(--muted);
+  line-height: var(--line-cjk);
+}
+
+/* 抬头 —— 原型 `.task-head`：与「任务说明」同在一张卡里，底下压一条分隔线。 */
+.detail__head {
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border);
+}
+
+/* 卡内小标题 —— 原型 `.chunk-title h2`：16px 深色粗体，不是通用的那行灰色分区标题。 */
+.detail__chunk-title {
+  margin: var(--space-3) 0 var(--space-2);
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+/* 原型 `.label`：12px 灰色粗体，压在正文上方。 */
+.detail__label {
+  margin-bottom: 12rpx;
+  font-size: 24rpx;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+/* 原型 `.text` 的行高是 1.65；这里用 --line-cjk（1.75），中文行高不低于 1.7 是设计约定。 */
+.detail__text {
   font-size: 28rpx;
   color: var(--fg);
   line-height: var(--line-cjk);
 }
 
-.detail__intro {
-  margin-top: var(--space-2);
+/* 附件行 —— 原型 `.attach-row`：定高一行，行与行之间一条细线。原型右列的
+   预览／下载两颗按钮本页不建（都要走 .js），所以这一行只有名字与大小。 */
+.detail__attach {
+  min-height: 92rpx;
+  padding: 18rpx 0;
+}
+
+.detail__attach + .detail__attach {
+  border-top: 1px solid var(--border);
+}
+
+.detail__file-name {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.detail__file-meta {
+  margin-top: 6rpx;
+  font-size: 22rpx;
   color: var(--muted);
 }
 
-.detail__file + .detail__file {
-  margin-top: var(--space-2);
+/* 卡内的空态是一行字，不是整块留白 —— 它上面就是标题，居中大留白会把卡撑散。 */
+.detail__none {
+  font-size: 26rpx;
+  color: var(--muted);
 }
 
 /* 提交区 —— 原型的 `.submit-card`：虚线青框、青色底、说明在上、按钮在下。 */
@@ -45,7 +100,8 @@
   margin-top: var(--space-4);
   padding: var(--space-3);
   border: 1px dashed var(--accent);
-  border-radius: var(--radius-sm);
+  /* 原型 `.submit-card` 的圆角是 14px（28rpx），不是 9px。 */
+  border-radius: var(--radius);
   background: var(--accent-light);
 }
 
@@ -68,7 +124,8 @@
   justify-content: center;
   min-height: 88rpx;
   margin-top: var(--space-2);
-  border-radius: var(--radius-sm);
+  /* 原型 `.primary` 的圆角是 13px，令牌里最接近的是 --radius（28rpx）。 */
+  border-radius: var(--radius);
   background: var(--accent);
   color: #fff;
   font-size: 30rpx;

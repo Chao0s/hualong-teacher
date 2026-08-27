@@ -1,33 +1,43 @@
-/* 摘要卡 —— 原型 party-study-list.html 的 `.summary`。渐变的两端在令牌里都有
+/* 学习资料列表页 —— 逐格对着 screens/party-study-list.html 转写。
+ *
+ * 换算因子沿用 tokens.wxss 头注定案的 2（原型宽 390，真实 1.923，不重算）：
+ * 18px 写成 36rpx，11px 写成 22rpx。字重按入口页的先例，原型的 720／800 一律落到 700。
+ * 卡片外框仍用 .hl-card 的投影，不改成原型的 1px 边框 —— 那是入口页已经定下的既有约定。
+ */
+
+/* 摘要卡 —— 原型 `.summary`。渐变的两端在令牌里都有
  * （#dc2626 = --danger，#f97316 与 --orange 同色相），所以这里不写死颜色。 */
 .summary {
-  padding: var(--space-4);
-  margin-bottom: var(--space-4);
-  border-radius: var(--radius);
+  padding: 36rpx;
+  margin-bottom: 36rpx;
+  border-radius: 32rpx;
   background: linear-gradient(135deg, var(--danger), var(--orange));
   color: #fff;
 }
 
 .summary__title {
   font-size: 40rpx;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .summary__desc {
-  margin-top: var(--space-1);
+  margin-top: 12rpx;
   font-size: 24rpx;
   opacity: 0.9;
 }
 
+/* 原型 `.list` 的 gap 是 8px。 */
 .hl-card + .hl-card {
   margin-top: var(--space-2);
 }
 
-/* 原型的一行是「色块＋文字＋右侧操作」三栏。 */
+/* 原型的一行是「色块＋文字＋右侧操作」三栏，定高 68px。 */
 .study {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: 20rpx;
+  min-height: 136rpx;
+  padding: 22rpx 24rpx;
 }
 
 .study__mark {
@@ -36,11 +46,11 @@
   justify-content: center;
   width: 76rpx;
   height: 76rpx;
-  border-radius: var(--radius-sm);
+  border-radius: 24rpx;
   background: var(--danger-light);
   color: var(--danger);
   font-size: 24rpx;
-  font-weight: 600;
+  font-weight: 700;
   flex: none;
 }
 
@@ -49,24 +59,22 @@
   min-width: 0;
 }
 
+/* 原型 `.title` 一行封顶：两行会把这张定高的卡撑变形。 */
+.study__text .hl-card__title {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
 .study__meta {
   display: flex;
-  gap: var(--space-2);
-}
-
-.study__type {
-  color: var(--accent-dark);
-}
-
-.study__excerpt {
-  margin-top: var(--space-2);
-  font-size: 26rpx;
-  color: var(--muted);
-  /* 两行足够看出这条讲什么；再多就该点进去读了。 */
+  gap: 14rpx;
   overflow: hidden;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  white-space: nowrap;
+  font-size: 22rpx;
 }
 
 /* 原型右侧的「预览」标签。它不是第二个可点区域 —— 整张卡都进详情页，

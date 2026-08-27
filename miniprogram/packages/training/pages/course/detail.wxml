@@ -8,25 +8,30 @@
   <view wx:if="{{loading}}" class="hl-loading">加载中…</view>
 
   <block wx:if="{{intro && !loading}}">
-    <view class="hl-card cover">
-      <view class="cover__title">{{intro.intro_title}}</view>
-      <view wx:if="{{intro.intro_summary}}" class="cover__summary">{{intro.intro_summary}}</view>
-    </view>
-
-    <view wx:if="{{intro.intro_lead}}" class="hl-card course__lead">{{intro.intro_lead}}</view>
-
-    <block wx:for="{{intro.sections}}" wx:for-item="section" wx:key="section_key">
-      <view class="hl-section-title">{{section.section_title}}</view>
-      <view class="hl-card">
-        <view wx:if="{{section.section_body}}" class="course__body">{{section.section_body}}</view>
-        <view
-          wx:for="{{section.items}}"
-          wx:key="item_title"
-          class="course__item">
-          <view class="hl-card__title">{{item.item_title}}</view>
-          <view wx:if="{{item.item_body}}" class="hl-card__meta">{{item.item_body}}</view>
-        </view>
+    <!-- 原型 course-building.html 的 `.article`：封面与正文在同一张卡里，封面满幅贴边，
+         标题不再是一张独立的卡。 -->
+    <view class="hl-card course__article">
+      <view class="cover">
+        <view class="cover__kicker">Course System</view>
+        <view class="cover__title">{{intro.intro_title}}</view>
+        <view wx:if="{{intro.intro_summary}}" class="cover__summary">{{intro.intro_summary}}</view>
       </view>
-    </block>
+
+      <view class="course__body">
+        <view wx:if="{{intro.intro_lead}}" class="course__lead">{{intro.intro_lead}}</view>
+
+        <block wx:for="{{intro.sections}}" wx:for-item="section" wx:key="section_key">
+          <view class="course__h2">{{section.section_title}}</view>
+          <view wx:if="{{section.section_body}}" class="course__intro">{{section.section_body}}</view>
+          <view
+            wx:for="{{section.items}}"
+            wx:key="item_title"
+            class="course__item">
+            <view class="course__item-title">{{item.item_title}}</view>
+            <view wx:if="{{item.item_body}}" class="course__item-body">{{item.item_body}}</view>
+          </view>
+        </block>
+      </view>
+    </view>
   </block>
 </view>

@@ -26,9 +26,10 @@
       <view class="activity__mark">活</view>
       <view class="activity__text">
         <text class="hl-card__title">{{item.activity_title}}</text>
+        <!-- 原型 `.meta` 两格同色，时间不比地点重一档。 -->
         <view class="hl-card__meta activity__meta">
           <!-- 时间由服务层按字面偏移量格式化，这里只绑定。 -->
-          <text class="activity__time">{{item.time_label}}</text>
+          <text>{{item.time_label}}</text>
           <text wx:if="{{item.location_label}}">{{item.location_label}}</text>
         </view>
       </view>

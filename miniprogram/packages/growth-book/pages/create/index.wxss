@@ -1,8 +1,44 @@
 @import "../../shared.wxss";
 
-/* 原型 growth-book.html 的 `.summary-card b`：15px 加粗。只有这一页在用。 */
+/* 原型 growth-book.html 的 `.summary-card`：左边件数与栏目名，右边一枚状态药丸。
+   原型右侧另有一格「编辑样板 ›」，那是通往另一个页面的入口，本端没有那一页，不摆。 */
+.gb-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.gb-summary__main {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 原型 `.summary-card b`：15px 加粗。 */
 .gb-summary__count {
   font-size: 30rpx;
   font-weight: 600;
   color: var(--fg);
+}
+
+/* 原型 `.summary-card .list`：11px 灰字，栏目名之间用「 · 」隔开。 */
+.gb-summary__list {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 10rpx;
+  font-size: 22rpx;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.gb-summary__name + .gb-summary__name::before {
+  content: ' · ';
+}
+
+.gb-summary__state {
+  flex: none;
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  font-size: 22rpx;
+  font-weight: 600;
 }

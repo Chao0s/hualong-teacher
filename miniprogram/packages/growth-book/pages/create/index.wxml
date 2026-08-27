@@ -36,11 +36,22 @@
       <view class="hl-card__meta">{{item.count_label}}</view>
     </view>
 
+    <!-- 原型 growth-book.html 第 61 行的分区标题「成长册内容」，下面就是它的 `.summary-card`。 -->
+    <view class="hl-section-title">成长册内容</view>
+
     <!-- 一句说明，不是一份空册子。 -->
     <view wx:if="{{emptyReason}}" class="hl-card gb-empty">{{emptyReason}}</view>
-    <!-- 原型 growth-book.html 的 `.summary-card`，文案照它写。 -->
-    <view wx:else class="hl-card">
-      <view class="gb-summary__count">已收录 {{itemCount}} 项内容</view>
+    <!-- 原型的 `.summary-card`：件数一行、纳入的栏目名一行、右边一枚编册状态药丸。 -->
+    <view wx:else class="hl-card gb-summary">
+      <view class="gb-summary__main">
+        <view class="gb-summary__count">已收录 {{itemCount}} 项内容</view>
+        <view class="gb-summary__list">
+          <block wx:for="{{panel}}" wx:key="key">
+            <text wx:if="{{item.enabled}}" class="gb-summary__name">{{item.label}}</text>
+          </block>
+        </view>
+      </view>
+      <text wx:if="{{compilation}}" class="hl-pill gb-summary__state">{{compilation.status_label}}</text>
     </view>
 
     <block wx:if="{{precheck}}">

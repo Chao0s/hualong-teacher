@@ -15,13 +15,13 @@
     </view>
 
     <!-- 可空列：没有标签就整张卡不渲染，不留一条空白带。 -->
-    <view wx:if="{{brand.tags.length > 0}}" class="hl-card">
+    <view wx:if="{{brand.tags.length > 0}}" class="hl-card detail__card">
       <view class="chips">
         <text wx:for="{{brand.tags}}" wx:key="*this" class="hl-pill chips__item">{{item}}</text>
       </view>
     </view>
 
-    <view class="hl-card">
+    <view class="hl-card detail__card">
       <view class="section__title">主题介绍</view>
       <view class="detail__body">{{brand.brand_content}}</view>
     </view>

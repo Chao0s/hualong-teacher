@@ -1,31 +1,37 @@
-/* 摘要卡 —— 原型 party-activity-list.html 的 `.summary`，蓝系。 */
+/* 党建活动列表页 —— 逐格对着 screens/party-activity-list.html 转写。
+ * 换算因子 2，字重按入口页的先例落到 700，卡片外框沿用 .hl-card 的投影。 */
+
+/* 摘要卡 —— 原型 `.summary`，蓝系。 */
 .summary {
-  padding: var(--space-4);
-  margin-bottom: var(--space-4);
-  border-radius: var(--radius);
+  padding: 36rpx;
+  margin-bottom: 36rpx;
+  border-radius: 32rpx;
   background: linear-gradient(135deg, #2563eb, var(--blue), #65b7ff);
   color: #fff;
 }
 
 .summary__title {
   font-size: 40rpx;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .summary__desc {
-  margin-top: var(--space-1);
+  margin-top: 12rpx;
   font-size: 24rpx;
   opacity: 0.9;
 }
 
+/* 原型 `.timeline` 的 gap 是 9px，比学习那张列表松一档。 */
 .hl-card + .hl-card {
-  margin-top: var(--space-2);
+  margin-top: 18rpx;
 }
 
+/* 原型 `.item` 不定高：活动没有第三行字，行高由内容决定。 */
 .activity {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: 20rpx;
+  padding: 26rpx 24rpx;
 }
 
 .activity__mark {
@@ -34,11 +40,11 @@
   justify-content: center;
   width: 76rpx;
   height: 76rpx;
-  border-radius: var(--radius-sm);
+  border-radius: 24rpx;
   background: var(--blue-light);
   color: var(--blue);
   font-size: 24rpx;
-  font-weight: 600;
+  font-weight: 700;
   flex: none;
 }
 
@@ -47,12 +53,20 @@
   min-width: 0;
 }
 
-.activity__meta {
-  display: flex;
-  gap: var(--space-2);
+/* 原型 `.title` 一行封顶。 */
+.activity__text .hl-card__title {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 28rpx;
+  font-weight: 700;
 }
 
-/* 时间是这张列表存在的理由（票据 12），所以它比地点重一档。 */
-.activity__time {
-  color: var(--accent-dark);
+.activity__meta {
+  display: flex;
+  gap: 14rpx;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 22rpx;
 }

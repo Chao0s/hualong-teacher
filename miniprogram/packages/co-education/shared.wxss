@@ -35,6 +35,50 @@
   line-height: var(--line-cjk);
 }
 
+/* 照片一节跟在选择行之后，所以 `.co-field + .co-field` 那条相邻规则够不着它 ——
+ * 上边距在这里补一次，与字段之间的间距同值。 */
+.co-field--photos {
+  margin-top: var(--space-3);
+}
+
+/* ── 任务类型两卡 ────────────────────────────────────────────────────────── */
+
+/* 尺寸抄原型 parent-task-publish.html 的 `.task-type-grid` 与 `.task-type`，
+ * 按固定换算因子 2 折成 rpx：gap 8px、padding 12px、圆角 14px、标题 14px、说明 11px。
+ * 圆角 28rpx 命中 --radius；14px 折出来的 28rpx 与它同值，所以用令牌，不写数值。 */
+.co-types {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.co-type {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-3);
+  border: 2rpx solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+/* 选中只改边框色与底色，与原型 `.task-type.active` 一致。 */
+.co-type--on {
+  border-color: var(--accent);
+  background: var(--accent-light);
+}
+
+.co-type__name {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.co-type__desc {
+  margin-top: var(--space-1);
+  font-size: 22rpx;
+  color: var(--muted);
+  line-height: var(--line-cjk);
+}
+
 /* ── 就地说明 ────────────────────────────────────────────────────────────── */
 
 /* 说明不是错误：它用正文色的弱化版，不用 --danger。教师选了一张过大的照片不是故障。 */

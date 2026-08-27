@@ -75,7 +75,11 @@
   width: 100%;
   aspect-ratio: 210 / 297;
   background: #ffffff;
-  border-radius: 8rpx;
+  /* 原型 growth-book-viewer.css 的 `.page`：圆角 12px，并且托着一层投影 —— 一张纸浮在
+     底色上，不是一块贴在底色上的白。原型的投影比 --shadow-soft 重得多，令牌里没有那一
+     档，取最接近的这一枚。 */
+  border-radius: 24rpx;
+  box-shadow: var(--shadow-soft);
   overflow: hidden;
 }
 
@@ -101,15 +105,47 @@
 
 /* ── 翻页 ────────────────────────────────────────────────────────────────── */
 
+/* 原型 growth-book-viewer.css 的 `.controls`：44px 的方形翻页键夹着居中的页码，
+   不是两颗写着字的胶囊按钮。两颗键都带读屏文案，图形不是唯一的说明。 */
 .gb-pager {
-  display: flex;
+  display: grid;
+  grid-template-columns: 88rpx 1fr 88rpx;
   align-items: center;
-  justify-content: space-between;
+  gap: 20rpx;
   margin-top: var(--space-2);
 }
 
+/* 原型 `.nav-btn`：高 40px、描边、圆角 12px、白底。 */
+.gb-pager__nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 80rpx;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 24rpx;
+  background: var(--surface);
+  color: var(--fg);
+  font-size: 36rpx;
+  line-height: 1;
+}
+
+.gb-pager__nav::after {
+  border: none;
+}
+
+/* 原型 `.nav-btn:disabled`：只是淡下去，位置不动。 */
+.gb-pager__nav[disabled] {
+  background: var(--surface);
+  color: var(--fg);
+  opacity: 0.38;
+}
+
+/* 原型 `.page-indicator`：12px 灰字加粗、居中。 */
 .gb-pager__label {
-  font-size: 26rpx;
+  text-align: center;
+  font-size: 24rpx;
+  font-weight: 600;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }

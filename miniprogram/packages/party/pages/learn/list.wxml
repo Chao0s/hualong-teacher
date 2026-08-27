@@ -17,6 +17,9 @@
     <!-- 空与失败是两种状态：读失败时不说「暂无」，那是把读不到说成没有东西可读。 -->
     <view wx:if="{{items.length === 0 && !errorText}}" class="hl-card hl-empty">暂无学习资料</view>
 
+    <!-- 原型 party-study-list.html 的 `.item` 是「色块＋两行文字＋预览」的定高一行
+         （min-height 68px）。服务层还给了一条 excerpt，但原型这一行放不下第三行字，
+         所以不绑它；摘要在详情页的正文里看得到。 -->
     <view
       wx:for="{{items}}"
       wx:key="study_id"
@@ -26,12 +29,12 @@
       <view class="study__mark">学</view>
       <view class="study__text">
         <text class="hl-card__title">{{item.study_title}}</text>
+        <!-- 原型 `.meta` 三格同色，类型不比日期重要，所以没有一格是彩色的。 -->
         <view class="hl-card__meta study__meta">
-          <text class="study__type">{{item.type_label}}</text>
+          <text>{{item.type_label}}</text>
           <text>{{item.published_label}}</text>
           <text wx:if="{{item.department_label}}">{{item.department_label}}</text>
         </view>
-        <view wx:if="{{item.excerpt}}" class="study__excerpt">{{item.excerpt}}</view>
       </view>
       <text class="study__action">预览</text>
     </view>
