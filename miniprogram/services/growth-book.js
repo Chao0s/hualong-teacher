@@ -566,10 +566,23 @@ const MODULE_ID = 'co-education';
 const PAGES = {
   create: '/packages/growth-book/pages/create/index',
   preview: '/packages/growth-book/pages/preview/index',
+  compile: '/packages/growth-book/pages/compile/index',
+  section: '/packages/growth-book/pages/section/index',
 };
 
 function openCreate() {
   guard.navigateTo(PAGES.create, MODULE_ID);
+}
+
+/** 学期编册页（原型「编辑样板 ›」那一条）。 */
+function openCompile() {
+  guard.navigateTo(PAGES.compile, MODULE_ID);
+}
+
+/** 栏目版面。不带编号就是新建（原型 `?new=1`）。 */
+function openSection(sectionId) {
+  const url = sectionId ? `${PAGES.section}?section_id=${sectionId}` : PAGES.section;
+  guard.navigateTo(url, MODULE_ID);
 }
 
 function openPreview(growthBookId, childId) {
@@ -609,4 +622,6 @@ module.exports = {
   newAttemptKey: api.uuid,
   openCreate,
   openPreview,
+  openCompile,
+  openSection,
 };

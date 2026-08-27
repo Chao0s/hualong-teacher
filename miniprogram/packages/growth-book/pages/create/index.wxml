@@ -52,6 +52,9 @@
         </view>
       </view>
       <text wx:if="{{compilation}}" class="hl-pill gb-summary__state">{{compilation.status_label}}</text>
+      <!-- 原型 `.summary-card` 右端那条「编辑样板 ›」。2026-08-27 补建 —— 此前这条入口
+           整个没有，教师无处编排班级模板，也就进不了新建栏目。 -->
+      <text class="gb-summary__enter" bindtap="onCompileTap">编辑样板 ›</text>
     </view>
 
     <block wx:if="{{precheck}}">

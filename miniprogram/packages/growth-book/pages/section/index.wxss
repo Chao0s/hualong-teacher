@@ -1,0 +1,232 @@
+/* 栏目版面 —— 逐格对着 screens/growth-book-section-edit.html 转写。换算因子 2（票据 01）。 */
+
+.se-label {
+  margin: 24rpx 0 12rpx;
+  font-size: 24rpx;
+  color: var(--muted);
+}
+
+.se-input {
+  width: 100%;
+  padding: 22rpx 24rpx;
+  border: 1px solid var(--border);
+  border-radius: 24rpx;
+  background: var(--surface);
+  font-size: 26rpx;
+  color: var(--fg);
+}
+
+/* 原型 `.select` 换成滚轮行（ADR-0017 豁免 1）：形状仍是一条描边框，右端一个记号。 */
+.se-picker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  padding: 22rpx 24rpx;
+  border: 1px solid var(--border);
+  border-radius: 24rpx;
+  background: var(--surface);
+  font-size: 26rpx;
+  color: var(--fg);
+}
+
+.se-picker__go {
+  flex: none;
+  color: var(--muted);
+}
+
+/* 原型 `.tool-row`：一行工具，允许换行。 */
+.se-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16rpx;
+  margin-top: 20rpx;
+}
+
+.se-tools__gap {
+  flex: 1;
+}
+
+.se-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+/* 原型 `.page-tabs` 的一枚：描边药丸，选中翻主色。 */
+.se-tab {
+  padding: 12rpx 22rpx;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 22rpx;
+}
+
+.se-tab--on {
+  border-color: var(--accent);
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+
+/* 原型 `.tool-btn`：小号描边方钮。 */
+.se-btn {
+  padding: 12rpx 20rpx;
+  border: 1px solid var(--border);
+  border-radius: 16rpx;
+  background: var(--surface);
+  color: var(--fg);
+  font-size: 22rpx;
+  line-height: 1.2;
+}
+
+.se-zoom {
+  min-width: 92rpx;
+  font-size: 22rpx;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* 原型 `.warn`：本地判定的一行警告。它标红，但不代表存得进去。 */
+.se-warn {
+  margin-top: 16rpx;
+  padding: 16rpx 20rpx;
+  border-radius: 16rpx;
+  background: var(--danger-light);
+  color: var(--danger);
+  font-size: 22rpx;
+  line-height: 1.5;
+}
+
+/* 原型 `.canvas-wrap` ＋ `.a4`：一块可横竖滚的画布。 */
+.se-canvas {
+  margin-top: 20rpx;
+  border: 1px solid var(--border);
+  border-radius: 20rpx;
+  background: var(--surface);
+  height: 720rpx;
+}
+
+.se-area {
+  position: relative;
+  background-color: var(--surface);
+  /* 网格线用两层线性渐变画，不引一张图：一格 10mm，格线是版面的语言。 */
+  background-image:
+    linear-gradient(to right, var(--border) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--border) 1px, transparent 1px);
+  background-size: 21px 21px;
+}
+
+/* 原型的组件框：浅底描边，标签压在里面。 */
+.se-widget {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2rpx solid var(--accent);
+  border-radius: 12rpx;
+  background: var(--accent-light);
+}
+
+.se-widget--text {
+  border-color: var(--blue);
+  background: var(--blue-light);
+}
+
+/* 本地判定说这一个有问题：标红。服务端会自己再跑一遍。 */
+.se-widget--bad {
+  border-color: var(--danger);
+  background: var(--danger-light);
+}
+
+.se-widget__label {
+  padding: 0 12rpx;
+  font-size: 20rpx;
+  line-height: 1.3;
+  color: var(--accent-dark);
+  text-align: center;
+}
+
+.se-widget--text .se-widget__label {
+  color: var(--blue);
+}
+
+.se-widget--bad .se-widget__label {
+  color: var(--danger);
+}
+
+.se-widget__remove {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 36rpx;
+  height: 36rpx;
+  border-radius: 0 12rpx 0 12rpx;
+  background: rgba(26, 25, 22, 0.5);
+  color: #fff;
+  font-size: 22rpx;
+  line-height: 36rpx;
+  text-align: center;
+}
+
+/* 右下角把手。最小 2 × 2 格正是为了这个热区留的地方。 */
+.se-widget__handle {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 32rpx;
+  height: 32rpx;
+  border-radius: 12rpx 0 12rpx 0;
+  background: var(--accent);
+}
+
+.se-widget--text .se-widget__handle {
+  background: var(--blue);
+}
+
+.se-text {
+  margin-top: 20rpx;
+}
+
+.se-text__label {
+  margin-bottom: 12rpx;
+  font-size: 22rpx;
+  color: var(--muted);
+}
+
+/* 原型 `.meta-row` 与页脚的说明。 */
+.se-meta {
+  margin-top: 20rpx;
+  font-size: 22rpx;
+  color: var(--muted);
+}
+
+.se-hint {
+  margin-top: 12rpx;
+  font-size: 22rpx;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.se-notice {
+  margin-top: 16rpx;
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: var(--danger);
+}
+
+/* 原型 `.state-actions`：三枚并排。 */
+.se-actions {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 28rpx;
+}
+
+.se-action {
+  flex: 1;
+  min-width: 0;
+}
+
+.se-action--danger {
+  color: var(--danger);
+}

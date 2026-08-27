@@ -97,7 +97,9 @@
       "name": "growth-book",
       "pages": [
         "pages/create/index",
-        "pages/preview/index"
+        "pages/preview/index",
+        "pages/compile/index",
+        "pages/section/index"
       ]
     },
     {

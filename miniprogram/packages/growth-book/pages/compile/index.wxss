@@ -1,0 +1,147 @@
+/* 学期编册 —— 逐格对着 screens/growth-book-edit.html 转写。换算因子 2（票据 01）。
+ * A4 页与 widget 的样式来自分包共用的 gb-* 那一套，本页不重写。 */
+
+/* 原型 `.sec`：16px 粗体，右侧一个次要标记。 */
+.cp-sec {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  margin: 28rpx 0 20rpx;
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.cp-sec__aside {
+  flex: none;
+  font-size: 24rpx;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.cp-sec__more {
+  flex: none;
+  font-size: 24rpx;
+  font-weight: 400;
+  color: var(--accent-dark);
+}
+
+/* 原型 `.controls`：两枚方钮夹着页码，居中一行。 */
+.cp-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 28rpx;
+  margin-top: 20rpx;
+}
+
+.cp-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64rpx;
+  height: 64rpx;
+  border: 1px solid var(--border);
+  border-radius: 20rpx;
+  background: var(--surface);
+  color: var(--fg);
+  font-size: 32rpx;
+  line-height: 1;
+}
+
+/* 到头的那一侧变淡。仍然点得下去，只是什么也不做 —— 与教师的预期一致。 */
+.cp-nav--off {
+  opacity: 0.35;
+}
+
+.cp-indicator {
+  min-width: 120rpx;
+  font-size: 24rpx;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* 原型 `.section-row`：勾选框 ＋ 整行入口。 */
+.cp-row {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 20rpx;
+  border: 1px solid var(--border);
+  border-radius: 26rpx;
+  background: var(--surface);
+}
+
+.cp-row + .cp-row {
+  margin-top: 16rpx;
+}
+
+/* WXSS 没有 checkbox 的原生形态可直接改色，这里用一个方框自绘（ADR-0017 豁免）。 */
+.cp-check {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 44rpx;
+  height: 44rpx;
+  border: 2rpx solid var(--border);
+  border-radius: 12rpx;
+  background: var(--surface);
+  color: #fff;
+  font-size: 26rpx;
+  line-height: 1;
+}
+
+.cp-check--on {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+/* 锁定之后勾选框不再改得动。 */
+.cp-check--off {
+  opacity: 0.4;
+}
+
+.cp-row__body {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  min-width: 0;
+}
+
+.cp-row__text {
+  flex: 1;
+  min-width: 0;
+}
+
+.cp-row__name {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.cp-row__state {
+  margin-left: 16rpx;
+  font-size: 22rpx;
+  color: var(--muted);
+}
+
+.cp-row__go {
+  flex: none;
+  color: var(--muted);
+  font-size: 28rpx;
+}
+
+.cp-lock--done {
+  opacity: 0.5;
+}
+
+.cp-hint {
+  padding: var(--space-2) 0;
+  font-size: 22rpx;
+  line-height: 1.5;
+  color: var(--muted);
+}

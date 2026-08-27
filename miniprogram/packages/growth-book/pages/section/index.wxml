@@ -1,0 +1,124 @@
+<view wx:if="{{ready}}" class="hl-page">
+  <view wx:if="{{loading}}" class="hl-loading">加载中…</view>
+
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障编号 {{errorRequestId}}</text>
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryLoad">重试</text>
+  </view>
+
+  <block wx:if="{{!loading && !errorText}}">
+    <!-- 发布之后版面永久冻结（W16）。说出来，不做成一个会当面拒绝人的画布。 -->
+    <view wx:if="{{readonly}}" class="hl-card gb-empty">{{readonlyReason}}</view>
+
+    <view class="se-label">栏目名称（同时作为活动标题）</view>
+    <input
+      class="se-input"
+      value="{{name}}"
+      maxlength="10"
+      disabled="{{readonly}}"
+      placeholder="如：入学第一天、园长寄语"
+      bindinput="onNameInput" />
+
+    <!-- 原型这里是 `<select>`。WXML 没有下拉列表，取值来自服务端定义的锚点、条数不定，
+         按 form-control-spec.md §1 第 3 问取原生滚轮。 -->
+    <view class="se-label">插入位置</view>
+    <picker range="{{anchors}}" range-key="label" value="{{anchorIndex}}" disabled="{{readonly}}" bindchange="onAnchorChange">
+      <view class="se-picker">
+        <text>{{anchors[anchorIndex].label}}</text>
+        <text class="se-picker__go">⌄</text>
+      </view>
+    </picker>
+
+    <!-- 原型 `.tool-row` 之一：页签在左，加页与删页在右。 -->
+    <view class="se-tools">
+      <view class="se-tabs">
+        <view
+          wx:for="{{pageTabs}}"
+          wx:key="*this"
+          class="se-tab {{item === pageIndex ? 'se-tab--on' : ''}}"
+          data-index="{{item}}"
+          bindtap="onPageTap">第 {{item + 1}} 页</view>
+      </view>
+      <view wx:if="{{!readonly}}" class="se-btn" bindtap="onAddPage">＋ 页</view>
+      <view wx:if="{{!readonly}}" class="se-btn" bindtap="onDeletePage">删页</view>
+    </view>
+
+    <!-- 原型 `.tool-row` 之二：加组件在左，缩放在右。 -->
+    <view class="se-tools">
+      <view wx:if="{{!readonly}}" class="se-btn" bindtap="onAddImage">＋ 图片</view>
+      <view wx:if="{{!readonly}}" class="se-btn" bindtap="onAddText">＋ 文字</view>
+      <view class="se-tools__gap"></view>
+      <view class="se-btn" bindtap="onZoomOut">−</view>
+      <text class="se-zoom">{{zoom}}×</text>
+      <view class="se-btn" bindtap="onZoomIn">＋</view>
+    </view>
+
+    <!-- 本地判定的结果。它标红，但**不代表存得进去** —— 服务端会自己再跑一遍（W6）。 -->
+    <view wx:for="{{problems}}" wx:key="rule" class="se-warn">{{item.text}}</view>
+
+    <!--
+      画布。`movable-area` 的坐标系就是网格的像素尺寸，widget 用 `movable-view` 拖动，
+      右下角把手用触摸事件缩放。两者落点都取整到格 —— 存进去的必须是整数格坐标。
+    -->
+    <scroll-view class="se-canvas" scroll-x scroll-y>
+      <movable-area class="se-area" style="width:{{canvasWidth}}px;height:{{canvasHeight}}px">
+        <movable-view
+          wx:for="{{widgets}}"
+          wx:key="index"
+          wx:if="{{item.page_index === pageIndex}}"
+          class="se-widget {{item.widget_type === 'image' ? 'se-widget--image' : 'se-widget--text'}} {{item.bad ? 'se-widget--bad' : ''}}"
+          direction="all"
+          disabled="{{readonly}}"
+          x="{{item.left}}"
+          y="{{item.top}}"
+          style="width:{{item.width}}px;height:{{item.height}}px"
+          data-index="{{index}}"
+          bindtouchend="onWidgetMoveEnd">
+          <view class="se-widget__label">{{item.label}}</view>
+          <view
+            wx:if="{{!readonly}}"
+            class="se-widget__remove"
+            data-index="{{index}}"
+            catchtap="onRemoveWidget">×</view>
+          <!-- 右下角把手。最小 2 × 2 格 —— 再小就抓不住这个热区。 -->
+          <view
+            wx:if="{{!readonly}}"
+            class="se-widget__handle"
+            data-index="{{index}}"
+            catchtouchstart="onResizeStart"
+            catchtouchmove="onResizeMove"
+            catchtouchend="onResizeEnd"></view>
+        </movable-view>
+      </movable-area>
+    </scroll-view>
+
+    <!-- 文字组件的内容就地填。只有 literal 才可以在 widget 上存 content（DDL ck_bw_literal）。 -->
+    <block wx:for="{{widgets}}" wx:key="index">
+      <view wx:if="{{item.page_index === pageIndex && item.widget_type === 'text'}}" class="se-text">
+        <view class="se-text__label">第 {{index + 1}} 个文字组件</view>
+        <input
+          class="se-input"
+          value="{{item.content}}"
+          maxlength="500"
+          disabled="{{readonly}}"
+          placeholder="这一格要印的字"
+          data-index="{{index}}"
+          bindinput="onWidgetTextInput" />
+      </view>
+    </block>
+
+    <view class="se-meta">本栏目 {{pageTabs.length}} 页 · 这一页 {{problems.length === 0 ? '版面无冲突' : '版面有冲突'}}</view>
+    <!-- 原型页脚那一段说明，逐字照抄。 -->
+    <view class="se-hint">拖动组件移动，拖右下角把手缩放，最小 2 × 2 格。网格 15 × 24 格，一格 10mm；组件占几格就是几公分，长宽比即占格之比。边距 30mm / 28.5mm 留给美术边框，组件不能放进去。</view>
+
+    <view wx:if="{{notice}}" class="se-notice">{{notice}}</view>
+
+    <!-- 原型 `.state-actions`：保存手稿、删除栏目、发布征集三枚。 -->
+    <view wx:if="{{!readonly}}" class="se-actions">
+      <view class="hl-btn hl-btn--hollow se-action" bindtap="onSaveTap">{{saving ? '保存中…' : '保存手稿'}}</view>
+      <view class="hl-btn hl-btn--hollow se-action se-action--danger" bindtap="onDeleteTap">删除栏目</view>
+      <view class="hl-btn se-action" bindtap="onPublishTap">发布征集</view>
+    </view>
+  </block>
+</view>

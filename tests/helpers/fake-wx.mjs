@@ -48,6 +48,7 @@ export function createFakeWx({ loginCode = 'JS_CODE_OK', loginFails = false } = 
     // separates 党建学习 的「下载」 from its 「预览」 — one endpoint, two buttons —
     // so it has to be visible here or that difference is untestable.
     opened: [],
+    modals: [],
     previews: [],        // urls passed to previewImage
     picks: [],           // { api, options } passed to chooseImage/chooseMessageFile
     uploads: [],         // { url, filePath, formData } passed to uploadFile
@@ -122,6 +123,8 @@ export function createFakeWx({ loginCode = 'JS_CODE_OK', loginFails = false } = 
     switchTab({ url }) { record.navigations.push({ api: 'switchTab', url }) },
     reLaunch({ url }) { record.navigations.push({ api: 'reLaunch', url }) },
     showToast(opts) { record.toasts.push(opts) },
+    // 确认弹窗只记录，不自动确认：调用方要测「确认之后」就直接调那一步。
+    showModal(opts) { record.modals.push(opts) },
     setNavigationBarTitle({ title }) { record.navTitles.push(title) },
     setClipboardData({ data, success }) {
       record.clipboard.push(data)

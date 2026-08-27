@@ -203,6 +203,11 @@ Page({
    * 两道挡在网络出口之前：没选幼儿、以及**可勾选来源为空**。第二道是验收项 7 ——
    * 一句说明，不是一份空册子，而且这时候连建册都不建（`ensureBook` 会真的建一行 b1）。
    */
+  /** 原型「编辑样板 ›」。去的是学期编册页，不是预览。 */
+  onCompileTap() {
+    growthBook.openCompile();
+  },
+
   async onPreviewTap() {
     if (this.data.opening) return;
     if (!this.data.childId) {

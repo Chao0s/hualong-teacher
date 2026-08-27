@@ -42,3 +42,13 @@
   font-size: 22rpx;
   font-weight: 600;
 }
+
+/* 原型 `.summary-card` 右端的 `.enter`：整条卡片右缘的入口。 */
+.gb-summary__enter {
+  flex: none;
+  margin-left: var(--space-2);
+  color: var(--accent-dark);
+  font-size: 24rpx;
+  font-weight: 700;
+  white-space: nowrap;
+}

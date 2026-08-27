@@ -1,0 +1,83 @@
+<view wx:if="{{ready}}" class="hl-page">
+  <view wx:if="{{loading}}" class="hl-loading">加载中…</view>
+
+  <view wx:if="{{errorText}}" class="hl-error">
+    {{errorText}}
+    <text wx:if="{{errorRequestId}}" class="hl-error__id">故障编号 {{errorRequestId}}</text>
+    <text wx:if="{{errorCanRetry}}" class="hl-error__retry" bindtap="onRetryLoad">重试</text>
+  </view>
+
+  <block wx:if="{{!loading}}">
+    <!-- 原型 `.sec`：区标题在左，预览的是哪一名幼儿在右。 -->
+    <view class="cp-sec">
+      <text>实时预览</text>
+      <text wx:if="{{previewChildName}}" class="cp-sec__aside">{{previewChildName}}</text>
+    </view>
+
+    <!-- 版式包没发布时这里是一句说明，不是空白页，也不是错误横幅。 -->
+    <view wx:if="{{previewNotice}}" class="hl-card gb-empty">{{previewNotice}}</view>
+
+    <block wx:else>
+      <!-- 一张 A4。格坐标来自服务端，像素由 utils/layout 取整一次后写进内联样式，
+           与成长册预览页同一条路，不另算一套。 -->
+      <view class="gb-sheet">
+        <view
+          wx:if="{{page && page.drawable}}"
+          class="gb-sheet__content"
+          style="left:{{page.offsetLeft}}px;top:{{page.offsetTop}}px;width:{{page.width}}px;height:{{page.height}}px">
+          <view
+            wx:for="{{page.widgets}}"
+            wx:key="index"
+            class="gb-widget"
+            style="left:{{item.rect.left}}px;top:{{item.rect.top}}px;width:{{item.rect.width}}px;height:{{item.rect.height}}px">
+            <image
+              wx:if="{{item.kind === 'image' && item.image}}"
+              class="gb-widget__image"
+              src="{{item.image.url}}"
+              mode="aspectFill" />
+            <view wx:elif="{{item.text}}" class="gb-widget__text">{{item.text}}</view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 原型 `.controls`：左右两枚方钮夹着页码。 -->
+      <view class="cp-controls">
+        <view class="cp-nav {{ordinal <= 1 ? 'cp-nav--off' : ''}}" bindtap="onPrevPage">‹</view>
+        <view class="cp-indicator">{{ordinal}} / {{totalPages}}</view>
+        <view class="cp-nav {{ordinal >= totalPages ? 'cp-nav--off' : ''}}" bindtap="onNextPage">›</view>
+      </view>
+    </block>
+
+    <!-- 原型 `.sec`：区标题在左，「＋ 新建栏目」在右。锁定之后这条入口关掉。 -->
+    <view class="cp-sec">
+      <text>栏目管理</text>
+      <text
+        wx:if="{{compilation && !compilation.locked}}"
+        class="cp-sec__more"
+        bindtap="onAddSectionTap">＋ 新建栏目</text>
+    </view>
+
+    <!-- 原型 `.section-row`：一行一个栏目，左边一个勾选框，右边整行是入口。 -->
+    <view wx:for="{{rows}}" wx:key="key" class="cp-row">
+      <view
+        class="cp-check {{item.enabled ? 'cp-check--on' : ''}} {{compilation.locked ? 'cp-check--off' : ''}}"
+        data-key="{{item.key}}"
+        bindtap="onToggle">{{item.enabled ? '✓' : ''}}</view>
+      <view class="cp-row__body" data-id="{{item.section_id}}" bindtap="onSectionTap">
+        <view class="cp-row__text">
+          <text class="cp-row__name">{{item.label}}</text>
+          <text wx:if="{{item.state_label}}" class="cp-row__state">{{item.state_label}}</text>
+        </view>
+        <text wx:if="{{item.openable}}" class="cp-row__go">›</text>
+      </view>
+    </view>
+
+    <!-- 原型 `.lock-button`：整宽实心。锁定是单向的，锁完这枚只剩一句「已锁定」。 -->
+    <view
+      class="hl-btn hl-btn--block {{compilation.locked ? 'cp-lock--done' : ''}}"
+      bindtap="onLockTap">
+      {{compilation.locked ? '已锁定' : (locking ? '锁定中…' : '锁定编册')}}
+    </view>
+    <view wx:if="{{compilation.locked}}" class="cp-hint">编册已锁定，班级模板不再改动，现在可以逐个幼儿定稿。</view>
+  </block>
+</view>
