@@ -132,7 +132,7 @@ describe('照契约，不在它旁边另造', () => {
         score: 4, idempotencyKey: c.quality.newScoreKey(),
       })
     }
-    const done = await c.quality.load(view.assessmentId)
+    const done = await c.quality.load(view.assessmentId, TOOL)
     assert.equal(done.summary.done, 120)
     assert.equal(done.readonly, true, '评满即完成，没有第二个动作')
   })
@@ -191,7 +191,7 @@ describe('题库随客户端发版', () => {
         header: {},
       })
     }
-    const view = await c.quality.load(401)
+    const view = await c.quality.load(401, TOOL)
     assert.equal(view.staleTool, true)
     assert.deepEqual(view.sections, [], '题文对不上就不画题')
     assert.match(view.staleReason, /0\.9\.0/, '说清楚是哪一版')

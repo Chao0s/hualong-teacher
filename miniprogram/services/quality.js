@@ -30,8 +30,9 @@
  *
  * 1. **题库随客户端发版，不从端点取。** 契约 `getAssessment` 写着「题文不随作答复制：
  *    客户端按 `tool_code + tool_version` 从版本化代码资产解析题文」。所以它在
- *    `packages/quality/assets/tool.js`。这与五大领域量表**相反** —— 那一套的题库由
- *    `GET /scales/{code}/{version}` 下发。两件量具两种安排，都是契约定的。
+ *    `packages/quality/assets/tool.js`（分包内，见第 5 条）。这与五大领域量表**相反**
+ *    —— 那一套的题库由 `GET /scales/{code}/{version}` 下发。两件量具两种安排，都是
+ *    契约定的。
  *
  * 2. **没有提交动作。** 契约把作答登记成一个动作、两条转移：首题
  *    `assessment.score_item`（s1→s2），末题 `assessment.score_item.complete`（s2→s3）。
@@ -45,6 +46,13 @@
  *    本客户端发明的。佐证走 `db_file_ref(owner_object='db_assessment_item',
  *    usage_key='evidence')` —— `db_assessment_item` 本身没有 `file_id` 列。
  *
+ * 5. **题库由调用方传进来，本文件不 require 它。** 题库在 `packages/quality/assets/`，
+ *    而本文件在**主包** —— 主包的代码 require 不到分包里的文件（平台规则：分包可以
+ *    读主包，反过来不行）。第一版就是这么写的，首页一进来整个应用就报
+ *    `module 'packages/quality/assets/tool.js' is not defined`。所以要用题库的那几个
+ *    函数都收它作参数，由分包内的页面 require 了再传进来；`open()` 用不着题库，
+ *    首页因此只碰得到它。`npm run verify:build` 现在会拦下这类跨包 require。
+ *
  * Everything returned is view-ready（实现决定 7）：页面绑定它，自己不查表、不算分。
  */
 
@@ -53,19 +61,8 @@ const guard = require('../utils/guard');
 
 const ASSESSMENT_PATH = '/assessments';
 
-/**
- * 题库 —— **版本化代码资产，随客户端发版**，不从端点取。
- *
- * 契约 `getAssessment` 的原话：「题文不随作答复制：客户端按 `tool_code + tool_version`
- * 从版本化代码资产解析题文、一级／二级结构与量尺锚点，本响应只回 `tool_item_code`
- * 与作答。」与五大领域量表相反 —— 那一套由 `GET /scales/{code}/{version}` 下发。
- * 两件量具，两种安排，都是契约定的，不是这里挑的。
- */
-const TOOL = require('../packages/quality/assets/tool');
-
-// 现役工具的编码与版本，从题库自身读 —— 换版本时改的是题库，不是这里。
-const TOOL_CODE = TOOL.tool_code;
-const TOOL_VERSION = TOOL.tool_version;
+// 题库**不在这里 require**，见头注第五条：它在分包里，而本文件在主包。
+// 需要它的函数收它作参数，由分包内的页面传进来。
 
 // db_assessment.assessment_status。**对外二元**够用：这一页只问「评完没有」。
 const DONE = 's3';
@@ -162,8 +159,11 @@ function summarise(tool, view) {
  * `assessment_period` 从哪来，是后端已登记的候选缺口。所以这里既不创建，也不在没有
  * 编号时替谁挑一份。
  */
-async function load(assessmentId) {
+async function load(assessmentId, tool) {
   const view = await api.get(`${ASSESSMENT_PATH}/${assessmentId}`);
+  const TOOL = tool;
+  const TOOL_CODE = tool.tool_code;
+  const TOOL_VERSION = tool.tool_version;
   // 旧评估按它自己那一版解释题文（F17）。本客户端只带着现役这一版，版本对不上时
   // 说出来，而不是拿新版题文去解释旧作答 —— 那会让教师读到与当初不同的题。
   const stale = view.tool_code !== TOOL_CODE || view.tool_version !== TOOL_VERSION;
@@ -224,8 +224,6 @@ function open(assessmentId) {
 }
 
 module.exports = {
-  TOOL_CODE,
-  TOOL_VERSION,
   NOTE_MAX,
   load,
   scoreItem,

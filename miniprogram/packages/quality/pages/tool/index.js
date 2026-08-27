@@ -18,6 +18,15 @@ const guard = require('../../../../utils/guard');
 const quality = require('../../../../services/quality');
 const { reportFailure } = require('../../../../utils/present');
 
+/**
+ * 题库 —— 在**本分包内**，由这一页 require 了再交给服务层。
+ *
+ * 服务层在主包，而主包 require 不到分包里的文件（平台规则：分包读得到主包，反过来
+ * 不行）。所以这一份 68 KB 的题库跟着本分包走 —— 不进主包，用不到这一页的教师
+ * 一个字节也不必下载。
+ */
+const TOOL = require('../../assets/tool');
+
 // 原型 `.filters` 的三枚筛选。取值固定且只有三个，所以是横排标签不是滚轮
 // （form-control-spec 三问第 2 问命中）。
 const FILTERS = [
@@ -82,7 +91,7 @@ Page({
   async load() {
     this.setData({ loading: true, errorText: '', errorRequestId: '', errorCanRetry: false });
     try {
-      const view = await quality.load(this.data.assessmentId);
+      const view = await quality.load(this.data.assessmentId, TOOL);
       this.setData({ ...view, loading: false });
       this.applyFilter();
     } catch (err) {

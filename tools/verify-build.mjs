@@ -189,6 +189,39 @@ for (const file of files) {
 // 分包切错了不会报错，只会在真机上多下一个包、并且把两个模块的代码绑在一起下发。
 // 服务层是模块边界（票据 08 定型），所以这里按 require 的服务模块判定归属。
 
+// ── 主包不得 require 分包里的文件 ───────────────────────────────────────────
+//
+// 平台规则是单向的：**分包读得到主包，主包读不到分包**。违反它不是编译错误，是
+// **运行时错误**，而且炸在启动那一刻 —— 主包的 bundle 里根本没有那个模块：
+//
+//   module 'packages/quality/assets/tool.js' is not defined,
+//   require args is '../packages/quality/assets/tool'
+//
+// 2026-08-27 真踩了一次：`services/quality.js`（主包）require 了办园质量评估的题库
+// （分包内），而首页 require 了那个服务 —— 于是首页一进来整个应用就白屏。静态检查
+// 当时全绿，测试也全绿，因为 Node 的 require 没有分包这个概念。所以这一条必须在这里
+// 拦：它是本文件唯一能替真机挡下的那类错。
+{
+  const roots = subRoots.map((r) => r.replace(/\\/g, '/'));
+  for (const file of files) {
+    if (extname(file) !== '.js') continue;
+    const relPath = rel(file).replace(/\\/g, '/');
+    const inSub = roots.some((root) => relPath.includes(`/${root}/`));
+    if (inSub) continue;   // 分包内的文件读主包是允许的，不必查
+
+    const src = readFileSync(file, 'utf8');
+    for (const m of src.matchAll(/require\(['"]([^'"]+)['"]\)/g)) {
+      const target = m[1];
+      if (!target.includes('packages/')) continue;
+      const hit = roots.find((root) => target.includes(root.split('/').pop()));
+      note(relPath,
+        `主包文件 require 了分包里的模块 ${target}`
+        + `${hit ? `（分包 ${hit}）` : ''} —— 平台规则是分包读主包，反过来不行，`
+        + '这会在启动时抛 “module … is not defined”。把它挪进主包，或让分包内的调用方传进来。');
+    }
+  }
+}
+
 for (const root of subRoots) {
   const allowed = SUBPACKAGE_SERVICES[root];
   if (!allowed) {
