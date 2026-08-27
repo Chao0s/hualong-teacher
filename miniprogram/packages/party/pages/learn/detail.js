@@ -56,4 +56,16 @@ Page({
   onCopyLink(e) {
     party.copyVideoLink(e.currentTarget.dataset.url);
   },
+
+  /**
+   * 原型 `.actions` 那两枚 —— 「在线预览」与「下载文件」。
+   *
+   * 两枚落到同一件事：§8.4 现签一次短时地址，再交给微信打开。小程序没有独立的预览器，
+   * 也没有文件系统下载，两个词在这里是同一个动作的两种说法。打不开的格式由服务层
+   * 先说清楚，不白跑一次签名。
+   */
+  onOpenFile(e) {
+    const save = Boolean(e.currentTarget.dataset.save);
+    return party.openStudyFile(this.data.studyId, save);
+  },
 });

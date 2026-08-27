@@ -65,3 +65,19 @@
   color: var(--fg);
   white-space: pre-wrap;
 }
+
+/* ── 图文素材 —— 原型 `.gallery`：两列，格间 9px，每格 92px 高 ───────────── */
+
+.gallery {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18rpx;
+  margin-top: 20rpx;
+}
+
+.gallery__cell {
+  width: 100%;
+  height: 184rpx;
+  border-radius: 26rpx;
+  background: var(--bg);
+}

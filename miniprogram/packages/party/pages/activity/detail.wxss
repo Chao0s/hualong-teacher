@@ -70,3 +70,69 @@
   color: var(--fg);
   white-space: pre-wrap;
 }
+
+/* ── 图文介绍里的现场图 —— 原型 `.article-photos` ────────────────────────── */
+
+/* 原型：一列，格间 8px；正文与图之间 12px。 */
+.photos {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  margin-top: 24rpx;
+}
+
+/* 原型 `.photo-main` 118px 高，`.ph` 72px。 */
+.photos__main {
+  width: 100%;
+  height: 236rpx;
+  border-radius: 28rpx;
+  background: var(--bg);
+}
+
+.photos__row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16rpx;
+}
+
+.photos__small {
+  width: 100%;
+  height: 144rpx;
+  border-radius: 24rpx;
+  background: var(--bg);
+}
+
+/* ── 附件下载 —— 原型 `.download-link` ────────────────────────────────────── */
+
+/* 原型：描边行，1fr 44px 两列，行间 8px。 */
+.download {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 20rpx 22rpx;
+  border: 1px solid var(--border);
+  border-radius: 24rpx;
+  background: var(--surface);
+}
+
+.download + .download {
+  margin-top: 16rpx;
+}
+
+.download__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 26rpx;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.download__act {
+  flex: none;
+  font-size: 24rpx;
+  font-weight: 700;
+  color: var(--accent-dark);
+}

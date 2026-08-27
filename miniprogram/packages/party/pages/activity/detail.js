@@ -50,4 +50,18 @@ Page({
       reportFailure(this, err, { loading: false });
     }
   },
+
+  /** 点开一张现场图。地址已经签好了，这一步不再跑网络。 */
+  onPhotoTap(e) {
+    const index = Number(e.currentTarget.dataset.index) || 0;
+    const urls = (this.data.activity.photos || []).map((p) => p.url);
+    if (!urls.length) return;
+    wx.previewImage({ urls, current: urls[index] });
+  },
+
+  /** 原型「附件下载」行末那一枚。服务层负责签名、格式判断与失败说明。 */
+  onDownloadTap(e) {
+    const { id, name } = e.currentTarget.dataset;
+    return party.openActivityFile(this.data.activityId, { file_id: id, file_name: name });
+  },
 });

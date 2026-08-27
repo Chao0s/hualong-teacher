@@ -50,4 +50,12 @@ Page({
       reportFailure(this, err, { loading: false });
     }
   },
+
+  /** 点开一张图文素材。地址已经签好了，这一步不再跑网络。 */
+  onPhotoTap(e) {
+    const index = Number(e.currentTarget.dataset.index) || 0;
+    const urls = (this.data.brand.photos || []).map((p) => p.url);
+    if (!urls.length) return;
+    wx.previewImage({ urls, current: urls[index] });
+  },
 });

@@ -9,9 +9,11 @@
 
   <block wx:if="{{brand && !loading}}">
     <!-- 原型 party-brand-detail.html 的头图：标题压在渐变块的下沿。 -->
+    <!-- 原型 `.hero` 的副标题是分类词（「科学探究 · 园本特色」），`db_party_brand`
+         没有这一列；发布日期原型没画，也就不画（园方 2026-08-27 裁定）。
+         这里只剩标题。缺口记在票据 27。 -->
     <view class="hero">
       <view class="hero__title">{{brand.brand_title}}</view>
-      <view class="hero__sub">{{brand.published_label}}</view>
     </view>
 
     <!-- 可空列：没有标签就整张卡不渲染，不留一条空白带。 -->
@@ -26,12 +28,22 @@
       <view class="detail__body">{{brand.brand_content}}</view>
     </view>
 
-    <block wx:if="{{brand.files.length > 0}}">
-      <view class="hl-section-title">附件</view>
-      <view wx:for="{{brand.files}}" wx:key="file_id" class="hl-card detail__file">
-        <text class="hl-card__title">{{item.file_name}}</text>
-        <view class="hl-card__meta">{{item.usage_label}}</view>
+    <!-- 原型 `.gallery`：四格图文素材，两列铺开。这些是 `inline_media` 附件，
+         每张单独签一次短时地址（§8.4）。原型这一页**没有附件区**，所以每条品牌带的
+         那份主文件在这里拿不到 —— 缺口记在票据 27。 -->
+    <view wx:if="{{brand.photos.length > 0}}" class="hl-card detail__card">
+      <view class="section__title">图文素材</view>
+      <view class="gallery">
+        <image
+          wx:for="{{brand.photos}}"
+          wx:key="file_id"
+          wx:for-index="i"
+          class="gallery__cell"
+          src="{{item.url}}"
+          mode="aspectFill"
+          data-index="{{i}}"
+          bindtap="onPhotoTap" />
       </view>
-    </block>
+    </view>
   </block>
 </view>

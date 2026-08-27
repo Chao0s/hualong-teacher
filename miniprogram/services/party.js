@@ -43,6 +43,8 @@ const USAGE_LABEL = { main_file: '主文件', inline_media: '配图', download: 
 
 // db_file_ref.owner_object —— 取档要按这张业务表重跑一次授权（§8.4）。
 const STUDY_FILE_OWNER = 'db_party_study';
+const ACTIVITY_FILE_OWNER = 'db_party_activity';
+const BRAND_FILE_OWNER = 'db_party_brand';
 
 // wx.openDocument 认得的扩展名。清单是微信平台定的，不是我们定的；不在表里的
 // 附件在手机上打不开，要当场说清楚。学习资料的主文件是文档，不是图片，所以这里
@@ -68,8 +70,43 @@ function toFileRow(ref) {
   return {
     file_id: ref.file_id,
     file_name: ref.file_name,
+    usage_key: ref.usage_key,
     usage_label: USAGE_LABEL[ref.usage_key] || '附件',
+    size_label: formatSize(ref.file_size),
   };
+}
+
+/** 字节数变成教师读得懂的一句。只作显示用。 */
+function formatSize(bytes) {
+  if (!bytes && bytes !== 0) return '';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
+/**
+ * 把 `inline_media` 附件签成可以直接绑到 `<image src>` 的地址。
+ *
+ * 原型的「活动现场图」「图文素材」画廊就是这些附件（园方 2026-08-27 裁定：图片区照画）。
+ * **一张图一次签名** —— 契约 §8.4 不回可直接访问的地址，每次取档都重跑授权、短时签名、
+ * `Cache-Control: no-store`，所以没有批量端点可用，也不能缓存。
+ *
+ * 签不出来的那一张**就不画**：一个裂图比少一张图更难看懂。整组都签不出来时这一节自己
+ * 消失，不留一个空画廊。
+ */
+async function signInlineMedia(refs, ownerObject, ownerId) {
+  const media = (refs || []).filter((r) => r.usage_key === 'inline_media');
+  const signed = await Promise.all(media.map(async (ref) => {
+    try {
+      const res = await api.get(`/media/files/${ref.file_id}/url`, {
+        query: { owner_object: ownerObject, owner_id: ownerId },
+      });
+      return { file_id: ref.file_id, file_name: ref.file_name, url: res.url };
+    } catch (err) {
+      return null;
+    }
+  }));
+  return signed.filter(Boolean);
 }
 
 /** The list-row shape. */
@@ -118,7 +155,18 @@ async function studyDetail(studyId) {
     // The column is nullable, so an absent list arrives as null, not as [].
     video_links: (study.video_links || []).map((v) => ({ title: v.title, url: v.url })),
     files: (study.file_refs || []).map(toFileRow),
+    // 原型 `.meta` 的第三格：主文件的格式与体积（「PDF · 2.4MB」）。
+    main_file_label: mainFileLabel(study.file_refs),
   };
+}
+
+/** 主文件的「格式 · 体积」。没有主文件就是空串，那一格不画。 */
+function mainFileLabel(refs) {
+  const main = (refs || []).find((r) => r.usage_key === 'main_file');
+  if (!main) return '';
+  const ext = extensionOf(main.file_name).toUpperCase();
+  const size = formatSize(main.file_size);
+  return [ext, size].filter(Boolean).join(' · ');
 }
 
 /**
@@ -153,7 +201,12 @@ async function activityDetail(activityId) {
     time_label: time.formatLong(activity.activity_at),
     location_label: activity.activity_location || '',
     activity_content: activity.activity_content || '',
-    files: (activity.file_refs || []).map(toFileRow),
+    // 原型「附件下载」那一节：只列可下载的档，图片归上面的图文区。
+    files: (activity.file_refs || [])
+      .filter((r) => r.usage_key !== 'inline_media')
+      .map(toFileRow),
+    // 原型 `.article-photos`：正文下面的现场图。
+    photos: await signInlineMedia(activity.file_refs, ACTIVITY_FILE_OWNER, activityId),
   };
 }
 
@@ -184,7 +237,10 @@ async function brandDetail(brandId) {
     // 详情把标签排成一排，所以这里给数组；列表给拼好的那一行。
     tags: brand.brand_tag || [],
     brand_content: brand.brand_content || '',
-    files: (brand.file_refs || []).map(toFileRow),
+    // 原型 `.gallery`：四格图文素材。品牌详情**没有附件区** —— 原型没画，本端不画
+    // （园方 2026-08-27 裁定）。每条品牌带的那份「课程包.pdf」因此在这一页拿不到，
+    // 缺口记在票据 27，等园方决定改原型还是改数据。
+    photos: await signInlineMedia(brand.file_refs, BRAND_FILE_OWNER, brandId),
   };
 }
 
@@ -356,6 +412,49 @@ async function openStudyFile(studyId, save) {
 }
 
 /**
+ * 打开一份党建活动的附件（原型「附件下载」行末那一枚）。
+ *
+ * 与 `openStudyFile` 的差别只有两处：这里的档由调用方指名（活动可以挂不止一份），
+ * 而且不必先读一次详情 —— 页面手上已经有 `file_refs` 了。§8.4 照旧：每次现签，
+ * 不缓存地址。
+ */
+async function openActivityFile(activityId, file) {
+  const ext = extensionOf(file.file_name);
+  if (DOCUMENT_EXT.indexOf(ext) === -1) {
+    sayCannotOpen('这种格式的文件无法在手机上打开，请到电脑上查看');
+    return;
+  }
+
+  let signed;
+  try {
+    signed = await api.get(`/media/files/${file.file_id}/url`, {
+      query: { owner_object: ACTIVITY_FILE_OWNER, owner_id: activityId },
+    });
+  } catch (err) {
+    if (guard.endSessionOnAuthFailure(err)) return;
+    sayCannotOpen(present(err).message);
+    return;
+  }
+
+  wx.downloadFile({
+    url: signed.url,
+    success: (res) => {
+      if (res.statusCode !== 200) {
+        sayCannotOpen('文件下载失败，请稍后再试');
+        return;
+      }
+      wx.openDocument({
+        filePath: res.tempFilePath,
+        fileType: ext,
+        showMenu: true,
+        fail: () => sayCannotOpen('文件打开失败，请到电脑上查看'),
+      });
+    },
+    fail: () => sayCannotOpen('文件下载失败，请检查网络后再试'),
+  });
+}
+
+/**
  * Copy an external video link.
  *
  * F7: these films live on other sites. They are not uploaded here and the Mini
@@ -402,6 +501,7 @@ module.exports = {
   partyHome,
   openSection,
   openStudyFile,
+  openActivityFile,
   listStudies,
   studyDetail,
   listActivities,

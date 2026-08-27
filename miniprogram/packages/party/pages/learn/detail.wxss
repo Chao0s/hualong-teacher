@@ -108,3 +108,16 @@
   font-weight: 700;
   flex: none;
 }
+
+/* ── 底部两枚动作 —— 原型 `.actions`：两列等宽，42px 高 ──────────────────── */
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20rpx;
+  margin-top: 28rpx;
+}
+
+.actions__btn {
+  min-width: 0;
+}

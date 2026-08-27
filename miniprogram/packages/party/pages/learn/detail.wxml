@@ -11,9 +11,11 @@
     <view class="hl-card detail">
       <text class="hl-pill detail__type">{{study.type_label}}</text>
       <view class="detail__title">{{study.study_title}}</view>
+      <!-- 原型 `.meta` 三格：日期、部门、主文件的「格式 · 体积」。 -->
       <view class="hl-card__meta detail__meta">
         <text>{{study.published_label}}</text>
         <text wx:if="{{study.department_label}}">{{study.department_label}}</text>
+        <text wx:if="{{study.main_file_label}}">{{study.main_file_label}}</text>
       </view>
 
       <!-- 原型 party-study-detail.html 把正文收在一块带框的「文件预览」里，
@@ -25,7 +27,7 @@
         <view wx:if="{{study.video_links.length > 0}}" class="video">
           <view class="video__title">相关视频学习</view>
           <!-- 外部网站影片，小程序不内嵌播放，只提供复制（F7）。 -->
-          <view class="video__hint">外部网站影片，请复制链接到浏览器打开。</view>
+          <view class="video__hint">请复制链接到浏览器中打开</view>
           <view
             wx:for="{{study.video_links}}"
             wx:key="url"
@@ -39,10 +41,12 @@
       </view>
     </view>
 
-    <view class="hl-section-title">附件</view>
-    <view wx:for="{{study.files}}" wx:key="file_id" class="hl-card detail__file">
-      <text class="hl-card__title">{{item.file_name}}</text>
-      <view class="hl-card__meta">{{item.usage_label}}</view>
+    <!-- 原型 `.actions`：两枚按钮，一实一描边，都指向这份学习资料的主文件。
+         原型没有逐条列附件的那一节 —— 它把主文件的格式与体积写在上面的 `.meta` 里，
+         底下只留动作。两个词落到同一件事：§8.4 现签短时地址，再交给微信打开。 -->
+    <view class="actions">
+      <view class="hl-btn actions__btn" data-save="" bindtap="onOpenFile">在线预览</view>
+      <view class="hl-btn hl-btn--hollow actions__btn" data-save="1" bindtap="onOpenFile">下载文件</view>
     </view>
   </block>
 </view>

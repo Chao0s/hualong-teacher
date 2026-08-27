@@ -276,12 +276,54 @@ test('detail carries the whole body, the tags and the attachments', async () => 
   assert.ok(row.brand_content.includes('主题由来'), '正文是完整的')
   assert.ok(row.brand_content.includes('课程转化'), '第二节也在')
   assert.ok(Array.isArray(row.tags) && row.tags.length > 0, '标签是数组，页面排成一排')
-  assert.ok(row.files.length > 0, '附件清单')
-  for (const file of row.files) {
-    assert.ok(file.file_name, '每个附件都有名字')
-    assert.ok(!/^(main_file|inline_media|download)$/.test(file.usage_label),
-      `界面上出现了枚举原值：${file.usage_label}`)
+
+  // 2026-08-27：品牌详情按原型只有 hero、标签、主题介绍、图文素材四节，**没有附件区**，
+  // 所以服务层不再回 `files`，改回签好地址的 `photos`（原型 `.gallery`）。
+  // 每条品牌带的那份主文件因此在这一页拿不到 —— 缺口记在票据 27。
+  assert.equal(row.files, undefined, '附件清单已随那一节一起退役')
+  assert.ok(Array.isArray(row.photos), '图文素材是签好地址的图')
+  for (const photo of row.photos) {
+    assert.ok(photo.url, '每张图都签到了地址')
+    assert.ok(photo.file_name, '每张图都有名字')
   }
+})
+
+test('图文素材一张图签一次地址 —— §8.4 不回可直接访问的地址', async () => {
+  const c = await signedIn()
+  const before = c.record.requests.length
+  const row = await c.party.brandDetail(1)
+
+  const signed = c.record.requests.slice(before).filter((r) => r.url.includes('/media/files/'))
+  assert.equal(signed.length, row.photos.length, '一张图一次签名，没有批量端点可用')
+  for (const r of signed) {
+    assert.match(r.url, /owner_object=db_party_brand/, 'owner 首先是授权参数')
+    assert.match(r.url, /owner_id=1/)
+  }
+})
+
+test('签不出来的那一张不画 —— 裂图比少一张更难看懂', async () => {
+  const c = await signedIn()
+
+  // 只让**取档签名**那一条失败，详情本身照常读到：拦第一条会打到详情上，
+  // 那测的就是另一件事了。
+  const real = globalThis.wx.request
+  globalThis.wx.request = (opts) => {
+    if (String(opts.url).includes('/media/files/')) {
+      opts.success({ header: {}, statusCode: 404,
+        data: { code: 'not_found', message: '文件不存在', request_id: 'req-b9' } })
+      return
+    }
+    return real(opts)
+  }
+  let row
+  try {
+    row = await c.party.brandDetail(3)
+  } finally {
+    globalThis.wx.request = real
+  }
+
+  assert.ok(row.brand_content, '正文不受影响 —— 一张图签不出来不该拖垮整页')
+  assert.deepEqual(row.photos, [], '签不出来的那一张就不画')
 })
 
 test('a null brand_tag arrives as an empty array, not as null', async () => {

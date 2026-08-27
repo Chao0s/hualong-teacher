@@ -423,3 +423,24 @@ test('the party entry page now really opens the activity list', async () => {
   )
   assert.equal(c.record.toasts.length, 0, '已经落地的入口不再说「尚未上线」')
 })
+
+// ── 版面：逐格对着 screens/party-activity-detail.html（2026-08-27） ──────────
+
+test('图文介绍里画现场图，附件那一节只留可下载的档', async () => {
+  const c = await signedIn()
+  const row = await c.party.activityDetail(1)
+
+  // 原型 `.article-photos` 是正文下面的图；`inline_media` 就是它们。
+  assert.ok(Array.isArray(row.photos), '现场图签好了地址')
+  for (const photo of row.photos) assert.ok(photo.url, '每张都签到了')
+
+  // 「附件下载」那一节不重复画图片。
+  for (const file of row.files) {
+    assert.notEqual(file.usage_key, 'inline_media', '图片归上面的图文区，不在附件里再列一次')
+  }
+
+  const wxml = read(`${DETAIL}.wxml`)
+  assert.match(wxml, /class="photos__main"/, '一张大图压在上面')
+  assert.match(wxml, /附件下载/, '这一节的标题照原型')
+  assert.match(wxml, /class="download__act"/, '行末一枚「下载」')
+})

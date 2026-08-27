@@ -28,15 +28,46 @@
     <view class="hl-card detail__card">
       <view class="section__title">图文介绍</view>
       <view class="detail__body">{{activity.activity_content}}</view>
+
+      <!-- 原型 `.article-photos`：一张大图压在上面，两张小图并排在下。
+           这些是 `usage_key='inline_media'` 的附件，每张单独签一次短时地址
+           （§8.4，不回可直接访问的地址）。签不出来的那一张不画。 -->
+      <view wx:if="{{activity.photos.length > 0}}" class="photos">
+        <image
+          class="photos__main"
+          src="{{activity.photos[0].url}}"
+          mode="aspectFill"
+          data-index="0"
+          bindtap="onPhotoTap" />
+        <view wx:if="{{activity.photos.length > 1}}" class="photos__row">
+          <image
+            wx:for="{{activity.photos}}"
+            wx:for-index="i"
+            wx:key="file_id"
+            wx:if="{{i > 0}}"
+            class="photos__small"
+            src="{{item.url}}"
+            mode="aspectFill"
+            data-index="{{i}}"
+            bindtap="onPhotoTap" />
+        </view>
+      </view>
     </view>
 
-    <!-- 活动的附件可以全空（F7），所以整块按有无开合，不留一个空标题。 -->
-    <block wx:if="{{activity.files.length > 0}}">
-      <view class="hl-section-title">附件</view>
-      <view wx:for="{{activity.files}}" wx:key="file_id" class="hl-card detail__file">
-        <text class="hl-card__title">{{item.file_name}}</text>
-        <view class="hl-card__meta">{{item.usage_label}}</view>
+    <!-- 原型「附件下载」：一张卡，逐行分隔，行末一枚「下载」。
+         活动的附件可以全空（F7），所以整块按有无开合，不留一个空标题。 -->
+    <view wx:if="{{activity.files.length > 0}}" class="hl-card detail__card">
+      <view class="section__title">附件下载</view>
+      <view
+        wx:for="{{activity.files}}"
+        wx:key="file_id"
+        class="download"
+        data-id="{{item.file_id}}"
+        data-name="{{item.file_name}}"
+        bindtap="onDownloadTap">
+        <text class="download__name">{{item.file_name}}</text>
+        <text class="download__act">下载</text>
       </view>
-    </block>
+    </view>
   </block>
 </view>

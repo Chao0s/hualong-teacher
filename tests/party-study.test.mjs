@@ -297,7 +297,8 @@ test('an external film is copied, never played inline', async () => {
 
   const wxml = read(`${DETAIL}.wxml`)
   assert.ok(!wxml.includes('<video'), 'F7：外部影片不由小程序内嵌播放')
-  assert.match(wxml, /请复制链接到浏览器打开/, '页面要写明这句，否则老师以为点了没反应')
+  // 2026-08-27 照原型改字：原型写的是「请复制链接到浏览器中打开」。
+  assert.match(wxml, /请复制链接到浏览器中打开/, '页面要写明这句，否则老师以为点了没反应')
 })
 
 test('out-of-scope and gone read identically, with no retry', async () => {
@@ -399,4 +400,35 @@ test('the party entry page now really opens the study list', async () => {
     '分包页面不是 tab 页，用 navigateTo',
   )
   assert.equal(c.record.toasts.length, 0, '已经落地的入口不再说「尚未上线」')
+})
+
+// ── 版面：逐格对着 screens/party-study-detail.html（2026-08-27） ────────────
+
+test('meta 三格，页尾两枚动作 —— 原型没有逐条列附件的那一节', async () => {
+  const c = await signedIn()
+  const row = await c.party.studyDetail(1)
+
+  // 原型 `.meta` 的第三格：主文件的「格式 · 体积」。
+  assert.match(row.main_file_label, /PDF/, '格式')
+  assert.match(row.main_file_label, /MB|KB/, '体积')
+
+  const wxml = read(`${DETAIL}.wxml`)
+  assert.match(wxml, /在线预览/)
+  assert.match(wxml, /下载文件/)
+  assert.equal(wxml.includes('hl-section-title">附件'), false, '原型没有这一节')
+})
+
+test('「在线预览」与「下载文件」走同一条取档路，只在最后一步分手', async () => {
+  const c = await signedIn()
+  const page = loadPage(c, `${DETAIL}.js`)
+  page.onLoad({ study_id: '1' })      // studyId 从这里来，两枚按钮都要用它
+  await page.load(1)
+
+  await page.onOpenFile({ currentTarget: { dataset: { save: '' } } })
+  const preview = c.record.opened.pop()
+  assert.equal(preview.showMenu, false, '预览不给转发菜单')
+
+  await page.onOpenFile({ currentTarget: { dataset: { save: '1' } } })
+  const download = c.record.opened.pop()
+  assert.equal(download.showMenu, true, '下载给转发菜单 —— 小程序没有文件系统下载')
 })
