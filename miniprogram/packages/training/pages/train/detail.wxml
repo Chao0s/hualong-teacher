@@ -9,7 +9,8 @@
 
   <block wx:if="{{train && !loading}}">
     <!-- 原型 training-detail.html 的 `.head`：阶段徽章是压在标题**上方**的一枚小记号
-         （`.kicker`），不是与标题并排的一列。 -->
+         （`.kicker`），下面两行灰字 —— 第一行是时间、地点、主讲，用「·」串成**一行**；
+         第二行是研修正文。原型没有单独的「研修通知」一节，正文就写在这里。 -->
     <view class="hl-card detail">
       <view class="detail__top">
         <text class="hl-pill {{train.phase_pill}}">{{train.phase_label}}</text>
@@ -17,17 +18,13 @@
         <text wx:if="{{train.status_label}}" class="hl-pill {{train.status_pill}}">{{train.status_label}}</text>
       </view>
       <view class="detail__title">{{train.training_title}}</view>
-      <!-- 研修时间：服务端给什么钟点就是什么钟点，客户端不换算（§1.2）。 -->
-      <view class="hl-card__meta">开始 {{train.start_label}}</view>
-      <view wx:if="{{train.end_label}}" class="hl-card__meta">结束 {{train.end_label}}</view>
-      <view wx:if="{{train.location_label}}" class="hl-card__meta">{{train.location_label}}</view>
-      <view wx:if="{{train.speaker_label}}" class="hl-card__meta">{{train.speaker_label}}</view>
+      <!-- 研修时间：服务端给什么钟点就是什么钟点，客户端不换算（§1.2）。
+           串这一行的「·」是拼字符串，不是时间算术 —— 开始与结束各自原样印出来。 -->
+      <view class="hl-card__meta">{{train.when_label}}</view>
+      <view class="hl-card__meta detail__body">{{train.training_content}}</view>
     </view>
 
     <view wx:if="{{train.withdrawn_notice}}" class="hl-card detail__notice">{{train.withdrawn_notice}}</view>
-
-    <view class="hl-section-title">研修通知</view>
-    <view class="hl-card detail__body">{{train.training_content}}</view>
 
     <!-- 研修材料排在线上会议**之前**，与原型同序。 -->
     <view class="hl-section-title detail__sec">
@@ -37,15 +34,28 @@
          原型把所有材料排进**同一张卡**，行与行之间只有一条细线，不是一行一张卡。 -->
     <view wx:if="{{train.materials.length === 0}}" class="hl-card hl-empty">暂无研修材料</view>
     <view wx:else class="hl-card">
+      <!-- 原型 `.file`：文件名在左，「预览」「下载」两枚在右。两枚都落到同一件事 ——
+           §8.4 现签短时 URL，再交给 wx.previewImage 或 wx.openDocument。小程序没有
+           文件系统下载，也没有独立的预览器，两个词在这里是同一个动作的两种说法。 -->
       <view
         wx:for="{{train.materials}}"
         wx:key="file_id"
         class="detail__file"
         data-id="{{item.file_id}}"
-        data-name="{{item.file_name}}"
-        bindtap="onOpenMaterial">
+        data-name="{{item.file_name}}">
         <text class="detail__file-name">{{item.file_name}}</text>
-        <text class="detail__file-usage">{{item.usage_label}}</text>
+        <view class="detail__file-acts">
+          <text
+            class="detail__file-act"
+            data-id="{{item.file_id}}"
+            data-name="{{item.file_name}}"
+            catchtap="onOpenMaterial">预览</text>
+          <text
+            class="detail__file-act"
+            data-id="{{item.file_id}}"
+            data-name="{{item.file_name}}"
+            catchtap="onOpenMaterial">下载</text>
+        </view>
       </view>
     </view>
 
@@ -57,10 +67,29 @@
         <!-- 外部会议，小程序不内嵌打开，只提供复制（F9）。原型把链接原文也印出来。 -->
         <view class="meeting__title">{{train.meeting.title}}</view>
         <view class="meeting__url">{{train.meeting.url}}</view>
-        <view class="meeting__hint">外部会议链接，请复制到浏览器或会议 App 打开。</view>
+        <view class="meeting__hint">请复制链接到浏览器或会议 App 打开。</view>
         <view class="meeting__row" bindtap="onCopyMeeting">
           <text class="meeting__copy">复制会议链接</text>
         </view>
+      </view>
+    </block>
+
+    <!-- ── 报名入口（原型 `#signupBlock`）──────────────────────────────────
+         2026-08-27 补建。契约的两个端点都没有请求体，也不携带用户内容，所以不过内容
+         安全闸门 —— 纯状态转移。开始之后参与状态冻结，那时这一节只剩一行理由。 -->
+    <block wx:if="{{registration.show}}">
+      <view class="hl-section-title detail__sec">
+        报名入口<text class="detail__sec-hint">最新研修</text>
+      </view>
+      <view class="hl-card signup">
+        <view class="signup__desc">报名后将自动记录到教师个人研修档案。请确认时间安排后提交报名。</view>
+        <view
+          wx:if="{{registration.open}}"
+          class="hl-btn hl-btn--block {{registration.registered ? 'hl-btn--hollow' : ''}}"
+          bindtap="onRegistrationTap">
+          {{registering ? '处理中…' : registration.label}}
+        </view>
+        <view wx:if="{{registration.reason}}" class="signup__reason">{{registration.reason}}</view>
       </view>
     </block>
 

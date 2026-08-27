@@ -75,6 +75,11 @@ async function seedWorld(token) {
   const tasks = (await get('/tasks?limit=100'))?.items || []
   const byAssign = (s) => tasks.find((t) => t.assign?.assign_status === s)?.task_id
 
+  // 报名与取消报名要两场不同的研修：报名要一场**还没报**的，取消要一场**已报**的。
+  // 与接收／完成同一个理由 —— 同一个 id 不能同时处在两个状态里。
+  const trainings = (await get('/trainings?phase=upcoming&limit=100'))?.items || []
+  const upcoming = (st) => trainings.find((t) => (t.my_participation_status || null) === st)?.training_id
+
   const resources = (await get('/library/resources?limit=100'))?.items || []
   const draftResource = resources.find((r) => r.resource_status === 's1')?.resource_id
 
@@ -144,6 +149,9 @@ async function seedWorld(token) {
     // 接收要 a1，完成要 a2 —— 同一个参数名，两条路径要两个不同的 id。
     acceptable_task_id: byAssign('a1'),
     completable_task_id: byAssign('a2'),
+    // 同上：一个报得进去，一个取消得掉。
+    registrable_training_id: upcoming(null),
+    cancellable_training_id: upcoming('s1'),
     resource_id: draftResource,
     case_id: draftCase?.case_id,
     compilation_id: compilation?.compilation_id,
@@ -226,6 +234,8 @@ const PATH_ID = {
   'POST /tasks/{task_id}/acceptance': (w) => w.acceptable_task_id,
   'POST /tasks/{task_id}/completion': (w) => w.completable_task_id,
   'PUT /children/{child_id}/term-evaluation': (w) => w.unseeded_child_id,
+  'POST /trainings/{training_id}/registration': (w) => w.registrable_training_id,
+  'POST /trainings/{training_id}/registration-cancellation': (w) => w.cancellable_training_id,
 }
 
 /**

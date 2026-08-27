@@ -708,6 +708,10 @@ const TRAINING_FEEDBACKS = [
 
 const TRAINING_FEEDBACK_SNAPSHOT = TRAINING_FEEDBACKS.map((f) => ({ ...f }));
 
+// 报名／取消报名会改 `my_participation_status`，与任务那边同一个理由：一个测试文件里的
+// 报名渗进下一个，两边都是对的却一起变红。
+const TRAINING_PARTICIPATION_SNAPSHOT = TRAININGS.map((t) => t.my_participation_status);
+
 /**
  * 办园理念与课程体系的图文。
  *
@@ -1895,6 +1899,9 @@ const HAND_WRITTEN_ROLES = [
   [/^\/trainings$/, ['teacher']],
   [/^\/trainings\/\d+$/, ['teacher']],
   // 票据 16 的写入面与它的公开回馈流。契约给这两条写的都是 teacher。
+  // 2026-08-27 按原型补建的报名入口。契约给这两条写的就是 teacher。
+  [/^\/trainings\/\d+\/registration$/, ['teacher']],
+  [/^\/trainings\/\d+\/registration-cancellation$/, ['teacher']],
   [/^\/trainings\/\d+\/feedback$/, ['teacher']],
   // 契约**没有**这两条路径。`course-intro` 连表都没有（见 COURSE_INTRO 的头注）；
   // `home` 有 spec 04 的 `db_training_home` 撑着，只是没有登记操作。登记在这里是为了
@@ -2181,6 +2188,10 @@ const server = createServer(async (req, res) => {
       getTrainings(req, res, url);
     } else if (req.method === 'GET' && /^\/trainings\/\d+$/.test(path)) {
       getTraining(req, res, path.split('/')[2]);
+    } else if (req.method === 'POST' && /^\/trainings\/\d+\/registration$/.test(path)) {
+      postTrainingRegistration(req, res, path.split('/')[2]);
+    } else if (req.method === 'POST' && /^\/trainings\/\d+\/registration-cancellation$/.test(path)) {
+      postTrainingCancellation(req, res, path.split('/')[2]);
     } else if (req.method === 'POST' && /^\/trainings\/\d+\/feedback$/.test(path)) {
       postTrainingFeedback(req, res, path.split('/')[2], body);
     } else if (req.method === 'GET' && /^\/trainings\/\d+\/feedback$/.test(path)) {
@@ -2363,6 +2374,7 @@ export function start({
   CASE_SNAPSHOT.forEach((row, i) => { CASES[i] = { ...row }; });
   TRAINING_FEEDBACKS.length = TRAINING_FEEDBACK_SNAPSHOT.length;
   TRAINING_FEEDBACK_SNAPSHOT.forEach((row, i) => { TRAINING_FEEDBACKS[i] = { ...row }; });
+  TRAININGS.forEach((t, i) => { t.my_participation_status = TRAINING_PARTICIPATION_SNAPSHOT[i]; });
   resetHomeSchool();
   resetEvaluation();
   resetGrowthRecordChain();
@@ -2721,6 +2733,58 @@ function postLibraryWithdrawal(req, res, kindKey, id) {
 }
 
 // ── 研修反馈（票据 16） ─────────────────────────────────────────────────────
+
+/**
+ * POST /trainings/{training_id}/registration — 报名／恢复报名（→ s1）。
+ *
+ * 契约 §4 规则 21：**一个端点覆盖三种入口状态**，因为它们写的是同一列 ——
+ * 无列则建列；s2 复用同列转 s1；s1 幂等，回 unchanged，不产生第二笔副作用。
+ * 开始之后参与状态冻结，回 409。本端点**没有请求体**。
+ */
+function postTrainingRegistration(req, res, id) {
+  const training = TRAININGS.find((t) => t.training_id === Number(id));
+  if (!training) return fail(res, 404, 'not_found', '研修不存在或不在可见范围内');
+  if (training.training_status !== 's1') {
+    return fail(res, 409, 'state_precondition_failed', '这场研修已撤回，不再接收报名');
+  }
+  // 「开始了没有」由服务端派生的 training_phase 回答，不做时间算术。
+  if (training.training_phase !== 'upcoming') {
+    return fail(res, 409, 'state_precondition_failed', '研修已开始，参与状态不再变动');
+  }
+  const unchanged = training.my_participation_status === 's1';
+  training.my_participation_status = 's1';
+  return sendJson(res, 200, {
+    training_participation_id: 8000 + training.training_id,
+    training_id: training.training_id,
+    participation_status: 's1',
+    registered_at: '2026-08-27T09:00:00+08:00',
+    cancelled_at: null,
+    unchanged,
+  });
+}
+
+/**
+ * POST /trainings/{training_id}/registration-cancellation — 取消报名（s1 -> s2）。
+ * 只在开始前成立。s2 **不完成**：有效结束时只有仍 s1 的列自动转 s3。
+ */
+function postTrainingCancellation(req, res, id) {
+  const training = TRAININGS.find((t) => t.training_id === Number(id));
+  if (!training) return fail(res, 404, 'not_found', '研修不存在或不在可见范围内');
+  if (training.training_phase !== 'upcoming') {
+    return fail(res, 409, 'state_precondition_failed', '研修已开始，参与状态不再变动');
+  }
+  if (training.my_participation_status !== 's1') {
+    return fail(res, 409, 'state_precondition_failed', '这场研修你还没有报名');
+  }
+  training.my_participation_status = 's2';
+  return sendJson(res, 200, {
+    training_participation_id: 8000 + training.training_id,
+    training_id: training.training_id,
+    participation_status: 's2',
+    registered_at: '2026-08-27T09:00:00+08:00',
+    cancelled_at: '2026-08-27T10:00:00+08:00',
+  });
+}
 
 /**
  * POST /trainings/{training_id}/feedback — NONE -> s2 待审核。

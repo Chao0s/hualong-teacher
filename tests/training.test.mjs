@@ -35,6 +35,14 @@ async function signedIn(options) {
 const COURSE = 'packages/training/pages/course/detail.js'
 const LIST = 'packages/training/pages/train/list.js'
 const DETAIL = 'packages/training/pages/train/detail.js'
+
+/** 打开一场研修的详情。 */
+async function openDetail(c, trainingId) {
+  const page = loadPage(c, DETAIL)
+  page.onLoad({ training_id: trainingId })
+  await page.load(trainingId)
+  return page
+}
 const DETAIL_PAGE = '/packages/training/pages/train/detail'
 const COURSE_PAGE = '/packages/training/pages/course/detail'
 
@@ -629,16 +637,56 @@ describe('三个页面只读，且不通往 PC后台', () => {
     }
   })
 
-  test('研修详情的写入控件只有反馈那一个 —— 报名与评分仍属票据 18', () => {
+  /**
+   * 2026-08-27：原型 `#signupBlock` 那一节按园方裁定补建，所以「报名」不再是禁词。
+   * 这条守住的边界换了个说法留下来：**这一页只有两处写入，都不带内容**——
+   * 报名／取消报名没有请求体，反馈是唯一带文字的那一处，且只有一个输入框。
+   */
+  test('研修详情只有两处写入：报名与反馈，评分仍不建', () => {
     const wxml = read('packages/training/pages/train/detail.wxml')
-    for (const word of ['评分', '报名', '上传', '新建', '删除']) {
-      assert.ok(!wxml.includes(word), `研修详情出现了本轮不该有的写入入口「${word}」`)
+    for (const word of ['评分', '上传', '新建', '删除']) {
+      assert.ok(!wxml.includes(word), `研修详情出现了不该有的写入入口「${word}」`)
     }
+    assert.match(wxml, /bindtap="onRegistrationTap"/, '报名那一枚在')
+
     // 一个输入框，不是两个。反馈是纯文字，附件一概不接（F9）。
     assert.equal((wxml.match(/<textarea/g) || []).length, 1, '反馈只有一个输入框')
     for (const tag of ['<input', '<form', '<checkbox', '<radio', '<switch', '<slider']) {
       assert.ok(!wxml.includes(tag), `研修详情出现了写入控件 ${tag}`)
     }
+  })
+
+  test('报名与取消报名都不带请求体 —— 纯状态转移，不过内容安全闸门', async () => {
+    const c = await signedIn()
+    const page = await openDetail(c, 44)          // 夹具：44 号未开始且已报名（s1）
+    assert.equal(page.data.registration.show, true, '这一节画出来了')
+    assert.equal(page.data.registration.open, true, '未开始，改得动')
+    assert.equal(page.data.registration.registered, true)
+    assert.equal(page.data.registration.label, '取消报名')
+
+    await page.onRegistrationTap()
+    const cancel = c.record.requests.filter((r) => r.url.includes('registration-cancellation'))
+    assert.equal(cancel.length, 1)
+    assert.equal(cancel[0].data, undefined, '无请求体')
+    assert.equal(page.data.registration.label, '立即报名', '取消之后按钮翻面')
+
+    await page.onRegistrationTap()
+    const reg = c.record.requests.filter((r) => r.url.endsWith('/registration'))
+    assert.equal(reg.length, 1)
+    assert.equal(reg[0].data, undefined, '无请求体')
+    assert.equal(page.data.registration.registered, true, '又报上了')
+  })
+
+  test('研修开始之后这一节只剩一行理由，按钮不画', async () => {
+    const c = await signedIn()
+    const page = await openDetail(c, 22)          // 夹具：22 号已结束
+    assert.equal(page.data.registration.show, true, '这一节照画 —— 教师要知道自己报没报上')
+    assert.equal(page.data.registration.open, false, '开始之后参与状态冻结')
+    assert.match(page.data.registration.reason, /已开始/)
+
+    const before = c.record.requests.length
+    await page.onRegistrationTap()
+    assert.equal(c.record.requests.length, before, '关着的入口点了不发请求')
   })
 
   test('三个页面都不出现观察记录（DO-NOT-BUILD 1）', () => {

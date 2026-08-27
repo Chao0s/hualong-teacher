@@ -42,9 +42,13 @@
  * 同类：**只在本地契约服务上成立，接真服务时必须重对**，已记进交接。
  *
  * **研修反馈（票据 16）也在本文件**，与资源库那边同一条理由：`packages/training` 这个分包
- * 只对应一个服务模块，`npm run verify:build` 会拦下第二个。报名与取消报名仍不在本轮范围内，
- * 所以 `my_participation_status` 只被反馈入口的判定读，**列表卡片仍然不带它** —— 一个没有
- * 报名入口的列表上显示「已报名」，教师看得到却改不了，比不显示更糟。
+ * 只对应一个服务模块，`npm run verify:build` 会拦下第二个。
+ *
+ * **报名与取消报名 2026-08-27 补上。** 原型 `training-detail.html` 的「报名入口」整整一节
+ * 此前没建，理由是「不在本轮范围内」；园方裁定以原型为准之后它回来了。两个端点都**没有
+ * 请求体**，也不携带用户内容，所以不过内容安全闸门 —— 它们是纯状态转移。报名那一条一个
+ * 端点覆盖三种入口状态（无列建列、s2 复用同列转 s1、s1 幂等 unchanged），客户端不去分辨
+ * 是哪一种，只发同一个请求。
  *
  * Everything returned is view-ready (spec 实现决定 7): a page binds it and
  * formats nothing.
@@ -166,12 +170,21 @@ async function trainingDetail(trainingId) {
   return {
     training_id: row.training_id,
     training_title: row.training_title,
-    // 开始与结束各占一行。拼成一行要判断是否同一天，那就是在时间上做算术，§1.2 不允许。
+    // 开始与结束各自原样印出来，客户端不换算、不比较（§1.2）。
     start_label: time.formatLong(row.start_at),
     // end_at 可空（F9）。空串让页面按空串开合，不渲染一个空盒子。
     end_label: row.end_at ? time.formatLong(row.end_at) : '',
     location_label: row.location || '',
     speaker_label: row.speaker ? `主讲：${row.speaker}` : '',
+    // 原型 `.head` 的第一行灰字：时间 · 地点 · 主讲，串成一行。
+    // 串的是已经格式化好的字符串，**不是时间算术** —— 没有判断同不同一天，
+    // 结束时间有就带上，没有就不带。
+    when_label: [
+      time.formatLong(row.start_at),
+      row.end_at ? `至 ${time.formatLong(row.end_at)}` : '',
+      row.location || '',
+      row.speaker ? `主讲：${row.speaker}` : '',
+    ].filter(Boolean).join(' · '),
     phase_label: TRAINING_PHASE[row.training_phase] || '未知阶段',
     phase_pill: PHASE_PILL[row.training_phase] || 'hl-pill--unknown',
     // s1 不挂徽章：列表的可见范围恒为 s1，它是常态，挂上去只是在重复「一切正常」。
@@ -490,6 +503,57 @@ function feedbackEntry({ train, canWrite, submitted }) {
   return { open: true, submitted: false, reason: '' };
 }
 
+/**
+ * 报名入口的判定（原型 `#signupBlock`）。
+ *
+ * 契约把「开始之后参与状态冻结」放在服务端（`$now < start_at`，否则 409），客户端读的是
+ * 服务端派生的 `training_phase`，**不自己拿时间去比**（§1.2 / DO-NOT-BUILD 9）。
+ *
+ * 返回三样：这一节画不画、按钮写什么、关着的时候理由是什么。
+ */
+function registrationEntry({ train }) {
+  if (!train) return { show: false, open: false, registered: false, label: '', reason: '' };
+  if (train.training_status === 's5') {
+    return { show: true, open: false, registered: false, label: '立即报名', reason: '这场研修已撤回，不再接收报名。' };
+  }
+  if (train.training_phase !== 'upcoming') {
+    // 已开始或已结束：这一节照画，理由写在里面 —— 教师会想知道自己当初报没报上。
+    const registered = train.my_participation_status === 's1' || train.my_participation_status === 's3';
+    return {
+      show: true, open: false, registered,
+      label: registered ? '已报名' : '立即报名',
+      reason: registered ? '研修已开始，参与状态不再变动。' : '研修已开始，不再接收报名。',
+    };
+  }
+  const registered = train.my_participation_status === 's1';
+  return {
+    show: true,
+    open: true,
+    registered,
+    label: registered ? '取消报名' : '立即报名',
+    reason: '',
+  };
+}
+
+/**
+ * 报名（→ s1）。**无请求体**，不携带用户内容，因此不过内容安全闸门。
+ * 重复报名幂等（契约 §4 规则 21），幂等键由调用方按一次逻辑尝试生成并持有。
+ */
+function register(trainingId, { idempotencyKey } = {}) {
+  return api.post(`${TRAINING_PATH}/${trainingId}/registration`, {
+    action: 'training_participation.register',
+    idempotencyKey,
+  });
+}
+
+/** 取消报名（s1 → s2）。同样无请求体，只在开始前成立，否则服务端 409。 */
+function cancelRegistration(trainingId, { idempotencyKey } = {}) {
+  return api.post(`${TRAINING_PATH}/${trainingId}/registration-cancellation`, {
+    action: 'training_participation.cancel',
+    idempotencyKey,
+  });
+}
+
 /** 反馈是否超长。页面用它就地拦，服务端仍会独立复验（§6.4）。 */
 function feedbackTooLong(text) {
   return typeof text === 'string' && text.trim().length > FEEDBACK_TEXT_MAX;
@@ -583,6 +647,9 @@ module.exports = {
   openFeatured,
   quickEntries,
   openQuickEntry,
+  registrationEntry,
+  register,
+  cancelRegistration,
   feedbackEntry,
   feedbackTooLong,
   buildFeedbackBody,

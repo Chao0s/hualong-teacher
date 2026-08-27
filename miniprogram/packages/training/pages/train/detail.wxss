@@ -65,16 +65,6 @@
   color: var(--accent-dark);
 }
 
-/* 原型 `.action`：材料类型是一枚描边小标，不是正文。 */
-.detail__file-usage {
-  flex: none;
-  padding: 6rpx 18rpx;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-pill);
-  font-size: 22rpx;
-  color: var(--muted);
-}
-
 .meeting__title {
   font-size: 26rpx;
   font-weight: 600;
@@ -201,4 +191,32 @@
   font-size: 24rpx;
   line-height: 1.55;
   color: var(--fg);
+}
+
+/* ── 报名入口 —— 原型 `.signup` ─────────────────────────────────────────── */
+
+.signup__desc {
+  margin-bottom: 24rpx;
+  font-size: 26rpx;
+  line-height: 1.6;
+  color: var(--fg);
+}
+
+.signup__reason {
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+/* 原型 `.file` 的右列：两枚无边框的青色文字按钮。 */
+.detail__file-acts {
+  display: flex;
+  flex: none;
+  gap: 24rpx;
+}
+
+.detail__file-act {
+  color: var(--accent-dark);
+  font-size: 24rpx;
+  font-weight: 800;
 }

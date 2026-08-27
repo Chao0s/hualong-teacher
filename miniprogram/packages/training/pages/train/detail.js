@@ -46,6 +46,9 @@ Page({
 
     // 反馈入口。关着的时候是一行说明，不是一个会拒绝人的按钮。
     entry: { open: false, submitted: false, reason: '' },
+    // 报名入口（原型 `#signupBlock`）。判定在服务层，页面只绑。
+    registration: { show: false, open: false, registered: false, label: '', reason: '' },
+    registering: false,
     stage: 'edit',
     feedbackText: '',
     feedbackTooLong: false,
@@ -97,6 +100,7 @@ Page({
           canWrite: guard.canWriteThisTerm(),
           submitted: this.data.entry.submitted,
         }),
+        registration: training.registrationEntry({ train: row }),
       });
       if (row.training_title) {
         wx.setNavigationBarTitle({ title: row.training_title });
@@ -111,6 +115,32 @@ Page({
   onOpenMaterial(e) {
     const { id, name } = e.currentTarget.dataset;
     return training.openMaterial(this.data.trainingId, { file_id: id, file_name: name });
+  },
+
+  /**
+   * 报名／取消报名（原型 `#signupBlock` 的那一枚）。
+   *
+   * 两个端点都没有请求体，也不携带用户内容，所以不过内容安全闸门。幂等键按「一次逻辑
+   * 尝试」生成一次并留在页面上：连点两下复用同一个，服务端按 §4.2 回第一次的结果。
+   *
+   * 成功之后重读整页 —— 参与状态是服务端派生的，本地翻一个标志会与服务端各说各话。
+   */
+  async onRegistrationTap() {
+    if (this.data.registering || !this.data.registration.open) return;
+    const key = this.registrationKey || training.newAttemptKey();
+    this.registrationKey = key;
+    this.setData({ registering: true, errorText: '', errorRequestId: '', errorCanRetry: false });
+    try {
+      const call = this.data.registration.registered ? training.cancelRegistration : training.register;
+      await call(this.data.trainingId, { idempotencyKey: key });
+      // 一次逻辑尝试结束，下一次报名或取消是新的一次。
+      this.registrationKey = null;
+      this.setData({ registering: false });
+      await this.load(this.data.trainingId);
+    } catch (err) {
+      this.registrationKey = null;
+      reportFailure(this, err, { registering: false });
+    }
   },
 
   /** 线上会议只提供复制，不内嵌外站（F9）。 */
