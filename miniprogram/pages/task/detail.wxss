@@ -23,13 +23,6 @@
   color: var(--fg);
 }
 
-.detail__row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  margin-top: var(--space-2);
-}
-
 .detail__intro {
   margin-top: var(--space-2);
   font-size: 28rpx;
@@ -45,6 +38,10 @@
 
 /* 卡内小标题 —— 原型 `.chunk-title h2`：16px 深色粗体，不是通用的那行灰色分区标题。 */
 .detail__chunk-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
   margin: var(--space-3) 0 var(--space-2);
   font-size: 32rpx;
   font-weight: 700;
@@ -69,8 +66,29 @@
 /* 附件行 —— 原型 `.attach-row`：定高一行，行与行之间一条细线。原型右列的
    预览／下载两颗按钮本页不建（都要走 .js），所以这一行只有名字与大小。 */
 .detail__attach {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
   min-height: 92rpx;
   padding: 18rpx 0;
+}
+
+.detail__file-text {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 原型 `.file-actions button`：无边框无底色，只有青色粗字。 */
+.detail__file-acts {
+  display: flex;
+  flex: none;
+  gap: 20rpx;
+}
+
+.detail__file-btn {
+  color: var(--accent-dark);
+  font-size: 24rpx;
+  font-weight: 800;
 }
 
 .detail__attach + .detail__attach {
@@ -142,5 +160,36 @@
   margin-top: var(--space-2);
   text-align: center;
   font-size: 24rpx;
+  color: var(--muted);
+}
+
+/* 原型 `.status-grid` 与 `.state-btn`：两枚等宽描边按钮，选中翻成浅青。 */
+.detail__ops {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16rpx;
+}
+
+.detail__op {
+  padding: 22rpx 16rpx;
+  border: 1px solid var(--border);
+  border-radius: 26rpx;
+  background: var(--surface);
+  font-size: 26rpx;
+  font-weight: 800;
+  text-align: center;
+}
+
+.detail__op--on {
+  border-color: var(--accent);
+  background: var(--accent-light);
+  color: var(--accent-dark);
+}
+
+/* 点了办不成的那一句就写在按钮下面。原型没有这一行 —— 原型的按钮都办得成。 */
+.detail__op-notice {
+  margin-top: var(--space-2);
+  font-size: 24rpx;
+  line-height: 1.6;
   color: var(--muted);
 }

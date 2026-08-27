@@ -49,8 +49,12 @@ Page({
     this.loadFirst().then(() => wx.stopPullDownRefresh());
   },
 
-  /** Reaching the bottom is the only way more rows arrive. */
-  onReachBottom() {
+  /**
+   * 加载更多。原型画的是一枚显式按钮（`.load-more`），读完就收起来，
+   * 所以这里不接 `onReachBottom` —— 那样按钮永远轮不到被点。
+   */
+  onMoreTap() {
+    if (this.data.loadingMore || this.data.exhausted) return;
     this.loadMore();
   },
 

@@ -280,7 +280,10 @@ test('the three groups say the same words for empty, loading and failed', () => 
     assert.match(wxml, /暂无资料/, '空列表要显示一句说明')
     assert.match(wxml, /加载中/, '首读有加载态')
     assert.match(wxml, /加载更多/, '续加载有自己的加载态')
-    assert.match(wxml, /没有更多了/, '读到底要说一声')
+    // 读到底时原型是把「加载更多」那一枚**收起来**（`loadMore.hidden = …`），
+    // 不另说一句「没有更多了」。2026-08-27 照原型改回。
+    assert.match(wxml, /wx:if="\{\{!exhausted && items\.length > 0\}\}"/, '读完就收起按钮')
+    assert.equal(wxml.includes('没有更多了'), false, '原型没有这一句')
     // 空态必须同时按 !errorText 开合，否则读不到会被说成「今天没有资料」。
     assert.match(wxml, /items\.length === 0 && !errorText/)
   }

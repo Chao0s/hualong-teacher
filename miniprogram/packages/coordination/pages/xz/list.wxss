@@ -64,14 +64,6 @@
 
 /* 原型的卡片只有标题与摘要。发布日期与部门是服务层专为列表行算好的字段，留在这里，
  * 字号跟着摘要走，不撑高卡片。 */
-.doc__meta {
-  display: flex;
-  gap: var(--space-2);
-  margin-top: var(--space-1);
-  font-size: 22rpx;
-  color: var(--muted);
-}
-
 /* 原型 `.doc-summary`：11px 灰字，行高 1.45。 */
 .doc__excerpt {
   margin-top: var(--space-1);
@@ -97,4 +89,16 @@
   color: #fff;
   font-size: 24rpx;
   font-weight: 700;
+}
+
+/* 原型 `.load-more`：整宽、描边、圆角，读完就不再画。 */
+.more {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--accent-dark);
+  font-size: 26rpx;
+  text-align: center;
 }

@@ -236,21 +236,65 @@ test('tapping a disabled entry does nothing — the reason is already on screen'
   )
 })
 
-test('neither task screen carries a submit, edit or delete control', () => {
-  // 原型有 接受 / 完成 / 提交材料 三个写入按钮。本票是只读的，三个都不得出现。
-  for (const file of ['pages/task/board.wxml', 'pages/task/detail.wxml',
-                      'pages/task/board.js', 'pages/task/detail.js',
-                      'services/task.js']) {
+/**
+ * 2026-08-27：原型的「任务操作」一节按园方裁定补回详情页，所以这条不再是
+ * 「两屏都没有写入控件」。看板仍然一个也没有；详情页那两枚的分界换了个说法留下来：
+ *
+ *   接受   真写入，但**无请求体** —— 它不携带任何用户内容，所以不过内容安全闸门。
+ *   完成   点得下去、办不成（G40），因此详情页仍然不提交、不编辑、不删除内容。
+ */
+test('看板一个写入控件也没有，详情页只接受、不提交内容', () => {
+  for (const file of ['pages/task/board.wxml', 'pages/task/board.js', 'services/task.js']) {
     const src = read(file)
     for (const forbidden of ['api.post', 'api.patch', 'api.del', '幂等', 'Idempotency']) {
       assert.ok(!src.includes(forbidden), `${file} 出现了写入痕迹：${forbidden}`)
     }
   }
-  // 详情页只允许出现「提交材料」这一个入口文案，且它旁边必须有 submitDisabled。
+
   const detail = read('pages/task/detail.wxml')
-  assert.ok(!detail.includes('bindtap="onAccept"'), '不得有「接受」按钮')
-  assert.ok(!detail.includes('bindtap="onComplete"'), '不得有「完成」按钮')
+  const detailJs = read('pages/task/detail.js')
+
+  // 原型那两枚都在，位置也在「任务操作」那一节里。
+  assert.match(detail, /bindtap="onAcceptTap"/, '「接受」按钮在')
+  assert.match(detail, /bindtap="onCompleteTap"/, '「完成」按钮在')
+  assert.match(detail, /任务操作/, '这一节的标题照原型')
+
+  // 详情页自己不发任何带请求体的写入：接受走 services/task-submit.js，且无 body。
+  assert.ok(!detailJs.includes('api.post'), '详情页不直接发请求')
+  assert.ok(!detailJs.includes('api.patch'), '详情页不改内容')
+  assert.ok(!detailJs.includes('api.del'), '详情页不删内容')
+
+  // 提交仍然只是入口，带禁用态。
   assert.ok(detail.includes('submitDisabled'), '提交入口必须带禁用态')
+})
+
+test('「完成」点得下去但一个请求也不发 —— 它办不成，就说为什么', async () => {
+  const c = await signedIn()
+  const page = loadPage(c, 'pages/task/detail.js')
+  page.onLoad({ task_id: '11' })
+  await page.load(11)
+
+  const before = c.record.requests.length
+  page.onCompleteTap()
+
+  assert.equal(c.record.requests.length, before, '一个请求也没发')
+  assert.match(page.data.opNotice, /提交材料/, '说清楚该走哪一条路')
+  assert.equal(c.record.toasts.length, 0, '就地写出来，不弹窗')
+})
+
+test('「接受」是真写入：a1 的任务点一下就转 a2', async () => {
+  const c = await signedIn()
+  const page = loadPage(c, 'pages/task/detail.js')
+  page.onLoad({ task_id: '6' })            // 夹具里 6—10 是待接收（a1）
+  await page.load(6)
+  assert.equal(page.data.task.assign_status, 'a1', '这一条本来就待接收')
+
+  await page.onAcceptTap()
+
+  const sent = c.record.requests.filter((r) => r.url.includes('/acceptance'))
+  assert.equal(sent.length, 1, '发了一次接受')
+  assert.equal(sent[0].data, undefined, '无请求体 —— 不携带内容，所以不过闸门')
+  assert.equal(page.data.task.assign_status, 'a2', '读回来的状态已经是已接收')
 })
 
 test('the board is reachable from 首页 待办事项, and it is a real navigation', async () => {

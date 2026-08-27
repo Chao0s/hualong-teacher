@@ -24,7 +24,9 @@
     <!-- 空与失败是两种状态：读失败时不说「暂无」，那是把读不到说成没有东西可读。 -->
     <view wx:if="{{items.length === 0 && !errorText}}" class="hl-card hl-empty">暂无资料</view>
 
-    <!-- 原型 `.doc-card`：左列标题与摘要，右列 104px 放操作。 -->
+    <!-- 原型 `.doc-card`：左列**只有标题与摘要**，右列放操作。
+         发布日期、部门与生效日期不在卡上 —— 原型把它们放在详情的那行灰字里
+         （`.preview-meta`），卡上留白正是让标题与摘要读得快。 -->
     <view
       wx:for="{{items}}"
       wx:key="document_id"
@@ -33,17 +35,15 @@
       bindtap="onTap">
       <view class="doc__main">
         <view class="doc__title">{{item.document_title}}</view>
-        <view class="doc__meta">
-          <text>{{item.published_label}}</text>
-          <text wx:if="{{item.department_label}}">{{item.department_label}}</text>
-          <text wx:if="{{item.effective_label}}">生效 {{item.effective_label}}</text>
-        </view>
         <view wx:if="{{item.excerpt}}" class="doc__excerpt">{{item.excerpt}}</view>
       </view>
       <view class="doc__btn">详情</view>
     </view>
 
-    <view wx:if="{{loadingMore}}" class="hl-loading">加载更多…</view>
-    <view wx:if="{{exhausted && items.length > 0}}" class="hl-loading">没有更多了</view>
+    <!-- 原型 `.load-more`：一枚显式按钮，读完就收起来。 -->
+    <view
+      wx:if="{{!exhausted && items.length > 0}}"
+      class="more"
+      bindtap="onMoreTap">{{loadingMore ? '加载中…' : '加载更多'}}</view>
   </block>
 </view>
