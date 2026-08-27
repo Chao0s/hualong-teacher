@@ -1932,6 +1932,7 @@ const HAND_WRITTEN_ROLES = [
   [/^\/trainings\/\d+$/, ['teacher']],
   // 票据 16 的写入面与它的公开回馈流。契约给这两条写的都是 teacher。
   // 2026-08-27 按原型补建的报名入口。契约给这两条写的就是 teacher。
+  [/^\/teacher\/growth-book\/sections$/, ['teacher']],
   [/^\/teacher-profile$/, ['teacher']],
   [/^\/teacher-profile\/changes$/, ['teacher']],
   [/^\/training-participations$/, ['teacher']],
@@ -2346,6 +2347,8 @@ const server = createServer(async (req, res) => {
       postCompilationLock(req, res, path.split('/')[4], body);
     } else if (req.method === 'PATCH' && /^\/teacher\/growth-book\/compilation\/\d+$/.test(path)) {
       patchCompilation(req, res, path.split('/')[4], body);
+    } else if (req.method === 'GET' && path === '/teacher/growth-book/sections') {
+      getBookSections(req, res);
     } else if (req.method === 'POST' && path === '/teacher/growth-book/sections') {
       postBookSection(req, res, body);
     } else if (req.method === 'PUT' && /^\/teacher\/growth-book\/sections\/\d+\/widgets$/.test(path)) {
@@ -5195,6 +5198,22 @@ function postCompilationLock(req, res, id, rawBody) {
   row.locked_at = '2026-08-26T17:00:00+08:00';
   row.locked_by = TEACHER.teacher_id;
   return sendJson(res, 200, { ...row });
+}
+
+/**
+ * GET /teacher/growth-book/sections —— 本班本学期的班级栏目清单（契约 v0.6.1 补）。
+ *
+ * 名册型集合，**整取不分页**（§3.5），按 `anchor_after`、`section_id` 稳定排序。
+ * 本端点不收参数：一个班一个学期只有一份编册，也就只有一份栏目清单。
+ */
+function getBookSections(req, res) {
+  if (!requireSession(req, res)) return;
+  const rows = BOOK_SECTIONS.slice().sort((a, b) => (
+    a.anchor_after === b.anchor_after
+      ? a.section_id - b.section_id
+      : String(a.anchor_after).localeCompare(String(b.anchor_after))
+  ));
+  return sendJson(res, 200, { items: rows.map((r) => ({ ...r })) });
 }
 
 /** POST /teacher/growth-book/sections —— 新增班级栏目（NONE→d1）。 */

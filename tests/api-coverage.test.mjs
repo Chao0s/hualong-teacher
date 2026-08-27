@@ -404,10 +404,11 @@ describe('每个教师端操作都回契约声明的成功码', () => {
 
   test('教师端可达操作的数量与契约一致', async () => {
     const teacherRoutes = routes.filter((r) => !r.isPublic)
-    // 93 teacher operations + 1 pre-session login = 94 routes generated.
-    // 2026-08-27：G45 拍板后契约补了三条教师端路径（读档案、读申请、提申请），91 -> 94。
+    // 94 teacher operations + 1 pre-session login = 95 routes generated.
+    // 2026-08-27：G45 拍板后契约补了三条教师端路径（读档案、读申请、提申请），91 -> 94；
+    // 同日再补 GET /teacher/growth-book/sections（班级栏目此前读不出来），94 -> 95。
     assert.equal(teacherRoutes.length + 1, routes.length)
-    assert.equal(routes.length, 94,
+    assert.equal(routes.length, 95,
       `契约的教师端操作数变了：现在 ${routes.length}。改的是契约还是这条断言？`)
   })
 

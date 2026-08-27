@@ -50,6 +50,7 @@ const evaluation = require('./evaluation');
 
 const COMPILATION_PATH = '/teacher/growth-book/compilation';
 const BOOK_PATH = '/teacher/growth-book/books';
+const SECTION_PATH = '/teacher/growth-book/sections';
 const PRECHECK_PATH = '/teacher/growth-book/precheck';
 // 预览与家长端共用的两条路径。**没有 `/teacher/` 前缀**，这一点是承重的。
 const READ_PATH = '/growth-book/books';
@@ -58,6 +59,10 @@ const READ_PATH = '/growth-book/books';
 const ACTIONS = {
   compilationEnsure: 'compilation.ensure',
   compilationUpdate: 'compilation.update',
+  compilationLock: 'compilation.lock',
+  sectionCreate: 'book_section.create',
+  sectionUpdate: 'book_section.update',
+  widgetsSave: 'book_widget.save',
   bookEnsure: 'book.ensure',
   bookPublish: 'book.publish',
 };
@@ -66,6 +71,24 @@ const ACTIONS = {
 const COMPILATION_STATUS = { e1: '编辑中', e2: '已锁定' };
 // db_growth_book.book_status：b1 准备中／b2 已定稿（**永久唯读**）。
 const BOOK_STATUS = { b1: '准备中', b2: '已定稿' };
+// db_growth_book_section.section_status：d1 草稿（版面可改）／d2 已发布（**版面永久冻结**，W16）。
+const SECTION_STATUS = { d1: '草稿', d2: '已发布' };
+// db_growth_book_section.collection_status：c1 未征集／c2 征集中。只有 c2 才向家长开放。
+const COLLECTION_STATUS = { c1: '未征集', c2: '征集中' };
+
+/**
+ * 「插入位置」的取值（契约 `BookSectionWrite.anchor_type`）。
+ *
+ * a1—a4 是四类锚点，`anchor_after` 指名插在哪一个之后。固定前置页与预设页不在 DB 里，
+ * 它们的键来自版式包，所以这份表是**客户端能提供的那几个**，不是全集。
+ */
+const SECTION_ANCHORS = [
+  { key: 'time', anchor_type: 'a1', label: '在园时光 之后' },
+  { key: 'task', anchor_type: 'a1', label: '亲子时光 之后' },
+  { key: 'term', anchor_type: 'a2', label: '学期评价 之后' },
+  { key: 'comp', anchor_type: 'a3', label: '综合评价 之后' },
+  { key: 'message', anchor_type: 'a4', label: '教师寄语 之后' },
+];
 
 /** 服务端说「没有版式包可解析」时，`details.rule` 的取值。 */
 const PACK_UNRELEASED = 'layout_pack_unreleased';
@@ -242,6 +265,102 @@ function updateEnabledSections({ compilationId, revision, enabledSections }) {
     revision,
     body: { enabled_sections: (enabledSections || []).slice() },
   });
+}
+
+/**
+ * 锁定编册（e1 -> e2，**单向**）。
+ *
+ * e2 是逐幼儿 b1 -> b2 的前置：不锁定就没有一本册子能定稿。锁了不能回头，所以调用方
+ * 必须先问一次。`revision` 是 §5.1 的 CAS，带上读到的那一版。
+ */
+function lockCompilation({ compilationId, revision, idempotencyKey }) {
+  return api.post(`${COMPILATION_PATH}/${compilationId}/lock`, {
+    action: ACTIONS.compilationLock,
+    idempotencyKey,
+    body: { revision },
+  });
+}
+
+/** 栏目的可绑定形状。 */
+function decorateSection(row) {
+  const published = row.section_status === 'd2';
+  return {
+    section_id: row.section_id,
+    name: row.name,
+    anchor_after: row.anchor_after,
+    anchor_type: row.anchor_type,
+    section_status: row.section_status,
+    status_label: SECTION_STATUS[row.section_status] || '未知状态',
+    collection_status: row.collection_status,
+    collection_label: COLLECTION_STATUS[row.collection_status] || '未知状态',
+    // W16：发布之后版面**永久冻结**。这是「还能不能改」的唯一判据，页面不自己再算一遍。
+    published,
+    editable: !published,
+  };
+}
+
+/**
+ * 本班本学期的栏目清单（契约 v0.6.1）。
+ *
+ * 这一条 2026-08-27 才补进契约：此前栏目只有写没有读，教师新建一个栏目、退出、再进来
+ * 就列不出来了。**名册型集合，整取不分页**（§3.5）。
+ */
+async function listSections() {
+  const data = await api.get(SECTION_PATH);
+  return (data.items || []).map(decorateSection);
+}
+
+/** 新增班级栏目（NONE -> d1）。 */
+async function createSection({ name, anchorAfter, anchorType, idempotencyKey }) {
+  const row = await api.post(SECTION_PATH, {
+    action: ACTIONS.sectionCreate,
+    idempotencyKey,
+    body: { name: String(name).trim(), anchor_after: anchorAfter, anchor_type: anchorType },
+  });
+  return decorateSection(row);
+}
+
+/** 改栏目名称或位置（仅 d1）。发布之后服务端一律 409，客户端也不该发。 */
+async function updateSection({ sectionId, name, anchorAfter, anchorType }) {
+  const row = await api.patch(`${SECTION_PATH}/${sectionId}`, {
+    action: ACTIONS.sectionUpdate,
+    body: { name: String(name).trim(), anchor_after: anchorAfter, anchor_type: anchorType },
+  });
+  return decorateSection(row);
+}
+
+/**
+ * 整栏目保存版面（仅 d1）。
+ *
+ * **PUT 整份，不是逐 widget PATCH** —— 契约原话：整个栏目一次提交、一次校验、一次存档，
+ * 任一处重叠则拒绝整个栏目。逐个提交表达不了「要么全存要么全拒」。
+ *
+ * 请求体按 `BookWidgetWrite` 白名单重建：草稿上还挂着只给界面看的字段（选中态、像素
+ * 矩形），送出去就是 422。
+ */
+function saveWidgets({ sectionId, widgets }) {
+  return api.put(`${SECTION_PATH}/${sectionId}/widgets`, {
+    action: ACTIONS.widgetsSave,
+    body: { widgets: (widgets || []).map(buildWidgetBody) },
+  });
+}
+
+/** 一个 widget 的请求体。派生与界面字段一个也不送。 */
+function buildWidgetBody(w) {
+  const body = {
+    page_index: Number(w.page_index),
+    grid_x: Number(w.grid_x),
+    grid_y: Number(w.grid_y),
+    grid_w: Number(w.grid_w),
+    grid_h: Number(w.grid_h),
+    widget_type: w.widget_type,
+    binding_key: w.binding_key,
+  };
+  // 已有的 widget 带上编号；新增的缺席即可（契约：缺席或 null 表示新增）。
+  if (w.widget_id) body.widget_id = Number(w.widget_id);
+  // **只有 literal 才可非空**（DDL ck_bw_literal）。别的绑定送了 content 就是 422。
+  if (w.binding_key === 'literal') body.content = w.content || null;
+  return body;
 }
 
 /** 编册的可绑定形状。 */
@@ -468,9 +587,17 @@ module.exports = {
   sourcePanel,
   selectedItemCount,
   emptyReason,
+  SECTION_ANCHORS,
   ensureCompilation,
   updateEnabledSections,
+  lockCompilation,
   decorateCompilation,
+  decorateSection,
+  listSections,
+  createSection,
+  updateSection,
+  saveWidgets,
+  buildWidgetBody,
   ensureBook,
   decorateBook,
   precheck,
