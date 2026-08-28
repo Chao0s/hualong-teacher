@@ -191,6 +191,19 @@ the limit is not, and is out of scope.
 Items 2 through 7 are read-mostly and safe to run against a dev instance. None
 of them should point at production data until there is a reason.
 
+**One permission will break on deploy day.** `hualong-api-backup` is scoped to
+`.../hualong-media-1464472146/backups/db/*` — the nightly dump and nothing
+else. The service's actual job is issuing presigned credentials for photo
+uploads, which land under a media prefix that policy does not cover. The first
+upload will fail with a COS `AccessDenied` surfacing through the client, so it
+will look like a bug in the upload code rather than a missing grant, and the
+hour goes into the wrong file.
+
+Fix it with a separate `hualong-api-media` policy rather than by widening the
+backup one: the two jobs fail differently and should be revocable
+independently. A key that can overwrite backups because it also needed to write
+photographs is how a ransomware incident becomes unrecoverable.
+
 ## What this does not do
 
 No load testing, no fuzzing, no rate-limit hammering. The box is a 5 Mbps
