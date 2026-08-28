@@ -1,0 +1,96 @@
+# Publishes two things to GitHub Pages from one build:
+#   /            the existing HTML prototype (index.html + screens/), unchanged
+#   /api-doc/    Swagger UI over the API contract, generated here
+#
+# The contract lives in the private hualong-backend repo and is deliberately
+# never committed to this one — see tools/openapi-source.mjs. So the build
+# checks that repo out, generates the site, and throws the copy away with the
+# runner. Nothing stale can be served, because nothing is stored.
+#
+# Reading the private repo needs a token this workflow cannot mint for itself:
+# the default GITHUB_TOKEN is scoped to this repository only. Create a
+# fine-grained PAT with `Contents: read` on Chao0s/hualong-backend and save it
+# as the repository secret BACKEND_TOKEN.
+
+name: Pages
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+  # Lets hualong-backend republish the docs when the contract changes:
+  #   gh api repos/Chao0s/hualong-teacher/dispatches -f event_type=contract-changed
+  repository_dispatch:
+    types: [contract-changed]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # A missing secret otherwise surfaces as a bare 404 from actions/checkout,
+      # which reads like the repository was deleted.
+      - name: BACKEND_TOKEN is present
+        env:
+          TOKEN: ${{ secrets.BACKEND_TOKEN }}
+        run: |
+          if [ -z "$TOKEN" ]; then
+            echo "::error::secret BACKEND_TOKEN is not set. It needs a fine-grained PAT with Contents:read on Chao0s/hualong-backend, otherwise the contract cannot be read."
+            exit 1
+          fi
+
+      - name: Check out the contract
+        uses: actions/checkout@v4
+        with:
+          repository: Chao0s/hualong-backend
+          token: ${{ secrets.BACKEND_TOKEN }}
+          path: contract
+          sparse-checkout: api/openapi.yaml
+          sparse-checkout-cone-mode: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build the site
+        env:
+          HUALONG_OPENAPI: ${{ github.workspace }}/contract/api/openapi.yaml
+        run: |
+          mkdir -p _site
+          cp index.html _site/
+          cp -r screens _site/
+          node tools/build-api-doc.mjs _site/api-doc
+
+      # Flips the Pages source from the legacy branch build to this workflow.
+      # It runs only after the token guard passed, so a missing secret can never
+      # take the existing prototype site offline.
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

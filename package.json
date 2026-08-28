@@ -9,6 +9,7 @@
     "mock:no-term": "node mock/server.mjs --no-term",
     "test": "node --test \"tests/**/*.test.mjs\"",
     "swagger": "node tools/swagger/server.mjs",
+    "docs:api": "node tools/build-api-doc.mjs",
     "spec:inventory": "node tools/spec-inventory.mjs",
     "verify:build": "node tools/verify-build.mjs",
     "check:remote-scripts": "node scripts/check-remote-scripts.mjs",
