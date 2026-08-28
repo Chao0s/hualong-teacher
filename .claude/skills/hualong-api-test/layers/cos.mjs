@@ -80,14 +80,18 @@ export async function cos(runReport) {
     return;
   }
 
+  // `reach` is the exception: it asks whether the key can see past its own
+  // bucket, so being refused IS the answer, not a broken check. It is handled
+  // below on its own terms. Everything else that could not run leaves a
+  // question open and says so.
   for (const [name, result] of Object.entries(probe.checks || {})) {
-    if (result.ran) continue;
+    if (result.ran || name === 'reach') continue;
     runReport.add({
       layer: 'cos', severity: 'medium', kind: 'check-failed',
       what: `the bucket ${name} could not be read (${result.why}) — that question is unanswered, not passed`,
       detail: result.why.startsWith('403')
-        ? 'the hualong-cos-rw policy grants object operations but not bucket-config reads. ' +
-          'Add cos:GetBucketACL, cos:GetBucketCORS and cos:GetBucketEncryption to hualong-bucket-config to close this.'
+        ? `the account this key belongs to lacks cos:${name === 'objects' ? 'GetBucket' : `GetBucket${name[0].toUpperCase()}${name.slice(1)}`}. ` +
+          'Grant it in the read-only policy attached to that account.'
         : undefined,
     });
   }
