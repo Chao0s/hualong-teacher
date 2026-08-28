@@ -76,27 +76,51 @@ export async function vm(runReport) {
     });
   }
 
-  // Must name postgres, not merely "backup". The first version of this check
-  // passed on dpkg-db-backup.timer -- Debian's package-database dump, which has
-  // nothing to do with the database holding the children's records. A backup
-  // check that goes green on the wrong backup is worse than no check.
+  // Two wrong versions of this check preceded this one, in opposite directions,
+  // and both are the reason it now looks like it does.
+  //
+  // The first grepped for "dump|backup" across cron and timers, and passed on
+  // `dpkg-db-backup.timer` -- Debian's package database, not ours. Green on the
+  // wrong backup.
+  //
+  // The second demanded postgres and pg_dump by name, but read only the
+  // FILENAMES in /etc/cron.d. The real job is /etc/cron.d/hualong-backup, whose
+  // name says neither word, so it cried data-loss over a backup that had run
+  // every night for eight days. A false alarm about data loss burns the credit
+  // the real one would need.
+  //
+  // So: read the contents, and follow the script the cron line names.
   const backupJob = await ssh(
     '( sudo crontab -l 2>/dev/null; sudo -u postgres crontab -l 2>/dev/null; ' +
-    'sudo ls /etc/cron.d /etc/cron.daily 2>/dev/null; ' +
+    'sudo grep -rh . /etc/cron.d /etc/cron.daily /etc/crontab 2>/dev/null; ' +
     'systemctl list-timers --all --no-pager 2>/dev/null ) ' +
-    '| grep -iE "pg_dump|pgdump|postgres.*(dump|backup)|(dump|backup).*postgres" || true',
+    '| grep -vi dpkg | grep -iE "pg_dump|pgdump|postgres|backup-db" || true',
   );
   if (!backupJob.trim()) {
     runReport.add({
       layer: 'vm', severity: 'high', kind: 'data-loss',
-      what: 'nothing schedules a PostgreSQL dump — no cron entry and no timer names pg_dump or postgres, ' +
-        'against CONTEXT.md line 69 which states a daily 05:00 pg_dump to COS with restore tested',
+      what: 'nothing schedules a PostgreSQL dump, against CONTEXT.md line 69 which states ' +
+        'a daily 05:00 pg_dump to COS with restore tested',
     });
   } else {
     runReport.add({
       layer: 'vm', severity: 'low', kind: 'coverage',
       what: 'a PostgreSQL dump is scheduled',
       detail: backupJob.trim().split(/\r?\n/).slice(0, 3),
+    });
+  }
+
+  // Scheduled is not the same as running. The freshest dump on disk is the only
+  // evidence that the schedule fires.
+  const newest = await ssh('sudo ls -t /var/backups/hualong/*.sql.gz 2>/dev/null | head -1 || true');
+  if (newest.trim()) {
+    const age = await ssh(`sudo stat -c %Y "${newest.trim()}"`);
+    const hours = Math.round((Date.now() / 1000 - Number(age.trim())) / 3600);
+    runReport.add({
+      layer: 'vm',
+      severity: hours > 48 ? 'high' : 'low',
+      kind: hours > 48 ? 'data-loss' : 'coverage',
+      what: `newest local dump ${newest.trim().split('/').pop()} is ${hours}h old`,
     });
   }
 
