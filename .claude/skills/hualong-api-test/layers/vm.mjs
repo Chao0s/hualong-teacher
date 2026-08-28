@@ -11,6 +11,8 @@
 
 import { ssh, adminReachable, REMOTE_PORT } from '../lib/vm.mjs';
 
+const NEWLINE = new RegExp('\\r?\\n');
+
 /** Listeners bound past loopback. Written without quoting awkward characters. */
 const EXPOSED = 'ss -lntH 2>/dev/null | tr -s " " | cut -d" " -f4 | grep -v "^127[.]" | grep -v "^\\[::1\\]" || true';
 
@@ -59,7 +61,31 @@ export async function vm(runReport) {
     });
   }
 
-  const ports = (await ssh(EXPOSED)).trim().split('\n').filter(Boolean);
+  // ADR-0016 §9: GitHub holds a key that reaches this box, restricted to one
+  // forced command. That restriction is the only thing standing between a
+  // deploy key and a shell on the machine holding the children's records, and
+  // it is one careless authorized_keys edit away from being gone. Nothing warns
+  // you; the deploy keeps working either way.
+  const deployKeys = await ssh(
+    'sudo grep -rhi "github\\|deploy" /home/*/.ssh/authorized_keys /root/.ssh/authorized_keys 2>/dev/null || true',
+  );
+  const deployLines = deployKeys.trim().split(NEWLINE).filter((l) => l.trim() && !l.trim().startsWith('#'));
+  if (!deployLines.length) {
+    runReport.skip('vm/deploy-key', 'no deploy key on the box yet — ADR-0016 §9 is chosen but not built',
+      'whether the key GitHub holds is restricted to one command, or can open a shell');
+  } else {
+    for (const line of deployLines) {
+      const restricted = line.includes('command=') && line.includes('restrict');
+      runReport.add(restricted
+        ? { layer: 'vm', severity: 'low', kind: 'coverage', what: 'the deploy key is locked to a forced command' }
+        : {
+          layer: 'vm', severity: 'high', kind: 'hardening-off',
+          what: 'a deploy key carries no command= restriction — whoever holds it gets a shell, not a deploy',
+        });
+    }
+  }
+
+  const ports = (await ssh(EXPOSED)).trim().split(NEWLINE).filter(Boolean);
   if (ports.length) {
     runReport.add({
       layer: 'vm', severity: 'medium', kind: 'exposure-surface',
