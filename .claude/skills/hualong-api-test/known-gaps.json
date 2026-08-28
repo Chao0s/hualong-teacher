@@ -14,8 +14,6 @@
     "/home-school/parent-evaluations/{}": "no operation registered",
     "/growth-book/books": "contract declares /teacher/growth-book/books; the client omits the /teacher prefix",
     "/training/home": "module landing read; no operation registered",
-    "/training/course-intro": "no table at all — mock/server.mjs:750 records that neither openapi.yaml nor 01_schema.sql has course/curriculum anything",
-    "/teacher-profile": "added in hualong-backend#1, still open; delete this line when it merges",
-    "/teacher-profile/changes": "added in hualong-backend#1, still open; delete this line when it merges"
+    "/training/course-intro": "no table at all — mock/server.mjs:750 records that neither openapi.yaml nor 01_schema.sql has course/curriculum anything"
   }
 }
