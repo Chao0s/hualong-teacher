@@ -2070,7 +2070,11 @@ const server = createServer(async (req, res) => {
   res.__requestId = req.headers['x-request-id'] || `mock-${randomUUID().slice(0, 8)}`;
 
   if (req.method === 'OPTIONS') {
-    sendJson(res, 204, null);
+    // Private Network Access: a page served from https://chao0s.github.io asking
+    // 127.0.0.1 is a public-to-private request, and Chrome holds the preflight
+    // until the target opts in. Without this header the published Swagger UI's
+    // Try-it-out hangs -- not blocked, not refused, just never answered.
+    sendJson(res, 204, null, { 'access-control-allow-private-network': 'true' });
     return;
   }
 

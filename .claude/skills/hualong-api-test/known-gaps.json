@@ -1,0 +1,21 @@
+{
+  "note": "Paths a client calls that the contract does not declare, and that are already known and deliberate. mock/server.mjs hand-writes each one and explains why in prose; this file is the machine-readable half, so a NEW drift stands out instead of drowning in fifteen old ones. Removing an entry when the contract gains the path is how this file stays honest.",
+  "register": {
+    "/notices": "db_notification exists; no operation registered. mock/server.mjs:1870",
+    "/notices/{}": "same gap as /notices",
+    "/home/todos": "db_notification backs it; no operation registered",
+    "/home/cases": "db_home_case backs it; no operation registered",
+    "/tasks": "teacher task list; no operation registered",
+    "/org/class-roster": "roster read; no operation registered",
+    "/home-school/home": "module landing read; no operation registered",
+    "/home-school/teacher-messages": "no operation registered",
+    "/home-school/teacher-messages/{}": "no operation registered",
+    "/home-school/teacher-eval": "no operation registered",
+    "/home-school/parent-evaluations/{}": "no operation registered",
+    "/growth-book/books": "contract declares /teacher/growth-book/books; the client omits the /teacher prefix",
+    "/training/home": "module landing read; no operation registered",
+    "/training/course-intro": "no table at all — mock/server.mjs:750 records that neither openapi.yaml nor 01_schema.sql has course/curriculum anything",
+    "/teacher-profile": "added in hualong-backend#1, still open; delete this line when it merges",
+    "/teacher-profile/changes": "added in hualong-backend#1, still open; delete this line when it merges"
+  }
+}
