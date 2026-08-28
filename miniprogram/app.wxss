@@ -1,5 +1,7 @@
 @import 'styles/tokens.wxss';
 @import 'styles/form-rows.wxss';
+@import 'towxml/style/main.wxss';
+@import 'towxml/style/theme/light.wxss';
 
 page {
   background: var(--bg);
@@ -102,6 +104,59 @@ view, text, button, input, textarea, scroll-view {
   color: var(--muted);
 }
 
+/* ── Press feedback ─────────────────────────────────────────────────────── */
+
+/*
+ * 按下去要有反应。
+ *
+ * 2026-08-28 补。原型给每一个可点的面写了 `:active`（56 个原型里 39 条），而本端一条
+ * 也没有 —— 教师点一张卡，屏幕上什么都不动。差的不是某一页，是整套按压反馈。
+ *
+ * 用 `hover-class` 而不是 WXSS 的 `:active`：本项目走 WebView 渲染
+ * （`skylineRenderEnable: false`），`:active` 在 iOS 的 WebView 里要挂上 touch 监听才
+ * 会触发，`view` 上并没有；`hover-class` 是平台为这件事给的接口，两端都稳。
+ *
+ * 选择器写成双类名（`.hl-press.hl-press`）是为了压过页面级 wxss —— 分包页面的样式表在
+ * app.wxss 之后加载，同为单类名时页面里那条 `background` 会赢，按下去就看不出变化。
+ * 这是提权，不是改样式：两条规则描述的是同一个类。
+ */
+
+/* 卡片按压：原型 `.todo-card`／`.resource-card`／`.flow-item` 的
+ * `transform: scale(.985); background: #f8fbfb`。 */
+.hl-press.hl-press {
+  transform: scale(0.985);
+  background: var(--pressed);
+}
+
+/* 只换底色、不动几何：原型 `.task-card`／`.sec-head`／`.ind-head`／`.link-card`。
+ * 与上一枚分开，是因为原型确实分了两种 —— 列表行按下去不缩，卡片按下去缩。 */
+.hl-press-tint.hl-press-tint {
+  background: var(--pressed);
+}
+
+/* 入口块按压：原型 `.entry-card`／`.hub-card` 用下沉 1px 而不是缩放。 */
+.hl-press-lift.hl-press-lift {
+  transform: translateY(1px);
+  background: var(--pressed);
+}
+
+/* 小按钮按压：原型 `.sbtn` 的 `transform: scale(.96)`，不换底色。 */
+.hl-press-btn.hl-press-btn {
+  transform: scale(0.96);
+}
+
+/* 主按钮按压：原型 `.save-btn` 压深一档主色，不缩放。 */
+.hl-press-solid.hl-press-solid {
+  background: var(--accent-dark);
+}
+
+/* 空心按钮按压。原型没有直接对应的一条 —— 空心钮在原型里多是 `<a class="btn">`，
+ * 浏览器给的默认反馈。按同族做法压深底色一档：主色的浅底换成中间那一档淡青，
+ * 文字色不动，对比度因此还在。 */
+.hl-press-hollow.hl-press-hollow {
+  background: #d3ebe9;
+}
+
 /* ── Status pill ────────────────────────────────────────────────────────── */
 
 .hl-pill {
@@ -113,10 +168,14 @@ view, text, button, input, textarea, scroll-view {
   line-height: 1.6;
 }
 
-.hl-pill--pending { background: var(--amber-light); color: #8a5c00; }
+/* 文字色照 component-showcase.html（令牌权威）的 `.state-warn`／`.state-info`／
+ * `.done` 逐条转写。2026-08-28 更正两处：`--pending` 此前写 #8a5c00、`--info` 此前
+ * 用 --blue(#3388fc)，两个值在 56 个原型里一次也没出现过 —— 原型一律是 #a15d00 与
+ * #226ac7。这两枚胶囊遍布全 app 的状态位，所以错的是每一页。 */
+.hl-pill--pending { background: var(--amber-light); color: #a15d00; }
 .hl-pill--ok      { background: var(--green-light); color: var(--green); }
 .hl-pill--danger  { background: var(--danger-light); color: var(--danger); }
-.hl-pill--info    { background: var(--blue-light); color: var(--blue); }
+.hl-pill--info    { background: var(--blue-light); color: #226ac7; }
 /* Unknown enum codes must degrade, not crash (§1.1). This is what they wear. */
 .hl-pill--unknown { background: #eee; color: var(--muted); }
 

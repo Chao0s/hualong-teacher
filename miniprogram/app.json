@@ -99,7 +99,10 @@
         "pages/create/index",
         "pages/preview/index",
         "pages/compile/index",
-        "pages/section/index"
+        "pages/section/index",
+        "pages/time/index",
+        "pages/task/index",
+        "pages/submissions/index"
       ]
     },
     {
@@ -198,6 +201,9 @@
         "selectedIconPath": "assets/icons/tab/co-education-selected.png"
       }
     ]
+  },
+  "usingComponents": {
+    "towxml": "/towxml/towxml"
   },
   "style": "v2",
   "lazyCodeLoading": "requiredComponents",

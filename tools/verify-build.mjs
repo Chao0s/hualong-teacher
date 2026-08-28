@@ -179,7 +179,14 @@ function walk(dir, out = []) {
 
 const files = walk(ROOT);
 
+// 第三方发布版目录。towxml 的产物用 ES 模块语法，小程序编译器认，这里的
+// CommonJS 解析不认 —— 按本项目的规矩去查它只会得到误报。体积仍照算，所以
+// 下面的主包上限检查不受影响。
+const VENDOR = /^towxml\//;
+const isVendor = (file) => VENDOR.test(relative(ROOT, file).replace(/\\/g, '/'));
+
 for (const file of files) {
+  if (isVendor(file)) continue;
   const ext = extname(file);
   if (ext === '.json') checkJsonFile(file);
   else if (ext === '.js') checkJsFile(file);

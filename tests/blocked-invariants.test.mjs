@@ -188,6 +188,10 @@ describe('票据 23 · 上线闸门在客户端留下的债', () => {
       for (const m of code.matchAll(/http:\/\/[^\s'"`)]+/g)) {
         // config.js 的开发档指向本地契约服务；那是开发期的落点，不是要上线的地址。
         if (/127\.0\.0\.1|localhost/.test(m[0])) continue
+        // towxml/parse/parse2/entities/escape.js 的行内注释里引了一篇文章。codeOnly
+        // 只剥行首的 //，剥不掉它。放行的是这一个域名，不是整个 towxml —— towxml 里
+        // 真出现新的明文 http 接口，这条断言仍然拦得住。
+        if (/mathiasbynens\.be/.test(m[0])) continue
         offenders.push(`${relative(MP, f)}: ${m[0]}`)
       }
     }
