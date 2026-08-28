@@ -3,38 +3,43 @@
  *
  * Two questions matter more than the rest. Can a stranger read it — asked by
  * actually trying, unauthenticated, because a policy that reads as private and
- * a bucket that behaves as private are different claims. And is the backup
- * real — `CONTEXT.md` states a daily 05:00 `pg_dump` lands here and that restore
- * has been tested, which is exactly the kind of statement that stays true in a
- * document long after it stopped being true on the machine.
+ * a bucket that behaves as private are different claims. And do the nightly
+ * dumps actually arrive — `/opt/hualong/backup-db.sh` runs at 05:00 and writes
+ * to `/var/backups/hualong`, and whether the COS half of that script succeeds
+ * is invisible from the VM: a failed upload leaves a healthy-looking local file
+ * behind it.
  */
 
-import { get, getAnonymous, credentials, BUCKET } from '../lib/cos.mjs';
+import { get, getAnonymous, listAll, credentials, BUCKET } from '../lib/cos.mjs';
 
 const DAY = 24 * 60 * 60 * 1000;
 
 export async function cos(runReport) {
-  try {
-    credentials();
-  } catch (err) {
-    runReport.skip('cos', err.message,
-      'the bucket ACL, its policy, SSE, CORS, and whether any backup exists at all');
-    return;
-  }
-
-  // Whether a stranger gets in. The only active probe this skill makes.
-  const anon = await getAnonymous('/?list-type=2&max-keys=1');
-  if (anon.status === 200) {
+  // The most important question here needs no credential, so it is asked before
+  // the ones that do. Hiding "can a stranger read this" behind a missing
+  // environment variable would mean the check most worth having is the one that
+  // silently does not run.
+  const anonList = await getAnonymous('/', { 'list-type': 2, 'max-keys': 1 });
+  if (anonList.status === 200) {
     runReport.add({
       layer: 'cos', severity: 'high', kind: 'exposure',
       what: `${BUCKET} lists its contents to an unauthenticated request`,
-      detail: anon.body.slice(0, 300),
+      detail: anonList.body.slice(0, 300),
     });
   } else {
     runReport.add({
       layer: 'cos', severity: 'low', kind: 'coverage',
-      what: `an unauthenticated list of ${BUCKET} is refused with ${anon.status}`,
+      what: `an unauthenticated list of ${BUCKET} is refused with ${anonList.status}`,
     });
+  }
+
+  try {
+    credentials();
+  } catch (err) {
+    runReport.skip('cos', err.message,
+      'the bucket ACL, its encryption, its CORS rules, and whether any backup has ever reached COS ' +
+      '(the unauthenticated exposure probe above did run)');
+    return;
   }
 
   const acl = await get('/', { acl: '' });
@@ -43,6 +48,12 @@ export async function cos(runReport) {
       layer: 'cos', severity: 'high', kind: 'exposure',
       what: 'the bucket ACL grants a public principal',
       detail: acl.body.slice(0, 400),
+    });
+  } else if (acl.status !== 200) {
+    runReport.add({
+      layer: 'cos', severity: 'medium', kind: 'check-failed',
+      what: `the bucket ACL could not be read (HTTP ${acl.status}) — public access is unverified`,
+      detail: acl.body.slice(0, 200),
     });
   }
 
@@ -59,46 +70,84 @@ export async function cos(runReport) {
   if (cors.status === 404) {
     runReport.add({
       layer: 'cos', severity: 'medium', kind: 'cors',
-      what: 'no CORS rules on the bucket — clients upload to it directly with presigned credentials',
+      what: 'no CORS rules on the bucket — clients are meant to upload to it directly ' +
+        'with presigned credentials, and a browser will refuse that without them',
     });
   }
 
-  // The backup. Newest object that looks like a dump.
-  const listing = await get('/', { 'list-type': 2, 'max-keys': 1000 });
+  // Everything, across every page. One page holds 1000 keys, and reading only
+  // the first would report the backup missing the moment the media outnumber it.
+  const listing = await listAll();
   if (listing.status !== 200) {
     runReport.add({
       layer: 'cos', severity: 'high', kind: 'data-loss',
       what: `cannot list ${BUCKET} even with credentials (HTTP ${listing.status}) — backup state unknown`,
-      detail: listing.body.slice(0, 300),
+      detail: String(listing.body).slice(0, 300),
     });
     return;
   }
+  if (listing.truncated) {
+    runReport.add({
+      layer: 'cos', severity: 'medium', kind: 'check-failed',
+      what: `the listing stopped at ${listing.objects.length} objects — anything past that is unchecked`,
+    });
+  }
 
-  const keys = [...listing.body.matchAll(/<Key>([^<]+)<\/Key>[\s\S]*?<LastModified>([^<]+)<\/LastModified>/g)]
-    .map(([, key, when]) => ({ key, when: new Date(when) }));
-  const dumps = keys.filter((k) => /dump|backup|\.sql|\.gz/i.test(k.key));
+  // A stranger reading one real object is a sharper question than listing:
+  // buckets are routinely private to list and public to read.
+  if (listing.objects.length) {
+    const sample = listing.objects[0];
+    const anonRead = await getAnonymous(`/${sample.key.split('/').map(encodeURIComponent).join('/')}`);
+    if (anonRead.status < 400) {
+      runReport.add({
+        layer: 'cos', severity: 'high', kind: 'exposure',
+        what: `an unauthenticated stranger can read ${sample.key} (HTTP ${anonRead.status})`,
+      });
+    } else {
+      runReport.add({
+        layer: 'cos', severity: 'low', kind: 'coverage',
+        what: `an unauthenticated read of a real object is refused with ${anonRead.status}`,
+      });
+    }
+  }
 
+  const dumps = listing.objects.filter((o) => /dump|backup|\.sql/i.test(o.key));
   if (!dumps.length) {
     runReport.add({
       layer: 'cos', severity: 'high', kind: 'data-loss',
-      what: `no backup object found in ${BUCKET} — CONTEXT.md states a daily 05:00 pg_dump lands here`,
-      detail: { objectsSeen: keys.length, sample: keys.slice(0, 5).map((k) => k.key) },
+      what: `no backup object in ${BUCKET} — backup-db.sh writes locally at 05:00 and uploads here; ` +
+        'a failed upload leaves a healthy-looking local file behind it',
+      detail: { objectsSeen: listing.objects.length, sample: listing.objects.slice(0, 5).map((o) => o.key) },
     });
     return;
   }
 
   const newest = dumps.reduce((a, b) => (a.when > b.when ? a : b));
   const age = Date.now() - newest.when.getTime();
-  if (age > DAY) {
+  if (age > 2 * DAY) {
     runReport.add({
       layer: 'cos', severity: 'high', kind: 'data-loss',
-      what: `the newest backup is ${Math.floor(age / DAY)} day(s) old`,
-      detail: { key: newest.key, lastModified: newest.when.toISOString() },
+      what: `the newest backup in COS is ${Math.floor(age / DAY)} day(s) old`,
+      detail: { key: newest.key, lastModified: newest.when.toISOString(), copiesHeld: dumps.length },
     });
   } else {
     runReport.add({
       layer: 'cos', severity: 'low', kind: 'coverage',
-      what: `newest backup ${newest.key} is ${Math.round(age / 3600000)}h old`,
+      what: `newest backup in COS ${newest.key} is ${Math.round(age / 3600000)}h old, ${dumps.length} copies held`,
     });
   }
+
+  // An empty dump is the failure that looks most like success.
+  if (newest.size < 1024) {
+    runReport.add({
+      layer: 'cos', severity: 'high', kind: 'data-loss',
+      what: `the newest backup is ${newest.size} bytes — a dump that small holds no data`,
+      detail: newest.key,
+    });
+  }
+
+  runReport.add({
+    layer: 'cos', severity: 'low', kind: 'coverage',
+    what: `${listing.objects.length} object(s) in ${BUCKET}`,
+  });
 }

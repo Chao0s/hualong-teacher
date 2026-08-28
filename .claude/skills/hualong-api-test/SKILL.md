@@ -105,6 +105,50 @@ it, two can.
 5. Stop. Ask before opening any PR, before any commit, before firing
    `repository_dispatch` to republish the docs site.
 
+## When the service lands on 3001
+
+The `api` layer today asks one question: does any non-public path answer without
+a session. That is all a live check can ask before there is anything to log in
+to. What follows is what it should gain, in the order the value falls, so the
+work is not re-derived when the port starts answering.
+
+**1. A session.** Everything below needs one. `POST /auth/session` is two-stage,
+so the layer needs a seeded test identity in the real database — which is a
+decision, not an implementation detail: a test teacher in production data is a
+real account with real reach. Ask before creating one.
+
+**2. Breadth, live.** What `tests/api-coverage.test.mjs` does against the mock,
+done against the service: every teacher-reachable operation, its declared
+success code, its declared response shape. The mock proves the contract is
+self-consistent; only this proves the service implements it.
+
+**3. Authorization — the red line.** `x-hualong-scope` on each operation says
+what the server must re-verify inline. Drive a teacher's token at another
+class's child and confirm **404, not 403** (§7.2 — a 403 confirms the object
+exists, which is itself the leak). This needs two seeded identities in different
+classes and is the highest-value check on this list, because it is the one no
+amount of reading the contract can settle.
+
+**4. Derived fields are ignored, not rejected.** §7.3 says submitting
+`school_id`, `created_by` or `uploaded_by` is silently dropped. A service that
+errors instead breaks clients; one that *honours* them is a privilege
+escalation. Send them and read back what stuck.
+
+**5. The envelope.** `*_at` carries a literal `+08:00`, never `Z` and never a
+conversion. Cursor pages carry `next_cursor` and never `total`. Errors take one
+shape. Each is a one-line assertion and each has already been got wrong once in
+the client.
+
+**6. Idempotency.** Replay a write with the same `Idempotency-Key` and the
+original status and body must come back — not a second row. §4.2.
+
+**7. Rate-limit headers present.** §5.3 says `x-ratelimit-*` ride every
+response, under the limit as well as over. Reading them is free; *provoking*
+the limit is not, and is out of scope.
+
+Items 2 through 7 are read-mostly and safe to run against a dev instance. None
+of them should point at production data until there is a reason.
+
 ## What this does not do
 
 No load testing, no fuzzing, no rate-limit hammering. The box is a 5 Mbps
