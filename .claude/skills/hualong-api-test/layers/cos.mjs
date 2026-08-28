@@ -92,12 +92,54 @@ export async function cos(runReport) {
     });
   }
 
+  // Every check that ran says what it found. A check that returns a healthy
+  // value and prints nothing is indistinguishable in the report from a check
+  // that never ran, which is the thing rule 5 exists to prevent.
   const acl = probe.checks?.acl;
-  if (acl?.ran && acl.value.publicGrants > 0) {
-    runReport.add({
-      layer: 'cos', severity: 'high', kind: 'exposure',
-      what: `the bucket ACL carries ${acl.value.publicGrants} public grant(s)`,
-    });
+  if (acl?.ran) {
+    if (acl.value.publicGrants > 0) {
+      runReport.add({
+        layer: 'cos', severity: 'high', kind: 'exposure',
+        what: `the bucket ACL carries ${acl.value.publicGrants} public grant(s)`,
+      });
+    } else {
+      runReport.add({
+        layer: 'cos', severity: 'low', kind: 'coverage',
+        what: `the bucket ACL has ${acl.value.grants} grant(s), none of them public`,
+      });
+    }
+  }
+
+  const enc = probe.checks?.encryption;
+  if (enc?.ran) {
+    runReport.add(enc.value.configured
+      ? { layer: 'cos', severity: 'low', kind: 'coverage', what: 'server-side encryption is configured' }
+      : {
+        layer: 'cos', severity: 'medium', kind: 'encryption',
+        what: 'no default server-side encryption — CONTEXT.md §3 states SSE-COS, and this bucket ' +
+          'holds photographs of children',
+      });
+  }
+
+  const cors = probe.checks?.cors;
+  if (cors?.ran) {
+    if (cors.value.origins.includes('*')) {
+      runReport.add({
+        layer: 'cos', severity: 'high', kind: 'exposure',
+        what: 'a CORS rule allows any origin — any website can make a visitor\'s browser call this bucket',
+      });
+    } else if (!cors.value.rules) {
+      runReport.add({
+        layer: 'cos', severity: 'medium', kind: 'cors',
+        what: 'no CORS rules — clients upload straight to COS with presigned credentials, ' +
+          'and a browser refuses that without them',
+      });
+    } else {
+      runReport.add({
+        layer: 'cos', severity: 'low', kind: 'coverage',
+        what: `${cors.value.rules} CORS rule(s), origins: ${cors.value.origins.join(', ')}`,
+      });
+    }
   }
 
   const objects = probe.checks?.objects;
