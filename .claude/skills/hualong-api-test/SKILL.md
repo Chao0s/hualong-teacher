@@ -56,10 +56,52 @@ local port is **not** 3001 — the wizard takes the first free of
 assume it. `permitopen="127.0.0.1:3001"` is written in front of every
 `devtunnel` key, so that route reaches one port and nothing else.
 
-COS needs `COS_SECRET_ID` and `COS_SECRET_KEY` in the environment. The v5
-signature is implemented in `lib/cos.mjs`, so nothing has to be installed on
-this machine or on the VM. A missing variable is a named error, never a silent
-skip. **Never** write a credential into a file, a report, or a commit.
+### COS
+
+Split in two on purpose.
+
+The **unauthenticated** probe runs from this machine, because "can a stranger
+read the bucket" is a question about what the internet sees. Asked from inside
+the VM's own region it would answer something else. It needs no credential, so
+it runs before anything can skip. `lib/cos.mjs` signs v5 requests itself, so
+nothing has to be installed here either.
+
+Everything **credentialed** runs on the VM. The key is already there —
+`/etc/hualong/cos.env`, sourced by `backup-db.sh` since 2026-08-18 — and
+copying a write-capable key to a second machine to answer a read-only question
+puts it somewhere nobody remembers to rotate. `vm-cos-probe.py` is piped in over
+ssh stdin, so nothing is written to the server, and it returns findings, never
+values.
+
+That half also answers what the VM alone cannot. `backup-db.sh` writes a local
+dump and then uploads it, so a failed upload leaves a healthy-looking file
+behind. Only the bucket knows whether the copy arrived.
+
+`lib/cos.mjs` still accepts `COS_SECRET_ID` and `COS_SECRET_KEY` from the
+environment for running against a bucket the VM cannot reach. A missing
+variable is a named error, never a silent skip. **Never** write a credential
+into a file, a report, or a commit.
+
+### The permission border
+
+The key that runs the nightly backup sits on a host reachable from the
+internet, so what it can reach beyond its one bucket matters more than
+convenience. Two accounts, two jobs:
+
+| Account | Needs | Must not have |
+| --- | --- | --- |
+| `hualong-api` (the server runs as this) | `PutObject`, `GetObject` on the one bucket — enough to upload a dump | anything account-wide, and any bucket-config write |
+| a read-only account for these checks | `GetBucketACL`, `GetBucketCORS`, `GetBucketEncryption`, `GetBucketLifecycle` | every write, and `GetService` |
+
+`cos:GetService` is account-wide by construction — it lists every bucket you
+own, and no resource clause narrows it. Nothing in this skill needs it: the
+bucket name is fixed in `lib/cos.mjs`. The `reach` check reports it when
+granted, which is how the border stops being a decision someone made once.
+
+The bucket-config **writes** are the ones worth refusing outright.
+`DeleteBucketLifecycle` changes how long backups are kept.
+`DeleteBucketCORS` breaks client uploads, and it will look like a client bug.
+A checker that only reads should hold neither.
 
 ## Layers
 

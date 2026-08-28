@@ -110,6 +110,22 @@ try:
         return {"total": total, "truncated": truncated, "dumpCount": len(dumps),
                 "newest": newest, "newestAgeHours": age_h}
 
+    def reach():
+        """
+        How far past this bucket the key can see.
+
+        GetService lists every bucket on the account. The key that runs the
+        nightly backup lives on an internet-facing VM, so what it can reach
+        beyond its one bucket is a border question, not a curiosity. Read-only:
+        it asks what is visible, it changes nothing.
+        """
+        buckets = client.list_buckets().get("Buckets", {}).get("Bucket", [])
+        if isinstance(buckets, dict):
+            buckets = [buckets]
+        return {"canListAllBuckets": True, "bucketsVisible": len(buckets),
+                "names": sorted(b["Name"] for b in buckets)[:10]}
+
+    attempt("reach", reach)
     attempt("acl", acl)
     attempt("encryption", encryption)
     attempt("cors", cors)

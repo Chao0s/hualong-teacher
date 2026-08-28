@@ -92,6 +92,24 @@ export async function cos(runReport) {
     });
   }
 
+  // How far the key reaches past the one bucket it needs. It sits on an
+  // internet-facing VM, so this is a border question: a key scoped to one
+  // bucket cannot become a way to enumerate the account.
+  const reach = probe.checks?.reach;
+  if (reach?.ran) {
+    runReport.add({
+      layer: 'cos', severity: 'medium', kind: 'over-permission',
+      what: `the backup key can list all ${reach.value.bucketsVisible} bucket(s) on the account — ` +
+        'cos:GetService is account-wide and nothing here needs it, since the bucket name is fixed',
+      detail: reach.value.names,
+    });
+  } else {
+    runReport.add({
+      layer: 'cos', severity: 'low', kind: 'coverage',
+      what: `the key cannot list other buckets (${reach?.why ?? 'refused'}) — scoped to its own`,
+    });
+  }
+
   // Every check that ran says what it found. A check that returns a healthy
   // value and prints nothing is indistinguishable in the report from a check
   // that never ran, which is the thing rule 5 exists to prevent.
