@@ -1,0 +1,64 @@
+<!-- 党建管理部 —— 对照原型 screens/school-affairs.html。
+     三块列表结构一样（标记块 + 标题 + 元信息 + 右侧操作），合成一份模板循环三次。 -->
+<view class="page">
+
+  <swiper
+    class="banner-wrap"
+    autoplay
+    circular
+    interval="3600"
+    duration="320"
+    current="{{bannerIndex}}"
+    bindchange="onBannerChange"
+  >
+    <swiper-item wx:for="{{banners}}" wx:key="id">
+      <view class="banner banner--{{item.tone}}" data-id="{{item.id}}" bindtap="onStudyTap">
+        <view class="banner__ring"></view>
+        <text class="banner__title">{{item.title}}</text>
+        <text class="banner__sub">{{item.sub}}</text>
+      </view>
+    </swiper-item>
+  </swiper>
+  <view class="banner-dots">
+    <view
+      class="banner-dot {{index === bannerIndex ? 'banner-dot--on' : ''}}"
+      wx:for="{{banners}}"
+      wx:key="id"
+    ></view>
+  </view>
+
+  <block wx:for="{{groups}}" wx:key="key" wx:for-item="group">
+    <view class="sec">
+      <text class="sec__title">{{group.title}}</text>
+      <text class="sec__more" data-key="{{group.key}}" bindtap="onMoreTap">全部 ›</text>
+    </view>
+    <view class="list">
+      <view
+        class="item"
+        hover-class="item--hover"
+        hover-stay-time="80"
+        wx:for="{{group.items}}"
+        wx:key="id"
+        data-key="{{group.key}}"
+        data-id="{{item.id}}"
+        bindtap="onItemTap"
+      >
+        <view class="mark mark--{{group.key}}">{{group.glyph}}</view>
+        <view class="item__main">
+          <text class="item__title">{{item.title}}</text>
+          <view class="item__meta">
+            <text wx:for="{{item.meta}}" wx:key="*this" wx:for-item="m">{{m}}</text>
+          </view>
+        </view>
+        <view class="item__ops" wx:if="{{group.key === 'study'}}">
+          <text class="pill">预览</text>
+          <text class="pill">下载</text>
+        </view>
+        <text class="item__arrow" wx:else>›</text>
+      </view>
+    </view>
+  </block>
+
+</view>
+
+<hl-tabbar active="party" />

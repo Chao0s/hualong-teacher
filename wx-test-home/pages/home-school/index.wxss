@@ -1,0 +1,39 @@
+@import '/styles/home-school-common.wxss';
+
+/* 家园社共育 —— 本页自己的样式，对照原型 screens/home-school.html 的内联块。 */
+
+.page {
+  padding: 24rpx 32rpx calc(200rpx + env(safe-area-inset-bottom));
+}
+
+.metric-row--gap {
+  margin-bottom: 16rpx;
+}
+
+/* 原型给这张表加了 `.home-progress-table`：不横向滚动，五列定宽，字号压小，
+ * 状态文字允许折行。5 列 = 幼儿 112rpx + 四列等分。 */
+.prog-row {
+  grid-template-columns: 112rpx repeat(4, 1fr);
+}
+
+.prog-cell {
+  padding: 18rpx 4rpx;
+  font-size: 22rpx;
+}
+
+.prog-row--head .prog-cell {
+  font-size: 20rpx;
+}
+
+.prog-cell--name {
+  padding-left: 16rpx;
+  font-size: 22rpx;
+}
+
+.status {
+  display: inline-block;
+  max-width: 116rpx;
+  font-size: 20rpx;
+  line-height: 1.25;
+  white-space: normal;
+}

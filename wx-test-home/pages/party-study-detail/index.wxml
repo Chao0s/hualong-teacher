@@ -1,0 +1,45 @@
+<!-- 党建学习 · 文件预览 —— 对照原型 screens/party-study-detail.html。
+     原型按 ?id= 从一张表里取内容，这里口径一样，在 onLoad 里取。 -->
+<view class="page">
+
+  <view class="doc">
+    <text class="badge">{{doc.type}}</text>
+    <text class="doc__title">{{doc.title}}</text>
+    <view class="doc__meta">
+      <text>{{doc.date}}</text>
+      <text>{{doc.owner}}</text>
+      <text>PDF · 2.4MB</text>
+    </view>
+
+    <view class="preview">
+      <text class="preview__title">文件预览</text>
+      <text class="preview__p">{{doc.p1}}</text>
+      <text class="preview__p">{{doc.p2}}</text>
+
+      <view class="video-box">
+        <text class="video-box__title">相关视频学习</text>
+        <text class="video-box__hint">请复制链接到浏览器中打开</text>
+        <view class="video-list">
+          <view
+            class="video-link"
+            hover-class="video-link--hover"
+            hover-stay-time="80"
+            wx:for="{{videos}}"
+            wx:key="url"
+            data-url="{{item.url}}"
+            bindtap="onCopyUrl"
+          >
+            <text class="video-link__name">{{item.name}}</text>
+            <text class="video-link__op">复制链接</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="actions">
+      <view class="btn btn--primary" hover-class="btn--hover" data-action="预览" bindtap="onAction">在线预览</view>
+      <view class="btn btn--secondary" hover-class="btn--hover" data-action="下载" bindtap="onAction">下载文件</view>
+    </view>
+  </view>
+
+</view>

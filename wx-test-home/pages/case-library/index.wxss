@@ -1,0 +1,187 @@
+/* 案例库 —— 逐条对照原型 screens/case-library.html。1px 记 2rpx。 */
+
+.page {
+  padding: 24rpx 32rpx calc(200rpx + env(safe-area-inset-bottom));
+}
+
+/* ── 筛选面板 ──────────────────────────────────────────────────────────── */
+
+.filter-panel {
+  display: grid;
+  gap: 12rpx;
+  padding: 16rpx;
+  margin-bottom: 24rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 24rpx;
+  background: var(--surface);
+}
+
+.filter-line {
+  display: flex;
+  gap: 12rpx;
+  flex-wrap: wrap;
+}
+
+.chip {
+  display: flex;
+  align-items: center;
+  min-height: 48rpx;
+  padding: 8rpx 16rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 999rpx;
+  background: var(--surface);
+  color: var(--fg);
+  font-size: 22rpx;
+  line-height: 1;
+}
+
+.chip--on {
+  border-color: var(--accent);
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+
+/* ── 分组标题 ──────────────────────────────────────────────────────────── */
+
+.sec {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 36rpx 0 20rpx;
+}
+
+.sec__title {
+  font-size: 32rpx;
+  font-weight: 700;
+}
+
+.sec__note {
+  font-size: 24rpx;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+/* ── 案例卡 ────────────────────────────────────────────────────────────── */
+
+.case-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.case-card {
+  display: flex;
+  gap: 24rpx;
+  align-items: center;
+  min-height: 188rpx;
+  padding: 24rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 28rpx;
+  background: var(--surface);
+}
+
+/* 原型按下态是 `color-mix(in oklab, var(--surface), var(--bg) 38%)`，换成定值。 */
+.case-card--hover {
+  background: #f6faf9;
+}
+
+/* 缩略图里的文字在原型是 `祠堂<br>探访`，这里数据里存 \n，靠 pre-line 换行。 */
+.thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 136rpx;
+  height: 136rpx;
+  padding: 16rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 24rpx;
+  font-size: 22rpx;
+  font-weight: 800;
+  text-align: center;
+  line-height: 1.25;
+  white-space: pre-line;
+}
+
+.thumb--accent {
+  background: linear-gradient(135deg, var(--accent-light), #d3efec);
+  color: var(--accent-dark);
+}
+
+.thumb--green {
+  background: linear-gradient(135deg, var(--green-light), #d9f0df);
+  color: var(--green);
+}
+
+/* 原型 `color-mix(in oklab, var(--amber), var(--fg) 42%)` 算出来约 #9e6f0c。 */
+.thumb--amber {
+  background: linear-gradient(135deg, var(--amber-light), #ffe7a6);
+  color: #9e6f0c;
+}
+
+.thumb--blue {
+  background: linear-gradient(135deg, var(--blue-light), #d8e8ff);
+  color: var(--blue);
+}
+
+.card-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin-bottom: 10rpx;
+}
+
+.card-name {
+  font-size: 30rpx;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.badge {
+  flex: 0 0 auto;
+  padding: 6rpx 14rpx;
+  border-radius: 999rpx;
+  font-size: 20rpx;
+  color: var(--accent-dark);
+  background: var(--accent-light);
+}
+
+.fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
+  margin-top: 12rpx;
+}
+
+/* 原型的描边是 `color-mix(in oklab, var(--accent), var(--border) 60%)`，约 #90c9c5。 */
+.field-pill {
+  padding: 6rpx 12rpx;
+  border: 1rpx solid #90c9c5;
+  border-radius: 999rpx;
+  font-size: 20rpx;
+  color: var(--accent-dark);
+  background: var(--accent-light);
+}
+
+.empty {
+  margin-top: 20rpx;
+  padding: 28rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 28rpx;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 24rpx;
+  line-height: 1.5;
+}

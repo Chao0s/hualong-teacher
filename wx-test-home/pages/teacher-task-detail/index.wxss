@@ -1,0 +1,240 @@
+/* 任务详情 —— 逐条对照原型 screens/teacher-task-detail.html。1px 记 2rpx。 */
+
+.page {
+  padding: 24rpx 32rpx 56rpx;
+}
+
+.chunk {
+  padding: 30rpx;
+  margin-bottom: 20rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 32rpx;
+  background: var(--surface);
+}
+
+/* ── 任务抬头 ──────────────────────────────────────────────────────────── */
+
+.task-head {
+  padding-bottom: 28rpx;
+  margin-bottom: 28rpx;
+  border-bottom: 1rpx solid var(--border);
+}
+
+.kicker {
+  display: inline-flex;
+  padding: 8rpx 20rpx;
+  border-radius: 999rpx;
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  font-size: 22rpx;
+  font-weight: 800;
+}
+
+.task-head__title {
+  display: block;
+  margin-top: 24rpx;
+  font-size: 42rpx;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+.task-head__sub {
+  display: block;
+  margin-top: 14rpx;
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.chunk-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  margin-bottom: 24rpx;
+}
+
+.chunk-title__text {
+  font-size: 32rpx;
+  font-weight: 700;
+}
+
+.status-pill {
+  padding: 10rpx 18rpx;
+  border-radius: 999rpx;
+  background: var(--amber-light);
+  color: #a15d00;
+  font-size: 22rpx;
+  font-weight: 800;
+}
+
+/* ── 三段说明 ──────────────────────────────────────────────────────────── */
+
+.block {
+  padding-top: 24rpx;
+  border-top: 1rpx solid var(--border);
+}
+
+/* 原型用 `.block:first-child` 去掉第一段的上边线；这里第一段在 wxml 里直接带类。 */
+.block--first {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.label {
+  display: block;
+  margin-bottom: 12rpx;
+  font-size: 24rpx;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.text {
+  display: block;
+  font-size: 28rpx;
+  line-height: 1.65;
+}
+
+.roles {
+  display: grid;
+  gap: 16rpx;
+}
+
+.role {
+  display: grid;
+  grid-template-columns: 144rpx 1fr;
+  gap: 16rpx;
+  font-size: 26rpx;
+  line-height: 1.45;
+}
+
+.role__name {
+  color: var(--muted);
+}
+
+.role__work {
+  font-weight: 600;
+}
+
+.timeline {
+  display: grid;
+  grid-template-columns: 144rpx 1fr;
+  gap: 16rpx 24rpx;
+  font-size: 26rpx;
+  line-height: 1.45;
+}
+
+.timeline__date {
+  color: var(--muted);
+}
+
+.timeline__event {
+  font-weight: 600;
+}
+
+/* ── 附件 ──────────────────────────────────────────────────────────────── */
+
+/* 原型的 `.attach{display:grid;gap:1px}`：行之间靠 1px 缝，分隔线是下一行的上边框。 */
+.attach {
+  display: grid;
+  gap: 2rpx;
+}
+
+.attach-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 20rpx;
+  min-height: 92rpx;
+  padding: 18rpx 0;
+}
+
+.attach-row + .attach-row {
+  border-top: 1rpx solid var(--border);
+}
+
+.file-name {
+  display: block;
+  font-size: 26rpx;
+  font-weight: 700;
+}
+
+.file-meta {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  color: var(--muted);
+}
+
+.file-actions {
+  display: flex;
+  gap: 20rpx;
+}
+
+.file-op {
+  color: var(--accent-dark);
+  font-size: 24rpx;
+  font-weight: 800;
+}
+
+/* ── 任务操作 ──────────────────────────────────────────────────────────── */
+
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16rpx;
+}
+
+.state-btn {
+  padding: 22rpx 16rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 26rpx;
+  background: #fff;
+  text-align: center;
+  font-size: 26rpx;
+  font-weight: 800;
+}
+
+.state-btn--on {
+  border-color: var(--accent);
+  background: var(--accent-light);
+  color: var(--accent-dark);
+}
+
+/* ── 提交材料 ──────────────────────────────────────────────────────────── */
+
+.submit-card {
+  padding: 24rpx;
+  border: 1rpx dashed var(--accent);
+  border-radius: 28rpx;
+  background: var(--accent-light);
+}
+
+.submit-card__title {
+  display: block;
+  margin-bottom: 12rpx;
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
+.submit-card__desc {
+  display: block;
+  font-size: 24rpx;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.primary {
+  margin-top: 20rpx;
+  padding: 24rpx 28rpx;
+  border-radius: 26rpx;
+  background: var(--accent);
+  color: #fff;
+  text-align: center;
+  font-size: 28rpx;
+  font-weight: 800;
+}
+
+.primary--hover {
+  opacity: 0.85;
+}

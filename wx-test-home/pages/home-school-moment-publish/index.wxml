@@ -1,0 +1,72 @@
+<!-- 发布活动 —— 对照原型 screens/home-school-moment-publish.html。
+     勾选名单会实时改上面的比例、进度条和那张一行的小表。 -->
+<view class="page">
+
+  <view class="chunk">
+    <text class="form-label form-label--first">活动名称</text>
+    <input class="input" maxlength="50" value="{{title}}" bindinput="onTitleInput" />
+
+    <text class="form-label">活动评语</text>
+    <textarea class="textarea" maxlength="600" value="{{content}}" bindinput="onContentInput" />
+
+    <text class="form-label">添加照片（最多 9 张）</text>
+    <scroll-view class="photo-row" scroll-x enable-flex>
+      <view class="photo add-photo" bindtap="onAddPhoto">
+        <text class="plus">+</text>
+        <text>添加</text>
+      </view>
+      <view class="photo photo-thumb {{item.group ? 'photo-thumb--group' : ''}}" wx:for="{{photos}}" wx:key="label">
+        <text class="photo-label">{{item.label}}</text>
+      </view>
+    </scroll-view>
+
+    <text class="hint hint--gap">{{saveState}}</text>
+  </view>
+
+  <view class="chunk">
+    <view class="selected-head">
+      <view>
+        <view class="selected-title">本次涉及幼儿</view>
+        <text class="hint hint--tight">已勾选 {{selectedCount}} / {{children.length}} 人</text>
+      </view>
+      <text class="selected-percent">{{rate}}%</text>
+    </view>
+    <view class="progress-line"><view class="bar"><view class="bar__fill" style="width: {{rate}}%"></view></view></view>
+
+    <view class="table-wrap table-wrap--gap">
+      <view class="prog-row prog-row--head">
+        <text class="prog-cell prog-cell--name">班级人数</text>
+        <text class="prog-cell">已勾选</text>
+        <text class="prog-cell">占比</text>
+      </view>
+      <view class="prog-row">
+        <text class="prog-cell prog-cell--name">小一班</text>
+        <text class="prog-cell">{{selectedCount}}人</text>
+        <view class="prog-cell">
+          <text class="status status--{{rate >= 80 ? 'done' : 'wait'}}">{{rate}}%</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="sec">幼儿名单</view>
+  <view class="chunk">
+    <!-- 每个勾选格 = 一行 db_moment_upload。child_id 在教师端属 scoped，
+         服务端要把 class_id=当前班级 内联进同一条判定里重验，不能只信客户端。 -->
+    <view class="check-grid compact-checks">
+      <view
+        class="check-card"
+        wx:for="{{children}}"
+        wx:key="name"
+        data-index="{{index}}"
+        bindtap="onToggleChild"
+      >
+        <view class="checkbox {{item.checked ? 'checkbox--on' : ''}}">{{item.checked ? '✓' : ''}}</view>
+        <text>{{item.name}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="btn btn--primary sticky-action" hover-class="btn--hover" bindtap="onPublish">发布活动</view>
+
+</view>

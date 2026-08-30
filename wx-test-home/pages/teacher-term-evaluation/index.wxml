@@ -1,0 +1,69 @@
+<!-- 教师学期评价 —— 对照原型 screens/teacher-term-evaluation.html。
+     「选择操作」打开一个勾选浮层，导出报告或发给家长。 -->
+<view class="page">
+
+  <view class="chunk">
+    <view class="btn btn--primary" hover-class="btn--hover" bindtap="onAdd">添加评价</view>
+  </view>
+
+  <view class="section-head">
+    <text class="sec sec--flat">完成情况</text>
+    <view class="outline-btn" hover-class="btn--hover" bindtap="onOpenExport">选择操作</view>
+  </view>
+
+  <view class="table-wrap">
+    <view class="prog-row prog-row--head">
+      <text class="prog-cell prog-cell--name">幼儿</text>
+      <text class="prog-cell">学期评价</text>
+    </view>
+    <view class="prog-row" wx:for="{{rows}}" wx:key="child" wx:for-item="row">
+      <text class="prog-cell prog-cell--name">{{row.name}}</text>
+      <view
+        class="prog-cell dot-link"
+        data-child="{{row.child}}"
+        data-done="{{row.done}}"
+        bindtap="onDotTap"
+      >
+        <view class="dot-cell dot-cell--{{row.done ? 'done' : 'miss'}}"></view>
+      </view>
+    </view>
+    <view class="dot-legend">
+      <view class="dot-legend__item"><view class="dot-cell dot-cell--done"></view>已完成</view>
+      <view class="dot-legend__item"><view class="dot-cell dot-cell--miss"></view>未完成</view>
+    </view>
+  </view>
+  <text class="hint hint--gap">仅展示当前学期；点击圆点可查看该幼儿的学期评价详情，未完成则进入填写。</text>
+
+</view>
+
+<!-- 选择评价报告 -->
+<view class="sheet-mask" wx:if="{{exportOpen}}" bindtap="onCloseExport"></view>
+<view class="sheet" wx:if="{{exportOpen}}">
+  <view class="sheet-head">
+    <text class="sheet-head__title">选择评价报告</text>
+    <view class="close" bindtap="onCloseExport">×</view>
+  </view>
+
+  <view class="check-row" bindtap="onToggleAll">
+    <view class="check-row__main">
+      <text class="check-row__name">全选</text>
+      <text class="check-row__desc">选择当前进度表中的全部幼儿</text>
+    </view>
+    <view class="checkbox {{allChecked ? 'checkbox--on' : ''}}">{{allChecked ? '✓' : ''}}</view>
+  </view>
+
+  <scroll-view class="check-list" scroll-y>
+    <view class="check-row" wx:for="{{rows}}" wx:key="child" wx:for-item="row" wx:for-index="ri" data-index="{{ri}}" bindtap="onToggleRow">
+      <view class="check-row__main">
+        <text class="check-row__name">{{row.name}}</text>
+        <text class="check-row__desc">{{row.done ? '已完成 · 可导出 / 可发送' : '未完成 · 仅记录进度'}}</text>
+      </view>
+      <view class="checkbox {{row.checked ? 'checkbox--on' : ''}}">{{row.checked ? '✓' : ''}}</view>
+    </view>
+  </scroll-view>
+
+  <view class="sheet-actions">
+    <view class="btn btn--green" hover-class="btn--hover" bindtap="onExport">导出报告</view>
+    <view class="btn btn--blue" hover-class="btn--hover" bindtap="onSend">发给家长</view>
+  </view>
+</view>

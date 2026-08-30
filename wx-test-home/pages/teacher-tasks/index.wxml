@@ -1,0 +1,33 @@
+<!-- 待办任务 —— 对照原型 screens/teacher-tasks.html。
+     「当前任务」和「历史任务」两段结构相同，合成一份数据循环。 -->
+<view class="page">
+
+  <block wx:for="{{groups}}" wx:key="title" wx:for-item="group">
+    <view class="sec">
+      <text class="sec__title">{{group.title}}</text>
+      <text class="sec__hint">{{group.tasks.length}}项</text>
+    </view>
+    <view class="task-list">
+      <view
+        class="task-card"
+        hover-class="task-card--hover"
+        hover-stay-time="80"
+        wx:for="{{group.tasks}}"
+        wx:key="id"
+        data-id="{{item.id}}"
+        bindtap="onTaskTap"
+      >
+        <view class="top">
+          <text class="title">{{item.title}}</text>
+          <text class="status status--{{item.state}}">{{item.stateText}}</text>
+        </view>
+        <text class="meta">{{item.meta}}</text>
+        <text class="summary">{{item.summary}}</text>
+        <view class="foot">
+          <text class="pill" wx:for="{{item.pills}}" wx:key="*this" wx:for-item="pill">{{pill}}</text>
+        </view>
+      </view>
+    </view>
+  </block>
+
+</view>

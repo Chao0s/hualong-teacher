@@ -1,0 +1,40 @@
+@import '/styles/home-school-common.wxss';
+
+/* 教师寄语 —— 本页自己的样式，对照原型 screens/teacher-message.html 的内联块。 */
+
+.page {
+  padding: 24rpx 32rpx 56rpx;
+}
+
+.form-label--first {
+  margin-top: 0;
+}
+
+.textarea__ph {
+  color: var(--muted);
+}
+
+.counter {
+  margin-top: 12rpx;
+  text-align: right;
+  font-size: 22rpx;
+  color: var(--muted);
+}
+
+.counter--limit {
+  color: var(--danger);
+}
+
+/* 两列：幼儿 + 教师寄语 */
+.prog-row {
+  grid-template-columns: 160rpx 1fr;
+}
+
+.dot-link {
+  padding: 12rpx;
+}
+
+.hint--gap {
+  display: block;
+  margin-top: 16rpx;
+}

@@ -1,0 +1,12 @@
+<view class="tabs">
+  <view
+    class="tab {{item.key === active ? 'tab--on' : ''}}"
+    wx:for="{{tabs}}"
+    wx:key="key"
+    data-key="{{item.key}}"
+    bindtap="onTap"
+  >
+    <view class="tab__icon tab__icon--{{item.key}}{{item.key === active ? '-on' : ''}}"></view>
+    <text class="tab__label">{{item.label}}</text>
+  </view>
+</view>

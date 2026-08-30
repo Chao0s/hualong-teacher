@@ -1,0 +1,28 @@
+<!-- 我的研修 —— 对照原型 screens/my-training.html。
+     最后一条「活动已撤回」在原型里是 <div> 不是 <a>，点不开；这里靠 item.id 为空区分。 -->
+<view class="page">
+
+  <view class="sec">报名记录</view>
+
+  <view
+    class="card"
+    hover-class="{{item.id ? 'card--hover' : ''}}"
+    hover-stay-time="80"
+    wx:for="{{records}}"
+    wx:key="title"
+    data-id="{{item.id}}"
+    data-type="{{item.type}}"
+    bindtap="onCardTap"
+  >
+    <view class="top">
+      <text class="title">{{item.title}}</text>
+      <text class="badge badge--{{item.state}}">{{item.stateText}}</text>
+    </view>
+    <text class="meta">{{item.meta}}</text>
+    <text class="summary">{{item.summary}}</text>
+    <view class="foot" wx:if="{{item.pills}}">
+      <text class="pill" wx:for="{{item.pills}}" wx:key="*this" wx:for-item="pill">{{pill}}</text>
+    </view>
+  </view>
+
+</view>

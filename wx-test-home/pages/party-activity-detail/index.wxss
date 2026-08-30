@@ -1,0 +1,137 @@
+/* 党建活动 · 活动介绍 —— 逐条对照原型 screens/party-activity-detail.html。1px 记 2rpx。 */
+
+.page {
+  padding: 24rpx 32rpx 64rpx;
+}
+
+.cover {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  height: 300rpx;
+  padding: 36rpx;
+  border-radius: 32rpx;
+  background: linear-gradient(135deg, #2563eb, #65b7ff);
+  color: #fff;
+}
+
+.cover__title {
+  font-size: 42rpx;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+.cover__sub {
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  opacity: 0.9;
+}
+
+.card {
+  margin-top: 24rpx;
+  padding: 30rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 32rpx;
+  background: var(--surface);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 144rpx 1fr;
+  gap: 16rpx;
+  font-size: 26rpx;
+  line-height: 1.5;
+}
+
+.row__label {
+  color: var(--muted);
+}
+
+.card__title {
+  display: block;
+  margin-bottom: 16rpx;
+  font-size: 30rpx;
+  font-weight: 700;
+}
+
+.card__body {
+  display: block;
+  font-size: 26rpx;
+  line-height: 1.7;
+  color: #3d3b36;
+}
+
+/* ── 图文占位块 ────────────────────────────────────────────────────────── */
+
+.photos {
+  display: grid;
+  gap: 16rpx;
+  margin-top: 24rpx;
+}
+
+.photo-main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 236rpx;
+  border-radius: 28rpx;
+  background: linear-gradient(135deg, var(--blue-light), #f7fbff);
+  color: var(--blue);
+  font-size: 26rpx;
+  font-weight: 800;
+}
+
+.photo-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16rpx;
+}
+
+.ph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 144rpx;
+  border-radius: 24rpx;
+  background: var(--blue-light);
+  color: var(--blue);
+  font-size: 24rpx;
+  font-weight: 800;
+}
+
+/* ── 附件 ──────────────────────────────────────────────────────────────── */
+
+.downloads {
+  display: grid;
+  gap: 16rpx;
+}
+
+.download {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 88rpx;
+  align-items: center;
+  gap: 20rpx;
+  padding: 20rpx 22rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 24rpx;
+  background: #fbfdfd;
+}
+
+.download--hover {
+  background: #f2f7f7;
+}
+
+.download__name {
+  font-size: 26rpx;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.download__op {
+  color: var(--blue);
+  font-size: 24rpx;
+  font-weight: 700;
+  text-align: right;
+}

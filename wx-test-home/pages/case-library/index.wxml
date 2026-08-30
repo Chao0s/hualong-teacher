@@ -1,0 +1,69 @@
+<!-- 案例库 —— 对照原型 screens/case-library.html。
+     三条筛选：年级和领域是单选，活动类型是多选。口径见 index.js。 -->
+<view class="page">
+
+  <view class="filter-panel">
+    <view class="filter-line">
+      <view
+        class="chip {{item === grade ? 'chip--on' : ''}}"
+        wx:for="{{grades}}"
+        wx:key="*this"
+        data-group="grade"
+        data-value="{{item}}"
+        bindtap="onChipTap"
+      >{{item === 'all' ? '全部' : item}}</view>
+    </view>
+
+    <view class="filter-line">
+      <view
+        class="chip {{item === field ? 'chip--on' : ''}}"
+        wx:for="{{fields}}"
+        wx:key="*this"
+        data-group="field"
+        data-value="{{item}}"
+        bindtap="onChipTap"
+      >{{item === 'all' ? '全部' : item}}</view>
+    </view>
+
+    <view class="filter-line">
+      <view
+        class="chip {{types.indexOf(item.value) > -1 ? 'chip--on' : ''}}"
+        wx:for="{{typeOptions}}"
+        wx:key="value"
+        data-group="type"
+        data-value="{{item.value}}"
+        bindtap="onChipTap"
+      >{{item.label}}</view>
+    </view>
+  </view>
+
+  <view class="sec">
+    <text class="sec__title">案例清单</text>
+    <text class="sec__note">{{countText}}</text>
+  </view>
+  <view class="case-list">
+    <view
+      class="case-card"
+      hover-class="case-card--hover"
+      hover-stay-time="80"
+      wx:for="{{visible}}"
+      wx:key="name"
+      bindtap="onCaseTap"
+    >
+      <view class="thumb thumb--{{item.tone}}">{{item.thumb}}</view>
+      <view class="card-body">
+        <view class="card-top">
+          <text class="card-name">{{item.name}}</text>
+          <text class="badge">{{item.grade}}</text>
+        </view>
+        <view class="fields">
+          <text class="field-pill" wx:for="{{item.pills}}" wx:key="*this" wx:for-item="pill">{{pill}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+  <view class="empty" wx:if="{{!visible.length}}">当前筛选暂无匹配案例，可调整年级、领域或活动类型。</view>
+
+</view>
+
+<hl-tabbar active="training" />

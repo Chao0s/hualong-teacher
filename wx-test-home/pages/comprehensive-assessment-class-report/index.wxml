@@ -1,0 +1,40 @@
+<!-- 班级评估报告 —— 对照原型 screens/comprehensive-assessment-class-report.html。
+     只汇总「已完成」的评估，草稿不计入。雷达图同样用 canvas 画（utils/radar.js）。 -->
+<view class="page">
+
+  <view class="chunk hero">
+    <text class="hero__title">中二班综合评估</text>
+    <text class="hero__note">{{heroNote}}</text>
+    <view class="summary-grid">
+      <view class="stat">
+        <text class="stat__n">{{doneRatio}}</text>
+        <text class="stat__l">已完成</text>
+      </view>
+      <view class="stat">
+        <text class="stat__n">{{classAvg}}</text>
+        <text class="stat__l">班级均分</text>
+      </view>
+      <view class="stat">
+        <text class="stat__n">5</text>
+        <text class="stat__l">评估领域</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="sec">五大领域雷达图</view>
+  <view class="chunk radar-wrap">
+    <canvas class="radar" type="2d" id="radar"></canvas>
+    <view class="legend">
+      <view class="metric" wx:for="{{legend}}" wx:key="label">
+        <text class="metric__label">{{item.label}}</text>
+        <text class="metric__value">{{item.value}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="btn-row">
+    <view class="btn" hover-class="btn--hover" bindtap="onContinue">继续评估</view>
+    <view class="btn btn--primary" hover-class="btn--hover" bindtap="onBack">返回进度</view>
+  </view>
+
+</view>

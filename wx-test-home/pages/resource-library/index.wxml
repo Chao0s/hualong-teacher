@@ -1,0 +1,54 @@
+<!-- 资源库 —— 对照原型 screens/resource-library.html。
+     原型用 style.display 逐个显示/隐藏卡片；小程序改成 data 里存一份筛过的列表，
+     wx:for 直接渲染筛选结果。 -->
+<view class="page">
+
+  <view class="search-bar">
+    <view class="search-bar__icon"></view>
+    <input
+      class="search-bar__input"
+      type="text"
+      placeholder="搜索香云纱、双皮奶、龙舟..."
+      placeholder-class="search-bar__ph"
+      value="{{query}}"
+      bindinput="onQueryInput"
+    />
+  </view>
+
+  <view class="sec">
+    <text class="sec__title">衣食住行艺分类</text>
+    <text class="sec__note">{{countText}}</text>
+  </view>
+  <scroll-view class="chip-row" scroll-x enable-flex>
+    <view
+      class="chip {{item === activeTag ? 'chip--on' : ''}}"
+      wx:for="{{tags}}"
+      wx:key="*this"
+      data-tag="{{item}}"
+      bindtap="onTagTap"
+    >{{item === 'all' ? '全部' : item}}</view>
+  </scroll-view>
+
+  <view class="sec">
+    <text class="sec__title">资源图标入口</text>
+    <text class="sec__note">点击进入资源详情</text>
+  </view>
+  <view class="entry-grid">
+    <view
+      class="entry"
+      hover-class="entry--hover"
+      hover-stay-time="80"
+      wx:for="{{visible}}"
+      wx:key="name"
+      bindtap="onEntryTap"
+    >
+      <view class="entry__icon entry__icon--{{item.icon}} entry__icon--tone-{{item.tone}}"></view>
+      <text class="entry__name">{{item.name}}</text>
+      <text class="entry__tag">{{item.tag}}</text>
+    </view>
+  </view>
+  <view class="section-note" wx:if="{{!visible.length}}">当前分类暂无匹配资源，可切换其他衣食住行艺分类或使用搜索。</view>
+
+</view>
+
+<hl-tabbar active="training" />

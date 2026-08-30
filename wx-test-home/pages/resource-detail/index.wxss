@@ -1,0 +1,102 @@
+/* 资源详情 —— 逐条对照原型 screens/resource-detail.html。1px 记 2rpx。
+ *
+ * 这一页原型自带一套配色，和教研培训那几页不同：底色米白 #f5f4f1，主色蓝 #2f6feb。
+ * app.wxss 的令牌是青绿那套，所以这里把 page 的底色和用到的颜色都写死覆盖。 */
+
+page {
+  background: #f5f4f1;
+}
+
+.page {
+  padding: 24rpx 32rpx 40rpx;
+}
+
+.detail-card {
+  padding: 36rpx;
+  margin-bottom: 20rpx;
+  border-radius: 28rpx;
+  background: #ffffff;
+  box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.04);
+}
+
+.detail-title {
+  display: block;
+  margin-bottom: 24rpx;
+  font-size: 40rpx;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.tag-row {
+  display: flex;
+  gap: 12rpx;
+  flex-wrap: wrap;
+  margin-bottom: 28rpx;
+}
+
+.tag {
+  padding: 8rpx 20rpx;
+  border-radius: 999rpx;
+  background: #e8f0fe;
+  color: #2f6feb;
+  font-size: 22rpx;
+}
+
+.sec-title {
+  margin-bottom: 16rpx;
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #1a1916;
+}
+
+.sec-title--gap {
+  margin-top: 36rpx;
+}
+
+.body-text {
+  display: block;
+  font-size: 28rpx;
+  line-height: 1.65;
+  color: #1a1916;
+}
+
+/* 原型的 `.detail-card .link-card` 覆盖了外层规则：底色换成页面底色，加一条描边，去掉投影。 */
+.link-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28rpx;
+  margin-bottom: 16rpx;
+  border: 1rpx solid #e8e5df;
+  border-radius: 24rpx;
+  background: #f5f4f1;
+}
+
+.link-card--hover {
+  background: #f8f8f6;
+}
+
+.link-card__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.link-card__name {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 500;
+}
+
+.link-card__meta {
+  display: block;
+  margin-top: 4rpx;
+  font-size: 24rpx;
+  color: #8c8a84;
+}
+
+.link-card__arrow {
+  flex: 0 0 auto;
+  margin-left: 16rpx;
+  color: #2f6feb;
+  font-size: 32rpx;
+}

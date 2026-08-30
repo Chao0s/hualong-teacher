@@ -1,0 +1,207 @@
+/* 综合协调 · 文件列表 —— 逐条对照原型 screens/coordination-file-list.html。1px 记 2rpx。 */
+
+.page {
+  padding: 24rpx 32rpx calc(200rpx + env(safe-area-inset-bottom));
+}
+
+.sec {
+  margin: 36rpx 0 20rpx;
+  font-size: 32rpx;
+  font-weight: 700;
+}
+
+/* ── 文件卡 ────────────────────────────────────────────────────────────── */
+
+.doc-list {
+  display: grid;
+  gap: 16rpx;
+}
+
+.doc-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 208rpx;
+  align-items: center;
+  gap: 20rpx;
+  min-height: 164rpx;
+  padding: 22rpx 24rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 28rpx;
+  background: var(--surface);
+}
+
+.doc-card__main {
+  min-width: 0;
+}
+
+.doc-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 28rpx;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.doc-summary {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-top: 10rpx;
+  color: var(--muted);
+  font-size: 22rpx;
+  line-height: 1.45;
+}
+
+.doc-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12rpx;
+}
+
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 64rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 18rpx;
+  background: var(--surface);
+  color: var(--fg);
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.btn--primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn--hover {
+  opacity: 0.85;
+}
+
+.load-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 80rpx;
+  margin-top: 24rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 24rpx;
+  background: var(--surface);
+  color: var(--accent-dark);
+  font-size: 26rpx;
+  font-weight: 700;
+}
+
+.load-more--hover {
+  background: #f2f7f7;
+}
+
+/* ── 详情浮层 ──────────────────────────────────────────────────────────── */
+
+/* 不用 `inset: 0` 简写：老版本 WebView 不认，四条边分开写最保险。 */
+.sheet {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 30;
+  padding: 168rpx 28rpx 48rpx;
+  background: rgba(26, 25, 22, 0.34);
+}
+
+.preview {
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 32rpx;
+  border-radius: 36rpx;
+  background: var(--surface);
+  box-shadow: 0 36rpx 96rpx rgba(0, 0, 0, 0.18);
+}
+
+.preview__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 24rpx;
+  align-items: flex-start;
+}
+
+.preview__headtext {
+  flex: 1;
+  min-width: 0;
+}
+
+.preview__title {
+  display: block;
+  font-size: 34rpx;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.preview__meta {
+  display: block;
+  margin-top: 16rpx;
+  color: var(--muted);
+  font-size: 24rpx;
+}
+
+.preview__close {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 999rpx;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 40rpx;
+}
+
+.preview__body {
+  display: block;
+  margin-top: 28rpx;
+  padding-top: 28rpx;
+  border-top: 1rpx solid var(--border);
+  color: #343330;
+  font-size: 26rpx;
+  line-height: 1.75;
+}
+
+.attachment-title {
+  display: block;
+  margin-top: 32rpx;
+  font-size: 26rpx;
+  font-weight: 800;
+}
+
+.attachment-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20rpx;
+  margin-top: 16rpx;
+  padding: 20rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 20rpx;
+  font-size: 24rpx;
+}
+
+.attachment-row__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachment-row__op {
+  flex: 0 0 auto;
+  color: var(--accent-dark);
+  font-weight: 800;
+}

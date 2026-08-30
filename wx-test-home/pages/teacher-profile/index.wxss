@@ -1,0 +1,387 @@
+/* 个人档案 —— 逐条对照原型 screens/teacher-profile.html。1px 记 2rpx。 */
+
+.page {
+  padding: 24rpx 32rpx 56rpx;
+}
+
+.chunk {
+  padding: 28rpx;
+  margin-bottom: 20rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 32rpx;
+  background: var(--surface);
+}
+
+.sec-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24rpx;
+}
+
+.sec {
+  display: block;
+  margin-bottom: 24rpx;
+  font-size: 32rpx;
+  font-weight: 800;
+}
+
+/* 标题行里的标题已经由行本身留了下边距 */
+.sec-row .sec {
+  margin-bottom: 0;
+}
+
+/* 原型把「编辑」放在自绘标题栏右上角；微信原生标题栏放不了自定义按钮，移到这里。 */
+.edit-btn {
+  padding: 10rpx 22rpx;
+  border-radius: 999rpx;
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  font-size: 24rpx;
+  font-weight: 800;
+}
+
+/* ── 基本履历 ──────────────────────────────────────────────────────────── */
+
+.hard-layout {
+  display: grid;
+  grid-template-columns: 176rpx 1fr;
+  gap: 28rpx;
+  align-items: start;
+}
+
+.photo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 176rpx;
+  height: 224rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 28rpx;
+  background: linear-gradient(145deg, var(--accent-light), #fff);
+  color: var(--accent-dark);
+  font-size: 24rpx;
+  font-weight: 800;
+  text-align: center;
+  line-height: 1.35;
+  white-space: pre-line;
+}
+
+.field-list {
+  display: grid;
+  gap: 18rpx;
+}
+
+.field {
+  display: grid;
+  grid-template-columns: 164rpx 1fr;
+  gap: 20rpx;
+  align-items: start;
+}
+
+.label {
+  font-size: 24rpx;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.value {
+  font-size: 28rpx;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+/* ── 资质与荣誉 ────────────────────────────────────────────────────────── */
+
+.subhead {
+  display: block;
+  margin: 4rpx 0 16rpx;
+  font-size: 26rpx;
+  font-weight: 800;
+}
+
+.soft-block + .soft-block {
+  margin-top: 28rpx;
+  padding-top: 24rpx;
+  border-top: 1rpx solid var(--border);
+}
+
+.item-list {
+  display: grid;
+  gap: 16rpx;
+}
+
+.item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 20rpx;
+  align-items: center;
+  padding: 18rpx 0;
+}
+
+.item + .item {
+  border-top: 1rpx solid var(--border);
+}
+
+.item__main {
+  min-width: 0;
+}
+
+.item-title {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.badge-row {
+  display: flex;
+  gap: 12rpx;
+  flex-wrap: wrap;
+  margin-top: 10rpx;
+}
+
+.badge {
+  padding: 8rpx 16rpx;
+  border-radius: 999rpx;
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  font-size: 22rpx;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.badge--award {
+  background: var(--amber-light);
+  color: #9a6200;
+}
+
+.file-actions {
+  display: flex;
+  gap: 12rpx;
+}
+
+.file-op {
+  padding: 12rpx 18rpx;
+  border-radius: 999rpx;
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  font-size: 24rpx;
+  font-weight: 800;
+}
+
+/* ── 编辑浮层 ──────────────────────────────────────────────────────────── */
+
+.sheet-mask {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 5;
+  display: flex;
+  align-items: flex-end;
+  background: rgba(0, 0, 0, 0.24);
+}
+
+.sheet {
+  width: 100%;
+  max-height: 78%;
+  overflow-y: auto;
+  padding: 32rpx;
+  border-top: 1rpx solid var(--border);
+  border-radius: 44rpx 44rpx 0 0;
+  background: var(--surface);
+}
+
+.sheet-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24rpx;
+}
+
+.sheet-title {
+  font-size: 32rpx;
+  font-weight: 800;
+}
+
+.close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 999rpx;
+  background: #f4f6f6;
+  color: var(--muted);
+  font-size: 36rpx;
+}
+
+.form-grid {
+  display: grid;
+  gap: 20rpx;
+}
+
+.form-row {
+  display: grid;
+  gap: 12rpx;
+}
+
+.form-row__label {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.input,
+.select,
+.readback {
+  display: flex;
+  align-items: center;
+  height: 80rpx;
+  padding: 0 22rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 24rpx;
+  background: #fff;
+  font-size: 28rpx;
+}
+
+.readback {
+  background: #f4f6f6;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.upload-note {
+  display: block;
+  margin-top: 16rpx;
+  font-size: 22rpx;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+/* ── 证书行 ────────────────────────────────────────────────────────────── */
+
+.edit-group {
+  margin-top: 20rpx;
+  padding: 20rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 28rpx;
+}
+
+.edit-group-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 16rpx;
+}
+
+.edit-group-title {
+  font-size: 26rpx;
+  font-weight: 800;
+}
+
+.add-file {
+  padding: 14rpx 22rpx;
+  border-radius: 999rpx;
+  background: var(--accent);
+  color: #fff;
+  font-size: 24rpx;
+  font-weight: 800;
+}
+
+.material-list {
+  display: grid;
+  gap: 20rpx;
+}
+
+.material-row {
+  display: grid;
+  gap: 18rpx;
+  padding: 20rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 28rpx;
+  background: #fbfdfd;
+}
+
+.material-row-head {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.remove-file {
+  color: var(--muted);
+  font-size: 24rpx;
+  font-weight: 800;
+}
+
+/* 原型在只剩一行时把删除按钮设成 visibility:hidden，占位不消失。 */
+.remove-file--hidden {
+  visibility: hidden;
+}
+
+.file-pick {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  padding: 20rpx 22rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 24rpx;
+  background: #fbfdfd;
+}
+
+.file-pick__note {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 24rpx;
+  color: var(--muted);
+}
+
+.file-pick__btn {
+  flex: 0 0 auto;
+  padding: 12rpx 20rpx;
+  border-radius: 999rpx;
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  font-size: 24rpx;
+  font-weight: 800;
+}
+
+/* ── 浮层按钮 ──────────────────────────────────────────────────────────── */
+
+.sheet-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16rpx;
+  margin-top: 28rpx;
+}
+
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 84rpx;
+  border-radius: 26rpx;
+  font-size: 28rpx;
+  font-weight: 800;
+}
+
+.btn--ghost {
+  background: #f4f6f6;
+  color: var(--fg);
+}
+
+.btn--primary {
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn--hover {
+  opacity: 0.85;
+}

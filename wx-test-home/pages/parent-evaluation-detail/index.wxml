@@ -1,0 +1,34 @@
+<!-- 家长测评进度 —— 对照原型 screens/parent-evaluation-detail.html。 -->
+<view class="page">
+
+  <view class="chunk">
+    <text class="pill">2026年6月 · 家长月度评价</text>
+    <view class="metric-row metric-row--gap">
+      <view class="metric" wx:for="{{metrics}}" wx:key="label">
+        <text class="metric__n">{{item.value}}</text>
+        <text class="metric__l">{{item.label}}</text>
+      </view>
+    </view>
+    <view class="progress-line">
+      <view class="bar"><view class="bar__fill" style="width: {{rate}}%"></view></view>
+      <text class="status status--done">{{rate}}%</text>
+    </view>
+  </view>
+
+  <view class="sec">每个孩子家长情况</view>
+  <view class="table-wrap">
+    <view class="prog-row prog-row--head">
+      <text class="prog-cell prog-cell--name">幼儿</text>
+      <text class="prog-cell">已读</text>
+      <text class="prog-cell">已完成</text>
+      <text class="prog-cell">提交内容预览</text>
+    </view>
+    <view class="prog-row" wx:for="{{rows}}" wx:key="name" wx:for-item="row">
+      <text class="prog-cell prog-cell--name">{{row.name}}</text>
+      <view class="prog-cell"><text class="status status--{{row.read.state}}">{{row.read.text}}</text></view>
+      <view class="prog-cell"><text class="status status--{{row.done.state}}">{{row.done.text}}</text></view>
+      <text class="prog-cell">{{row.preview}}</text>
+    </view>
+  </view>
+
+</view>

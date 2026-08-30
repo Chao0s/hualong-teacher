@@ -1,0 +1,55 @@
+@import '/styles/assessment-report.wxss';
+
+/* 班级评估报告 —— 本页自己的样式，对照原型 screens/comprehensive-assessment-class-report.html。 */
+
+/* 抬头是一张青色渐变卡，白字，没有描边 */
+.hero {
+  border: 0;
+  background: linear-gradient(135deg, #0f766e, #189b91);
+  color: #fff;
+}
+
+.hero__title {
+  display: block;
+  font-size: 44rpx;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.hero__note {
+  display: block;
+  margin-top: 14rpx;
+  font-size: 24rpx;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16rpx;
+  margin-top: 24rpx;
+}
+
+/* 三个统计格是半透明白底加半透明白描边，压在渐变上 */
+.stat {
+  padding: 20rpx;
+  border: 1rpx solid rgba(255, 255, 255, 0.28);
+  border-radius: 24rpx;
+  background: rgba(255, 255, 255, 0.12);
+  text-align: center;
+}
+
+.stat__n {
+  display: block;
+  font-size: 40rpx;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.stat__l {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  color: rgba(255, 255, 255, 0.82);
+}

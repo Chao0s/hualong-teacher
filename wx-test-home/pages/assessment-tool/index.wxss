@@ -1,0 +1,486 @@
+/* 质量评估 —— 逐条对照原型 screens/assessment-tool.html。1px 记 2rpx。 */
+
+/* 顶部的汇总条和筛选条在原型里是固定的，页面只滚下面的列表。
+ * 小程序里页面整体滚动，所以把这一块 fixed 住，再给 .page 留出等高的上内边距。
+ * 284rpx = 8(上) + 172(汇总卡) + 20(间距) + 60(筛选条) + 24(下)。 */
+.topfix {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  height: 284rpx;
+  padding: 8rpx 32rpx 24rpx;
+  background: var(--bg);
+}
+
+.page {
+  padding: 288rpx 32rpx calc(200rpx + env(safe-area-inset-bottom));
+}
+
+/* ── 汇总卡 ────────────────────────────────────────────────────────────── */
+
+.summary {
+  display: flex;
+  align-items: center;
+  gap: 28rpx;
+  padding: 28rpx 32rpx;
+  border-radius: 32rpx;
+  background: var(--surface);
+}
+
+/* 圆环：外层是 js 算好的 conic-gradient，中间盖一个底色圆挖空。 */
+.dial {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 116rpx;
+  height: 116rpx;
+  border-radius: 50%;
+}
+
+.dial__hole {
+  position: absolute;
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 50%;
+  background: var(--surface);
+}
+
+.dial__txt {
+  position: relative;
+  z-index: 1;
+  font-size: 26rpx;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -1rpx;
+}
+
+.sum-right {
+  flex: 1;
+  min-width: 0;
+}
+
+.sum-lvl {
+  font-size: 30rpx;
+  font-weight: 800;
+}
+
+.sum-lvl__b {
+  color: var(--accent-dark);
+}
+
+.sum-count {
+  margin: 6rpx 0 14rpx;
+  font-size: 23rpx;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.bar {
+  height: 12rpx;
+  border-radius: 999rpx;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.bar__fill {
+  height: 100%;
+  border-radius: 999rpx;
+  background: var(--accent);
+  transition: width 0.3s;
+}
+
+/* ── 筛选条 ────────────────────────────────────────────────────────────── */
+
+.filters {
+  display: flex;
+  gap: 14rpx;
+  margin-top: 20rpx;
+}
+
+.chip {
+  padding: 12rpx 26rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 999rpx;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 24rpx;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.chip--on {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.chip__n {
+  font-weight: 800;
+}
+
+/* ── 分组 ──────────────────────────────────────────────────────────────── */
+
+.empty {
+  padding: 96rpx 40rpx;
+  text-align: center;
+  color: var(--muted);
+  font-size: 26rpx;
+  line-height: 1.7;
+}
+
+.section {
+  margin-bottom: 20rpx;
+  border-radius: 32rpx;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.sec-head {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 28rpx;
+}
+
+.sec-head--hover {
+  background: #f8fbfb;
+}
+
+.sec-idx {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 52rpx;
+  height: 52rpx;
+  border-radius: 16rpx;
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  font-size: 24rpx;
+  font-weight: 800;
+}
+
+.sec-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 29rpx;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.sec-meta {
+  font-size: 22rpx;
+  font-weight: 700;
+  color: var(--muted);
+  white-space: nowrap;
+  text-align: right;
+}
+
+.sec-meta__b {
+  color: var(--accent-dark);
+}
+
+.chev {
+  flex-shrink: 0;
+  width: 32rpx;
+  color: var(--muted);
+  font-size: 24rpx;
+  text-align: center;
+  transition: transform 0.2s;
+}
+
+.chev--open {
+  transform: rotate(90deg);
+}
+
+.sec-body {
+  padding: 0 24rpx 16rpx;
+}
+
+.subhead {
+  display: block;
+  margin: 24rpx 8rpx 12rpx;
+  font-size: 22rpx;
+  font-weight: 800;
+  letter-spacing: 0.8rpx;
+  color: var(--muted);
+}
+
+/* ── 指标 ──────────────────────────────────────────────────────────────── */
+
+.ind {
+  margin-bottom: 16rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 24rpx;
+  overflow: hidden;
+}
+
+.ind-head {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+  padding: 22rpx 24rpx;
+}
+
+.ind-head--hover {
+  background: #f8fbfb;
+}
+
+.ind-code {
+  flex-shrink: 0;
+  font-size: 20rpx;
+  font-weight: 800;
+  color: var(--muted);
+}
+
+.ind-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 26rpx;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.chip-score {
+  flex-shrink: 0;
+  padding: 6rpx 18rpx;
+  border-radius: 999rpx;
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 22rpx;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.chip-score--low { color: var(--danger); background: var(--danger-light); }
+/* 原型这一页把 --amber 定义成 #c47900（文字用的深琥珀），不是首页那个 #feaf06 */
+.chip-score--mid { color: #c47900; background: var(--amber-light); }
+.chip-score--high { color: var(--green); background: var(--green-light); }
+
+.ind-body {
+  padding: 4rpx 24rpx 26rpx;
+  border-top: 1rpx solid var(--border);
+}
+
+.legend {
+  margin: 22rpx 0 14rpx;
+  font-size: 20rpx;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+/* ── 五个分档按钮 ──────────────────────────────────────────────────────── */
+
+.scores {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12rpx;
+}
+
+.sbtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4rpx;
+  padding: 16rpx 4rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 20rpx;
+  background: var(--surface);
+}
+
+.sbtn__n {
+  font-size: 32rpx;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.sbtn__l {
+  font-size: 18rpx;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.sbtn--sel {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.sbtn--sel .sbtn__n,
+.sbtn--sel .sbtn__l {
+  color: #fff;
+}
+
+.evi-hint {
+  margin-top: 20rpx;
+  padding: 16rpx 20rpx;
+  border-radius: 18rpx;
+  background: var(--danger-light);
+  color: var(--danger);
+  font-size: 22rpx;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+/* ── 评分标准 ──────────────────────────────────────────────────────────── */
+
+.rub-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  margin-top: 22rpx;
+  font-size: 24rpx;
+  font-weight: 700;
+  color: var(--accent-dark);
+}
+
+.rub-toggle__a {
+  font-size: 22rpx;
+  transition: transform 0.2s;
+}
+
+.rub-toggle__a--open {
+  transform: rotate(90deg);
+}
+
+.rubric {
+  margin-top: 16rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 20rpx;
+  overflow: hidden;
+}
+
+.rrow {
+  display: grid;
+  grid-template-columns: 60rpx 1fr;
+  gap: 18rpx;
+  padding: 18rpx 22rpx;
+  font-size: 23rpx;
+  line-height: 1.55;
+}
+
+.rrow + .rrow {
+  border-top: 1rpx solid var(--border);
+}
+
+.rrow__k {
+  font-weight: 800;
+}
+
+.rrow--r1 { background: #fdf4f4; }
+.rrow--r1 .rrow__k { color: var(--danger); }
+.rrow--r3 { background: #fffaf0; }
+.rrow--r3 .rrow__k { color: #c47900; }
+.rrow--r5 { background: #f2faf3; }
+.rrow--r5 .rrow__k { color: var(--green); }
+
+/* ── 佐证与记录 ────────────────────────────────────────────────────────── */
+
+.field-lbl {
+  margin: 26rpx 0 12rpx;
+  font-size: 22rpx;
+  font-weight: 800;
+  color: var(--muted);
+}
+
+.evi-line {
+  display: flex;
+  align-items: center;
+}
+
+.evi-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 16rpx 24rpx;
+  border: 1rpx dashed var(--border);
+  border-radius: 18rpx;
+  color: var(--muted);
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.evi-add__plus {
+  color: var(--accent);
+  font-size: 30rpx;
+  line-height: 1;
+}
+
+.evi-count {
+  margin-left: 16rpx;
+  color: var(--accent-dark);
+  font-size: 22rpx;
+  font-weight: 700;
+}
+
+.note {
+  width: 100%;
+  min-height: 112rpx;
+  padding: 18rpx 22rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 20rpx;
+  background: var(--surface);
+  color: var(--fg);
+  font-size: 25rpx;
+}
+
+.note__ph {
+  color: #b7b7b7;
+}
+
+/* ── 底部条 ────────────────────────────────────────────────────────────── */
+
+.footbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  padding: 24rpx 32rpx calc(24rpx + env(safe-area-inset-bottom));
+  border-top: 1rpx solid var(--border);
+  background: var(--surface);
+}
+
+.foot-score {
+  flex: 1;
+  min-width: 0;
+}
+
+.foot-score__n {
+  font-size: 38rpx;
+  font-weight: 800;
+  letter-spacing: -1rpx;
+}
+
+.foot-score__unit {
+  font-size: 22rpx;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.foot-score__l {
+  margin-top: 2rpx;
+  font-size: 22rpx;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.save-btn {
+  flex-shrink: 0;
+  padding: 24rpx 44rpx;
+  border-radius: 24rpx;
+  background: var(--accent);
+  color: #fff;
+  font-size: 28rpx;
+  font-weight: 800;
+}
+
+.save-btn--hover {
+  background: var(--accent-dark);
+}

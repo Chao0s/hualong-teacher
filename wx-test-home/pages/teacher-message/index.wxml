@@ -1,0 +1,46 @@
+<!-- 教师寄语 —— 对照原型 screens/teacher-message.html。
+     点已完成的圆点看详情；点未完成的圆点会把「添加到」切到那个幼儿并滚回顶部。 -->
+<view class="page">
+
+  <view class="sec sec--first">寄语内容</view>
+  <view class="chunk">
+    <text class="form-label form-label--first">添加到</text>
+    <picker mode="selector" range="{{targets}}" range-key="name" value="{{targetIndex}}" bindchange="onTargetChange">
+      <view class="select">{{targets[targetIndex].name}}</view>
+    </picker>
+
+    <text class="form-label">寄语</text>
+    <textarea
+      class="textarea"
+      maxlength="300"
+      placeholder="写下想对孩子说的话（300字以内，仅支持文字）…"
+      placeholder-class="textarea__ph"
+      value="{{text}}"
+      focus="{{focusInput}}"
+      bindinput="onTextInput"
+    />
+    <view class="counter {{text.length >= 300 ? 'counter--limit' : ''}}">{{text.length}}/300</view>
+
+    <view class="btn btn--primary sticky-action" hover-class="btn--hover" bindtap="onSubmit">提交寄语</view>
+  </view>
+
+  <view class="sec">完成情况</view>
+  <view class="table-wrap">
+    <view class="prog-row prog-row--head">
+      <text class="prog-cell prog-cell--name">幼儿</text>
+      <text class="prog-cell">教师寄语</text>
+    </view>
+    <view class="prog-row" wx:for="{{rows}}" wx:key="child" wx:for-item="row">
+      <text class="prog-cell prog-cell--name">{{row.name}}</text>
+      <view class="prog-cell dot-link" data-child="{{row.child}}" data-done="{{row.done}}" bindtap="onDotTap">
+        <view class="dot-cell dot-cell--{{row.done ? 'done' : 'miss'}}"></view>
+      </view>
+    </view>
+    <view class="dot-legend">
+      <view class="dot-legend__item"><view class="dot-cell dot-cell--done"></view>已完成</view>
+      <view class="dot-legend__item"><view class="dot-cell dot-cell--miss"></view>未完成</view>
+    </view>
+  </view>
+  <text class="hint hint--gap">点击圆点可查看该幼儿已提交的寄语；提交后永久只读，未完成则定位到上方填写。</text>
+
+</view>

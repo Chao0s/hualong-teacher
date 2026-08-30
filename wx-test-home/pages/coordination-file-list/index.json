@@ -1,0 +1,10 @@
+{
+  "navigationBarTitleText": "文件列表",
+  "navigationBarBackgroundColor": "#f0f5f5",
+  "navigationBarTextStyle": "black",
+  "backgroundColor": "#f0f5f5",
+  "backgroundTextStyle": "dark",
+  "usingComponents": {
+    "hl-tabbar": "/components/hl-tabbar/index"
+  }
+}

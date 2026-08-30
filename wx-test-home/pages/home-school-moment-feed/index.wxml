@@ -1,0 +1,61 @@
+<!-- 全部活动 —— 对照原型 screens/home-school-moment-feed.html。
+     每条动态右下角的按钮把这条活动收进成长册；已收录的显示已选照片数，再点可调整。 -->
+<view class="page">
+
+  <view class="hint hint--top">点动态右下角的「+ 加入成长册」可将其加入成长资料；加入后会作为成长册「在园时光」栏目的内容（全班共用）。</view>
+
+  <view class="moment-card" wx:for="{{moments}}" wx:key="id" wx:for-item="m" wx:for-index="mi">
+    <view>
+      <view class="avatar {{m.tone ? 'avatar--' + m.tone : ''}}">时</view>
+    </view>
+    <view>
+      <view class="moment-head">
+        <text class="moment-head__title">{{m.title}}</text>
+        <text class="moment-head__time">{{m.time}}</text>
+      </view>
+      <text class="moment-body__text">{{m.text}}</text>
+
+      <view class="photo-grid {{m.photos.length <= 2 ? 'photo-grid--two' : ''}}">
+        <view class="feed-photo" wx:for="{{m.preview}}" wx:key="*this" wx:for-item="label">{{label}}</view>
+      </view>
+
+      <view class="moment-foot">
+        <text class="moment-meta">{{m.meta}}</text>
+        <view
+          class="add-material {{m.pickedCount ? 'add-material--on' : ''}}"
+          data-index="{{mi}}"
+          bindtap="onOpenPick"
+        >{{m.pickedCount ? '✓ 已加入（' + m.pickedCount + ' 张）' : '+ 加入成长册'}}</view>
+      </view>
+    </view>
+  </view>
+
+</view>
+
+<!-- 选照片浮层 -->
+<view class="sheet-mask" wx:if="{{picking}}" bindtap="onClosePick"></view>
+<view class="sheet" wx:if="{{picking}}">
+  <view class="sheet-head">
+    <text class="sheet-head__title">{{pickTitle}}</text>
+    <view class="close" bindtap="onClosePick">×</view>
+  </view>
+  <text class="sheet-sub">活动文字将全部收录；请选择要收录的照片（可多选）。</text>
+
+  <scroll-view class="pick-grid" scroll-y>
+    <view
+      class="pick-photo {{selected.indexOf(item) > -1 ? 'pick-photo--sel' : ''}}"
+      wx:for="{{pickPhotos}}"
+      wx:key="*this"
+      data-label="{{item}}"
+      bindtap="onTogglePhoto"
+    >
+      <text>{{item}}</text>
+      <view class="pick-photo__tick" wx:if="{{selected.indexOf(item) > -1}}">✓</view>
+    </view>
+  </scroll-view>
+
+  <view class="sheet-actions">
+    <view class="btn btn--ghost" hover-class="btn--hover" bindtap="onClosePick">取消</view>
+    <view class="btn btn--primary" hover-class="btn--hover" bindtap="onConfirmPick">{{confirmText}}</view>
+  </view>
+</view>

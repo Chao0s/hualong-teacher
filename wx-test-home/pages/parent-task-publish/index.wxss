@@ -1,0 +1,55 @@
+@import '/styles/home-school-common.wxss';
+
+/* 发布新任务 —— 本页自己的样式，对照原型 screens/parent-task-publish.html 的内联块。 */
+
+.page {
+  padding: 24rpx 32rpx 56rpx;
+}
+
+.task-type-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16rpx;
+  margin-top: 20rpx;
+}
+
+.task-type {
+  padding: 24rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 28rpx;
+  background: var(--surface);
+  color: var(--fg);
+}
+
+.task-type--active {
+  border-color: var(--accent);
+  background: var(--accent-light);
+}
+
+.task-type__title {
+  display: block;
+  margin-bottom: 8rpx;
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
+.task-type__desc {
+  display: block;
+  color: var(--muted);
+  font-size: 22rpx;
+  line-height: 1.35;
+}
+
+.form-label--first {
+  margin-top: 0;
+}
+
+.submit-note {
+  margin-top: 20rpx;
+  padding: 20rpx 24rpx;
+  border-radius: 24rpx;
+  background: var(--green-light);
+  color: var(--green);
+  font-size: 24rpx;
+  font-weight: 600;
+}

@@ -1,0 +1,99 @@
+/**
+ * 综合评估两个报告页的共用样式 —— 对照原型
+ * comprehensive-assessment-report.html 和 comprehensive-assessment-class-report.html。
+ *
+ * 这两页在原型里各写各的，但雷达图那一块、按钮行和卡片外壳完全一样，合成一份。
+ * 1px 记 2rpx。
+ */
+
+.page {
+  padding: 24rpx 32rpx 56rpx;
+}
+
+.chunk {
+  padding: 28rpx;
+  margin-bottom: 24rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 32rpx;
+  background: var(--surface);
+}
+
+.sec {
+  margin: 36rpx 0 20rpx;
+  font-size: 32rpx;
+  font-weight: 700;
+}
+
+/* ── 雷达图 ────────────────────────────────────────────────────────────── */
+
+.radar-wrap {
+  display: grid;
+  grid-template-columns: 360rpx 1fr;
+  gap: 24rpx;
+  align-items: center;
+}
+
+.radar {
+  width: 360rpx;
+  height: 360rpx;
+}
+
+.legend {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.metric {
+  display: flex;
+  justify-content: space-between;
+  gap: 16rpx;
+  padding-bottom: 14rpx;
+  border-bottom: 1rpx solid var(--border);
+  font-size: 24rpx;
+}
+
+.metric:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.metric__label {
+  font-size: 26rpx;
+  font-weight: 700;
+}
+
+.metric__value {
+  font-weight: 800;
+  color: var(--accent-dark);
+}
+
+/* ── 底部两个按钮 ──────────────────────────────────────────────────────── */
+
+.btn-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20rpx;
+  margin-top: 24rpx;
+}
+
+.btn {
+  padding: 20rpx 24rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 999rpx;
+  background: #fff;
+  color: var(--fg);
+  text-align: center;
+  font-size: 26rpx;
+  font-weight: 700;
+}
+
+.btn--primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn--hover {
+  opacity: 0.85;
+}

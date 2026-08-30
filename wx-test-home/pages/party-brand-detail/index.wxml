@@ -1,0 +1,28 @@
+<!-- 品牌建设 · 图文介绍 —— 对照原型 screens/party-brand-detail.html。
+     图文素材区是四个占位色块（原型没有真图），照搬。 -->
+<view class="page">
+
+  <view class="hero">
+    <text class="hero__title">{{brand.title}}</text>
+    <text class="hero__sub">{{brand.sub}}</text>
+  </view>
+
+  <view class="card">
+    <view class="chips">
+      <text class="chip" wx:for="{{brand.chips}}" wx:key="*this">{{item}}</text>
+    </view>
+  </view>
+
+  <view class="card">
+    <text class="card__title">主题介绍</text>
+    <text class="card__body">{{brand.body}}</text>
+  </view>
+
+  <view class="card">
+    <text class="card__title">图文素材</text>
+    <view class="gallery">
+      <view class="ph" wx:for="{{gallery}}" wx:key="*this">{{item}}</view>
+    </view>
+  </view>
+
+</view>

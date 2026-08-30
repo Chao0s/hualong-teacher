@@ -1,0 +1,53 @@
+<!-- 家园社共育 —— 对照原型 screens/home-school.html。
+     原型的完成度汇总是一张 <table>，小程序没有表格标签，改成网格行，列宽在 wxss 里给。 -->
+<view class="page">
+
+  <view class="banner">
+    <text class="banner__eyebrow">大一班 · 本周家园协同</text>
+    <text class="banner__title">家园社共育进度一页掌握</text>
+    <text class="banner__desc">集中处理在园时光、亲子任务、成长档案与社区共育提交状态。</text>
+  </view>
+
+  <view class="sec">快捷入口</view>
+  <view class="entry-grid">
+    <view
+      class="entry-card"
+      hover-class="list-card--hover"
+      hover-stay-time="80"
+      wx:for="{{entries}}"
+      wx:key="key"
+      data-key="{{item.key}}"
+      bindtap="onEntryTap"
+    >
+      <view class="entry-icon">{{item.glyph}}</view>
+      <text class="entry-label">{{item.label}}</text>
+    </view>
+  </view>
+
+  <view class="sec">完成度汇总</view>
+  <view class="metric-row metric-row--gap">
+    <view class="metric" wx:for="{{metrics}}" wx:key="label">
+      <text class="metric__n {{item.amber ? 'metric__n--amber' : ''}}">{{item.value}}</text>
+      <text class="metric__l">{{item.label}}</text>
+    </view>
+  </view>
+
+  <view class="table-wrap">
+    <view class="prog-row prog-row--head">
+      <text class="prog-cell prog-cell--name">幼儿</text>
+      <text class="prog-cell">在园时光</text>
+      <text class="prog-cell">亲子任务</text>
+      <text class="prog-cell">成长档案</text>
+      <text class="prog-cell">成长册</text>
+    </view>
+    <view class="prog-row" wx:for="{{rows}}" wx:key="name" wx:for-item="row">
+      <text class="prog-cell prog-cell--name">{{row.name}}</text>
+      <view class="prog-cell" wx:for="{{row.cells}}" wx:key="text" wx:for-item="cell">
+        <text class="status status--{{cell.state}}">{{cell.text}}</text>
+      </view>
+    </view>
+  </view>
+
+</view>
+
+<hl-tabbar active="family" />

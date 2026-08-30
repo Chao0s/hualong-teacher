@@ -1,0 +1,238 @@
+/* 研修详情 —— 逐条对照原型 screens/training-detail.html。1px 记 2rpx。 */
+
+.page {
+  padding: 24rpx 32rpx 56rpx;
+}
+
+.head {
+  padding: 32rpx;
+  margin-bottom: 28rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 36rpx;
+  background: var(--surface);
+}
+
+.kicker {
+  display: inline-flex;
+  padding: 8rpx 16rpx;
+  border-radius: 999rpx;
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  font-size: 22rpx;
+  font-weight: 800;
+}
+
+.head__title {
+  display: block;
+  margin-top: 20rpx;
+  font-size: 40rpx;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+.meta {
+  display: block;
+  margin-top: 16rpx;
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.sec {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 36rpx 0 20rpx;
+}
+
+.sec__title {
+  font-size: 32rpx;
+  font-weight: 700;
+}
+
+.sec__hint {
+  font-size: 24rpx;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.chunk {
+  padding: 24rpx;
+  margin-bottom: 28rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 32rpx;
+  background: var(--surface);
+}
+
+/* ── 研修材料 ──────────────────────────────────────────────────────────── */
+
+.file {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 16rpx;
+  align-items: center;
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid var(--border);
+}
+
+.file:last-child {
+  border-bottom: 0;
+}
+
+.file-name {
+  font-size: 26rpx;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.action {
+  padding: 12rpx 18rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 999rpx;
+  background: var(--surface);
+  color: var(--fg);
+  font-size: 22rpx;
+}
+
+/* ── 线上会议 ──────────────────────────────────────────────────────────── */
+
+.meeting {
+  display: grid;
+  gap: 16rpx;
+}
+
+.meeting__title {
+  font-size: 26rpx;
+  font-weight: 700;
+}
+
+.meeting__url {
+  font-size: 22rpx;
+  line-height: 1.45;
+  color: var(--accent-dark);
+  word-break: break-all;
+}
+
+.meeting__hint {
+  font-size: 22rpx;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+/* ── 报名 ──────────────────────────────────────────────────────────────── */
+
+.signup {
+  display: grid;
+  gap: 20rpx;
+}
+
+.signup__desc {
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.primary {
+  padding: 24rpx;
+  border-radius: 28rpx;
+  background: var(--accent);
+  color: #fff;
+  text-align: center;
+  font-size: 28rpx;
+  font-weight: 800;
+}
+
+.primary--hover {
+  opacity: 0.85;
+}
+
+.ghost {
+  padding: 20rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 28rpx;
+  background: var(--surface);
+  color: var(--fg);
+  text-align: center;
+  font-size: 26rpx;
+  font-weight: 700;
+}
+
+.ghost--hover {
+  background: #f2f7f7;
+}
+
+/* ── 研修反馈 ──────────────────────────────────────────────────────────── */
+
+.feedback {
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid var(--border);
+}
+
+.feedback:last-child {
+  border-bottom: 0;
+}
+
+.feedback__top {
+  display: flex;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin-bottom: 12rpx;
+}
+
+.feedback__teacher {
+  font-size: 26rpx;
+  font-weight: 700;
+}
+
+.feedback__time {
+  font-size: 22rpx;
+  color: var(--muted);
+}
+
+.feedback__text {
+  display: block;
+  font-size: 24rpx;
+  line-height: 1.55;
+  color: var(--fg);
+}
+
+.input {
+  display: flex;
+  gap: 16rpx;
+  align-items: center;
+  padding-top: 20rpx;
+  margin-top: 16rpx;
+  border-top: 1rpx solid var(--border);
+}
+
+.input__field {
+  flex: 1;
+  min-width: 0;
+  padding: 16rpx 20rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 999rpx;
+  background: var(--bg);
+  font-size: 24rpx;
+}
+
+.input__ph {
+  color: var(--muted);
+}
+
+.input__send {
+  flex: 0 0 auto;
+  padding: 14rpx 22rpx;
+  border-radius: 999rpx;
+  background: var(--accent);
+  color: #fff;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.feedback-hint {
+  display: block;
+  margin-top: 14rpx;
+  font-size: 22rpx;
+  line-height: 1.5;
+  color: var(--muted);
+}

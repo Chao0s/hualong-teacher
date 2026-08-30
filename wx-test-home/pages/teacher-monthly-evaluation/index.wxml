@@ -1,0 +1,38 @@
+<!-- 教师月度评价 —— 对照原型 screens/teacher-monthly-evaluation.html。
+     点圆点进填写页：已完成的带 view=1 只读查看，未完成的直接进填写。 -->
+<view class="page">
+
+  <view class="chunk">
+    <view class="btn btn--primary" hover-class="btn--hover" bindtap="onAdd">添加评价</view>
+  </view>
+
+  <view class="sec">完成情况</view>
+  <view class="table-wrap">
+    <view class="prog-row prog-row--head">
+      <text class="prog-cell prog-cell--name">幼儿</text>
+      <text class="prog-cell" wx:for="{{months}}" wx:key="*this">{{item}}月</text>
+    </view>
+    <view class="prog-row" wx:for="{{rows}}" wx:key="child" wx:for-item="row" wx:for-index="ri">
+      <text class="prog-cell prog-cell--name">{{row.name}}</text>
+      <view
+        class="prog-cell dot-link"
+        wx:for="{{row.states}}"
+        wx:key="index"
+        wx:for-item="state"
+        wx:for-index="ci"
+        data-child="{{row.child}}"
+        data-month="{{months[ci]}}"
+        data-done="{{state === 'done'}}"
+        bindtap="onDotTap"
+      >
+        <view class="dot-cell dot-cell--{{state}}"></view>
+      </view>
+    </view>
+    <view class="dot-legend">
+      <view class="dot-legend__item"><view class="dot-cell dot-cell--done"></view>已完成</view>
+      <view class="dot-legend__item"><view class="dot-cell dot-cell--miss"></view>未完成</view>
+    </view>
+  </view>
+  <text class="hint hint--gap">月份列由已录入的评价月份自动生成；点击圆点可查看该幼儿当月评价详情，未完成则进入填写。</text>
+
+</view>

@@ -1,0 +1,52 @@
+<!-- 社区共育 —— 对照原型 screens/community-coeducation.html。
+
+     两个筛选都是查询参数，不是列；「全部」表示不加这条筛选条件，不是某个列值。
+     本页读的是已发布的全部亲子任务加上家长提交的 feed，按任务类型筛。
+
+     「加入成长册」和「在园时光」写的是同一条成长资料通道（成长册配置里的 material）。 -->
+<view class="page">
+
+  <view class="filter-panel">
+    <view>
+      <text class="filter-field__label">时间</text>
+      <picker mode="selector" range="{{timeOptions}}" range-key="label" value="{{timeIndex}}" bindchange="onTimeChange">
+        <view class="filter-field__select">{{timeOptions[timeIndex].label}}</view>
+      </picker>
+    </view>
+    <view>
+      <text class="filter-field__label">任务类别</text>
+      <picker mode="selector" range="{{typeOptions}}" range-key="label" value="{{typeIndex}}" bindchange="onTypeChange">
+        <view class="filter-field__select">{{typeOptions[typeIndex].label}}</view>
+      </picker>
+    </view>
+  </view>
+
+  <view class="feed-list" wx:if="{{visible.length}}">
+    <view class="moment-card" wx:for="{{visible}}" wx:key="id" wx:for-item="post" wx:for-index="pi">
+      <view class="avatar {{post.tone ? 'avatar--' + post.tone : ''}}">{{post.initial}}</view>
+      <view class="post-body">
+        <view class="moment-head">
+          <text class="moment-head__title">{{post.author}}</text>
+          <text class="moment-head__time">{{post.time}}</text>
+        </view>
+        <text class="post-text">{{post.text}}</text>
+
+        <view class="photo-grid {{post.photos.length <= 2 ? 'photo-grid--two' : ''}}">
+          <view class="feed-photo" wx:for="{{post.photos}}" wx:key="*this" wx:for-item="label">{{label}}</view>
+        </view>
+
+        <view class="moment-foot">
+          <text class="pill">{{post.typeLabel}}</text>
+          <view
+            class="add-material {{post.added ? 'add-material--on' : ''}}"
+            data-index="{{pi}}"
+            bindtap="onToggleMaterial"
+          >{{post.added ? '✓ 已加入（' + post.photos.length + ' 张）' : '+ 加入成长册'}}</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="empty" wx:else>当前筛选下暂无家长提交内容</view>
+
+</view>

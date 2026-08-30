@@ -1,0 +1,84 @@
+/* 品牌建设 · 图文介绍 —— 逐条对照原型 screens/party-brand-detail.html。1px 记 2rpx。 */
+
+.page {
+  padding: 24rpx 32rpx 64rpx;
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  height: 360rpx;
+  padding: 36rpx;
+  border-radius: 36rpx;
+  background: linear-gradient(135deg, #2f855a, #4b9a5a, #88c35a);
+  color: #fff;
+}
+
+.hero__title {
+  font-size: 44rpx;
+  line-height: 1.24;
+  font-weight: 700;
+}
+
+.hero__sub {
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  opacity: 0.9;
+}
+
+.card {
+  margin-top: 24rpx;
+  padding: 30rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 32rpx;
+  background: var(--surface);
+}
+
+.card__title {
+  display: block;
+  margin-bottom: 16rpx;
+  font-size: 30rpx;
+  font-weight: 700;
+}
+
+.card__body {
+  display: block;
+  font-size: 26rpx;
+  line-height: 1.72;
+  color: #3d3b36;
+}
+
+.chips {
+  display: flex;
+  gap: 16rpx;
+  flex-wrap: wrap;
+}
+
+.chip {
+  padding: 12rpx 18rpx;
+  border-radius: 999rpx;
+  background: var(--green-light);
+  color: var(--green);
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.gallery {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18rpx;
+  margin-top: 20rpx;
+}
+
+.ph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 184rpx;
+  border-radius: 26rpx;
+  background: #eef7f3;
+  color: var(--green);
+  font-size: 26rpx;
+  font-weight: 800;
+}

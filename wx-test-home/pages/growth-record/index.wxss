@@ -1,0 +1,119 @@
+@import '/styles/home-school-common.wxss';
+
+/* 儿童成长档案 —— 本页自己的样式，对照原型 screens/growth-record.html 的内联块。 */
+
+.page {
+  padding: 24rpx 32rpx 56rpx;
+}
+
+/* ── 三个入口 ──────────────────────────────────────────────────────────── */
+
+.record-entry-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20rpx;
+  margin-bottom: 28rpx;
+}
+
+.record-entry {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120rpx;
+  padding: 24rpx 20rpx;
+  border: 1rpx solid #e5e7eb;
+  border-radius: 32rpx;
+  background: #fff;
+  color: #1f2937;
+  text-align: center;
+  font-size: 26rpx;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.record-entry--primary {
+  border-color: #a7f3d0;
+  background: #ecfdf5;
+  color: #047857;
+}
+
+/* ── 两行表头的进度表 ──────────────────────────────────────────────────── */
+
+/* 七列：幼儿 + 家长月度/学期 + 教师月度/学期 + 综合 + 成长册。
+ * 表头两行，靠 grid-row / grid-column 跨格还原原型的 rowspan / colspan。 */
+.rec-head {
+  display: grid;
+  grid-template-columns: 92rpx repeat(6, 1fr);
+  background: var(--accent-light);
+}
+
+.rec-head__cell {
+  padding: 14rpx 6rpx;
+  text-align: center;
+  line-height: 1.3;
+}
+
+/* 「幼儿」「综合」「成长册」占满两行 */
+.rec-head__cell--tall {
+  grid-row: span 2;
+  align-self: center;
+  font-size: 24rpx;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+/* 「家长」「教师」各占两列 */
+.rec-head__cell--wide {
+  grid-column: span 2;
+  padding-bottom: 6rpx;
+  font-size: 24rpx;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+/* 第二行的四个小标题 */
+.rec-head__cell--sub {
+  padding-top: 6rpx;
+  font-size: 20rpx;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.rec-head__cell--name {
+  text-align: left;
+  padding-left: 12rpx;
+}
+
+.rec-row {
+  display: grid;
+  grid-template-columns: 92rpx repeat(6, 1fr);
+  align-items: center;
+  border-top: 1rpx solid var(--border);
+}
+
+.rec-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14rpx 6rpx;
+  font-size: 24rpx;
+  line-height: 1.25;
+}
+
+.rec-cell--name {
+  justify-content: flex-start;
+  padding-left: 12rpx;
+  font-weight: 600;
+  white-space: normal;
+  word-break: keep-all;
+}
+
+/* 原型的圆点是 #16a34a / #dc2626，和共用样式里的 --green/--danger 不是同一组，照抄 */
+.dot-cell--done { background: #16a34a; }
+.dot-cell--miss { border-color: #dc2626; }
+
+.dot-legend {
+  margin-top: 16rpx;
+  padding: 0;
+  color: #6b7280;
+}

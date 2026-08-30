@@ -1,0 +1,59 @@
+<!-- 课程建设 —— 对照原型 screens/course-building.html。
+     原型顶部有自绘的返回箭头，小程序的原生标题栏自带返回，这里不复刻。 -->
+<view class="page">
+
+  <view class="article">
+    <view class="article__cover">
+      <view class="article__ring"></view>
+      <text class="article__kicker">{{cover.kicker}}</text>
+      <text class="article__title">{{cover.title}}</text>
+      <text class="article__desc">{{cover.desc}}</text>
+    </view>
+
+    <view class="article__body">
+      <text class="article__lead">{{lead}}</text>
+
+      <view class="image-panel">
+        <text class="image-panel__title">{{imagePanel.title}}</text>
+        <view class="mini-grid">
+          <text class="mini-grid__item" wx:for="{{imagePanel.items}}" wx:key="*this">{{item}}</text>
+        </view>
+        <text class="caption">{{imagePanel.caption}}</text>
+      </view>
+
+      <view class="article__h2"><text>课程体系架构</text></view>
+      <text class="intro">{{architecture.intro}}</text>
+      <view class="flow-chart">
+        <view class="flow-main">{{architecture.main}}</view>
+        <view class="flow-row">
+          <view class="flow-item" wx:for="{{architecture.items}}" wx:key="label">
+            <text class="flow-item__label">{{item.label}}</text>
+            <text class="flow-item__desc">{{item.desc}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="article__h2"><text>五个课程范畴</text></view>
+      <view class="domain-list">
+        <view class="domain-item" wx:for="{{domains}}" wx:key="mark">
+          <view class="domain-mark">{{item.mark}}</view>
+          <view>
+            <text class="domain-title">{{item.title}}</text>
+            <text class="domain-desc">{{item.desc}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="sec">附件下载</view>
+  <view class="chunk">
+    <view class="file-list">
+      <view class="file-row" wx:for="{{files}}" wx:key="*this">
+        <text class="file-name">{{item}}</text>
+        <text class="download" data-name="{{item}}" bindtap="onDownload">下载</text>
+      </view>
+    </view>
+  </view>
+
+</view>

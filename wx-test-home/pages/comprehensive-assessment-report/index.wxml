@@ -1,0 +1,55 @@
+<!-- 综合评估结果 —— 对照原型 screens/comprehensive-assessment-report.html。
+     原型的雷达图是内联 SVG，小程序没有这个标签，改用 canvas 画同样的几何（utils/radar.js）。 -->
+<view class="page">
+
+  <view class="chunk child-card">
+    <view class="child-card__main">
+      <text class="child-card__name">{{childName}}</text>
+      <text class="child-card__meta">{{childMeta}}</text>
+    </view>
+    <text class="badge">{{statusLabel}}</text>
+  </view>
+
+  <view class="tab-switch">
+    <view class="tab-switch__btn {{showDetail ? '' : 'tab-switch__btn--on'}}" bindtap="onShowResult">评估结果</view>
+    <view class="tab-switch__btn {{showDetail ? 'tab-switch__btn--on' : ''}}" bindtap="onShowDetail">明细</view>
+  </view>
+
+  <block wx:if="{{!showDetail}}">
+    <view class="sec">五大领域雷达图</view>
+    <view class="chunk radar-wrap">
+      <canvas class="radar" type="2d" id="radar"></canvas>
+      <view class="legend">
+        <view class="metric" wx:for="{{legend}}" wx:key="label">
+          <text class="metric__label">{{item.label}}</text>
+          <text class="metric__value">{{item.value}}</text>
+        </view>
+      </view>
+    </view>
+  </block>
+
+  <block wx:else>
+    <view class="sec">评估明细</view>
+    <view class="chunk" wx:for="{{detail}}" wx:key="name" wx:for-item="domain">
+      <view class="detail-head">
+        <text class="detail-title">{{domain.name}}</text>
+        <text class="detail-avg">{{domain.avgText}}</text>
+      </view>
+      <view class="detail-row" wx:for="{{domain.items}}" wx:key="id" wx:for-item="item">
+        <view class="detail-name">
+          <text>{{item.name}}</text>
+          <text class="none" wx:if="{{!item.score}}">未评</text>
+        </view>
+        <view class="scale-view">
+          <text class="scale-view__n {{item.score === num ? 'scale-view__n--on' : ''}}" wx:for="{{scaleNums}}" wx:key="*this" wx:for-item="num">{{num}}</text>
+        </view>
+      </view>
+    </view>
+  </block>
+
+  <view class="btn-row">
+    <view class="btn" hover-class="btn--hover" bindtap="onContinue">继续评估</view>
+    <view class="btn btn--primary" hover-class="btn--hover" bindtap="onBack">返回进度</view>
+  </view>
+
+</view>

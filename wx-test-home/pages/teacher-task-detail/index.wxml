@@ -1,0 +1,86 @@
+<!-- 任务详情 —— 对照原型 screens/teacher-task-detail.html。
+     原型按 ?id= 取任务；状态是「完成」时，任务操作和提交材料两块整块隐藏。 -->
+<view class="page">
+
+  <view class="chunk">
+    <view class="task-head">
+      <text class="kicker">{{task.source}}</text>
+      <text class="task-head__title">{{task.title}}</text>
+      <text class="task-head__sub">{{task.summary}}</text>
+    </view>
+
+    <view class="chunk-title">
+      <text class="chunk-title__text">任务说明</text>
+    </view>
+
+    <view class="block block--first">
+      <text class="label">背景信息</text>
+      <text class="text">{{task.background}}</text>
+    </view>
+
+    <view class="block">
+      <text class="label">分工要求</text>
+      <view class="roles">
+        <view class="role" wx:for="{{task.roles}}" wx:key="name">
+          <text class="role__name">{{item.name}}</text>
+          <text class="role__work">{{item.work}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="block">
+      <text class="label">时间节点</text>
+      <view class="timeline">
+        <block wx:for="{{task.timeline}}" wx:key="date">
+          <text class="timeline__date">{{item.date}}</text>
+          <text class="timeline__event">{{item.event}}</text>
+        </block>
+      </view>
+    </view>
+  </view>
+
+  <view class="chunk">
+    <view class="chunk-title">
+      <text class="chunk-title__text">任务附件</text>
+    </view>
+    <view class="attach">
+      <view class="attach-row" wx:for="{{task.files}}" wx:key="name">
+        <view>
+          <text class="file-name">{{item.name}}</text>
+          <text class="file-meta">{{item.size}}</text>
+        </view>
+        <view class="file-actions">
+          <text class="file-op" data-action="预览：{{item.name}}" bindtap="onToast">预览</text>
+          <text class="file-op" data-action="下载：{{item.name}}" bindtap="onToast">下载</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <block wx:if="{{task.status !== '完成'}}">
+    <view class="chunk">
+      <view class="chunk-title">
+        <text class="chunk-title__text">任务操作</text>
+        <text class="status-pill">{{status}}</text>
+      </view>
+      <view class="status-grid">
+        <view
+          class="state-btn {{status === item ? 'state-btn--on' : ''}}"
+          wx:for="{{states}}"
+          wx:key="*this"
+          data-state="{{item}}"
+          bindtap="onStateTap"
+        >{{item === '已接受' ? '接受' : '完成'}}</view>
+      </view>
+    </view>
+
+    <view class="chunk">
+      <view class="submit-card">
+        <text class="submit-card__title">提交材料 / 反馈</text>
+        <text class="submit-card__desc">教师只需按分工上传照片、记录、说明或反馈。提交后进入管理端审核与汇总。</text>
+        <view class="primary" hover-class="primary--hover" data-action="已进入材料提交" bindtap="onToast">提交材料</view>
+      </view>
+    </view>
+  </block>
+
+</view>

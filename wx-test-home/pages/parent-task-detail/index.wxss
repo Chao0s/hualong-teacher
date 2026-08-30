@@ -1,0 +1,25 @@
+@import '/styles/home-school-common.wxss';
+
+/* 亲子任务 · 任务详情 —— 这一页原型没有自己的样式块，只用共用样式。 */
+
+.page {
+  padding: 24rpx 32rpx 56rpx;
+}
+
+.metric-row--gap {
+  margin-top: 28rpx;
+}
+
+/* 四列：幼儿 / 已读 / 已完成 / 提交预览。最后一列放文字，给宽一点。 */
+.prog-row {
+  grid-template-columns: 120rpx 96rpx 128rpx 1fr;
+}
+
+.prog-cell {
+  padding: 20rpx 8rpx;
+  font-size: 22rpx;
+}
+
+.prog-cell--name {
+  padding-left: 16rpx;
+}

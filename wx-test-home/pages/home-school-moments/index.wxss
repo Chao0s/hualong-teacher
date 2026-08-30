@@ -1,0 +1,17 @@
+@import '/styles/home-school-common.wxss';
+
+/* 在园时光 —— 这一页原型没有自己的样式块，只用共用样式。 */
+
+.page {
+  padding: 24rpx 32rpx 56rpx;
+}
+
+.hint--gap {
+  display: block;
+  margin-top: 20rpx;
+}
+
+/* 三列：幼儿 + 两次上传 */
+.prog-row {
+  grid-template-columns: 160rpx 1fr 1fr;
+}

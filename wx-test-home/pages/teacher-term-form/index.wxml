@@ -1,0 +1,63 @@
+<!-- 填写学期评价 —— 对照原型 screens/teacher-term-form.html。
+     相册按月分组，全部显示，不像月度评价那样按月过滤。
+
+     原型删掉了「五大领域评价」那个 textarea：五大领域已经由 124 题量表逐题打分、
+     领域分即时聚合，再用文字写一遍是重复劳动，两份说法还可能互相矛盾。
+     db_term_eval 只有 eval_text 一个内容列。量表给分数，寄语给温度。 -->
+<view class="page">
+
+  <view class="chunk">
+    <text class="form-label form-label--first">评价对象</text>
+    <picker mode="selector" range="{{children}}" value="{{childIndex}}" bindchange="onChildChange">
+      <view class="select">{{children[childIndex]}}</view>
+    </picker>
+
+    <text class="form-label">学期综合评语（最多 500 字）</text>
+    <textarea class="textarea" maxlength="500" value="{{content}}" bindinput="onContentInput" />
+
+    <text class="form-label">关联月度评价照片</text>
+    <scroll-view class="photo-row" scroll-x enable-flex wx:if="{{imported.length}}">
+      <view class="photo imported" wx:for="{{imported}}" wx:key="*this">
+        <text>{{item}}</text>
+        <view class="remove" catchtap="onRemoveImported" data-label="{{item}}">×</view>
+      </view>
+    </scroll-view>
+    <view class="empty-hint" wx:else>尚未导入照片，点击下方按钮从该幼儿的相册中选择。</view>
+
+    <view class="btn btn--blue full" hover-class="btn--hover" bindtap="onOpenAlbum">选择照片</view>
+    <view class="btn btn--primary full full--gap" hover-class="btn--hover" bindtap="onSave">保存学期评价</view>
+  </view>
+
+</view>
+
+<!-- 月度评价相册 -->
+<view class="sheet-mask" wx:if="{{albumOpen}}" bindtap="onCloseAlbum"></view>
+<view class="sheet" wx:if="{{albumOpen}}">
+  <view class="sheet-head">
+    <text class="sheet-head__title">{{albumTitle}}</text>
+    <view class="close" bindtap="onCloseAlbum">×</view>
+  </view>
+
+  <scroll-view class="album-scroll" scroll-y>
+    <view class="album-group" wx:for="{{groups}}" wx:key="title" wx:for-item="group">
+      <text class="group-title">{{group.title}}</text>
+      <view class="album-grid">
+        <view
+          class="album-photo {{picked.indexOf(item.label) > -1 ? 'album-photo--sel' : ''}}"
+          wx:for="{{group.photos}}"
+          wx:key="label"
+          data-label="{{item.label}}"
+          bindtap="onTogglePhoto"
+        >
+          <text>{{item.text}}</text>
+          <view class="album-photo__tick" wx:if="{{picked.indexOf(item.label) > -1}}">✓</view>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+
+  <view class="sheet-actions">
+    <view class="btn btn--ghost" hover-class="btn--hover" bindtap="onCloseAlbum">取消</view>
+    <view class="btn btn--primary" hover-class="btn--hover" bindtap="onConfirmAlbum">{{confirmText}}</view>
+  </view>
+</view>

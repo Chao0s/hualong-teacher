@@ -1,0 +1,424 @@
+/* 上传资料 —— 逐条对照原型 screens/upload-resource.html。1px 记 2rpx。 */
+
+.page {
+  padding: 24rpx 32rpx 56rpx;
+}
+
+/* ── 头图 ──────────────────────────────────────────────────────────────── */
+
+.banner {
+  position: relative;
+  padding: 36rpx;
+  margin-bottom: 28rpx;
+  border-radius: 36rpx;
+  background: linear-gradient(135deg, #0f766e, #189b91, #4fc4b9);
+  color: #fff;
+  overflow: hidden;
+}
+
+.banner__ring {
+  position: absolute;
+  right: -68rpx;
+  top: -76rpx;
+  width: 296rpx;
+  height: 296rpx;
+  border-radius: 50%;
+  border: 40rpx solid rgba(255, 255, 255, 0.18);
+}
+
+.kicker {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  padding: 8rpx 20rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.18);
+  font-size: 22rpx;
+  font-weight: 800;
+}
+
+.banner__title {
+  position: relative;
+  z-index: 1;
+  display: block;
+  margin-top: 24rpx;
+  font-size: 44rpx;
+  font-weight: 700;
+}
+
+.banner__desc {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 540rpx;
+  margin-top: 14rpx;
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+/* ── 卡片与标题 ────────────────────────────────────────────────────────── */
+
+.chunk {
+  padding: 30rpx;
+  margin-bottom: 20rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 32rpx;
+  background: var(--surface);
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24rpx;
+}
+
+.sec {
+  font-size: 32rpx;
+  font-weight: 700;
+}
+
+.sec--gap {
+  display: block;
+  margin-bottom: 24rpx;
+}
+
+.hint {
+  font-size: 24rpx;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.hint--gap {
+  display: block;
+  margin-top: 16rpx;
+}
+
+/* ── 上传目标 ──────────────────────────────────────────────────────────── */
+
+.target-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16rpx;
+}
+
+.target {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  min-height: 164rpx;
+  padding: 22rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 28rpx;
+  background: #fff;
+}
+
+.target--on {
+  border-color: var(--accent);
+  background: var(--accent-light);
+}
+
+.target__mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60rpx;
+  height: 60rpx;
+  border-radius: 20rpx;
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  font-size: 24rpx;
+  font-weight: 800;
+}
+
+.target__title {
+  font-size: 28rpx;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.target__desc {
+  font-size: 22rpx;
+  line-height: 1.35;
+  color: var(--muted);
+}
+
+/* ── 上传人信息 ────────────────────────────────────────────────────────── */
+
+.profile {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16rpx;
+}
+
+.readback {
+  padding: 22rpx 24rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 24rpx;
+  background: #f2f6f6;
+  color: var(--muted);
+  font-size: 26rpx;
+  font-weight: 700;
+}
+
+/* ── 表单 ──────────────────────────────────────────────────────────────── */
+
+.form {
+  display: grid;
+  gap: 22rpx;
+}
+
+.field__labelrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12rpx;
+}
+
+.field__label {
+  display: block;
+  margin-bottom: 12rpx;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+/* 标题行里的 label 已经由行本身留了下边距，不再重复 */
+.field__labelrow .field__label {
+  margin-bottom: 0;
+}
+
+.limit {
+  font-size: 22rpx;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.input,
+.textarea,
+.select {
+  width: 100%;
+  padding: 22rpx 24rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 24rpx;
+  background: #fbfdfd;
+  font-size: 26rpx;
+}
+
+.textarea {
+  min-height: 156rpx;
+  line-height: 1.55;
+}
+
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16rpx;
+}
+
+/* ── 封面与附件 ────────────────────────────────────────────────────────── */
+
+.image-upload {
+  display: grid;
+  gap: 12rpx;
+}
+
+.image-upload__title {
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.image-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  min-height: 80rpx;
+  padding: 0 22rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 24rpx;
+  background: #fbfdfd;
+}
+
+.pick-row,
+.upload-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 20rpx;
+  padding: 22rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 24rpx;
+  background: #fbfdfd;
+}
+
+.pick-row__main,
+.upload-row__main {
+  min-width: 0;
+}
+
+.pick-name,
+.upload-name {
+  display: block;
+  font-size: 26rpx;
+  font-weight: 700;
+}
+
+.pick-meta,
+.upload-note {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  color: var(--muted);
+}
+
+/* 封面框里的说明文字不需要上边距 */
+.image-box .upload-note {
+  margin-top: 0;
+  white-space: nowrap;
+}
+
+.mini-btn {
+  flex: 0 0 auto;
+  padding: 16rpx 22rpx;
+  border-radius: 999rpx;
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  font-size: 24rpx;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+/* ── 底部按钮 ──────────────────────────────────────────────────────────── */
+
+.actions {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 8rpx;
+}
+
+.btn {
+  flex: 1;
+  padding: 24rpx 28rpx;
+  border-radius: 26rpx;
+  text-align: center;
+  font-size: 28rpx;
+  font-weight: 800;
+}
+
+.btn--ghost {
+  border: 1rpx solid var(--border);
+  background: #fff;
+}
+
+.btn--primary {
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn--hover {
+  opacity: 0.85;
+}
+
+/* ── 选择浮层 ──────────────────────────────────────────────────────────── */
+
+.sheet {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 5;
+  display: flex;
+  align-items: flex-end;
+  padding: 28rpx;
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-height: 1300rpx;
+  padding: 28rpx;
+  border-radius: 44rpx;
+  background: #fff;
+  box-shadow: 0 -36rpx 80rpx rgba(0, 0, 0, 0.16);
+}
+
+.panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.panel-title {
+  font-size: 32rpx;
+  font-weight: 800;
+}
+
+.close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 999rpx;
+  background: #f2f6f6;
+  font-size: 36rpx;
+}
+
+.filters {
+  display: flex;
+  white-space: nowrap;
+  padding-bottom: 16rpx;
+}
+
+.chip {
+  flex: 0 0 auto;
+  margin-right: 14rpx;
+  padding: 14rpx 20rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 999rpx;
+  background: #fff;
+  font-size: 24rpx;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.chip--on {
+  border-color: var(--accent);
+  background: var(--accent-light);
+  color: var(--accent-dark);
+}
+
+.option-list {
+  max-height: 700rpx;
+}
+
+.option {
+  padding: 22rpx;
+  margin-bottom: 16rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 26rpx;
+  background: #fbfdfd;
+}
+
+.option--on {
+  border-color: var(--accent);
+  background: var(--accent-light);
+}
+
+.option__name {
+  display: block;
+  font-size: 26rpx;
+  font-weight: 700;
+}
+
+.option__meta {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: var(--muted);
+}

@@ -1,0 +1,207 @@
+/* 资源库 —— 逐条对照原型 screens/resource-library.html。1px 记 2rpx。 */
+
+.page {
+  padding: 24rpx 32rpx calc(200rpx + env(safe-area-inset-bottom));
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 20rpx 28rpx;
+  margin-bottom: 28rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 48rpx;
+  background: var(--surface);
+}
+
+.search-bar__icon {
+  flex: 0 0 auto;
+  width: 36rpx;
+  height: 36rpx;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 36rpx 36rpx;
+}
+
+.search-bar__input {
+  flex: 1;
+  min-width: 0;
+  font-size: 28rpx;
+  color: var(--fg);
+}
+
+.search-bar__ph {
+  color: var(--muted);
+}
+
+.sec {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 36rpx 0 20rpx;
+}
+
+.sec__title {
+  font-size: 32rpx;
+  font-weight: 700;
+}
+
+.sec__note {
+  font-size: 24rpx;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+/* ── 分类筛选条 ────────────────────────────────────────────────────────── */
+
+/* 原型是一条 `overflow-x: auto` 的 flex；小程序用 scroll-view 横滚。
+ * `enable-flex` 打开后子节点才按 flex 排。 */
+.chip-row {
+  display: flex;
+  white-space: nowrap;
+  margin: 0 -32rpx 28rpx 0;
+}
+
+.chip {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  min-height: 64rpx;
+  margin-right: 16rpx;
+  padding: 14rpx 24rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 999rpx;
+  background: var(--surface);
+  color: var(--fg);
+  font-size: 24rpx;
+}
+
+.chip--on {
+  border-color: var(--accent);
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+
+/* ── 资源图标入口 ──────────────────────────────────────────────────────── */
+
+.entry-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20rpx;
+}
+
+.entry {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16rpx;
+  min-height: 172rpx;
+  padding: 20rpx 12rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 28rpx;
+  background: var(--surface);
+}
+
+/* 原型按下态是 `color-mix(in oklab, var(--surface), var(--bg) 35%)`，换成定值。 */
+.entry--hover {
+  background: #f7fafa;
+}
+
+.entry__icon {
+  width: 76rpx;
+  height: 76rpx;
+  border-radius: 24rpx;
+  border: 1rpx solid var(--border);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 42rpx 42rpx;
+}
+
+.entry__icon--tone-accent { background-color: var(--accent-light); }
+.entry__icon--tone-green { background-color: var(--green-light); }
+.entry__icon--tone-amber { background-color: var(--amber-light); }
+.entry__icon--tone-blue { background-color: var(--blue-light); }
+
+.entry__name {
+  max-width: 136rpx;
+  font-size: 24rpx;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.entry__tag {
+  font-size: 20rpx;
+  color: var(--muted);
+}
+
+.section-note {
+  margin-top: 28rpx;
+  padding: 24rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 28rpx;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 24rpx;
+  line-height: 1.5;
+}
+
+/* ── 图标 ──────────────────────────────────────────────────────────────── */
+
+.search-bar__icon {
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjODY4Njg2IiBzdHJva2Utd2lkdGg9IjIiPjxjaXJjbGUgY3g9IjExIiBjeT0iMTEiIHI9IjgiLz48bGluZSB4MT0iMjEiIHkxPSIyMSIgeDI9IjE2LjY1IiB5Mj0iMTYuNjUiLz48L3N2Zz4=");
+}
+
+.entry__icon--silk {
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNGI5YTVhIiBzdHJva2Utd2lkdGg9IjEuOCI+PHBhdGggZD0iTTcgNGgxMGwzIDUtNCAxMUg4TDQgOWwzLTV6Ii8+PHBhdGggZD0iTTggOWg4Ii8+PHBhdGggZD0iTTEwIDE0aDQiLz48L3N2Zz4=");
+}
+
+.entry__icon--embroidery {
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNGI5YTVhIiBzdHJva2Utd2lkdGg9IjEuOCI+PHJlY3QgeD0iNSIgeT0iOCIgd2lkdGg9IjE0IiBoZWlnaHQ9IjExIiByeD0iMiIvPjxwYXRoIGQ9Ik05IDhhMyAzIDAgMDE2IDAiLz48cGF0aCBkPSJNOCAxM2g4Ii8+PC9zdmc+");
+}
+
+.entry__icon--milk {
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjOWU2ZjBjIiBzdHJva2Utd2lkdGg9IjEuOCI+PHBhdGggZD0iTTUgMTFoMTRsLTEuNCA4SDYuNEw1IDExeiIvPjxwYXRoIGQ9Ik04IDhoOCIvPjxwYXRoIGQ9Ik05IDVoNiIvPjwvc3ZnPg==");
+}
+
+.entry__icon--honey {
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjOWU2ZjBjIiBzdHJva2Utd2lkdGg9IjEuOCI+PHBhdGggZD0iTTEyIDNjMyAzIDYgNi41IDYgMTBhNiA2IDAgMDEtMTIgMGMwLTMuNSAzLTcgNi0xMHoiLz48cGF0aCBkPSJNOSAxNGg2Ii8+PC9zdmc+");
+}
+
+.entry__icon--hall {
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDY3ZTc2IiBzdHJva2Utd2lkdGg9IjEuOCI+PHBhdGggZD0iTTMgMjFoMTgiLz48cGF0aCBkPSJNNSAyMVY5bDctNSA3IDV2MTIiLz48cGF0aCBkPSJNOSAyMXYtNmg2djYiLz48L3N2Zz4=");
+}
+
+.entry__icon--town {
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNGI5YTVhIiBzdHJva2Utd2lkdGg9IjEuOCI+PHBhdGggZD0iTTQgMjBoMTYiLz48cGF0aCBkPSJNNiAyMFY4bDYtNCA2IDR2MTIiLz48cGF0aCBkPSJNOSAyMHYtNWg2djUiLz48L3N2Zz4=");
+}
+
+.entry__icon--boat {
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjOWU2ZjBjIiBzdHJva2Utd2lkdGg9IjEuOCI+PHBhdGggZD0iTTQgMTRjNCAzIDEyIDMgMTYgMCIvPjxwYXRoIGQ9Ik02IDEwaDEybC0yIDVIOGwtMi01eiIvPjxwYXRoIGQ9Ik04IDdoOCIvPjwvc3ZnPg==");
+}
+
+.entry__icon--crossing {
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMzM4OGZjIiBzdHJva2Utd2lkdGg9IjEuOCI+PHBhdGggZD0iTTQgMTloMTYiLz48cGF0aCBkPSJNNiAxNWgxMiIvPjxwYXRoIGQ9Ik04IDExaDgiLz48Y2lyY2xlIGN4PSI4IiBjeT0iNiIgcj0iMiIvPjxwYXRoIGQ9Ik04IDh2MyIvPjwvc3ZnPg==");
+}
+
+.entry__icon--song {
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMzM4OGZjIiBzdHJva2Utd2lkdGg9IjEuOCI+PHBhdGggZD0iTTkgMThWNWwxMi0ydjEzIi8+PGNpcmNsZSBjeD0iNiIgY3k9IjE4IiByPSIzIi8+PGNpcmNsZSBjeD0iMTgiIGN5PSIxNiIgcj0iMyIvPjwvc3ZnPg==");
+}
+
+.entry__icon--lion {
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNGI5YTVhIiBzdHJva2Utd2lkdGg9IjEuOCI+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iOCIvPjxwYXRoIGQ9Ik04IDEyaDgiLz48cGF0aCBkPSJNMTIgOHY4Ii8+PC9zdmc+");
+}
+
+.entry__icon--opera {
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMzM4OGZjIiBzdHJva2Utd2lkdGg9IjEuOCI+PHBhdGggZD0iTTQgMThjNC01IDEyLTUgMTYgMCIvPjxwYXRoIGQ9Ik02IDhjMyAzIDkgMyAxMiAwIi8+PHBhdGggZD0iTTEyIDV2MTQiLz48L3N2Zz4=");
+}
+
+.entry__icon--pottery {
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDY3ZTc2IiBzdHJva2Utd2lkdGg9IjEuOCI+PHBhdGggZD0iTTggNGg4Ii8+PHBhdGggZD0iTTEwIDRjMCA0LTMgNS0zIDEwYTUgNSAwIDAwMTAgMGMwLTUtMy02LTMtMTAiLz48cGF0aCBkPSJNOSAxNGg2Ii8+PC9zdmc+");
+}

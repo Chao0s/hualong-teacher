@@ -1,0 +1,123 @@
+<!-- 质量评估 —— 对照原型 screens/assessment-tool.html。
+     题库 120 条在 assessment-data.js 里，原样搬过来的。
+     原型的圆环用 conic-gradient 加 CSS 变量；这里把整条渐变在 js 里算好再绑，
+     省掉自定义属性在旧 WebView 上的支持问题。 -->
+
+<view class="topfix">
+  <view class="summary">
+    <view class="dial" style="background: conic-gradient(#189b91 {{dialPct}}%, #e0e8e8 0)">
+      <view class="dial__hole"></view>
+      <text class="dial__txt">{{dialText}}</text>
+    </view>
+    <view class="sum-right">
+      <view class="sum-lvl">总体等级 <text class="sum-lvl__b">{{sumLevel}}</text></view>
+      <view class="sum-count">{{sumCount}}</view>
+      <view class="bar"><view class="bar__fill" style="width: {{barPct}}%"></view></view>
+    </view>
+  </view>
+
+  <view class="filters">
+    <view
+      class="chip {{mode === item.key ? 'chip--on' : ''}}"
+      wx:for="{{filters}}"
+      wx:key="key"
+      data-mode="{{item.key}}"
+      bindtap="onFilterTap"
+    >{{item.label}} <text class="chip__n">{{item.count}}</text></view>
+  </view>
+</view>
+
+<view class="page">
+
+  <view class="empty" wx:if="{{emptyText}}">{{emptyText}}</view>
+
+  <block wx:for="{{sections}}" wx:key="name" wx:for-item="section" wx:for-index="si">
+    <view class="section" wx:if="{{section.visible}}">
+      <view class="sec-head" hover-class="sec-head--hover" hover-stay-time="80" data-si="{{si}}" bindtap="onToggleSection">
+        <view class="sec-idx">{{section.idx}}</view>
+        <text class="sec-name">{{section.name}}</text>
+        <text class="sec-meta"><text class="sec-meta__b">{{section.scored}}</text>/{{section.total}} · 均分 {{section.avg}}</text>
+        <text class="chev {{section.open ? 'chev--open' : ''}}">›</text>
+      </view>
+
+      <!-- 折叠起来的分组不渲染内容：120 个指标全部展开会有几千个节点。
+           折叠态本来就看不见，行为一致，代价只是展开时现渲染。 -->
+      <view class="sec-body" wx:if="{{section.open}}">
+        <block wx:for="{{section.subs}}" wx:key="name" wx:for-item="sub" wx:for-index="bi">
+          <text class="subhead" wx:if="{{sub.visible}}">{{sub.name}}</text>
+
+          <block wx:for="{{sub.inds}}" wx:key="id" wx:for-item="ind" wx:for-index="ii">
+            <view class="ind" wx:if="{{ind.visible}}">
+              <view class="ind-head" hover-class="ind-head--hover" hover-stay-time="80"
+                    data-si="{{si}}" data-bi="{{bi}}" data-ii="{{ii}}" bindtap="onToggleInd">
+                <text class="ind-code">{{ind.code}}</text>
+                <text class="ind-title">{{ind.title}}</text>
+                <text class="chip-score {{ind.chipCls}}">{{ind.chipText}}</text>
+              </view>
+
+              <view class="ind-body" wx:if="{{ind.open}}">
+                <view class="legend">评分：1 {{label1}} · 3 {{label3}} · 5 {{label5}}（2、4 为过渡分）</view>
+
+                <view class="scores">
+                  <view
+                    class="sbtn {{ind.score === opt.score ? 'sbtn--sel' : ''}}"
+                    wx:for="{{options}}"
+                    wx:key="score"
+                    wx:for-item="opt"
+                    data-si="{{si}}" data-bi="{{bi}}" data-ii="{{ii}}" data-score="{{opt.score}}"
+                    bindtap="onScoreTap"
+                  >
+                    <text class="sbtn__n">{{opt.score}}</text>
+                    <text class="sbtn__l">{{opt.label}}</text>
+                  </view>
+                </view>
+
+                <!-- 1 分和 5 分要留佐证，这条提示只在这两档出现 -->
+                <view class="evi-hint" wx:if="{{ind.needEvi}}">该评分（1 分 / 5 分）需保存图像资料或特例作为评价依据。</view>
+
+                <view class="rub-toggle" data-si="{{si}}" data-bi="{{bi}}" data-ii="{{ii}}" bindtap="onToggleRub">
+                  <text class="rub-toggle__a {{ind.rubOpen ? 'rub-toggle__a--open' : ''}}">›</text>
+                  <text>评分标准（1 / 3 / 5 分锚点）</text>
+                </view>
+                <view class="rubric" wx:if="{{ind.rubOpen}}">
+                  <view class="rrow rrow--r1"><text class="rrow__k">1分</text><text>{{ind.r1}}</text></view>
+                  <view class="rrow rrow--r3"><text class="rrow__k">3分</text><text>{{ind.r3}}</text></view>
+                  <view class="rrow rrow--r5"><text class="rrow__k">5分</text><text>{{ind.r5}}</text></view>
+                </view>
+
+                <view class="field-lbl">佐证图片</view>
+                <view class="evi-line">
+                  <view class="evi-add" data-si="{{si}}" data-bi="{{bi}}" data-ii="{{ii}}" bindtap="onAddEvidence">
+                    <text class="evi-add__plus">＋</text>
+                    <text>添加佐证</text>
+                  </view>
+                  <text class="evi-count" wx:if="{{ind.eviCount}}">已选 {{ind.eviCount}} 张</text>
+                </view>
+
+                <view class="field-lbl">评价记录</view>
+                <textarea
+                  class="note"
+                  maxlength="300"
+                  placeholder="记录观察到的现象、特例或改进建议…"
+                  placeholder-class="note__ph"
+                  value="{{ind.note}}"
+                  data-si="{{si}}" data-bi="{{bi}}" data-ii="{{ii}}"
+                  bindinput="onNoteInput"
+                />
+              </view>
+            </view>
+          </block>
+        </block>
+      </view>
+    </view>
+  </block>
+
+</view>
+
+<view class="footbar">
+  <view class="foot-score">
+    <view class="foot-score__n">{{footScore}}<text class="foot-score__unit">{{footUnit}}</text></view>
+    <view class="foot-score__l">{{footLevel}}</view>
+  </view>
+  <view class="save-btn" hover-class="save-btn--hover" bindtap="onSave">保存</view>
+</view>

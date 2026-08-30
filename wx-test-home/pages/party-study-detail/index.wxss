@@ -1,0 +1,154 @@
+/* 党建学习 · 文件预览 —— 逐条对照原型 screens/party-study-detail.html。1px 记 2rpx。 */
+
+.page {
+  padding: 24rpx 32rpx 64rpx;
+}
+
+.doc {
+  padding: 32rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 32rpx;
+  background: var(--surface);
+}
+
+.badge {
+  display: inline-flex;
+  padding: 10rpx 18rpx;
+  border-radius: 999rpx;
+  background: #fdecec;
+  color: var(--danger);
+  font-size: 22rpx;
+  font-weight: 700;
+}
+
+.doc__title {
+  display: block;
+  margin-top: 24rpx;
+  font-size: 40rpx;
+  font-weight: 700;
+  line-height: 1.28;
+}
+
+.doc__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  margin-top: 16rpx;
+  color: var(--muted);
+  font-size: 24rpx;
+}
+
+/* ── 文件预览块 ────────────────────────────────────────────────────────── */
+
+.preview {
+  margin-top: 28rpx;
+  padding: 28rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 24rpx;
+  background: #fafcfc;
+}
+
+.preview__title {
+  display: block;
+  margin-bottom: 16rpx;
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
+.preview__p {
+  display: block;
+  margin-top: 16rpx;
+  font-size: 26rpx;
+  line-height: 1.65;
+  color: #3d3b36;
+}
+
+.video-box {
+  margin-top: 28rpx;
+  padding-top: 24rpx;
+  border-top: 1rpx solid var(--border);
+}
+
+.video-box__title {
+  display: block;
+  margin-bottom: 6rpx;
+  font-size: 26rpx;
+  font-weight: 700;
+}
+
+.video-box__hint {
+  display: block;
+  margin-bottom: 18rpx;
+  font-size: 22rpx;
+  color: var(--muted);
+}
+
+.video-list {
+  display: grid;
+  gap: 16rpx;
+}
+
+.video-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  min-height: 80rpx;
+  padding: 20rpx 24rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 24rpx;
+  background: #fff;
+}
+
+.video-link--hover {
+  background: #f2f7f7;
+}
+
+.video-link__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 26rpx;
+  font-weight: 700;
+}
+
+.video-link__op {
+  flex: 0 0 auto;
+  color: var(--accent);
+  font-size: 24rpx;
+}
+
+/* ── 两个按钮 ──────────────────────────────────────────────────────────── */
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20rpx;
+  margin-top: 28rpx;
+}
+
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 84rpx;
+  border-radius: 24rpx;
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
+.btn--primary {
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn--secondary {
+  border: 1rpx solid var(--border);
+  background: #fff;
+  color: var(--fg);
+}
+
+.btn--hover {
+  opacity: 0.85;
+}

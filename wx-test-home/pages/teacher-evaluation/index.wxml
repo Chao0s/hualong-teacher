@@ -1,0 +1,39 @@
+<!-- 教师评价 —— 对照原型 screens/teacher-evaluation.html。
+     四个入口 + 一张只显示圆点的进度表。 -->
+<view class="page">
+
+  <view class="sec sec--first">评价入口</view>
+  <view class="eval-entry-grid">
+    <view
+      class="eval-entry {{item.primary ? 'eval-entry--primary' : ''}}"
+      hover-class="list-card--hover"
+      hover-stay-time="80"
+      wx:for="{{entries}}"
+      wx:key="key"
+      data-key="{{item.key}}"
+      bindtap="onEntryTap"
+    >{{item.label}}</view>
+  </view>
+
+  <view class="sec">本班幼儿进度</view>
+  <view class="table-wrap">
+    <view class="prog-row prog-row--head">
+      <text class="prog-cell prog-cell--name">幼儿</text>
+      <text class="prog-cell">本月评价</text>
+      <text class="prog-cell">学期评估</text>
+      <text class="prog-cell">综合评估</text>
+      <text class="prog-cell">教师寄语</text>
+    </view>
+    <view class="prog-row" wx:for="{{rows}}" wx:key="name" wx:for-item="row">
+      <text class="prog-cell prog-cell--name">{{row.name}}</text>
+      <view class="prog-cell" wx:for="{{row.states}}" wx:key="index" wx:for-item="state">
+        <view class="dot-cell dot-cell--{{state}}"></view>
+      </view>
+    </view>
+    <view class="dot-legend">
+      <view class="dot-legend__item"><view class="dot-cell dot-cell--done"></view>完成</view>
+      <view class="dot-legend__item"><view class="dot-cell dot-cell--miss"></view>未完成</view>
+    </view>
+  </view>
+
+</view>

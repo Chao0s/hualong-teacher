@@ -1,0 +1,49 @@
+<!-- 教研培训 —— 对照原型 screens/training-list.html。
+     原型把「最新研修」和「历史研修」写成两段结构相同的 HTML，这里合成一份数据两次循环。 -->
+<view class="page">
+
+  <view class="sec"><text class="sec__title">我的档案</text></view>
+  <view class="profile-grid">
+    <view
+      class="profile-card"
+      hover-class="card--hover"
+      hover-stay-time="80"
+      wx:for="{{profiles}}"
+      wx:key="key"
+      data-key="{{item.key}}"
+      bindtap="onProfileTap"
+    >
+      <view class="profile-icon profile-icon--{{item.key}}"></view>
+      <text class="profile-title">{{item.title}}</text>
+      <text class="profile-desc">{{item.desc}}</text>
+    </view>
+  </view>
+
+  <block wx:for="{{groups}}" wx:key="title" wx:for-item="group">
+    <view class="sec">
+      <text class="sec__title">{{group.title}}</text>
+      <text class="sec__more" data-name="{{group.title}}" bindtap="onNotYet">更多</text>
+    </view>
+    <view
+      class="card"
+      hover-class="card--hover"
+      hover-stay-time="80"
+      wx:for="{{group.items}}"
+      wx:key="title"
+      data-id="{{item.id}}"
+      data-type="{{item.type}}"
+      bindtap="onTrainingTap"
+    >
+      <view class="card-top">
+        <text class="card-title">{{item.title}}</text>
+        <text class="badge">{{item.badge}}</text>
+      </view>
+      <text class="card-meta">{{item.meta}}</text>
+      <text class="card-summary">{{item.summary}}</text>
+      <view class="card-foot">
+        <text class="pill" wx:for="{{item.pills}}" wx:key="*this" wx:for-item="pill">{{pill}}</text>
+      </view>
+    </view>
+  </block>
+
+</view>

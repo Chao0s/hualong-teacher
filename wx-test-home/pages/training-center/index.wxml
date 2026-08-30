@@ -1,0 +1,101 @@
+<!-- 教研培训部 —— 对照原型 screens/training-center.html。
+     原型的轮播是 setInterval 换 class，这里换成小程序原生 swiper，间隔一样 3600ms。
+     指示点没用 swiper 自带的 indicator-dots：原型的选中点是拉长的胶囊，自带的做不出来。 -->
+<view class="page">
+
+  <swiper
+    class="banner-wrap"
+    autoplay
+    circular
+    interval="3600"
+    duration="320"
+    current="{{bannerIndex}}"
+    bindchange="onBannerChange"
+  >
+    <swiper-item wx:for="{{banners}}" wx:key="title">
+      <view class="banner banner--{{item.tone}}">
+        <view class="banner__ring"></view>
+        <text class="banner__kicker">{{item.kicker}}</text>
+        <text class="banner__title">{{item.title}}</text>
+        <text class="banner__desc">{{item.desc}}</text>
+      </view>
+    </swiper-item>
+  </swiper>
+  <view class="banner-dots">
+    <view
+      class="banner-dot {{index === bannerIndex ? 'banner-dot--on' : ''}}"
+      wx:for="{{banners}}"
+      wx:key="title"
+    ></view>
+  </view>
+
+  <view class="sec"><text class="sec__title">快捷入口</text></view>
+  <view class="entry-grid">
+    <view
+      class="entry-card"
+      hover-class="card--hover"
+      hover-stay-time="80"
+      wx:for="{{entries}}"
+      wx:key="key"
+      data-key="{{item.key}}"
+      bindtap="onEntryTap"
+    >
+      <view class="ec-icon ec-icon--{{item.tone}}">{{item.glyph}}</view>
+      <text class="entry-card__title">{{item.title}}</text>
+      <text class="entry-card__desc">{{item.desc}}</text>
+    </view>
+  </view>
+
+  <view class="sec">
+    <text class="sec__title">推荐资源</text>
+    <text class="sec__more" bindtap="onResourceMore">全部</text>
+  </view>
+  <view class="card-list">
+    <view
+      class="info-card"
+      hover-class="card--hover"
+      hover-stay-time="80"
+      wx:for="{{resources}}"
+      wx:key="name"
+      bindtap="onResourceTap"
+    >
+      <view class="thumb thumb--{{item.tone}}">{{item.glyph}}</view>
+      <view class="card-body">
+        <view class="card-top">
+          <text class="card-name">{{item.name}}</text>
+          <text class="badge">{{item.badge}}</text>
+        </view>
+        <text class="card-meta">{{item.meta}}</text>
+        <text class="card-summary">{{item.summary}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="sec">
+    <text class="sec__title">推荐案例</text>
+    <text class="sec__more" bindtap="onCaseMore">全部</text>
+  </view>
+  <view class="card-list">
+    <view
+      class="info-card"
+      hover-class="card--hover"
+      hover-stay-time="80"
+      wx:for="{{cases}}"
+      wx:key="name"
+      bindtap="onCaseTap"
+    >
+      <view class="thumb thumb--{{item.tone}}">{{item.glyph}}</view>
+      <view class="card-body">
+        <view class="card-top">
+          <text class="card-name">{{item.name}}</text>
+          <text class="badge">{{item.badge}}</text>
+        </view>
+        <text class="card-meta">{{item.meta}}</text>
+        <text class="card-summary">{{item.summary}}</text>
+      </view>
+    </view>
+  </view>
+
+</view>
+
+<hl-tabbar active="training" />

@@ -1,0 +1,260 @@
+/* 课程资源 —— 逐条对照原型 screens/resource-center.html。1px 记 2rpx。 */
+
+.page {
+  padding: 24rpx 32rpx calc(200rpx + env(safe-area-inset-bottom));
+}
+
+/* ── 搜索条 ────────────────────────────────────────────────────────────── */
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 20rpx 28rpx;
+  margin-bottom: 28rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 48rpx;
+  background: var(--surface);
+}
+
+.search-bar__icon {
+  flex: 0 0 auto;
+  width: 36rpx;
+  height: 36rpx;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 36rpx 36rpx;
+}
+
+.search-bar__input {
+  flex: 1;
+  min-width: 0;
+  font-size: 28rpx;
+  color: var(--fg);
+}
+
+.search-bar__ph {
+  color: var(--muted);
+}
+
+.search-bar__action {
+  flex: 0 0 auto;
+  padding: 10rpx 20rpx;
+  border-radius: 999rpx;
+  background: var(--accent);
+  color: var(--surface);
+  font-size: 24rpx;
+  font-weight: 600;
+}
+
+/* ── 两个大入口 ────────────────────────────────────────────────────────── */
+
+.hub-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20rpx;
+  margin-bottom: 40rpx;
+}
+
+.hub-card {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+  min-height: 232rpx;
+  padding: 28rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 32rpx;
+  background: var(--surface);
+}
+
+.hub-card--resource {
+  background: linear-gradient(180deg, var(--accent-light) 0%, var(--surface) 82%);
+}
+
+.hub-card--case {
+  background: linear-gradient(180deg, var(--green-light) 0%, var(--surface) 82%);
+}
+
+.hub-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.hub-icon {
+  flex: 0 0 auto;
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 20rpx;
+  border: 1rpx solid var(--border);
+  background-color: var(--surface);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 38rpx 38rpx;
+}
+
+.hub-arrow {
+  color: var(--muted);
+  font-size: 36rpx;
+  line-height: 1;
+}
+
+.hub-title {
+  display: block;
+  margin-bottom: 8rpx;
+  font-size: 34rpx;
+  font-weight: 700;
+}
+
+.hub-desc {
+  display: block;
+  font-size: 24rpx;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+/* ── 分组标题 ──────────────────────────────────────────────────────────── */
+
+.sec {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 40rpx 0 20rpx;
+}
+
+.sec__title {
+  font-size: 32rpx;
+  font-weight: 700;
+}
+
+.sec__more {
+  font-size: 24rpx;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+/* ── 资源卡 / 案例卡 ───────────────────────────────────────────────────── */
+
+.card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.info-card {
+  display: flex;
+  gap: 24rpx;
+  align-items: stretch;
+  padding: 24rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 28rpx;
+  background: var(--surface);
+}
+
+/* 原型的按下态是 `color-mix(in oklab, var(--surface), var(--bg) 38%)`，
+ * 小程序不认 color-mix，换成算好的定值。 */
+.card--hover {
+  background: #f6faf9;
+}
+
+.thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 116rpx;
+  border-radius: 24rpx;
+  border: 1rpx solid var(--border);
+  flex: 0 0 auto;
+}
+
+.thumb--accent { background: var(--accent-light); }
+.thumb--green { background: var(--green-light); }
+.thumb--amber { background: var(--amber-light); }
+
+.thumb__icon {
+  width: 48rpx;
+  height: 48rpx;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 48rpx 48rpx;
+}
+
+.card-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin-bottom: 10rpx;
+}
+
+.card-name {
+  font-size: 30rpx;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.badge {
+  flex: 0 0 auto;
+  padding: 6rpx 14rpx;
+  border-radius: 999rpx;
+  font-size: 20rpx;
+  color: var(--accent-dark);
+  background: var(--accent-light);
+}
+
+.card-meta {
+  font-size: 24rpx;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.card-summary {
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: var(--fg);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ── 图标 ──────────────────────────────────────────────────────────────── */
+
+.search-bar__icon {
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjODY4Njg2IiBzdHJva2Utd2lkdGg9IjIiPjxjaXJjbGUgY3g9IjExIiBjeT0iMTEiIHI9IjgiLz48bGluZSB4MT0iMjEiIHkxPSIyMSIgeDI9IjE2LjY1IiB5Mj0iMTYuNjUiLz48L3N2Zz4=");
+}
+
+.hub-icon--resource {
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMTg5YjkxIiBzdHJva2Utd2lkdGg9IjEuOSI+PHBhdGggZD0iTTQgMTkuNUEyLjUgMi41IDAgMDE2LjUgMTdIMjAiLz48cGF0aCBkPSJNNCA0LjVBMi41IDIuNSAwIDAxNi41IDJIMjB2MjBINi41QTIuNSAyLjUgMCAwMTQgMTkuNXoiLz48L3N2Zz4=");
+}
+
+.hub-icon--case {
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNGI5YTVhIiBzdHJva2Utd2lkdGg9IjEuOSI+PHBhdGggZD0iTTggNmgxMyIvPjxwYXRoIGQ9Ik04IDEyaDEzIi8+PHBhdGggZD0iTTggMThoMTMiLz48cGF0aCBkPSJNMyA2aC4wMSIvPjxwYXRoIGQ9Ik0zIDEyaC4wMSIvPjxwYXRoIGQ9Ik0zIDE4aC4wMSIvPjwvc3ZnPg==");
+}
+
+.thumb__icon--house {
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDY3ZTc2IiBzdHJva2Utd2lkdGg9IjEuOCI+PHBhdGggZD0iTTMgMjFoMTgiLz48cGF0aCBkPSJNNSAyMVY5bDctNSA3IDV2MTIiLz48cGF0aCBkPSJNOSAyMXYtNmg2djYiLz48L3N2Zz4=");
+}
+
+.thumb__icon--star {
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNGI5YTVhIiBzdHJva2Utd2lkdGg9IjEuOCI+PHBhdGggZD0iTTEyIDNsMi42IDUuMyA1LjkuOS00LjMgNC4xIDEgNS44TDEyIDE2LjQgNi44IDE5LjFsMS01LjgtNC4zLTQuMSA1LjktLjlMMTIgM3oiLz48L3N2Zz4=");
+}
+
+.thumb__icon--book {
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDY3ZTc2IiBzdHJva2Utd2lkdGg9IjEuOCI+PHBhdGggZD0iTTQgMTlWNWEyIDIgMCAwMTItMmgxMmEyIDIgMCAwMTIgMnYxNCIvPjxwYXRoIGQ9Ik04IDdoOCIvPjxwYXRoIGQ9Ik04IDExaDgiLz48cGF0aCBkPSJNOCAxNWg1Ii8+PC9zdmc+");
+}
+
+.thumb__icon--wave {
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjOWU2ZjBjIiBzdHJva2Utd2lkdGg9IjEuOCI+PHBhdGggZD0iTTEyIDN2MTgiLz48cGF0aCBkPSJNNSA4YzQgMCA0IDMgNyAzczMtMyA3LTMiLz48cGF0aCBkPSJNNSAxNmM0IDAgNC0zIDctM3MzIDMgNyAzIi8+PC9zdmc+");
+}

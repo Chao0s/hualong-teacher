@@ -1,0 +1,35 @@
+<!-- 资源详情 —— 对照原型 screens/resource-detail.html。
+     注意这一页原型用的是另一套配色（米底 #f5f4f1、蓝主色 #2f6feb），
+     和教研培训那几页的青绿色不是同一套。这里照抄原型，没有统一。 -->
+<view class="page">
+
+  <view class="detail-card">
+    <text class="detail-title">{{title}}</text>
+    <view class="tag-row">
+      <text class="tag" wx:for="{{tags}}" wx:key="*this">{{item}}</text>
+    </view>
+
+    <!-- 原型给第 2 段起的小标题挂了 `margin-top:18px`，第 1 段没有。 -->
+    <block wx:for="{{sections}}" wx:key="title">
+      <view class="sec-title {{index === 0 ? '' : 'sec-title--gap'}}">{{item.title}}</view>
+      <text class="body-text">{{item.text}}</text>
+    </block>
+
+    <view class="sec-title sec-title--gap">课程应用</view>
+    <view
+      class="link-card"
+      hover-class="link-card--hover"
+      hover-stay-time="80"
+      wx:for="{{links}}"
+      wx:key="name"
+      bindtap="onLinkTap"
+    >
+      <view class="link-card__body">
+        <text class="link-card__name">{{item.name}}</text>
+        <text class="link-card__meta">{{item.meta}}</text>
+      </view>
+      <text class="link-card__arrow">→</text>
+    </view>
+  </view>
+
+</view>

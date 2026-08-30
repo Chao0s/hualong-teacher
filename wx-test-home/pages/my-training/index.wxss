@@ -1,0 +1,82 @@
+/* 我的研修 —— 逐条对照原型 screens/my-training.html。1px 记 2rpx。 */
+
+.page {
+  padding: 24rpx 32rpx 56rpx;
+}
+
+.sec {
+  margin: 24rpx 0 20rpx;
+  font-size: 32rpx;
+  font-weight: 800;
+}
+
+.card {
+  padding: 28rpx;
+  margin-bottom: 20rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 32rpx;
+  background: var(--surface);
+}
+
+.card--hover {
+  background: #f8fbfb;
+}
+
+.top {
+  display: flex;
+  justify-content: space-between;
+  gap: 20rpx;
+  align-items: flex-start;
+}
+
+.title {
+  font-size: 30rpx;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.badge {
+  flex: 0 0 auto;
+  padding: 8rpx 16rpx;
+  border-radius: 999rpx;
+  font-size: 20rpx;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.badge--done { background: var(--green-light); color: var(--green); }
+.badge--doing { background: var(--blue-light); color: var(--blue); }
+.badge--wait { background: var(--amber-light); color: #9d6500; }
+/* 原型里「活动已撤回」那条不带颜色类，走浏览器默认（无底色、继承文字色）。 */
+.badge--plain { color: var(--fg); }
+
+.meta {
+  display: block;
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.summary {
+  display: block;
+  margin-top: 16rpx;
+  font-size: 24rpx;
+  line-height: 1.55;
+  color: var(--fg);
+}
+
+.foot {
+  display: flex;
+  gap: 12rpx;
+  flex-wrap: wrap;
+  margin-top: 20rpx;
+}
+
+.pill {
+  padding: 8rpx 14rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 999rpx;
+  font-size: 20rpx;
+  color: var(--muted);
+}

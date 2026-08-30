@@ -1,0 +1,28 @@
+<!-- 品牌建设 · 全部主题 —— 对照原型 screens/party-brand-list.html。 -->
+<view class="page">
+
+  <view class="summary">
+    <text class="summary__title">全部品牌主题</text>
+    <text class="summary__desc">沉淀本园课程特色、环境特色和党建引领实践案例。</text>
+  </view>
+
+  <view class="grid">
+    <view
+      class="card"
+      hover-class="card--hover"
+      hover-stay-time="80"
+      wx:for="{{brands}}"
+      wx:key="id"
+      data-id="{{item.id}}"
+      bindtap="onItemTap"
+    >
+      <view class="thumb">{{item.glyph}}</view>
+      <view class="card__main">
+        <text class="card__title">{{item.title}}</text>
+        <text class="card__meta">{{item.meta}}</text>
+      </view>
+      <text class="card__arrow">›</text>
+    </view>
+  </view>
+
+</view>

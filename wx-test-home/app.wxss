@@ -1,0 +1,35 @@
+/* 设计令牌 —— 逐条抄自设计稿 home.html 的 `:root`。
+ * 网页版的 `:root` 在小程序里对应 `page`。 */
+page {
+  --bg: #f0f5f5;
+  --surface: #ffffff;
+  --fg: #1a1916;
+  --muted: #868686;
+  --border: #e0e8e8;
+  --accent: #189b91;
+  --accent-dark: #067e76;
+  --accent-light: #e8f5f4;
+  --green: #4b9a5a;
+  --green-light: #eaf5ed;
+  --amber: #feaf06;
+  --amber-light: #fff6df;
+  --orange: #f6762f;
+  --orange-light: #fff0e8;
+  --blue: #3388fc;
+  --blue-light: #e8f2fe;
+  --danger: #dc2626;
+  --danger-light: #feecec;
+  --purple: #7c5cff;
+  --purple-light: #f0edff;
+  --radius: 28rpx;
+  --radius-sm: 18rpx;
+
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+view, text, image {
+  box-sizing: border-box;
+}

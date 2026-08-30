@@ -1,0 +1,146 @@
+@import '/styles/home-school-common.wxss';
+
+/* 发布活动 —— 本页自己的样式，对照原型 screens/home-school-moment-publish.html 的内联块。 */
+
+.page {
+  padding: 24rpx 32rpx 56rpx;
+}
+
+/* 卡片里第一个 label 不需要上边距 */
+.form-label--first {
+  margin-top: 0;
+}
+
+.hint--gap {
+  display: block;
+  margin-top: 20rpx;
+}
+
+.hint--tight {
+  display: block;
+  margin-top: 8rpx;
+}
+
+/* ── 照片位 ────────────────────────────────────────────────────────────── */
+
+.photo-row {
+  gap: 20rpx;
+  padding-top: 20rpx;
+  align-items: flex-start;
+}
+
+.photo-row .photo {
+  position: relative;
+  flex: 0 0 164rpx;
+  width: 164rpx;
+  height: 144rpx;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  overflow: hidden;
+  margin-right: 20rpx;
+}
+
+.photo-label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48rpx;
+  padding: 0 8rpx;
+  /* 原型是 color-mix(in oklab, var(--surface), transparent 10%)，等价于 90% 不透明的白 */
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--accent-dark);
+  font-size: 22rpx;
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+.add-photo {
+  border-style: dashed;
+  flex-direction: column;
+  gap: 8rpx;
+  color: var(--accent);
+}
+
+.add-photo .plus {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 50%;
+  background: var(--accent-light);
+  font-size: 36rpx;
+  line-height: 1;
+}
+
+/* 原型用 ::before 叠了几层 color-mix 渐变当假照片，这里换成算好的定值渐变。 */
+.photo-thumb {
+  background:
+    radial-gradient(circle at 26% 34%, #4bb3aa 0 18rpx, transparent 20rpx),
+    linear-gradient(145deg, transparent 0 52%, #d5ecdb 53% 100%),
+    linear-gradient(135deg, var(--accent-light), var(--green-light));
+}
+
+.photo-thumb--group {
+  background:
+    radial-gradient(circle at 34% 38%, #46b0a7 0 16rpx, transparent 18rpx),
+    radial-gradient(circle at 58% 34%, #85c48f 0 16rpx, transparent 18rpx),
+    linear-gradient(150deg, var(--green-light), var(--blue-light));
+}
+
+/* ── 涉及幼儿 ──────────────────────────────────────────────────────────── */
+
+.selected-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.selected-title {
+  font-size: 30rpx;
+  font-weight: 600;
+}
+
+.selected-percent {
+  color: var(--accent);
+  font-size: 40rpx;
+  font-weight: 700;
+}
+
+.table-wrap--gap {
+  margin-top: 24rpx;
+}
+
+/* 三列：班级人数 / 已勾选 / 占比 */
+.prog-row {
+  grid-template-columns: 180rpx 1fr 1fr;
+}
+
+/* ── 勾选框 ────────────────────────────────────────────────────────────── */
+
+/* 原型用原生 checkbox；小程序的 checkbox 不好改样式，这里自己画一个方框。 */
+.checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 36rpx;
+  height: 36rpx;
+  border: 2rpx solid var(--border);
+  border-radius: 8rpx;
+  background: #fff;
+  color: #fff;
+  font-size: 24rpx;
+  line-height: 1;
+}
+
+.checkbox--on {
+  border-color: var(--accent);
+  background: var(--accent);
+}

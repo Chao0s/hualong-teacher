@@ -1,0 +1,46 @@
+<!-- 儿童成长档案 —— 对照原型 screens/growth-record.html。
+     进度表的表头在原型里是两行 <th>，带 rowspan/colspan。
+     小程序没有表格标签，这里用网格的 grid-row / grid-column 跨格做出同样的形状。 -->
+<view class="page">
+
+  <view class="sec sec--first">儿童评价</view>
+  <view class="record-entry-row">
+    <view
+      class="record-entry {{item.primary ? 'record-entry--primary' : ''}}"
+      hover-class="list-card--hover"
+      hover-stay-time="80"
+      wx:for="{{entries}}"
+      wx:key="key"
+      data-key="{{item.key}}"
+      bindtap="onEntryTap"
+    >{{item.label}}</view>
+  </view>
+
+  <view class="sec">孩子评价进度</view>
+  <view class="table-wrap">
+    <view class="rec-head">
+      <text class="rec-head__cell rec-head__cell--tall rec-head__cell--name">幼儿</text>
+      <text class="rec-head__cell rec-head__cell--wide">家长</text>
+      <text class="rec-head__cell rec-head__cell--wide">教师</text>
+      <text class="rec-head__cell rec-head__cell--tall">综合</text>
+      <text class="rec-head__cell rec-head__cell--tall">成长册</text>
+      <text class="rec-head__cell rec-head__cell--sub">月度</text>
+      <text class="rec-head__cell rec-head__cell--sub">学期</text>
+      <text class="rec-head__cell rec-head__cell--sub">月度</text>
+      <text class="rec-head__cell rec-head__cell--sub">学期</text>
+    </view>
+
+    <view class="rec-row" wx:for="{{rows}}" wx:key="name" wx:for-item="row">
+      <text class="rec-cell rec-cell--name">{{row.name}}</text>
+      <view class="rec-cell" wx:for="{{row.states}}" wx:key="index" wx:for-item="state">
+        <view class="dot-cell dot-cell--{{state}}"></view>
+      </view>
+    </view>
+  </view>
+
+  <view class="dot-legend">
+    <view class="dot-legend__item"><view class="dot-cell dot-cell--done"></view>已完成</view>
+    <view class="dot-legend__item"><view class="dot-cell dot-cell--miss"></view>未完成</view>
+  </view>
+
+</view>

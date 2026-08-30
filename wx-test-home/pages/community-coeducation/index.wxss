@@ -1,0 +1,139 @@
+@import '/styles/home-school-common.wxss';
+
+/* 社区共育 —— 本页自己的样式，对照原型 screens/community-coeducation.html 的内联块。
+ * 这一页的 .moment-card / .avatar / .photo-grid / .feed-photo 尺寸和共用样式那份不同
+ * （原型里也是各写各的），所以下面覆盖了一遍。 */
+
+.page {
+  padding: 24rpx 32rpx 56rpx;
+}
+
+/* ── 筛选条 ────────────────────────────────────────────────────────────── */
+
+.filter-panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20rpx;
+  padding: 28rpx;
+  margin-bottom: 24rpx;
+  border-radius: 32rpx;
+  background: var(--surface);
+}
+
+.filter-field__label {
+  display: block;
+  margin-bottom: 12rpx;
+  color: var(--muted);
+  font-size: 22rpx;
+}
+
+.filter-field__select {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 76rpx;
+  padding: 0 20rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 22rpx;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 26rpx;
+}
+
+/* ── Feed ──────────────────────────────────────────────────────────────── */
+
+.feed-list {
+  border-radius: 32rpx;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+/* 覆盖共用样式：这一页的卡片有内边距、没有分隔线 */
+.moment-card {
+  display: grid;
+  grid-template-columns: 76rpx 1fr;
+  gap: 20rpx;
+  padding: 28rpx;
+  border-bottom: 0;
+}
+
+.avatar {
+  width: 76rpx;
+  height: 76rpx;
+  font-size: 26rpx;
+}
+
+.moment-head {
+  align-items: flex-start;
+  margin-bottom: 14rpx;
+}
+
+.post-body {
+  min-width: 0;
+}
+
+.post-text {
+  display: block;
+  margin-bottom: 20rpx;
+  color: #34322e;
+  font-size: 26rpx;
+  line-height: 1.55;
+}
+
+.photo-grid {
+  gap: 10rpx;
+  margin-top: 0;
+  margin-bottom: 20rpx;
+}
+
+/* 这一页的照片位是正方形，底色也和在园时光那份不同 */
+.feed-photo {
+  aspect-ratio: 1;
+  min-height: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 18rpx;
+  color: rgba(26, 25, 22, 0.68);
+  background:
+    linear-gradient(135deg, rgba(24, 155, 145, 0.16), rgba(51, 136, 252, 0.14)),
+    var(--accent-light);
+  font-size: 24rpx;
+}
+
+/* ── 卡片底行 ──────────────────────────────────────────────────────────── */
+
+.moment-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+}
+
+.add-material {
+  flex: none;
+  padding: 10rpx 20rpx;
+  border: 1rpx solid var(--accent);
+  border-radius: 999rpx;
+  background: var(--surface);
+  color: var(--accent);
+  font-size: 22rpx;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.add-material--on {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.empty {
+  padding: 40rpx;
+  border-radius: 32rpx;
+  background: var(--surface);
+  color: var(--muted);
+  text-align: center;
+  font-size: 26rpx;
+}

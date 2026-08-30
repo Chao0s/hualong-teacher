@@ -1,0 +1,12 @@
+@import '/styles/home-school-common.wxss';
+@import '/styles/album-sheet.wxss';
+
+/* 填写月度评价 —— 页面本身没有额外样式，全部来自上面两份共用样式。 */
+
+.page {
+  padding: 24rpx 32rpx 56rpx;
+}
+
+.form-label--first {
+  margin-top: 0;
+}

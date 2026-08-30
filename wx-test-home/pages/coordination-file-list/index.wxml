@@ -1,0 +1,43 @@
+<!-- 综合协调 · 文件列表 —— 对照原型 screens/coordination-file-list.html。
+     原型每次「加载更多」往列表里 append 3 条；这里同样每次多放 3 条，放满就隐藏按钮。 -->
+<view class="page">
+
+  <view class="sec">全部文件</view>
+
+  <view class="doc-list">
+    <view class="doc-card" wx:for="{{visible}}" wx:key="title">
+      <view class="doc-card__main">
+        <text class="doc-title">{{item.title}}</text>
+        <text class="doc-summary">{{item.summary}}</text>
+      </view>
+      <view class="doc-actions">
+        <view class="btn btn--primary" hover-class="btn--hover" data-index="{{index}}" bindtap="onPreview">详情</view>
+        <view class="btn" hover-class="btn--hover" data-title="{{item.title}}" bindtap="onDownload">下载</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="load-more" hover-class="load-more--hover" wx:if="{{hasMore}}" bindtap="onLoadMore">加载更多</view>
+
+</view>
+
+<hl-tabbar active="coord" />
+
+<!-- 文件详情浮层。原型是页内一个 .sheet 遮罩，点遮罩或叉号关掉。 -->
+<view class="sheet" wx:if="{{preview}}" bindtap="onClosePreview">
+  <view class="preview" catchtap="noop">
+    <view class="preview__head">
+      <view class="preview__headtext">
+        <text class="preview__title">{{preview.title}}</text>
+        <text class="preview__meta">{{preview.meta}}</text>
+      </view>
+      <view class="preview__close" bindtap="onClosePreview">×</view>
+    </view>
+    <text class="preview__body">{{preview.summary}}</text>
+    <text class="attachment-title">附件</text>
+    <view class="attachment-row">
+      <text class="attachment-row__name">主文件 · {{preview.title}}.txt</text>
+      <text class="attachment-row__op" data-title="{{preview.title}}" bindtap="onDownload">下载</text>
+    </view>
+  </view>
+</view>

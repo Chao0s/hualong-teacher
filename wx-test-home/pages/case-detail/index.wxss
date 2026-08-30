@@ -1,0 +1,273 @@
+/* 案例详情 —— 逐条对照原型 screens/case-detail.html。1px 记 2rpx。
+ * 和资源详情一样，这一页原型自带米底 #f5f4f1、蓝主色 #2f6feb 的配色。 */
+
+page {
+  background: #f5f4f1;
+}
+
+.page {
+  padding: 24rpx 32rpx 40rpx;
+}
+
+/* ── 案例卡 ────────────────────────────────────────────────────────────── */
+
+.detail-card {
+  padding: 36rpx;
+  margin-bottom: 20rpx;
+  border-radius: 28rpx;
+  background: #ffffff;
+  box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.04);
+}
+
+.detail-title {
+  display: block;
+  margin-bottom: 24rpx;
+  font-size: 40rpx;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.tag-row {
+  display: flex;
+  gap: 12rpx;
+  flex-wrap: wrap;
+  margin: -4rpx 0 32rpx;
+}
+
+.tag {
+  padding: 8rpx 20rpx;
+  border-radius: 999rpx;
+  background: #e8f0fe;
+  color: #2f6feb;
+  font-size: 22rpx;
+}
+
+.sec-title {
+  margin-bottom: 16rpx;
+  font-size: 30rpx;
+  font-weight: 600;
+}
+
+.sec-title--gap {
+  margin-top: 36rpx;
+}
+
+.body-text {
+  display: block;
+  font-size: 28rpx;
+  line-height: 1.65;
+}
+
+.link-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 32rpx;
+  padding: 28rpx 32rpx;
+  border: 1rpx solid #e8e5df;
+  border-radius: 24rpx;
+  background: #f8f7f4;
+}
+
+.link-card--hover {
+  background: #f2f0ec;
+}
+
+.link-card__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.link-card__name {
+  display: block;
+  font-size: 30rpx;
+  font-weight: 600;
+}
+
+.link-card__meta {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 24rpx;
+  color: #8c8a84;
+}
+
+.link-card__arrow {
+  flex: 0 0 auto;
+  margin-left: 16rpx;
+  color: #2f6feb;
+  font-size: 32rpx;
+}
+
+/* ── 下载按钮 ──────────────────────────────────────────────────────────── */
+
+.detail-actions {
+  margin-top: 36rpx;
+  padding-top: 28rpx;
+  border-top: 1rpx solid #e8e5df;
+}
+
+.btn-dl {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 28rpx;
+  border: 1rpx solid #e8e5df;
+  border-radius: 24rpx;
+  background: #f8f7f4;
+}
+
+.btn-dl--hover {
+  background: #f2f0ec;
+}
+
+.btn-dl__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.btn-dl__title {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
+.btn-dl__note {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 24rpx;
+  font-weight: 400;
+  color: #8c8a84;
+}
+
+.btn-dl__arrow {
+  flex: 0 0 auto;
+  margin-left: 16rpx;
+  color: #2f6feb;
+  font-weight: 600;
+}
+
+/* ── Word 详案预览 ─────────────────────────────────────────────────────── */
+
+.word-wrap {
+  margin-top: 36rpx;
+  padding: 28rpx;
+  border-radius: 32rpx;
+  background: #ebe9e3;
+}
+
+.word-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20rpx;
+  font-size: 26rpx;
+  color: #8c8a84;
+}
+
+.word-page {
+  padding: 48rpx 40rpx;
+  border: 1rpx solid #dedbd3;
+  border-radius: 12rpx;
+  background: #fff;
+  box-shadow: 0 16rpx 48rpx rgba(0, 0, 0, 0.08);
+  color: #202020;
+}
+
+.w-h1 {
+  display: block;
+  margin-bottom: 32rpx;
+  font-size: 40rpx;
+  line-height: 1.3;
+  text-align: center;
+  font-weight: 600;
+}
+
+.word-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12rpx 24rpx;
+  padding: 20rpx 0 28rpx;
+  margin-bottom: 32rpx;
+  border-top: 1rpx solid #d7d3ca;
+  border-bottom: 1rpx solid #d7d3ca;
+}
+
+.word-meta__item {
+  font-size: 24rpx;
+  line-height: 1.5;
+}
+
+.w-h2 {
+  margin: 36rpx 0 16rpx;
+  font-size: 30rpx;
+  line-height: 1.4;
+  font-weight: 600;
+}
+
+.w-h3 {
+  margin: 24rpx 0 12rpx;
+  font-size: 26rpx;
+  line-height: 1.5;
+  font-weight: 600;
+}
+
+.w-p {
+  display: block;
+  font-size: 24rpx;
+  line-height: 1.85;
+  text-align: justify;
+}
+
+/* 原型用 <ol>/<ul> 加 padding-left:18px；小程序没有列表标签，
+ * 这里用两列布局手画序号和圆点，缩进对齐一致。 */
+.w-list {
+  padding-left: 36rpx;
+}
+
+.w-li {
+  display: flex;
+  align-items: flex-start;
+}
+
+.w-li__mark {
+  flex: 0 0 auto;
+  width: 40rpx;
+  font-size: 24rpx;
+  line-height: 1.85;
+}
+
+.w-li__text {
+  flex: 1;
+  min-width: 0;
+  font-size: 24rpx;
+  line-height: 1.85;
+  text-align: justify;
+}
+
+/* 原型是一张 <table>，小程序没有表格标签，用两列网格拼出同样的框线。
+ * 相邻行共用一条边：每格只画上边和左边，最外层补右边和下边。 */
+.w-table {
+  margin-top: 16rpx;
+  border-right: 1rpx solid #d7d3ca;
+  border-bottom: 1rpx solid #d7d3ca;
+}
+
+.w-tr {
+  display: grid;
+  grid-template-columns: 24% 1fr;
+}
+
+.w-th,
+.w-td {
+  padding: 14rpx 16rpx;
+  border-top: 1rpx solid #d7d3ca;
+  border-left: 1rpx solid #d7d3ca;
+  font-size: 24rpx;
+  line-height: 1.65;
+}
+
+.w-th {
+  background: #f7f6f3;
+  font-weight: 600;
+  text-align: left;
+}

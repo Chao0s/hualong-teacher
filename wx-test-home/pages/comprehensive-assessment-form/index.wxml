@@ -1,0 +1,97 @@
+<!-- 开始综合评估 —— 对照原型 screens/comprehensive-assessment-form.html。
+     124 题分五个领域，默认全部折叠；展开的领域才渲染题目，否则一屏几千个节点。
+     每改一个分就写一次草稿，退出页面不会丢。 -->
+<view class="page">
+
+  <view class="chunk">
+    <text class="label">评估对象</text>
+    <picker mode="selector" range="{{children}}" range-key="name" value="{{childIndex}}" bindchange="onChildChange">
+      <view class="select">{{children[childIndex].name}}</view>
+    </picker>
+  </view>
+
+  <view class="sec">领域打分</view>
+  <view class="chunk chunk--tight">
+    <text class="guide-title">评分说明（1—5 分）</text>
+    <view class="anchors">
+      <view class="anchor"><text class="anchor__k">1</text><text>达到 3~4 岁年龄段典型水平</text></view>
+      <view class="anchor"><text class="anchor__k">3</text><text>达到 4~5 岁年龄段典型水平</text></view>
+      <view class="anchor"><text class="anchor__k">5</text><text>达到 5~6 岁年龄段典型水平</text></view>
+      <view class="anchor"><text class="anchor__k">2 / 4</text><text>介于相邻锚点之间的过渡水平，由教师依据实际表现判断</text></view>
+    </view>
+    <text class="hint">依据《3-6岁儿童学习与发展指南》教师评定量表，共 5 大领域 124 题。</text>
+  </view>
+
+  <view class="domain" wx:for="{{domains}}" wx:key="id" wx:for-item="domain" wx:for-index="di">
+    <view class="domain-head" hover-class="domain-head--hover" hover-stay-time="80" data-di="{{di}}" bindtap="onToggleDomain">
+      <text class="domain-title">{{domain.name}}</text>
+      <view class="domain-meta">
+        <text class="score">{{domain.scoreText}}</text>
+        <text class="caret {{domain.open ? 'caret--open' : ''}}">›</text>
+      </view>
+    </view>
+
+    <view class="domain-body" wx:if="{{domain.open}}">
+      <view class="item" wx:for="{{domain.items}}" wx:key="id" wx:for-item="item" wx:for-index="ii">
+        <view class="item-name">
+          <text>{{item.name}}</text>
+          <text class="item-tag" wx:if="{{item.measured}}">实测换算</text>
+        </view>
+        <text class="item-q">{{item.q}}</text>
+
+        <view class="anchors">
+          <view class="anchor"><text class="anchor__k">1</text><text>{{item.a1}}</text></view>
+          <view class="anchor"><text class="anchor__k">3</text><text>{{item.a3}}</text></view>
+          <view class="anchor"><text class="anchor__k">5</text><text>{{item.a5}}</text></view>
+        </view>
+
+        <!-- 身高体重那题多一张 WHO 参考表。原型是 <table> 带 rowspan/colspan，这里用网格跨格。 -->
+        <block wx:if="{{item.ref}}">
+          <view class="ref-table">
+            <view class="ref-head">
+              <text class="ref-cell ref-cell--th ref-cell--tall">年龄段</text>
+              <text class="ref-cell ref-cell--th ref-cell--wide">男孩</text>
+              <text class="ref-cell ref-cell--th ref-cell--wide">女孩</text>
+              <text class="ref-cell ref-cell--th">身高 cm</text>
+              <text class="ref-cell ref-cell--th">体重 kg</text>
+              <text class="ref-cell ref-cell--th">身高 cm</text>
+              <text class="ref-cell ref-cell--th">体重 kg</text>
+            </view>
+            <view class="ref-row" wx:for="{{item.ref}}" wx:key="age" wx:for-item="row">
+              <text class="ref-cell ref-cell--th">{{row.age}}</text>
+              <text class="ref-cell">{{row.bh}}</text>
+              <text class="ref-cell">{{row.bw}}</text>
+              <text class="ref-cell">{{row.gh}}</text>
+              <text class="ref-cell">{{row.gw}}</text>
+            </view>
+          </view>
+          <text class="ref-note">{{item.note}}</text>
+        </block>
+
+        <view class="scale">
+          <view
+            class="scale-btn {{item.score === num ? 'scale-btn--on' : ''}}"
+            wx:for="{{scaleNums}}"
+            wx:key="*this"
+            wx:for-item="num"
+            data-di="{{di}}"
+            data-ii="{{ii}}"
+            data-score="{{num}}"
+            bindtap="onScoreTap"
+          >{{num}}</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+</view>
+
+<view class="summary">
+  <view class="summary-card">
+    <view>
+      <view class="avg">{{avg}}</view>
+      <text class="hint">{{progressHint}}</text>
+    </view>
+    <view class="btn" hover-class="btn--hover" bindtap="onSave">保存评估</view>
+  </view>
+</view>

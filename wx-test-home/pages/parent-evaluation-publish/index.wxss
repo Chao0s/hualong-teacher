@@ -1,0 +1,19 @@
+@import '/styles/home-school-common.wxss';
+
+/* 发布家长测评 —— 页面本身没有额外样式，全部来自共用样式。 */
+
+.page {
+  padding: 24rpx 32rpx 56rpx;
+}
+
+.form-label--first {
+  margin-top: 0;
+}
+
+.full {
+  width: 100%;
+}
+
+.full--gap {
+  margin-top: 24rpx;
+}

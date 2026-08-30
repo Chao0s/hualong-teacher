@@ -1,0 +1,95 @@
+/* 待办任务 —— 逐条对照原型 screens/teacher-tasks.html。1px 记 2rpx。 */
+
+.page {
+  padding: 24rpx 32rpx 56rpx;
+}
+
+.sec {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 36rpx 0 20rpx;
+}
+
+.sec__title {
+  font-size: 32rpx;
+  font-weight: 700;
+}
+
+.sec__hint {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.task-list {
+  display: grid;
+  gap: 20rpx;
+}
+
+.task-card {
+  padding: 28rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 32rpx;
+  background: var(--surface);
+}
+
+.task-card--hover {
+  background: #f8fbfb;
+}
+
+.top {
+  display: flex;
+  justify-content: space-between;
+  gap: 20rpx;
+  align-items: flex-start;
+}
+
+.title {
+  font-size: 30rpx;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.status {
+  flex: 0 0 auto;
+  padding: 8rpx 16rpx;
+  border-radius: 999rpx;
+  font-size: 20rpx;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.status--wait { color: #a15d00; background: var(--amber-light); }
+.status--doing { color: #226ac7; background: var(--blue-light); }
+.status--done { color: var(--green); background: var(--green-light); }
+
+.meta {
+  display: block;
+  margin-top: 14rpx;
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.summary {
+  display: block;
+  margin-top: 16rpx;
+  font-size: 24rpx;
+  line-height: 1.55;
+}
+
+.foot {
+  display: flex;
+  gap: 12rpx;
+  flex-wrap: wrap;
+  margin-top: 20rpx;
+}
+
+.pill {
+  padding: 8rpx 14rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 999rpx;
+  font-size: 20rpx;
+  color: var(--muted);
+}

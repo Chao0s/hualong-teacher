@@ -1,0 +1,86 @@
+/* 党建活动 · 全部活动 —— 逐条对照原型 screens/party-activity-list.html。1px 记 2rpx。 */
+
+.page {
+  padding: 24rpx 32rpx 56rpx;
+}
+
+.summary {
+  padding: 36rpx;
+  margin-bottom: 36rpx;
+  border-radius: 32rpx;
+  background: linear-gradient(135deg, #2563eb, #3388fc, #65b7ff);
+  color: #fff;
+}
+
+.summary__title {
+  display: block;
+  font-size: 40rpx;
+  font-weight: 700;
+}
+
+.summary__desc {
+  display: block;
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  line-height: 1.5;
+  opacity: 0.9;
+}
+
+.timeline {
+  display: grid;
+  gap: 18rpx;
+}
+
+.item {
+  display: grid;
+  grid-template-columns: 76rpx minmax(0, 1fr) auto;
+  gap: 20rpx;
+  align-items: center;
+  padding: 26rpx 24rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 28rpx;
+  background: var(--surface);
+}
+
+.item--hover {
+  background: #f8fbfb;
+}
+
+.mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 76rpx;
+  height: 76rpx;
+  border-radius: 24rpx;
+  color: var(--blue);
+  background: var(--blue-light);
+  font-size: 24rpx;
+  font-weight: 800;
+}
+
+.item__main {
+  min-width: 0;
+}
+
+.item__title {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.item__meta {
+  display: flex;
+  gap: 14rpx;
+  margin-top: 8rpx;
+  color: var(--muted);
+  font-size: 22rpx;
+}
+
+.item__arrow {
+  color: var(--muted);
+  font-size: 36rpx;
+}

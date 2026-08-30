@@ -1,0 +1,43 @@
+@import '/styles/home-school-common.wxss';
+
+/* 寄语详情 —— 本页自己的样式，对照原型 screens/teacher-message-detail.html 的内联块。 */
+
+.page {
+  padding: 24rpx 32rpx 56rpx;
+}
+
+.msg-head {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  margin-bottom: 24rpx;
+}
+
+.msg-head__who {
+  display: block;
+  font-size: 30rpx;
+  font-weight: 700;
+}
+
+.msg-head__meta {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  color: var(--muted);
+}
+
+.msg-text {
+  display: block;
+  font-size: 26rpx;
+  line-height: 1.7;
+  color: var(--fg);
+}
+
+.hint--gap {
+  display: block;
+  margin-top: 20rpx;
+}
+
+.edit-actions {
+  margin-top: 24rpx;
+}

@@ -1,0 +1,222 @@
+@import '/styles/home-school-common.wxss';
+@import '/styles/album-sheet.wxss';
+
+/* 综合评估 —— 本页自己的样式，对照原型 screens/growth-comprehensive-assessment.html 的内联块。
+ * 浮层外壳（sheet-mask / sheet / sheet-head / close / sheet-actions）复用相册那份。 */
+
+.page {
+  padding: 24rpx 32rpx 56rpx;
+}
+
+/* ── 开始评估 ──────────────────────────────────────────────────────────── */
+
+.assessment-start {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24rpx;
+}
+
+.assessment-start__text {
+  flex: 1;
+  min-width: 0;
+}
+
+.assessment-start__title {
+  display: block;
+  margin-bottom: 12rpx;
+  font-size: 32rpx;
+  font-weight: 600;
+}
+
+.assessment-start__desc {
+  display: block;
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+/* ── 两张概况卡 ────────────────────────────────────────────────────────── */
+
+.assessment-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20rpx;
+  margin-bottom: 28rpx;
+}
+
+.assessment-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 208rpx;
+  padding: 28rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 32rpx;
+  background: var(--surface);
+  color: var(--fg);
+}
+
+.assessment-card__title {
+  display: block;
+  font-size: 30rpx;
+  font-weight: 700;
+}
+
+.assessment-card__desc {
+  display: block;
+  margin-top: 12rpx;
+  font-size: 22rpx;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.ratio {
+  font-size: 48rpx;
+  line-height: 1;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.arrow {
+  align-self: flex-end;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 50%;
+  background: var(--accent-light);
+  color: var(--accent);
+  font-size: 32rpx;
+  font-weight: 800;
+}
+
+/* ── 个人进度 ──────────────────────────────────────────────────────────── */
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 40rpx 0 20rpx;
+}
+
+.sec--flat {
+  margin: 0;
+  font-size: 32rpx;
+  font-weight: 600;
+}
+
+.outline-btn {
+  padding: 14rpx 22rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 999rpx;
+  background: var(--surface);
+  color: var(--fg);
+  font-size: 24rpx;
+  font-weight: 600;
+}
+
+.student {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 16rpx;
+  padding: 22rpx 24rpx;
+  margin-bottom: 16rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 28rpx;
+  background: var(--surface);
+}
+
+.student__main {
+  min-width: 0;
+}
+
+.student__name {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
+.student__sub {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  line-height: 1.35;
+  color: var(--muted);
+}
+
+/* 覆盖共用样式的 .pill：这一页的胶囊按状态换色 */
+.pill {
+  min-height: 0;
+  padding: 8rpx 16rpx;
+  font-size: 22rpx;
+  font-weight: 700;
+}
+
+.pill--done { background: var(--green-light); color: var(--green); }
+.pill--draft { background: var(--amber-light); color: #a35e00; }
+.pill--miss { background: #fff0ed; color: #e05243; }
+
+.small-btn {
+  padding: 10rpx 18rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 999rpx;
+  background: var(--surface);
+  color: var(--fg);
+  font-size: 22rpx;
+}
+
+/* ── 浮层里的勾选行 ────────────────────────────────────────────────────── */
+
+.check-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  padding: 22rpx 24rpx;
+  margin-bottom: 16rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 26rpx;
+}
+
+.check-row__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.check-row__name {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
+.check-row__desc {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+/* 原型用原生 checkbox；小程序的不好改样式，自己画一个方框。 */
+.checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 36rpx;
+  height: 36rpx;
+  border: 2rpx solid var(--border);
+  border-radius: 8rpx;
+  background: #fff;
+  color: #fff;
+  font-size: 24rpx;
+  line-height: 1;
+}
+
+.checkbox--on {
+  border-color: var(--accent);
+  background: var(--accent);
+}

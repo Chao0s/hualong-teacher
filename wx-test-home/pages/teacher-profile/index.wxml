@@ -1,0 +1,122 @@
+<!-- 个人档案 —— 对照原型 screens/teacher-profile.html。
+     原型的「编辑」按钮在自绘标题栏右上角；微信原生标题栏放不了自定义按钮，
+     这里把它放到「基本履历」那行的右侧。 -->
+<view class="page">
+
+  <view class="chunk">
+    <view class="sec-row">
+      <text class="sec">基本履历</text>
+      <text class="edit-btn" bindtap="onOpenSheet">编辑</text>
+    </view>
+    <view class="hard-layout">
+      <view class="photo">教师{{'\n'}}照片</view>
+      <view class="field-list">
+        <view class="field" wx:for="{{profile}}" wx:key="label">
+          <text class="label">{{item.label}}</text>
+          <text class="value">{{item.value}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="chunk">
+    <text class="sec">资质与荣誉</text>
+    <view class="soft-block" wx:for="{{credentialGroups}}" wx:key="subhead" wx:for-item="group">
+      <text class="subhead">{{group.subhead}}</text>
+      <view class="item-list">
+        <view class="item" wx:for="{{group.items}}" wx:key="name">
+          <view class="item__main">
+            <text class="item-title">{{item.name}}</text>
+            <view class="badge-row">
+              <text class="badge {{item.award ? 'badge--award' : ''}}">{{item.badge}}</text>
+            </view>
+          </view>
+          <view class="file-actions">
+            <text class="file-op" data-action="预览：{{item.name}}" bindtap="onToast">预览</text>
+            <text class="file-op" data-action="下载：{{item.name}}" bindtap="onToast">下载</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+</view>
+
+<!-- 提交个人档案修改。姓名和任教班级只读回显：两者由园方名冊维护，
+     教师自助改档案只能改专业档案与证书，改这两项等于给自己改授权边界。 -->
+<view class="sheet-mask" wx:if="{{sheetOpen}}" bindtap="onCloseSheet">
+  <view class="sheet" catchtap="noop">
+    <view class="sheet-head">
+      <text class="sheet-title">提交个人档案修改</text>
+      <view class="close-btn" bindtap="onCloseSheet">×</view>
+    </view>
+
+    <view class="form-grid">
+      <view class="form-row">
+        <text class="form-row__label">姓名</text>
+        <view class="readback">{{teacher.name}}</view>
+      </view>
+      <view class="form-row">
+        <text class="form-row__label">任教班级</text>
+        <view class="readback">{{teacher.className}}</view>
+      </view>
+      <view class="form-row" wx:for="{{selects}}" wx:key="key">
+        <text class="form-row__label">{{item.label}}</text>
+        <picker mode="selector" range="{{item.options}}" value="{{item.index}}" data-key="{{item.key}}" bindchange="onSelectChange">
+          <view class="select">{{item.options[item.index]}}</view>
+        </picker>
+      </view>
+    </view>
+    <text class="upload-note">姓名与任教班级由园方名冊维护，如需更正请联系园所管理员。</text>
+
+    <view class="edit-group">
+      <view class="edit-group-head">
+        <text class="edit-group-title">证书与奖项文件</text>
+        <text class="add-file" bindtap="onAddMaterial">＋ 新增证书</text>
+      </view>
+
+      <view class="material-list">
+        <view class="material-row" wx:for="{{materials}}" wx:key="id" wx:for-item="row" wx:for-index="rowIndex">
+          <view class="material-row-head">
+            <text class="remove-file {{materials.length > 1 ? '' : 'remove-file--hidden'}}" data-index="{{rowIndex}}" bindtap="onRemoveMaterial">删除</text>
+          </view>
+
+          <view class="form-row">
+            <text class="form-row__label">文件类型</text>
+            <picker mode="selector" range="{{materialTypes}}" value="{{row.typeIndex}}" data-index="{{rowIndex}}" bindchange="onMaterialTypeChange">
+              <view class="select">{{materialTypes[row.typeIndex]}}</view>
+            </picker>
+          </view>
+
+          <!-- 「类别」下拉是双用的：选「学历证书」时列 本科/硕士/博士，其余时列 校级…国家级。 -->
+          <view class="form-row">
+            <text class="form-row__label">{{row.typeIndex === 0 ? '学历类别' : '等级类别'}}</text>
+            <picker mode="selector" range="{{row.categories}}" value="{{row.categoryIndex}}" data-index="{{rowIndex}}" bindchange="onMaterialCategoryChange">
+              <view class="select">{{row.categories[row.categoryIndex]}}</view>
+            </picker>
+          </view>
+
+          <view class="form-row">
+            <text class="form-row__label">文件名称</text>
+            <input class="input" maxlength="150" placeholder="如：学士学位证" value="{{row.name}}" data-index="{{rowIndex}}" bindinput="onMaterialNameInput" />
+          </view>
+
+          <view class="form-row">
+            <text class="form-row__label">上传原文件</text>
+            <view class="file-pick" data-index="{{rowIndex}}" bindtap="onPickFile">
+              <text class="file-pick__note">{{row.file || '未选择文件'}}</text>
+              <text class="file-pick__btn">选择</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <text class="upload-note">每份文件都需要填写文件类型、文件名称，并上传对应原文件。文件标签用于后续档案分析，原文件用于审核留存。</text>
+    </view>
+
+    <view class="sheet-actions">
+      <view class="btn btn--ghost" hover-class="btn--hover" bindtap="onCloseSheet">取消</view>
+      <view class="btn btn--primary" hover-class="btn--hover" bindtap="onSubmitEdit">提交审核</view>
+    </view>
+  </view>
+</view>

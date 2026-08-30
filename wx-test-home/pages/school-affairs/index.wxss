@@ -1,0 +1,184 @@
+/* 党建管理部 —— 逐条对照原型 screens/school-affairs.html。1px 记 2rpx。 */
+
+.page {
+  padding: 24rpx 32rpx calc(200rpx + env(safe-area-inset-bottom));
+}
+
+/* ── 轮播头图 ──────────────────────────────────────────────────────────── */
+
+/* 原型 `.banner-card` 高 142px；swiper 要死高度，这里直接给 284rpx。 */
+.banner-wrap {
+  height: 284rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 32rpx;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.banner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  height: 100%;
+  padding: 40rpx 36rpx;
+  overflow: hidden;
+  color: #fff;
+}
+
+.banner__ring {
+  position: absolute;
+  right: -56rpx;
+  top: -64rpx;
+  width: 256rpx;
+  height: 256rpx;
+  border-radius: 50%;
+  border: 36rpx solid rgba(255, 255, 255, 0.18);
+}
+
+.banner--b1 { background: linear-gradient(135deg, #b91c1c, #dc2626, #f97316); }
+.banner--b2 { background: linear-gradient(135deg, #8a3b12, #b45309, #feaf06); }
+.banner--b3 { background: linear-gradient(135deg, #0f766e, #189b91, #49c3b7); }
+
+.banner__title {
+  position: relative;
+  z-index: 1;
+  font-size: 38rpx;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.banner__sub {
+  position: relative;
+  z-index: 1;
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  line-height: 1.45;
+  opacity: 0.9;
+}
+
+.banner-dots {
+  display: flex;
+  gap: 12rpx;
+  justify-content: center;
+  margin: 20rpx 0 4rpx;
+}
+
+.banner-dot {
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 999rpx;
+  background: #c9e7e7;
+  transition: width 0.2s ease, background 0.2s ease;
+}
+
+.banner-dot--on {
+  width: 40rpx;
+  background: var(--accent);
+}
+
+/* ── 分组标题 ──────────────────────────────────────────────────────────── */
+
+.sec {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 44rpx 0 20rpx;
+}
+
+.sec__title {
+  font-size: 32rpx;
+  font-weight: 700;
+}
+
+.sec__more {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: var(--accent-dark);
+}
+
+/* ── 三块列表 ──────────────────────────────────────────────────────────── */
+
+.list {
+  display: grid;
+  gap: 16rpx;
+}
+
+.item {
+  display: grid;
+  grid-template-columns: 72rpx minmax(0, 1fr) auto;
+  gap: 20rpx;
+  align-items: center;
+  min-height: 132rpx;
+  padding: 22rpx 24rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 28rpx;
+  background: var(--surface);
+}
+
+.item--hover {
+  transform: scale(0.985);
+  background: #f8fbfb;
+}
+
+.mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 24rpx;
+  font-size: 24rpx;
+  font-weight: 800;
+}
+
+.mark--study { color: var(--danger); background: #fdecec; }
+.mark--activity { color: var(--blue); background: var(--blue-light); }
+.mark--brand { color: var(--green); background: var(--green-light); }
+
+.item__main {
+  min-width: 0;
+}
+
+.item__title {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.item__meta {
+  display: flex;
+  gap: 12rpx;
+  margin-top: 8rpx;
+  color: var(--muted);
+  font-size: 22rpx;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.item__ops {
+  display: flex;
+  gap: 10rpx;
+  align-items: center;
+}
+
+.pill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 48rpx;
+  padding: 0 14rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 999rpx;
+  background: #fff;
+  color: var(--muted);
+  font-size: 22rpx;
+}
+
+.item__arrow {
+  color: var(--muted);
+  font-size: 36rpx;
+}

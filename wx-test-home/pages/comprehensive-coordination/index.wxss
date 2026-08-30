@@ -1,0 +1,157 @@
+/* 综合协调部 —— 逐条对照原型 screens/comprehensive-coordination.html。1px 记 2rpx。 */
+
+.page {
+  padding: 24rpx 32rpx calc(200rpx + env(safe-area-inset-bottom));
+}
+
+/* ── 头图 ──────────────────────────────────────────────────────────────── */
+
+/* 这一页的头图是白底描边卡，不是渐变块：右下角一个浅青大圆，右下角压一个青色方块。 */
+.banner {
+  position: relative;
+  min-height: 276rpx;
+  padding: 36rpx;
+  margin-bottom: 36rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 32rpx;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.banner__ring {
+  position: absolute;
+  right: -40rpx;
+  bottom: -60rpx;
+  width: 300rpx;
+  height: 300rpx;
+  border-radius: 50%;
+  background: var(--accent-light);
+}
+
+.banner__kicker {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  height: 48rpx;
+  padding: 0 20rpx;
+  border-radius: 999rpx;
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  font-size: 22rpx;
+  font-weight: 600;
+}
+
+.banner__title {
+  position: relative;
+  z-index: 1;
+  display: block;
+  margin-top: 28rpx;
+  font-size: 42rpx;
+  line-height: 1.25;
+  font-weight: 700;
+  letter-spacing: -0.4rpx;
+}
+
+.banner__desc {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 470rpx;
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.banner__mark {
+  position: absolute;
+  right: 36rpx;
+  bottom: 32rpx;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 112rpx;
+  height: 112rpx;
+  border-radius: 36rpx;
+  background: var(--accent);
+  color: #fff;
+  font-size: 44rpx;
+  font-weight: 700;
+}
+
+/* ── 三块入口 ──────────────────────────────────────────────────────────── */
+
+.sec {
+  margin: 40rpx 0 20rpx;
+  font-size: 32rpx;
+  font-weight: 700;
+}
+
+.entry-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20rpx;
+  margin-bottom: 12rpx;
+}
+
+.entry-grid--three {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.entry-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16rpx;
+  min-height: 192rpx;
+  padding: 26rpx 24rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 32rpx;
+  background: var(--surface);
+}
+
+.entry-grid--three .entry-card {
+  min-height: 212rpx;
+  padding: 24rpx 20rpx;
+}
+
+.entry-card--hover {
+  transform: scale(0.985);
+  background: #f8fbfb;
+}
+
+.entry-card__title {
+  font-size: 28rpx;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.entry-grid--three .entry-card__title {
+  font-size: 26rpx;
+}
+
+.entry-card__desc {
+  font-size: 22rpx;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.ec-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 68rpx;
+  height: 68rpx;
+  border-radius: 24rpx;
+  font-size: 26rpx;
+  font-weight: 800;
+}
+
+.ec-icon--accent { background: var(--accent-light); color: var(--accent-dark); }
+.ec-icon--blue { background: var(--blue-light); color: var(--blue); }
+.ec-icon--amber { background: var(--amber-light); color: var(--amber); }
+.ec-icon--red { background: #fdecec; color: var(--danger); }
+.ec-icon--green { background: var(--green-light); color: var(--green); }
+.ec-icon--orange { background: #fff0e7; color: var(--orange); }

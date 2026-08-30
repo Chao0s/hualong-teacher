@@ -1,0 +1,146 @@
+@import '/styles/assessment-report.wxss';
+
+/* 综合评估结果 —— 本页自己的样式，对照原型 screens/comprehensive-assessment-report.html。 */
+
+/* ── 幼儿抬头卡 ────────────────────────────────────────────────────────── */
+
+.child-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24rpx;
+  border: 0;
+  background: linear-gradient(135deg, #0f766e, #189b91);
+  color: #fff;
+}
+
+.child-card__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.child-card__name {
+  display: block;
+  font-size: 44rpx;
+  line-height: 1.15;
+  font-weight: 700;
+}
+
+.child-card__meta {
+  display: block;
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.badge {
+  flex: 0 0 auto;
+  padding: 12rpx 20rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.18);
+  font-size: 24rpx;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+/* ── 结果 / 明细 切换 ──────────────────────────────────────────────────── */
+
+.tab-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8rpx;
+  padding: 8rpx;
+  margin: 28rpx 0 8rpx;
+  border-radius: 999rpx;
+  background: #e3eded;
+}
+
+.tab-switch__btn {
+  padding: 16rpx 0;
+  border-radius: 999rpx;
+  text-align: center;
+  font-size: 26rpx;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.tab-switch__btn--on {
+  background: #fff;
+  color: var(--accent-dark);
+  box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.08);
+}
+
+/* ── 明细 ──────────────────────────────────────────────────────────────── */
+
+.detail-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 20rpx;
+  margin-bottom: 12rpx;
+}
+
+.detail-title {
+  font-size: 30rpx;
+  font-weight: 800;
+}
+
+.detail-avg {
+  font-size: 24rpx;
+  font-weight: 800;
+  color: var(--accent-dark);
+}
+
+.detail-row {
+  padding: 22rpx 0;
+  border-bottom: 1rpx solid var(--border);
+}
+
+.detail-row:last-child {
+  border-bottom: 0;
+}
+
+.detail-name {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 20rpx;
+  margin-bottom: 16rpx;
+  font-size: 24rpx;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.none {
+  flex: 0 0 auto;
+  font-size: 22rpx;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+/* 只读的李克特选项栏：样式和填写页一致，但不可点 */
+.scale-view {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12rpx;
+}
+
+.scale-view__n {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 56rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 999rpx;
+  background: #fff;
+  color: var(--muted);
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.scale-view__n--on {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}

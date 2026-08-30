@@ -1,0 +1,151 @@
+@import '/styles/home-school-common.wxss';
+
+/* 全部活动 —— 本页自己的样式，对照原型 screens/home-school-moment-feed.html 的内联块。 */
+
+.page {
+  padding: 24rpx 32rpx 56rpx;
+}
+
+.hint--top {
+  display: block;
+  padding: 4rpx 4rpx 20rpx;
+}
+
+/* 卡片底行：左侧统计信息，右侧「加入成长册」按钮 */
+.moment-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  margin-top: 16rpx;
+}
+
+.moment-foot .moment-meta {
+  margin-top: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.add-material {
+  flex: none;
+  padding: 10rpx 20rpx;
+  border: 1rpx solid var(--accent);
+  border-radius: 999rpx;
+  background: var(--surface);
+  color: var(--accent);
+  font-size: 22rpx;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.add-material--on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* ── 选照片浮层 ────────────────────────────────────────────────────────── */
+
+.sheet-mask {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 30;
+  background: rgba(31, 41, 55, 0.32);
+}
+
+.sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 31;
+  padding: 36rpx 32rpx calc(44rpx + env(safe-area-inset-bottom));
+  border-radius: 48rpx 48rpx 0 0;
+  background: var(--surface);
+}
+
+.sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8rpx;
+}
+
+.sheet-head__title {
+  font-size: 34rpx;
+  font-weight: 600;
+}
+
+.close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60rpx;
+  height: 60rpx;
+  border-radius: 50%;
+  background: #f3f7f7;
+  color: var(--muted);
+  font-size: 36rpx;
+}
+
+.sheet-sub {
+  display: block;
+  margin-bottom: 24rpx;
+  font-size: 24rpx;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.pick-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12rpx;
+  max-height: 520rpx;
+}
+
+.pick-photo {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  min-height: 140rpx;
+  padding: 14rpx;
+  border: 4rpx solid transparent;
+  border-radius: 20rpx;
+  background: linear-gradient(135deg, var(--accent-light), var(--blue-light));
+  color: var(--accent-dark);
+  font-size: 20rpx;
+  font-weight: 600;
+}
+
+.pick-photo--sel {
+  border-color: var(--accent);
+}
+
+/* 原型用 ::after 画这个对勾，这里用真实节点，方便按选中状态显隐 */
+.pick-photo__tick {
+  position: absolute;
+  top: 10rpx;
+  right: 10rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36rpx;
+  height: 36rpx;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 22rpx;
+}
+
+.sheet-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20rpx;
+  margin-top: 28rpx;
+}

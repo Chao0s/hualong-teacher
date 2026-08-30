@@ -1,0 +1,259 @@
+/* 教研培训部 —— 逐条对照原型 screens/training-center.html。1px 记 2rpx。 */
+
+.page {
+  padding: 24rpx 32rpx calc(200rpx + env(safe-area-inset-bottom));
+}
+
+/* ── 轮播头图 ──────────────────────────────────────────────────────────── */
+
+/* 原型 `.banner-wrap`：18px 圆角、描边、白底。
+ * swiper 必须给死高度，原型的 `min-height:146px` 换算成 292rpx 再留一点余量。 */
+.banner-wrap {
+  height: 300rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 36rpx;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.banner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  height: 100%;
+  padding: 36rpx;
+  overflow: hidden;
+  color: #fff;
+}
+
+/* 原型 `.banner::after` 那个右上角的白圈。伪元素在 wxss 里能用，
+ * 但三个渐变共用一条规则更省事，这里改成一个真实节点。 */
+.banner__ring {
+  position: absolute;
+  right: -60rpx;
+  top: -68rpx;
+  width: 276rpx;
+  height: 276rpx;
+  border-radius: 50%;
+  border: 36rpx solid rgba(255, 255, 255, 0.18);
+}
+
+.banner--b1 { background: linear-gradient(135deg, #0f766e, #189b91, #49c3b7); }
+.banner--b2 { background: linear-gradient(135deg, #2563eb, #3388fc, #62b7ff); }
+.banner--b3 { background: linear-gradient(135deg, #b45309, #feaf06, #f97316); }
+
+.banner__kicker {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  align-self: flex-start;
+  height: 48rpx;
+  padding: 0 20rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.18);
+  font-size: 22rpx;
+  font-weight: 700;
+}
+
+.banner__title {
+  position: relative;
+  z-index: 1;
+  margin-top: 24rpx;
+  width: 520rpx;
+  font-size: 44rpx;
+  line-height: 1.22;
+  font-weight: 700;
+  letter-spacing: -0.4rpx;
+}
+
+.banner__desc {
+  position: relative;
+  z-index: 1;
+  width: 520rpx;
+  margin-top: 14rpx;
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.banner-dots {
+  display: flex;
+  gap: 12rpx;
+  justify-content: center;
+  margin: 16rpx 0 32rpx;
+}
+
+.banner-dot {
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 999rpx;
+  background: #c9e7e7;
+  transition: width 0.2s ease, background 0.2s ease;
+}
+
+.banner-dot--on {
+  width: 40rpx;
+  background: var(--accent);
+}
+
+/* ── 分组标题 ──────────────────────────────────────────────────────────── */
+
+.sec {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 40rpx 0 20rpx;
+}
+
+.sec__title {
+  font-size: 32rpx;
+  font-weight: 700;
+}
+
+.sec__more {
+  font-size: 24rpx;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+/* ── 快捷入口 ──────────────────────────────────────────────────────────── */
+
+.entry-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20rpx;
+  margin-bottom: 36rpx;
+}
+
+.entry-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  min-height: 224rpx;
+  padding: 26rpx 20rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 32rpx;
+  background: var(--surface);
+}
+
+.ec-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 68rpx;
+  height: 68rpx;
+  border-radius: 24rpx;
+  font-size: 26rpx;
+  font-weight: 800;
+}
+
+.ec-icon--accent { background: var(--accent-light); color: var(--accent-dark); }
+.ec-icon--blue { background: var(--blue-light); color: var(--blue); }
+.ec-icon--green { background: var(--green-light); color: var(--green); }
+
+.entry-card__title {
+  font-size: 28rpx;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.entry-card__desc {
+  font-size: 22rpx;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+/* ── 资源卡 / 案例卡 ───────────────────────────────────────────────────── */
+
+.card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.info-card {
+  display: flex;
+  gap: 24rpx;
+  align-items: stretch;
+  padding: 24rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 28rpx;
+  background: var(--surface);
+}
+
+/* 原型用 `color-mix(in oklab, var(--surface), var(--bg) 38%)` 做按下态。
+ * 小程序不认 color-mix，这里换成算好的定值。 */
+.card--hover {
+  background: #f6faf9;
+}
+
+.thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 116rpx;
+  border-radius: 24rpx;
+  border: 1rpx solid var(--border);
+  flex: 0 0 auto;
+  font-weight: 800;
+  font-size: 30rpx;
+}
+
+.thumb--accent { background: var(--accent-light); color: var(--accent-dark); }
+.thumb--green { background: var(--green-light); color: var(--green); }
+.thumb--blue { background: var(--blue-light); color: var(--blue); }
+/* 原型 `color-mix(in oklab, var(--amber), var(--fg) 42%)` 算出来约 #9e6f0c。 */
+.thumb--amber { background: var(--amber-light); color: #9e6f0c; }
+
+.card-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin-bottom: 10rpx;
+}
+
+.card-name {
+  font-size: 30rpx;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.badge {
+  flex: 0 0 auto;
+  padding: 6rpx 14rpx;
+  border-radius: 999rpx;
+  font-size: 20rpx;
+  color: var(--accent-dark);
+  background: var(--accent-light);
+}
+
+.card-meta {
+  font-size: 24rpx;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+/* 原型 `.summary` 用 -webkit-box 截两行，小程序 WebView 支持。 */
+.card-summary {
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: var(--fg);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

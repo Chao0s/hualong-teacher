@@ -1,0 +1,159 @@
+/**
+ * 相册选择浮层 —— 对照原型 screens/teacher-monthly-form.html 和 teacher-term-form.html。
+ *
+ * 这两页在原型里各自内联了一份一模一样的样式（都是 2568 字符）。这里合成一份，
+ * 两页 @import。内容照抄，只做了 1px 记 2rpx 的换算。
+ */
+
+/* ── 已导入的照片 ──────────────────────────────────────────────────────── */
+
+.imported {
+  position: relative;
+  margin-right: 16rpx;
+}
+
+.imported .remove {
+  position: absolute;
+  top: 8rpx;
+  right: 8rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36rpx;
+  height: 36rpx;
+  border-radius: 50%;
+  background: rgba(26, 25, 22, 0.55);
+  color: #fff;
+  font-size: 24rpx;
+  line-height: 1;
+}
+
+.empty-hint {
+  padding: 20rpx 0;
+  font-size: 24rpx;
+  color: var(--muted);
+}
+
+/* 原型给这两个按钮写的是 style="width:100%" */
+.full {
+  width: 100%;
+}
+
+.full--gap {
+  margin-top: 28rpx;
+}
+
+/* ── 浮层 ──────────────────────────────────────────────────────────────── */
+
+.sheet-mask {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 30;
+  background: rgba(26, 25, 22, 0.32);
+}
+
+.sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 31;
+  padding: 36rpx 32rpx calc(44rpx + env(safe-area-inset-bottom));
+  border-radius: 48rpx 48rpx 0 0;
+  background: var(--surface);
+}
+
+.sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24rpx;
+}
+
+.sheet-head__title {
+  flex: 1;
+  min-width: 0;
+  font-size: 34rpx;
+  font-weight: 600;
+}
+
+.close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 60rpx;
+  height: 60rpx;
+  border-radius: 50%;
+  background: #f3f7f7;
+  color: var(--muted);
+  font-size: 36rpx;
+}
+
+/* ── 相册 ──────────────────────────────────────────────────────────────── */
+
+.album-scroll {
+  max-height: 800rpx;
+}
+
+.album-group {
+  margin-bottom: 28rpx;
+}
+
+.group-title {
+  display: block;
+  margin-bottom: 12rpx;
+  font-size: 24rpx;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.album-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12rpx;
+}
+
+.album-photo {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  min-height: 148rpx;
+  padding: 14rpx;
+  border: 4rpx solid transparent;
+  border-radius: 20rpx;
+  background: linear-gradient(135deg, var(--accent-light), var(--blue-light));
+  color: var(--accent-dark);
+  font-size: 20rpx;
+  font-weight: 600;
+}
+
+.album-photo--sel {
+  border-color: var(--accent);
+}
+
+/* 原型用 ::after 画这个对勾，这里用真实节点，方便按选中状态显隐 */
+.album-photo__tick {
+  position: absolute;
+  top: 10rpx;
+  right: 10rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36rpx;
+  height: 36rpx;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 22rpx;
+}
+
+.sheet-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20rpx;
+  margin-top: 28rpx;
+}

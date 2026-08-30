@@ -1,0 +1,21 @@
+<!-- 寄语详情 —— 对照原型 screens/teacher-message-detail.html。按 ?child= 取内容，只读。 -->
+<view class="page">
+
+  <view class="chunk">
+    <view class="msg-head">
+      <view class="avatar">{{message.avatar}}</view>
+      <view>
+        <text class="msg-head__who">{{message.name}}</text>
+        <text class="msg-head__meta">{{message.meta}}</text>
+      </view>
+    </view>
+
+    <text class="msg-text">{{message.text}}</text>
+    <text class="hint hint--gap">寄语提交后永久只读。如本学期尚未提交，请返回寄语列表填写。</text>
+
+    <view class="edit-actions">
+      <view class="btn btn--ghost" hover-class="btn--hover" bindtap="onBack">返回</view>
+    </view>
+  </view>
+
+</view>

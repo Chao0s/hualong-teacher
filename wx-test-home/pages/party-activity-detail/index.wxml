@@ -1,0 +1,47 @@
+<!-- 党建活动 · 活动介绍 —— 对照原型 screens/party-activity-detail.html。
+     原型的图文区是四个占位色块（没有真图），照搬。 -->
+<view class="page">
+
+  <view class="cover">
+    <text class="cover__title">{{activity.title}}</text>
+    <text class="cover__sub">{{activity.sub}}</text>
+  </view>
+
+  <view class="card">
+    <view class="row">
+      <text class="row__label">活动时间</text>
+      <text>{{activity.time}}</text>
+    </view>
+  </view>
+
+  <view class="card">
+    <text class="card__title">图文介绍</text>
+    <text class="card__body">{{activity.body}}</text>
+    <view class="photos">
+      <view class="photo-main">活动现场图</view>
+      <view class="photo-row">
+        <view class="ph">分组研讨</view>
+        <view class="ph">成果展示</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="card">
+    <text class="card__title">附件下载</text>
+    <view class="downloads">
+      <view
+        class="download"
+        hover-class="download--hover"
+        hover-stay-time="80"
+        wx:for="{{files}}"
+        wx:key="file"
+        data-name="{{item.file}}"
+        bindtap="onDownload"
+      >
+        <text class="download__name">{{item.file}}</text>
+        <text class="download__op">下载</text>
+      </view>
+    </view>
+  </view>
+
+</view>

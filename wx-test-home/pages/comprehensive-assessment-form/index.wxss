@@ -1,0 +1,296 @@
+/* 开始综合评估 —— 逐条对照原型 screens/comprehensive-assessment-form.html。1px 记 2rpx。
+ * 这一页原型没有引共用样式，全是自己的内联块，这里也不 @import。 */
+
+.page {
+  /* 底部有吸底的汇总条，给它留出高度 */
+  padding: 24rpx 32rpx calc(200rpx + env(safe-area-inset-bottom));
+}
+
+.chunk {
+  padding: 28rpx;
+  margin-bottom: 24rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 32rpx;
+  background: var(--surface);
+}
+
+.chunk--tight {
+  padding: 24rpx 28rpx;
+}
+
+.label {
+  display: block;
+  margin-bottom: 14rpx;
+  font-size: 26rpx;
+  font-weight: 700;
+}
+
+.select {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 22rpx 24rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 24rpx;
+  background: #fff;
+  color: var(--fg);
+  font-size: 26rpx;
+}
+
+.sec {
+  margin: 36rpx 0 20rpx;
+  font-size: 32rpx;
+  font-weight: 700;
+}
+
+.guide-title {
+  display: block;
+  margin-bottom: 12rpx;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.hint {
+  display: block;
+  margin-top: 4rpx;
+  font-size: 22rpx;
+  color: var(--muted);
+}
+
+/* ── 领域 ──────────────────────────────────────────────────────────────── */
+
+.domain {
+  padding: 28rpx;
+  margin-bottom: 20rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 32rpx;
+  background: var(--surface);
+}
+
+.domain-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20rpx;
+}
+
+.domain-head--hover {
+  opacity: 0.7;
+}
+
+.domain-title {
+  font-size: 30rpx;
+  font-weight: 800;
+}
+
+.domain-meta {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.score {
+  font-size: 24rpx;
+  font-weight: 800;
+  color: var(--accent-dark);
+}
+
+.caret {
+  color: var(--muted);
+  font-size: 24rpx;
+  transition: transform 0.18s ease;
+}
+
+.caret--open {
+  transform: rotate(90deg);
+}
+
+.domain-body {
+  margin-top: 20rpx;
+}
+
+/* ── 题目 ──────────────────────────────────────────────────────────────── */
+
+.item {
+  padding-top: 24rpx;
+  margin-top: 24rpx;
+  border-top: 1rpx solid var(--border);
+}
+
+.item:first-child {
+  padding-top: 0;
+  margin-top: 0;
+  border-top: 0;
+}
+
+.item-name {
+  font-size: 26rpx;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.item-tag {
+  display: inline-block;
+  margin-left: 12rpx;
+  padding: 2rpx 12rpx;
+  border-radius: 999rpx;
+  background: var(--amber-light);
+  color: #8a6100;
+  font-size: 20rpx;
+  font-weight: 700;
+}
+
+.item-q {
+  display: block;
+  margin: 8rpx 0 16rpx;
+  font-size: 24rpx;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.anchors {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+  margin-bottom: 18rpx;
+}
+
+.anchor {
+  display: flex;
+  gap: 12rpx;
+  font-size: 22rpx;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.anchor__k {
+  flex: 0 0 auto;
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+
+/* ── 身高体重参考表 ────────────────────────────────────────────────────── */
+
+/* 原型是 <table> 带 rowspan/colspan，五列：年龄段 + 男孩身高体重 + 女孩身高体重。
+ * 表头两行，靠 grid 跨格还原。 */
+.ref-table {
+  margin-bottom: 18rpx;
+  border-left: 1rpx solid var(--border);
+  border-top: 1rpx solid var(--border);
+}
+
+.ref-head,
+.ref-row {
+  display: grid;
+  grid-template-columns: 1.2fr repeat(4, 1fr);
+}
+
+.ref-cell {
+  padding: 8rpx 10rpx;
+  border-right: 1rpx solid var(--border);
+  border-bottom: 1rpx solid var(--border);
+  font-size: 20rpx;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.ref-cell--th {
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.ref-cell--tall {
+  grid-row: span 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ref-cell--wide {
+  grid-column: span 2;
+}
+
+.ref-note {
+  display: block;
+  margin-bottom: 18rpx;
+  font-size: 20rpx;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+/* ── 五个分档 ──────────────────────────────────────────────────────────── */
+
+.scale {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12rpx;
+}
+
+.scale-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 64rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 999rpx;
+  background: #fff;
+  color: var(--muted);
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.scale-btn--on {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+/* ── 吸底汇总条 ────────────────────────────────────────────────────────── */
+
+/* 原型用 position: sticky 贴在滚动容器底部；小程序里页面整体滚动，改成 fixed。 */
+.summary {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  padding: 36rpx 32rpx calc(24rpx + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, rgba(240, 245, 245, 0), var(--bg) 20%);
+}
+
+.summary-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24rpx;
+  padding: 24rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 32rpx;
+  background: var(--surface);
+}
+
+.avg {
+  font-size: 44rpx;
+  font-weight: 800;
+  color: var(--accent-dark);
+}
+
+.summary-card .hint {
+  margin-top: 4rpx;
+}
+
+.btn {
+  flex: 0 0 auto;
+  padding: 20rpx 32rpx;
+  border-radius: 999rpx;
+  background: var(--accent);
+  color: #fff;
+  font-size: 26rpx;
+  font-weight: 700;
+}
+
+.btn--hover {
+  opacity: 0.85;
+}

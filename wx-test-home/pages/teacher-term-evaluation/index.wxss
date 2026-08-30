@@ -1,0 +1,106 @@
+@import '/styles/home-school-common.wxss';
+@import '/styles/album-sheet.wxss';
+
+/* 教师学期评价 —— 本页自己的样式，对照原型 screens/teacher-term-evaluation.html 的内联块。
+ * 浮层的外壳（sheet-mask / sheet / sheet-head / close / sheet-actions）和相册那份一样，
+ * 直接 @import 复用；这里只写勾选行和「选择操作」按钮。 */
+
+.page {
+  padding: 24rpx 32rpx 56rpx;
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 40rpx 0 24rpx;
+}
+
+/* 标题在这一行里，不再自己带外边距 */
+.sec--flat {
+  margin: 0;
+  font-size: 32rpx;
+  font-weight: 600;
+}
+
+.outline-btn {
+  padding: 14rpx 22rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 999rpx;
+  background: var(--surface);
+  color: var(--fg);
+  font-size: 24rpx;
+  font-weight: 600;
+}
+
+/* 两列：幼儿 + 学期评价 */
+.prog-row {
+  grid-template-columns: 160rpx 1fr;
+}
+
+.dot-link {
+  padding: 12rpx;
+}
+
+.hint--gap {
+  display: block;
+  margin-top: 16rpx;
+}
+
+/* ── 浮层里的勾选行 ────────────────────────────────────────────────────── */
+
+.check-list {
+  max-height: 620rpx;
+}
+
+.check-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  padding: 22rpx 24rpx;
+  margin-bottom: 16rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 26rpx;
+  background: var(--surface);
+}
+
+.check-row__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.check-row__name {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
+.check-row__desc {
+  display: block;
+  margin-top: 6rpx;
+  color: var(--muted);
+  font-size: 22rpx;
+  font-weight: 400;
+}
+
+/* 原型用原生 checkbox；小程序的不好改样式，自己画一个方框。 */
+.checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 36rpx;
+  height: 36rpx;
+  border: 2rpx solid var(--border);
+  border-radius: 8rpx;
+  background: #fff;
+  color: #fff;
+  font-size: 24rpx;
+  line-height: 1;
+}
+
+.checkbox--on {
+  border-color: var(--accent);
+  background: var(--accent);
+}

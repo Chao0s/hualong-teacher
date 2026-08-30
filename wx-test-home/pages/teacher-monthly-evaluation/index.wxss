@@ -1,0 +1,21 @@
+@import '/styles/home-school-common.wxss';
+
+/* 教师月度评价 —— 本页自己的样式，对照原型 screens/teacher-monthly-evaluation.html。 */
+
+.page {
+  padding: 24rpx 32rpx 56rpx;
+}
+
+/* 五列：幼儿 + 四个月份 */
+.prog-row {
+  grid-template-columns: 140rpx repeat(4, 1fr);
+}
+
+.dot-link {
+  padding: 12rpx;
+}
+
+.hint--gap {
+  display: block;
+  margin-top: 16rpx;
+}

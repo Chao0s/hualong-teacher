@@ -1,0 +1,97 @@
+<!-- 课程资源 —— 对照原型 screens/resource-center.html。
+     原型的搜索是一个 <form>，提交后跳到资源库并带上 q 参数，这里保持同样行为。 -->
+<view class="page">
+
+  <view class="search-bar">
+    <view class="search-bar__icon"></view>
+    <input
+      class="search-bar__input"
+      type="text"
+      placeholder="搜索资源、案例、活动主题"
+      placeholder-class="search-bar__ph"
+      value="{{query}}"
+      confirm-type="search"
+      bindinput="onQueryInput"
+      bindconfirm="onSearch"
+    />
+    <text class="search-bar__action" bindtap="onSearch">搜索</text>
+  </view>
+
+  <view class="hub-row">
+    <view
+      class="hub-card hub-card--{{item.key}}"
+      hover-class="card--hover"
+      hover-stay-time="80"
+      wx:for="{{hubs}}"
+      wx:key="key"
+      data-key="{{item.key}}"
+      bindtap="onHubTap"
+    >
+      <view class="hub-top">
+        <view class="hub-icon hub-icon--{{item.key}}"></view>
+        <text class="hub-arrow">›</text>
+      </view>
+      <view>
+        <text class="hub-title">{{item.title}}</text>
+        <text class="hub-desc">{{item.desc}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="sec">
+    <text class="sec__title">推荐资源</text>
+    <text class="sec__more" bindtap="onResourceMore">全部</text>
+  </view>
+  <view class="card-list">
+    <view
+      class="info-card"
+      hover-class="card--hover"
+      hover-stay-time="80"
+      wx:for="{{resources}}"
+      wx:key="name"
+      bindtap="onResourceTap"
+    >
+      <view class="thumb thumb--{{item.tone}}">
+        <view class="thumb__icon thumb__icon--{{item.icon}}"></view>
+      </view>
+      <view class="card-body">
+        <view class="card-top">
+          <text class="card-name">{{item.name}}</text>
+          <text class="badge">{{item.badge}}</text>
+        </view>
+        <text class="card-meta">{{item.meta}}</text>
+        <text class="card-summary">{{item.summary}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="sec">
+    <text class="sec__title">推荐案例</text>
+    <text class="sec__more" bindtap="onCaseMore">全部</text>
+  </view>
+  <view class="card-list">
+    <view
+      class="info-card"
+      hover-class="card--hover"
+      hover-stay-time="80"
+      wx:for="{{cases}}"
+      wx:key="name"
+      bindtap="onCaseTap"
+    >
+      <view class="thumb thumb--{{item.tone}}">
+        <view class="thumb__icon thumb__icon--{{item.icon}}"></view>
+      </view>
+      <view class="card-body">
+        <view class="card-top">
+          <text class="card-name">{{item.name}}</text>
+          <text class="badge">{{item.badge}}</text>
+        </view>
+        <text class="card-meta">{{item.meta}}</text>
+        <text class="card-summary">{{item.summary}}</text>
+      </view>
+    </view>
+  </view>
+
+</view>
+
+<hl-tabbar active="training" />

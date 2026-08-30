@@ -1,0 +1,145 @@
+/* 教研培训 —— 逐条对照原型 screens/training-list.html。1px 记 2rpx。
+ * 这一页原型底部没有导航条。 */
+
+.page {
+  padding: 24rpx 32rpx 56rpx;
+}
+
+.sec {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 24rpx 0 20rpx;
+}
+
+.sec__title {
+  font-size: 32rpx;
+  font-weight: 700;
+}
+
+.sec__more {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: var(--accent-dark);
+}
+
+/* ── 我的档案 ──────────────────────────────────────────────────────────── */
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20rpx;
+  margin-bottom: 28rpx;
+}
+
+.profile-card {
+  min-height: 208rpx;
+  padding: 28rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 32rpx;
+  background: var(--surface);
+}
+
+.card--hover {
+  background: #f6faf9;
+}
+
+.profile-icon {
+  width: 68rpx;
+  height: 68rpx;
+  margin-bottom: 24rpx;
+  border-radius: 24rpx;
+  background-color: var(--accent-light);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 36rpx 36rpx;
+}
+
+.profile-title {
+  display: block;
+  font-size: 30rpx;
+  font-weight: 800;
+}
+
+.profile-desc {
+  display: block;
+  margin-top: 12rpx;
+  font-size: 22rpx;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+/* ── 研修卡 ────────────────────────────────────────────────────────────── */
+
+.card {
+  padding: 28rpx;
+  margin-bottom: 20rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 32rpx;
+  background: var(--surface);
+}
+
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 20rpx;
+  align-items: flex-start;
+}
+
+.card-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.badge {
+  flex: 0 0 auto;
+  padding: 8rpx 16rpx;
+  border-radius: 999rpx;
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  font-size: 20rpx;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.card-meta {
+  display: block;
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.card-summary {
+  display: block;
+  margin-top: 16rpx;
+  font-size: 24rpx;
+  line-height: 1.55;
+  color: var(--fg);
+}
+
+.card-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: 20rpx;
+}
+
+.pill {
+  padding: 8rpx 14rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 999rpx;
+  font-size: 20rpx;
+  color: var(--muted);
+}
+
+/* ── 图标 ──────────────────────────────────────────────────────────────── */
+
+.profile-icon--user {
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDY3ZTc2IiBzdHJva2Utd2lkdGg9IjIiPjxwYXRoIGQ9Ik0yMCAyMWE4IDggMCAwIDAtMTYgMCIvPjxjaXJjbGUgY3g9IjEyIiBjeT0iNyIgcj0iNCIvPjwvc3ZnPg==");
+}
+
+.profile-icon--book {
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDY3ZTc2IiBzdHJva2Utd2lkdGg9IjIiPjxwYXRoIGQ9Ik00IDE5LjVBMi41IDIuNSAwIDAgMSA2LjUgMTdIMjAiLz48cGF0aCBkPSJNNi41IDJIMjB2MjBINi41QTIuNSAyLjUgMCAwIDEgNCAxOS41di0xNUEyLjUgMi41IDAgMCAxIDYuNSAyeiIvPjwvc3ZnPg==");
+}

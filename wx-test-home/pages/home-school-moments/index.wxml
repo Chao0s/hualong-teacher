@@ -1,0 +1,28 @@
+<!-- 在园时光 —— 对照原型 screens/home-school-moments.html。 -->
+<view class="page">
+
+  <view class="chunk">
+    <view class="btn btn--primary sticky-action" hover-class="btn--hover" bindtap="onPublish">发布活动</view>
+    <text class="hint hint--gap">按集体活动发布，可补充地点、观察实录、分析和图片。</text>
+  </view>
+
+  <view class="sec">
+    <text>本周上传进度</text>
+    <text class="more" bindtap="onFeed">全部活动</text>
+  </view>
+
+  <view class="table-wrap">
+    <view class="prog-row prog-row--head">
+      <text class="prog-cell prog-cell--name">幼儿</text>
+      <text class="prog-cell">第一次</text>
+      <text class="prog-cell">第二次</text>
+    </view>
+    <view class="prog-row" wx:for="{{rows}}" wx:key="name" wx:for-item="row">
+      <text class="prog-cell prog-cell--name">{{row.name}}</text>
+      <view class="prog-cell" wx:for="{{row.cells}}" wx:key="text" wx:for-item="cell">
+        <text class="status status--{{cell.state}}">{{cell.text}}</text>
+      </view>
+    </view>
+  </view>
+
+</view>

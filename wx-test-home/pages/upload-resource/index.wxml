@@ -1,0 +1,249 @@
+<!-- 上传资料 —— 对照原型 screens/upload-resource.html。
+     原型按「上传目标」二选一切换两套表单，这里同样按 type 用 wx:if 切。
+     原型的 <select> 小程序没有，换成 <picker mode="selector">，点开是底部滚轮。 -->
+<view class="page">
+
+  <view class="banner">
+    <view class="banner__ring"></view>
+    <text class="kicker">提交审核</text>
+    <text class="banner__title">上传资源与案例</text>
+    <text class="banner__desc">选择提交到资源库或案例库，系统会按对应资料标准生成表单，提交后进入审核流程。</text>
+  </view>
+
+  <view class="chunk">
+    <view class="section-head">
+      <text class="sec">上传目标</text>
+      <text class="hint">二选一</text>
+    </view>
+    <view class="target-grid">
+      <view
+        class="target {{type === item.key ? 'target--on' : ''}}"
+        wx:for="{{targets}}"
+        wx:key="key"
+        data-type="{{item.key}}"
+        bindtap="onTargetTap"
+      >
+        <view class="target__mark">{{item.glyph}}</view>
+        <text class="target__title">{{item.title}}</text>
+        <text class="target__desc">{{item.desc}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 上传人信息在原型里已经从两个 select 改成只读回显：一位教师只属一个班，
+       上传者就是登录的教师，两个值都由会话派生，不该让客户端提供。 -->
+  <view class="chunk">
+    <text class="sec sec--gap">上传人信息</text>
+    <view class="profile">
+      <view>
+        <text class="field__label">姓名</text>
+        <view class="readback">{{teacher.name}}</view>
+      </view>
+      <view>
+        <text class="field__label">班级</text>
+        <view class="readback">{{teacher.className}}</view>
+      </view>
+    </view>
+    <text class="hint hint--gap">由登录信息自动带入，不可修改。</text>
+  </view>
+
+  <view class="chunk">
+    <view class="section-head">
+      <text class="sec">{{type === 'resource' ? '资源库材料' : '案例库材料'}}</text>
+      <text class="hint">{{type === 'resource' ? '资源标准表单' : '案例标准表单'}}</text>
+    </view>
+
+    <view class="form">
+      <!-- ── 资源表单 ── -->
+      <block wx:if="{{type === 'resource'}}">
+        <view>
+          <view class="field__labelrow">
+            <text class="field__label">资源名称</text>
+            <text class="limit">≤20字</text>
+          </view>
+          <input class="input" maxlength="20" value="{{resource.name}}" data-key="name" bindinput="onResourceInput" />
+        </view>
+
+        <view class="image-upload">
+          <text class="image-upload__title">封面图片</text>
+          <view class="image-box" bindtap="onPickCover">
+            <text class="upload-note">{{coverPicked ? '已选择封面图片' : '未选择文件'}}</text>
+            <text class="mini-btn">上传封面</text>
+          </view>
+        </view>
+
+        <view>
+          <text class="field__label">资源标签</text>
+          <picker mode="selector" range="{{resourceTags}}" value="{{resourceTagIndex}}" bindchange="onResourceTagChange">
+            <view class="select">{{resourceTags[resourceTagIndex]}}</view>
+          </picker>
+        </view>
+
+        <view>
+          <view class="field__labelrow">
+            <text class="field__label">资源解读</text>
+            <text class="limit">≤200字</text>
+          </view>
+          <textarea class="textarea" maxlength="200" value="{{resource.explain}}" data-key="explain" bindinput="onResourceInput" />
+        </view>
+
+        <view>
+          <view class="field__labelrow">
+            <text class="field__label">资源获取</text>
+            <text class="limit">≤300字</text>
+          </view>
+          <textarea class="textarea" maxlength="300" value="{{resource.access}}" data-key="access" bindinput="onResourceInput" />
+        </view>
+
+        <view>
+          <view class="field__labelrow">
+            <text class="field__label">资源转化</text>
+            <text class="limit">≤200字</text>
+          </view>
+          <textarea class="textarea" maxlength="200" value="{{resource.trans}}" data-key="trans" bindinput="onResourceInput" />
+        </view>
+
+        <view>
+          <text class="field__label">课程应用</text>
+          <view class="pick-row">
+            <view class="pick-row__main">
+              <text class="pick-name">{{selectedCase}}</text>
+              <text class="pick-meta">{{selectedCaseMeta}}</text>
+            </view>
+            <text class="mini-btn" data-picker="case" bindtap="onOpenPicker">选择</text>
+          </view>
+        </view>
+
+        <view class="upload-row">
+          <view class="upload-row__main">
+            <text class="upload-name">Word附件</text>
+            <text class="upload-note">资源说明、授权材料或整理文档</text>
+          </view>
+          <text class="mini-btn" data-action="已选择Word附件" bindtap="onToast">上传</text>
+        </view>
+      </block>
+
+      <!-- ── 案例表单 ── -->
+      <block wx:else>
+        <view>
+          <view class="field__labelrow">
+            <text class="field__label">案例名称</text>
+            <text class="limit">≤20字</text>
+          </view>
+          <input class="input" maxlength="20" value="{{caseForm.name}}" data-key="name" bindinput="onCaseInput" />
+        </view>
+
+        <view class="image-upload">
+          <text class="image-upload__title">封面图片</text>
+          <view class="image-box" bindtap="onPickCover">
+            <text class="upload-note">{{coverPicked ? '已选择封面图片' : '未选择文件'}}</text>
+            <text class="mini-btn">上传封面</text>
+          </view>
+        </view>
+
+        <view class="two-col">
+          <view>
+            <text class="field__label">年级</text>
+            <picker mode="selector" range="{{grades}}" value="{{gradeIndex}}" bindchange="onGradeChange">
+              <view class="select">{{grades[gradeIndex]}}</view>
+            </picker>
+          </view>
+          <view>
+            <text class="field__label">五大领域</text>
+            <picker mode="selector" range="{{fields}}" value="{{fieldIndex}}" bindchange="onFieldChange">
+              <view class="select">{{fields[fieldIndex]}}</view>
+            </picker>
+          </view>
+        </view>
+
+        <!-- 100 字不是 200／300：db_case 的 case_intro 和 case_trans 都是 VARCHAR(100)。
+             原型早先写 200／300，教师打满会被数据库退回，已在原型里改掉。 -->
+        <view>
+          <view class="field__labelrow">
+            <text class="field__label">活动简介</text>
+            <text class="limit">≤100字</text>
+          </view>
+          <textarea class="textarea" maxlength="100" value="{{caseForm.intro}}" data-key="intro" bindinput="onCaseInput" />
+        </view>
+
+        <view>
+          <view class="field__labelrow">
+            <text class="field__label">活动转化</text>
+            <text class="limit">≤100字</text>
+          </view>
+          <textarea class="textarea" maxlength="100" value="{{caseForm.trans}}" data-key="trans" bindinput="onCaseInput" />
+        </view>
+
+        <view>
+          <text class="field__label">关联资源</text>
+          <view class="pick-row">
+            <view class="pick-row__main">
+              <text class="pick-name">{{selectedResource}}</text>
+              <text class="pick-meta">{{selectedResourceMeta}}</text>
+            </view>
+            <text class="mini-btn" data-picker="resource" bindtap="onOpenPicker">选择</text>
+          </view>
+        </view>
+
+        <view class="upload-row">
+          <view class="upload-row__main">
+            <text class="upload-name">Word附件</text>
+            <text class="upload-note">活动详案、反思或图文案例文档</text>
+          </view>
+          <text class="mini-btn" data-action="已选择Word附件" bindtap="onToast">上传</text>
+        </view>
+      </block>
+    </view>
+  </view>
+
+  <view class="actions">
+    <view class="btn btn--ghost" hover-class="btn--hover" data-action="已保存草稿" bindtap="onToast">保存草稿</view>
+    <view class="btn btn--primary" hover-class="btn--hover" data-action="已提交审核" bindtap="onToast">提交审核</view>
+  </view>
+
+</view>
+
+<!-- 选择课程应用 / 关联资源的底部浮层 -->
+<view class="sheet" wx:if="{{picker}}" bindtap="onClosePicker">
+  <view class="panel" catchtap="noop">
+    <view class="panel-head">
+      <text class="panel-title">{{picker === 'case' ? '选择课程应用' : '选择关联资源'}}</text>
+      <view class="close" bindtap="onClosePicker">×</view>
+    </view>
+
+    <scroll-view class="filters" scroll-x enable-flex>
+      <view
+        class="chip {{filterA === item ? 'chip--on' : ''}}"
+        wx:for="{{filterAOptions}}"
+        wx:key="*this"
+        data-group="A"
+        data-value="{{item}}"
+        bindtap="onFilterTap"
+      >{{item}}</view>
+    </scroll-view>
+
+    <scroll-view class="filters" scroll-x enable-flex wx:if="{{filterBOptions.length}}">
+      <view
+        class="chip {{filterB === item ? 'chip--on' : ''}}"
+        wx:for="{{filterBOptions}}"
+        wx:key="*this"
+        data-group="B"
+        data-value="{{item}}"
+        bindtap="onFilterTap"
+      >{{item}}</view>
+    </scroll-view>
+
+    <scroll-view class="option-list" scroll-y>
+      <view
+        class="option {{item.name === currentSelection ? 'option--on' : ''}}"
+        wx:for="{{options}}"
+        wx:key="name"
+        data-name="{{item.name}}"
+        bindtap="onOptionTap"
+      >
+        <text class="option__name">{{item.name}}</text>
+        <text class="option__meta">{{item.label}}</text>
+      </view>
+    </scroll-view>
+  </view>
+</view>

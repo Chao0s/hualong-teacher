@@ -1,0 +1,30 @@
+<!-- 党建活动 · 全部活动 —— 对照原型 screens/party-activity-list.html。 -->
+<view class="page">
+
+  <view class="summary">
+    <text class="summary__title">全部党建活动</text>
+    <text class="summary__desc">按时间查看园内主题党日、志愿服务和理论学习活动。</text>
+  </view>
+
+  <view class="timeline">
+    <view
+      class="item"
+      hover-class="item--hover"
+      hover-stay-time="80"
+      wx:for="{{activities}}"
+      wx:key="id"
+      data-id="{{item.id}}"
+      bindtap="onItemTap"
+    >
+      <view class="mark">活</view>
+      <view class="item__main">
+        <text class="item__title">{{item.title}}</text>
+        <view class="item__meta">
+          <text wx:for="{{item.meta}}" wx:key="*this" wx:for-item="m">{{m}}</text>
+        </view>
+      </view>
+      <text class="item__arrow">›</text>
+    </view>
+  </view>
+
+</view>
