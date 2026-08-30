@@ -25,3 +25,7 @@ tools/.report/
 # tools/build-api-doc.mjs output. Generated at publish time, never committed —
 # a committed copy of the contract would go stale silently.
 dist/
+
+# 原型抓取的临时抽取目录。captures/*.txt 是源料要留，_extracted/ 是从它们
+# 现抽出来的 body/css/js，一条命令可重建，不进版本库。
+captures/_extracted/

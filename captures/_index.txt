@@ -1,0 +1,141 @@
+web-capture 抓取清单
+起始页: https://chao0s.github.io/hualong-teacher/screens/home.html
+        https://chao0s.github.io/hualong-teacher/screens/component-showcase.html
+        https://chao0s.github.io/hualong-teacher/screens/growth-book-view.html
+抓取时间: 2026-08-30T10:13:44.293Z
+页数: 56
+失败资源: 0
+
+文件	层	标题	字节	CSS	JS	站内链接	query变体
+home.txt	0	首页 · 幼儿园教师端	25395	1	1	14	0
+component-showcase.txt	0	组件清单 · Component Showcase	132237	1	0	13	0
+growth-book-view.txt	0	成长册 · 家园社共育	61097	3	2	1	0
+upload-resource.txt	1	上传资料 · 幼儿园教师端	39935	1	1	1	0
+teacher-tasks.txt	1	待办任务 · 幼儿园教师端	9050	1	0	4	0
+assessment-tool.txt	1	质量评估 · 幼儿园教师端	114380	1	3	1	0
+training-list.txt	1	教研培训 · 教研培训部	12255	1	0	9	2
+home-school-moments.txt	1	在园时光 · 家园社共育	15391	1	0	3	0
+teacher-monthly-form.txt	1	填写月度评价 · 家园社共育	30317	2	1	1	24
+resource-center.txt	1	课程资源 · 教研培训部	21797	1	1	9	0
+case-library.txt	1	案例库首页 · 幼儿园教师端	25880	1	1	7	0
+case-detail.txt	1	案例详情 · 幼儿园教师端	21500	1	0	2	0
+school-affairs.txt	1	党建管理部 · 幼儿园教师端	23013	1	1	17	0
+comprehensive-coordination.txt	1	综合协调部 · 幼儿园教师端	19295	1	1	12	0
+training-center.txt	1	教研培训部 · 幼儿园教师端	24073	1	1	12	0
+home-school.txt	1	家园社共育 · 幼儿园教师端	20583	2	0	9	0
+teacher-task-detail.txt	1	任务详情 · 幼儿园教师端	23115	1	1	1	3
+coordination-file-list.txt	1	综合协调文件列表 · 幼儿园教师端	37528	1	1	5	7
+resource-library.txt	1	资源库首页 · 幼儿园教师端	22706	1	1	7	0
+teacher-monthly-evaluation.txt	1	教师月度评价 · 家园社共育	21980	2	0	26	0
+growth-book-sample.txt	1	成长册样本 · 家园社共育	60968	3	2	2	0
+growth-book.txt	1	成长册 · 家园社共育	76365	2	2	3	0
+teacher-profile.txt	2	个人档案 · 教研培训	31860	1	1	1	0
+my-training.txt	2	我的研修 · 教研培训	9664	1	0	5	0
+training-detail.txt	2	研修详情 · 教研培训部	23372	1	1	1	4
+home-school-moment-publish.txt	2	发布活动 · 在园时光	25706	2	1	1	0
+home-school-moment-feed.txt	2	全部活动 · 在园时光	69840	2	2	1	0
+resource-detail.txt	2	资源详情 · 幼儿园教师端	9916	1	0	2	0
+party-study-detail.txt	2	党建学习 · 文件预览	15870	1	1	1	5
+party-study-list.txt	2	党建学习 · 全部文件	8016	1	0	6	0
+party-activity-list.txt	2	党建活动 · 全部活动	7577	1	0	6	0
+party-activity-detail.txt	2	党建活动 · 活动介绍	14087	1	1	1	5
+party-brand-list.txt	2	品牌建设 · 全部主题	6962	1	0	5	0
+party-brand-detail.txt	2	品牌建设 · 图文介绍	9201	1	1	1	4
+course-building.txt	2	课程建设 · 教研培训部	28898	1	0	1	0
+parent-tasks.txt	2	亲子任务 · 家园社共育	17927	2	0	3	0
+growth-record.txt	2	儿童成长档案 · 家园社共育	24887	2	0	4	0
+community-coeducation.txt	2	社区共育 · 家园社共育	70647	2	2	1	0
+teacher-evaluation.txt	2	教师评价 · 儿童成长档案	19444	2	0	5	0
+growth-book-edit.txt	2	学期编册 · 成长册	68891	3	2	6	0
+parent-task-publish.txt	3	发布亲子任务 · 家园社共育	21259	2	1	1	0
+parent-task-detail.txt	3	亲子任务详情 · 家园社共育	15737	1	0	1	0
+parent-evaluation-publish.txt	3	发布家长测评 · 家园社共育	15595	1	0	2	0
+teacher-term-evaluation.txt	3	教师学期评价 · 家园社共育	27251	2	1	8	0
+growth-comprehensive-assessment.txt	3	综合评估 · 儿童成长档案	42860	2	3	4	0
+teacher-message.txt	3	教师寄语 · 儿童成长档案	21221	2	1	3	0
+growth-book-section-edit.txt	3	栏目版面 · 成长册	117036	2	2	2	1
+growth-book-section-materials.txt	3	栏目投稿管理	65883	2	2	1	0
+growth-book-time-manage.txt	3	在园时光管理	81511	2	2	1	0
+growth-book-task-manage.txt	3	亲子时光管理	60811	2	2	1	0
+parent-evaluation-detail.txt	4	家长测评进度 · 家园社共育	15621	1	0	1	0
+teacher-term-form.txt	4	填写学期评价 · 家园社共育	28023	2	1	1	6
+comprehensive-assessment-form.txt	4	开始综合评估 · 儿童成长档案	115956	1	2	1	0
+comprehensive-assessment-class-report.txt	4	班级评估报告 · 儿童成长档案	26980	1	2	2	0
+comprehensive-assessment-report.txt	4	综合评估结果 · 儿童成长档案	32210	1	2	2	0
+teacher-message-detail.txt	4	寄语详情 · 儿童成长档案	17481	2	1	1	2
+
+query 变体（同一个 HTML，只抓了一次）:
+  /hualong-teacher/screens/teacher-task-detail.html
+      ?id=resource-pack
+      ?id=community-walk
+      ?id=training-feedback
+  /hualong-teacher/screens/coordination-file-list.html
+      ?type=policy
+      ?type=notice
+      ?type=org
+      ?type=safety
+      ?type=health
+      ?type=ethics
+      ?type=exchange
+  /hualong-teacher/screens/training-list.html
+      ?section=latest&amp;view=all
+      ?section=history&amp;view=all
+  /hualong-teacher/screens/training-detail.html
+      ?id=game-course&type=latest
+      ?id=lingnan&type=latest
+      ?id=observation&type=history
+      ?id=home-connect&type=history
+  /hualong-teacher/screens/party-study-detail.html
+      ?id=work-points
+      ?id=discipline
+      ?id=safety
+      ?id=meeting
+      ?id=archive
+  /hualong-teacher/screens/party-activity-detail.html
+      ?id=theme-day
+      ?id=volunteer
+      ?id=reading
+      ?id=visit
+      ?id=class
+  /hualong-teacher/screens/party-brand-detail.html
+      ?id=steam
+      ?id=dragon
+      ?id=garden
+      ?id=reading
+  /hualong-teacher/screens/teacher-monthly-form.html
+      ?child=chen&month=3&view=1
+      ?child=chen&month=4&view=1
+      ?child=chen&month=5&view=1
+      ?child=chen&month=6&view=1
+      ?child=li&month=3&view=1
+      ?child=li&month=4&view=1
+      ?child=li&month=5
+      ?child=li&month=6
+      ?child=zhang&month=3&view=1
+      ?child=zhang&month=4
+      ?child=zhang&month=5
+      ?child=zhang&month=6
+      ?child=wang&month=3&view=1
+      ?child=wang&month=4&view=1
+      ?child=wang&month=5&view=1
+      ?child=wang&month=6&view=1
+      ?child=zhao&month=3
+      ?child=zhao&month=4
+      ?child=zhao&month=5
+      ?child=zhao&month=6
+      ?child=liu&month=3&view=1
+      ?child=liu&month=4&view=1
+      ?child=liu&month=5&view=1
+      ?child=liu&month=6&view=1
+  /hualong-teacher/screens/growth-book-section-edit.html
+      ?new=1
+  /hualong-teacher/screens/teacher-term-form.html
+      ?child=chen&view=1
+      ?child=li
+      ?child=zhang
+      ?child=wang&view=1
+      ?child=zhao
+      ?child=liu&view=1
+  /hualong-teacher/screens/teacher-message-detail.html
+      ?child=chen
+      ?child=liu

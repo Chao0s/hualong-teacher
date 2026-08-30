@@ -1,0 +1,48 @@
+{
+  "exportFormat": "browser-ui-debug-package",
+  "exportVersion": 1,
+  "capturedBy": "http-fetch",
+  "instructionsForAI": [
+    "sourceHTML 是服务器返回的原始 HTML，不是 JS 执行后的 DOM。",
+    "页面若用 JS 生成列表，模板和数据都在 scripts 里；那些 `.map(...)` 对应小程序的 wx:for，数组对应 data。",
+    "styles 含页面内联的 <style> 和外链 CSS 的正文。",
+    "scripts 含内联脚本和外链 JS 的正文。",
+    "failedResources 列出取不到的文件。",
+    "links 是本页指向的站内页面，用来追多级页面。",
+    "转微信小程序时重点看 display、position、box-sizing、flex、grid、overflow、字体、行高和尺寸单位。",
+    "本文件不含截图。排版是否跑位要另外截图比对，见 web-capture 的 SKILL.md。"
+  ],
+  "environment": {
+    "exportedAt": "2026-08-30T10:13:37.084Z",
+    "page": {
+      "url": "https://chao0s.github.io/hualong-teacher/screens/party-brand-list.html",
+      "origin": "https://chao0s.github.io",
+      "pathname": "/hualong-teacher/screens/party-brand-list.html",
+      "title": "品牌建设 · 全部主题",
+      "charset": "utf-8"
+    },
+    "viewport": {
+      "declared": "width=390, initial-scale=1, user-scalable=no",
+      "width": 390
+    }
+  },
+  "sourceHTML": "<!doctype html>\n<html lang=\"zh-CN\">\n<head>\n<meta charset=\"utf-8\" />\n<meta name=\"viewport\" content=\"width=390, initial-scale=1, user-scalable=no\" />\n<title>品牌建设 · 全部主题</title>\n<style>\n  :root{--bg:#f0f5f5;--surface:#fff;--fg:#1a1916;--muted:#868686;--border:#e0e8e8;--green:#4b9a5a;--green-light:#eaf5ed;--font:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',system-ui,sans-serif}\n  *{box-sizing:border-box;margin:0;padding:0}body{min-height:100vh;display:flex;justify-content:center;background:transparent;font-family:var(--font);color:var(--fg)}.phone{width:390px;height:844px;overflow:hidden;border-radius:40px;background:var(--bg)}.status{display:flex;justify-content:space-between;padding:14px 28px 8px;font-size:13px;font-weight:600}.nav{display:grid;grid-template-columns:40px 1fr 40px;align-items:center;padding:8px 16px 12px}.nav a{color:var(--fg);text-decoration:none;font-size:22px}.nav h1{text-align:center;font-size:17px}.scroll{height:calc(100% - 70px);overflow:auto;padding:0 16px 28px}.scroll::-webkit-scrollbar{display:none}.summary{border-radius:16px;background:linear-gradient(135deg,#2f855a,#4b9a5a,#88c35a);color:#fff;padding:18px;margin-bottom:18px}.summary h2{font-size:20px}.summary p{font-size:12px;opacity:.9;margin-top:6px}.grid{display:grid;gap:10px}.card{padding:14px;border:1px solid var(--border);border-radius:16px;background:var(--surface);display:grid;grid-template-columns:54px 1fr auto;gap:12px;align-items:center;color:inherit;text-decoration:none}.thumb{width:54px;height:54px;border-radius:14px;background:var(--green-light);color:var(--green);display:grid;place-items:center;font-size:18px;font-weight:800}.title{font-size:14px;font-weight:720}.meta{margin-top:5px;color:var(--muted);font-size:11px}.arrow{color:var(--muted);font-size:18px}\n</style>\n</head>\n<body><div class=\"phone\">\n  <div class=\"status\"><span>9:41</span><span>WiFi · ▮▮▮</span></div>\n  <header class=\"nav\"><a href=\"school-affairs.html\">‹</a><h1>品牌建设</h1><span></span></header>\n  <main class=\"scroll\">\n    <section class=\"summary\"><h2>全部品牌主题</h2><p>沉淀本园课程特色、环境特色和党建引领实践案例。</p></section>\n    <section class=\"grid\">\n      <a class=\"card\" href=\"party-brand-detail.html?id=steam\"><span class=\"thumb\">科</span><span><span class=\"title\">科技启蒙：小小工程师项目</span><span class=\"meta\">科学探究 · 园本特色</span></span><span class=\"arrow\">›</span></a>\n      <a class=\"card\" href=\"party-brand-detail.html?id=dragon\"><span class=\"thumb\">狮</span><span><span class=\"title\">醒狮文化：岭南艺术体验</span><span class=\"meta\">艺术表达 · 本土课程</span></span><span class=\"arrow\">›</span></a>\n      <a class=\"card\" href=\"party-brand-detail.html?id=garden\"><span class=\"thumb\">园</span><span><span class=\"title\">自然花园：劳动教育实践</span><span class=\"meta\">劳动教育 · 班级共建</span></span><span class=\"arrow\">›</span></a>\n      <a class=\"card\" href=\"party-brand-detail.html?id=reading\"><span class=\"thumb\">读</span><span><span class=\"title\">书香班级：亲子阅读共建</span><span class=\"meta\">语言发展 · 家园协同</span></span><span class=\"arrow\">›</span></a>\n    </section>\n  </main>\n</div></body></html>\n",
+  "styles": [
+    {
+      "type": "inline",
+      "index": 1,
+      "media": "",
+      "content": "\n  :root{--bg:#f0f5f5;--surface:#fff;--fg:#1a1916;--muted:#868686;--border:#e0e8e8;--green:#4b9a5a;--green-light:#eaf5ed;--font:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',system-ui,sans-serif}\n  *{box-sizing:border-box;margin:0;padding:0}body{min-height:100vh;display:flex;justify-content:center;background:transparent;font-family:var(--font);color:var(--fg)}.phone{width:390px;height:844px;overflow:hidden;border-radius:40px;background:var(--bg)}.status{display:flex;justify-content:space-between;padding:14px 28px 8px;font-size:13px;font-weight:600}.nav{display:grid;grid-template-columns:40px 1fr 40px;align-items:center;padding:8px 16px 12px}.nav a{color:var(--fg);text-decoration:none;font-size:22px}.nav h1{text-align:center;font-size:17px}.scroll{height:calc(100% - 70px);overflow:auto;padding:0 16px 28px}.scroll::-webkit-scrollbar{display:none}.summary{border-radius:16px;background:linear-gradient(135deg,#2f855a,#4b9a5a,#88c35a);color:#fff;padding:18px;margin-bottom:18px}.summary h2{font-size:20px}.summary p{font-size:12px;opacity:.9;margin-top:6px}.grid{display:grid;gap:10px}.card{padding:14px;border:1px solid var(--border);border-radius:16px;background:var(--surface);display:grid;grid-template-columns:54px 1fr auto;gap:12px;align-items:center;color:inherit;text-decoration:none}.thumb{width:54px;height:54px;border-radius:14px;background:var(--green-light);color:var(--green);display:grid;place-items:center;font-size:18px;font-weight:800}.title{font-size:14px;font-weight:720}.meta{margin-top:5px;color:var(--muted);font-size:11px}.arrow{color:var(--muted);font-size:18px}\n"
+    }
+  ],
+  "scripts": [],
+  "resources": [],
+  "links": [
+    "https://chao0s.github.io/hualong-teacher/screens/school-affairs.html",
+    "https://chao0s.github.io/hualong-teacher/screens/party-brand-detail.html?id=steam",
+    "https://chao0s.github.io/hualong-teacher/screens/party-brand-detail.html?id=dragon",
+    "https://chao0s.github.io/hualong-teacher/screens/party-brand-detail.html?id=garden",
+    "https://chao0s.github.io/hualong-teacher/screens/party-brand-detail.html?id=reading"
+  ],
+  "failedResources": []
+}
