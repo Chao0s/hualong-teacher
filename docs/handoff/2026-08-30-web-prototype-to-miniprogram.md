@@ -126,14 +126,31 @@ node tools/wx-test-home-verify.js
 | `tools/wx-test-home-verify.js` | 静态自检。**每批做完必跑。** 查 JSON、JS 语法、四件套齐全、跳转目标已注册、样式类、base64 图标 |
 | `tools/wx-test-home-icons.js` | 生成 36 个 base64 图标追加到各页 wxss。**重跑前先 git 还原那几个 wxss**，否则会重复追加 |
 | `tools/wx-port-growth-book.js` | 转成长册共用模块，幂等，可重跑 |
+| `tools/wx-extract-capture.js` | 从 `captures/*.txt` 抽出 body/css/js。**转换前的第一步** |
 
 自检脚本自己被修过 5 次 bug，每次都是它先误报、查下去发现是脚本的问题。**它报错时先看是不是真问题，但不要默认它错**——有两次它抓到了真漏写（`teacher-term-evaluation` 少两条规则、`comprehensive-assessment-class-report` 抬头配色整块写错）。
 
 ## 8. 原型源料在哪
 
-`captures/` 下 56 个 `.txt`，每个是一页的完整源料（`sourceHTML` + `styles` + `scripts` + `links`），加一份 `_index.txt` 清单。
+**56 页的源料已经在版本库里**：`captures/` 下 56 个 `.txt`，每个是一页的完整源料
+（`sourceHTML` + `styles` + `scripts` + `links`），加一份 `_index.txt` 清单。
 
-抓取工具是个人 skill `web-capture`（`C:\Users\Lin\.claude\skills\web-capture\`）。重抓命令：
+**转换前不需要重新抓站。** 直接抽出来读：
+
+```bash
+node tools/wx-extract-capture.js growth-book growth-book-time-manage
+node tools/wx-extract-capture.js --all
+```
+
+产出到 `captures/_extracted/`（不进版本库，随时可重建）。每页给出
+`.body.html`（去掉 script 的正文）、`.style.css`（页面自己的样式）、
+外链样式和脚本各自的正文（如 `.home-school-common.css`、`.growth-book-render.js`）、
+`.inline0.js`（内联脚本）。
+
+### 什么时候才需要重抓
+
+只有两种情况：原型重新部署了，或者 `captures/` 里确实缺页。那时用个人 skill
+`web-capture`（`C:\Users\Lin\.claude\skills\web-capture\`）：
 
 ```bash
 node "C:/Users/Lin/.claude/skills/web-capture/scripts/capture.js" \
@@ -142,21 +159,6 @@ node "C:/Users/Lin/.claude/skills/web-capture/scripts/capture.js" \
 ```
 
 后两个是孤儿页，站内没有任何链接指向它们，不点名抓不到。
-
-开工前把要转的页面抽成可读文件：
-
-```bash
-node -e "
-const fs=require('fs');
-const p=JSON.parse(fs.readFileSync('D:/hualong-teacher/captures/<页面名>.txt','utf8'));
-const body=(p.sourceHTML.match(/<body[^>]*>([\s\S]*)<\/body>/)||[,''])[1];
-fs.writeFileSync('D:/hualong-teacher/captures/_extracted/<页面名>.body.html', body.replace(/<script[\s\S]*?<\/script>/g,'').trim());
-p.styles.forEach(s=>{if(s.type==='inline')fs.writeFileSync('D:/hualong-teacher/captures/_extracted/<页面名>.style.css',s.content)});
-p.scripts.forEach((s,i)=>{if(s.content.trim())fs.writeFileSync('D:/hualong-teacher/captures/_extracted/<页面名>.inline'+i+'.js',s.content)});
-"
-```
-
-`captures/_extracted/` 是临时抽取目录，没进版本库，需要时重新生成。
 
 ## 9. 原型自身的三个问题（**没有擅自改**）
 
@@ -170,7 +172,7 @@ p.scripts.forEach((s,i)=>{if(s.content.trim())fs.writeFileSync('D:/hualong-teach
 
 | skill | 什么时候用 |
 |---|---|
-| `web-capture` | 要重抓原型页面时。已在 `C:\Users\Lin\.claude\skills\web-capture\` |
+| `web-capture` | **一般用不上**。源料已在 `captures/`，只有原型重新部署或确实缺页才用 |
 | `context7-mcp` | 查小程序 API、组件、配置项。别凭记忆答 |
 | `caveman-commit` | 写提交信息 |
 
@@ -178,7 +180,11 @@ p.scripts.forEach((s,i)=>{if(s.content.trim())fs.writeFileSync('D:/hualong-teach
 
 ## 11. 下一批的具体做法
 
-1. 抽出 4 个页面的 body/css/js（命令见第 8 节）。
+1. 抽源料，**不用抓站**：
+   ```bash
+   node tools/wx-extract-capture.js growth-book growth-book-time-manage \
+     growth-book-task-manage growth-book-section-materials
+   ```
 2. 逐页读，按第 6 节的对照表转。
 3. 页面 `require('../../utils/growth-book.js')` 取配置和逻辑。
 4. 注册进 `wx-test-home/app.json` 的 `pages`。
