@@ -1,122 +1,94 @@
 /**
- * Home — APP-STRUCTURE.md flowchart 01, screen id `Home`.
+ * 首页 —— 原型 screens/home.html 的小程序版本。
  *
- * Four constituents, per the flowchart: 待办事项 (three stat cards since the
- * 2026-08-26 redesign) / 资源中心通知 (a quick-entry card with an unread badge,
- * no longer a section of rows) / 常用入口 / 推荐课程案例.
- *
- * This page is the layering template the remaining 38 screens copy (ticket 08).
- * It calls services, calls setData, and answers taps. It holds no endpoint
- * path, no enum table, no time format and no error branch — those live in
- * services/home.js and utils/present.js.
+ * 网页版把文字写死在 HTML 里；小程序的 wxml 只画结构，文字要从 data 传过去。
+ * 所以原型里的四块内容（头图、近期任务、常用入口、推荐课程案例）在这里变成四份数据。
+ * 底部导航搬到 hl-tabbar 组件，5 个页面共用。
  */
 
-const guard = require('../../utils/guard');
-const identity = require('../../services/identity');
-const home = require('../../services/home');
-const { reportFailure } = require('../../utils/present');
+const ASSESSMENT_STORAGE_KEY = 'hualong_assessment_v1';
+const ASSESSMENT_TOTAL = 120;
+
+// 已转成小程序的页面写路径，没转的写 null，点了弹提示
+const TARGETS = {
+  upload: '/pages/upload-resource/index',
+  task: '/pages/teacher-tasks/index',
+  assess: '/pages/assessment-tool/index',
+  training: '/pages/training-list/index',
+  moments: '/pages/home-school-moments/index',
+  monthly: '/pages/teacher-monthly-form/index',
+  resource: '/pages/resource-center/index',
+};
 
 Page({
   data: {
-    ready: false,
-    loading: true,
-    errorText: '',
-    errorRequestId: '',
-    errorCanRetry: false,
+    banner: {
+      title: '教师工作台',
+      sub: '上传资源、处理待办任务',
+    },
 
-    teacherName: '',
-    className: '',
-    termName: '',
-    noTerm: false,
-    termNotice: '',
-    canWrite: false,
+    todos: [
+      { key: 'upload', glyph: '传', title: '上传资源', badge: '提交审核', tone: 'accent' },
+      { key: 'task', glyph: '办', title: '待办任务', badge: '待处理 0', tone: 'warn' },
+      { key: 'assess', glyph: '评', title: '质量评估', badge: '3/120', tone: 'info' },
+    ],
 
-    stats: [],
-    unreadNotice: 0,
-    assessmentId: 0,
-    cases: [],
-    // Write entries start off and are turned on by the term state, never the
-    // other way round.
-    quickEntries: home.quickEntries(false),
+    quickEntries: [
+      { key: 'training', label: '教研培训' },
+      { key: 'moments', label: '在园时光' },
+      { key: 'monthly', label: '月度评价' },
+      { key: 'resource', label: '课程资源' },
+    ],
+
+    cases: [
+      { id: 1, glyph: '社', name: '祠堂里的故事', tag: '社会 · 住', tone: 'accent' },
+      { id: 2, glyph: '健', name: '龙舟竞渡', tag: '健康 · 行', tone: 'green' },
+      { id: 3, glyph: '艺', name: '醒狮从哪里来', tag: '语言 · 艺', tone: 'amber' },
+    ],
   },
 
-  onLoad() {
-    if (!guard.requireSession()) return;
-    this.setData({ ready: true });
-    this.hydrateFromSession();
-    this.load();
-  },
-
-  /**
-   * The term can roll over while the app sits in the background: the holiday
-   * ends and the same page's write entries must come back WITHOUT a re-login
-   * (ticket 06). Re-read the context on every show; cheap, and the answer is
-   * always current.
-   */
-  async onShow() {
-    if (!this.data.ready || !identity.isLoggedIn()) return;
-    try {
-      await identity.refreshContext();
-      this.hydrateFromSession();
-    } catch (err) {
-      if (identity.handleAuthFailure(err)) return;
-      // A failed refresh keeps the last known state; the next show retries.
-    }
-  },
-
-  onPullDownRefresh() {
-    this.load().then(() => wx.stopPullDownRefresh());
+  onShow() {
+    this.refreshAssessmentBadge();
   },
 
   /**
-   * Fill the header and the entry states from the cached session context.
-   *
-   * §6.4: `scope` is for display only. Showing the class name is exactly the
-   * sanctioned use; writing it back into a request body is not. The term state
-   * is first-class (ticket 06): this page renders what `termState()` returns and
-   * never inspects the term enum itself.
+   * 质量评估徽标 —— 原型页尾那段脚本的等价实现。
+   * 网页版读 localStorage，小程序读 Storage，口径一样：算已打分的条目数。
    */
-  hydrateFromSession() {
-    const who = identity.homeIdentity();
-    const term = identity.termState();
-    this.setData({
-      teacherName: who.teacherName,
-      className: who.className,
-      termName: term.termName,
-      noTerm: who.noTerm,
-      termNotice: term.notice,
-      canWrite: term.canWrite,
-      quickEntries: home.quickEntries(term.canWrite),
-    });
-  },
-
-  async load() {
-    this.setData({ loading: true, errorText: '', errorRequestId: '', errorCanRetry: false });
+  refreshAssessmentBadge() {
+    let done = 0;
     try {
-      const view = await home.load();
-      this.setData({ ...view, loading: false });
-    } catch (err) {
-      reportFailure(this, err, { loading: false });
+      const scores = wx.getStorageSync(ASSESSMENT_STORAGE_KEY) || {};
+      done = Object.keys(scores).filter((k) => scores[k] >= 1).length;
+    } catch (e) {
+      /* 读不到就按 0 算 */
     }
-  },
-
-  onRetryLoad() {
-    this.load();
+    this.setData({ 'todos[2].badge': `${done}/${ASSESSMENT_TOTAL}` });
   },
 
   onTodoTap(e) {
-    home.openTodo(e.currentTarget.dataset.kind, this.data.assessmentId);
-  },
-
-  onCaseTap(e) {
-    home.openCase(e.currentTarget.dataset.id);
-  },
-
-  onCaseMore() {
-    home.openCaseList();
+    this.go(e.currentTarget.dataset.key, this.data.todos, 'key', 'title');
   },
 
   onQuickTap(e) {
-    home.openQuickEntry(e.currentTarget.dataset.key, this.data.canWrite);
+    this.go(e.currentTarget.dataset.key, this.data.quickEntries, 'key', 'label');
+  },
+
+  onCaseTap() {
+    wx.navigateTo({ url: '/pages/case-detail/index' });
+  },
+
+  onCaseMore() {
+    wx.navigateTo({ url: '/pages/case-library/index' });
+  },
+
+  go(key, list, idField, nameField) {
+    const url = TARGETS[key];
+    if (url) {
+      wx.navigateTo({ url });
+      return;
+    }
+    const hit = list.find((item) => item[idField] === key);
+    wx.showToast({ title: `${hit ? hit[nameField] : '该入口'}（预览工程未接入）`, icon: 'none' });
   },
 });

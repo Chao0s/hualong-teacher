@@ -1,213 +1,68 @@
 {
   "pages": [
-    "pages/login/index",
     "pages/home/index",
-    "pages/party-building/index",
-    "pages/coordination/index",
-    "pages/training/index",
-    "pages/co-education/index",
-    "pages/notice/list",
-    "pages/notice/detail",
-    "pages/task/board",
-    "pages/task/detail",
-    "pages/task/submit"
+    "pages/upload-resource/index",
+    "pages/teacher-tasks/index",
+    "pages/teacher-task-detail/index",
+    "pages/assessment-tool/index",
+    "pages/school-affairs/index",
+    "pages/party-study-list/index",
+    "pages/party-study-detail/index",
+    "pages/party-activity-list/index",
+    "pages/party-activity-detail/index",
+    "pages/party-brand-list/index",
+    "pages/party-brand-detail/index",
+    "pages/comprehensive-coordination/index",
+    "pages/coordination-file-list/index",
+    "pages/training-center/index",
+    "pages/course-building/index",
+    "pages/resource-center/index",
+    "pages/training-list/index",
+    "pages/training-detail/index",
+    "pages/teacher-profile/index",
+    "pages/my-training/index",
+    "pages/resource-library/index",
+    "pages/resource-detail/index",
+    "pages/case-library/index",
+    "pages/case-detail/index",
+    "pages/home-school/index",
+    "pages/home-school-moments/index",
+    "pages/home-school-moment-feed/index",
+    "pages/home-school-moment-publish/index",
+    "pages/parent-tasks/index",
+    "pages/parent-task-detail/index",
+    "pages/parent-task-publish/index",
+    "pages/growth-record/index",
+    "pages/teacher-evaluation/index",
+    "pages/teacher-monthly-evaluation/index",
+    "pages/teacher-monthly-form/index",
+    "pages/teacher-term-evaluation/index",
+    "pages/teacher-term-form/index",
+    "pages/teacher-message/index",
+    "pages/teacher-message-detail/index",
+    "pages/parent-evaluation-publish/index",
+    "pages/parent-evaluation-detail/index",
+    "pages/community-coeducation/index",
+    "pages/growth-comprehensive-assessment/index",
+    "pages/comprehensive-assessment-form/index",
+    "pages/comprehensive-assessment-report/index",
+    "pages/comprehensive-assessment-class-report/index",
+    "pages/growth-book/index",
+    "pages/growth-book-time-manage/index",
+    "pages/growth-book-task-manage/index",
+    "pages/growth-book-section-materials/index",
+    "pages/growth-book-edit/index",
+    "pages/growth-book-sample/index",
+    "pages/growth-book-view/index",
+    "pages/growth-book-section-edit/index"
   ],
-  "subPackages": [
-    {
-      "root": "packages/party",
-      "name": "party",
-      "pages": [
-        "pages/learn/list",
-        "pages/learn/detail",
-        "pages/activity/list",
-        "pages/activity/detail",
-        "pages/brand/list",
-        "pages/brand/detail"
-      ]
-    },
-    {
-      "root": "packages/coordination",
-      "name": "coordination",
-      "pages": [
-        "pages/xz/list",
-        "pages/hq/list",
-        "pages/hr/list"
-      ]
-    },
-    {
-      "root": "packages/library",
-      "name": "library",
-      "pages": [
-        "pages/home/index",
-        "pages/resource/list",
-        "pages/resource/detail",
-        "pages/case/list",
-        "pages/case/detail",
-        "pages/upload/form"
-      ]
-    },
-    {
-      "root": "packages/training",
-      "name": "training",
-      "pages": [
-        "pages/course/detail",
-        "pages/train/list",
-        "pages/train/detail",
-        "pages/mine/list"
-      ]
-    },
-    {
-      "root": "packages/assessment",
-      "name": "assessment",
-      "pages": [
-        "pages/five-chart/index",
-        "pages/scale/index",
-        "pages/radar/index"
-      ]
-    },
-    {
-      "root": "packages/co-education",
-      "name": "co-education",
-      "pages": [
-        "pages/moment/publish",
-        "pages/moment/progress",
-        "pages/moment/feed",
-        "pages/task/publish",
-        "pages/task/progress",
-        "pages/community/index"
-      ]
-    },
-    {
-      "root": "packages/evaluation",
-      "name": "evaluation",
-      "pages": [
-        "pages/month/index",
-        "pages/term/index",
-        "pages/report/index",
-        "pages/growth-record/index",
-        "pages/teacher-eval/index",
-        "pages/message/index",
-        "pages/message/detail",
-        "pages/parent-eval/index",
-        "pages/parent-eval/progress"
-      ]
-    },
-    {
-      "root": "packages/growth-book",
-      "name": "growth-book",
-      "pages": [
-        "pages/create/index",
-        "pages/preview/index",
-        "pages/compile/index",
-        "pages/section/index",
-        "pages/time/index",
-        "pages/task/index",
-        "pages/submissions/index"
-      ]
-    },
-    {
-      "root": "packages/quality",
-      "name": "quality",
-      "pages": [
-        "pages/tool/index"
-      ]
-    },
-    {
-      "root": "packages/profile",
-      "name": "profile",
-      "pages": [
-        "pages/mine/index"
-      ]
-    }
-  ],
-  "preloadRule": {
-    "pages/party-building/index": {
-      "network": "all",
-      "packages": [
-        "party"
-      ]
-    },
-    "pages/coordination/index": {
-      "network": "all",
-      "packages": [
-        "coordination"
-      ]
-    },
-    "pages/training/index": {
-      "network": "all",
-      "packages": [
-        "library",
-        "training",
-        "assessment",
-        "profile"
-      ]
-    },
-    "pages/co-education/index": {
-      "network": "all",
-      "packages": [
-        "co-education",
-        "evaluation",
-        "growth-book"
-      ]
-    },
-    "pages/home/index": {
-      "packages": [
-        "quality"
-      ],
-      "network": "all"
-    }
-  },
   "window": {
+    "backgroundColor": "#f0f5f5",
     "backgroundTextStyle": "dark",
     "navigationBarBackgroundColor": "#f0f5f5",
-    "navigationBarTitleText": "化龙幼儿园",
-    "navigationBarTextStyle": "black",
-    "backgroundColor": "#f0f5f5"
-  },
-  "tabBar": {
-    "color": "#868686",
-    "selectedColor": "#189b91",
-    "backgroundColor": "#ffffff",
-    "borderStyle": "white",
-    "list": [
-      {
-        "pagePath": "pages/home/index",
-        "text": "首页",
-        "iconPath": "assets/icons/tab/home-normal.png",
-        "selectedIconPath": "assets/icons/tab/home-selected.png"
-      },
-      {
-        "pagePath": "pages/party-building/index",
-        "text": "党建管理",
-        "iconPath": "assets/icons/tab/party-building-normal.png",
-        "selectedIconPath": "assets/icons/tab/party-building-selected.png"
-      },
-      {
-        "pagePath": "pages/coordination/index",
-        "text": "综合协调",
-        "iconPath": "assets/icons/tab/coordination-normal.png",
-        "selectedIconPath": "assets/icons/tab/coordination-selected.png"
-      },
-      {
-        "pagePath": "pages/training/index",
-        "text": "教研培训",
-        "iconPath": "assets/icons/tab/teaching-research-normal.png",
-        "selectedIconPath": "assets/icons/tab/teaching-research-selected.png"
-      },
-      {
-        "pagePath": "pages/co-education/index",
-        "text": "家园社共育",
-        "iconPath": "assets/icons/tab/co-education-normal.png",
-        "selectedIconPath": "assets/icons/tab/co-education-selected.png"
-      }
-    ]
-  },
-  "usingComponents": {
-    "towxml": "/towxml/towxml"
+    "navigationBarTitleText": "幼儿园教师端",
+    "navigationBarTextStyle": "black"
   },
   "style": "v2",
-  "lazyCodeLoading": "requiredComponents",
-  "sitemapLocation": "sitemap.json",
-  "permission": {},
-  "requiredPrivateInfos": []
+  "sitemapLocation": "sitemap.json"
 }

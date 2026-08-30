@@ -1,0 +1,80 @@
+@import '/styles/home-school-common.wxss';
+@import '/styles/growth-book-viewer.wxss';
+
+/* 2026 春季学期编册 —— 本页自己的样式，对照原型 screens/growth-book-edit.html 的内联块。1px 记 2rpx。
+ * 书本本体的尺寸（.book--preview / .controls--preview）写在共用的书本样式里。 */
+
+.screen {
+  padding: 24rpx 32rpx 56rpx;
+}
+
+.preview-label {
+  color: var(--muted);
+  font-size: 22rpx;
+  font-weight: 500;
+}
+
+.section-list {
+  display: grid;
+  gap: 18rpx;
+  margin-bottom: 36rpx;
+}
+
+.section-row {
+  display: flex;
+  align-items: center;
+  gap: 22rpx;
+  padding: 10rpx 24rpx 10rpx 28rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 26rpx;
+  background: #fff;
+}
+
+.section-link {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  flex: 1;
+  min-width: 0;
+  min-height: 92rpx;
+  color: var(--fg);
+}
+
+.section-link__name {
+  flex: 1;
+  min-width: 0;
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
+.section-link__go {
+  color: var(--muted);
+  font-size: 40rpx;
+  line-height: 1;
+}
+
+/* 原型用原生 checkbox；小程序的不好改样式，自己画一个方框。 */
+.checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 38rpx;
+  height: 38rpx;
+  border: 2rpx solid var(--border);
+  border-radius: 8rpx;
+  background: #fff;
+  color: #fff;
+  font-size: 24rpx;
+  line-height: 1;
+}
+
+.checkbox--on {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.lock-button {
+  width: 100%;
+  margin-top: 24rpx;
+}

@@ -1,0 +1,29 @@
+<!-- 成长册样本 —— 对照原型 screens/growth-book-sample.html。
+     和预览页同一本书，只是幼儿名固定成「示例幼儿」，也不带任何一名幼儿的提交。 -->
+<import src="/templates/growth-book-page.wxml" />
+
+<view class="screen">
+
+  <view class="sample-note">
+    <text class="sample-tag">样本</text>
+    <text class="sample-note__text">版式示意，内容为示例数据；实际成长册按每名幼儿的真实内容排版并在 App 内定稿开放。</text>
+  </view>
+
+  <view class="book">
+    <template is="bookPage" wx:for="{{pages}}" wx:key="index" wx:for-item="p" data="{{p: p}}" />
+  </view>
+
+  <view class="controls">
+    <view class="nav-btn {{atFirst ? 'nav-btn--off' : ''}}" bindtap="onPrev">‹</view>
+    <text class="page-indicator">{{indicator}}</text>
+    <view class="nav-btn {{atLast ? 'nav-btn--off' : ''}}" bindtap="onNext">›</view>
+  </view>
+
+  <view class="action-row action-row--gap">
+    <view class="btn" hover-class="btn--hover" bindtap="onReset">回到封面</view>
+    <view class="btn btn--primary" hover-class="btn--hover" bindtap="onEdit">编辑样板</view>
+  </view>
+
+  <text class="hint hint--gap">点击书页或使用左右按钮翻页。固定书脊不可关闭或换序；目录从实际正文反填页码，封面与美术边框由园所统一设置。</text>
+
+</view>

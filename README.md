@@ -2,7 +2,16 @@
 
 > 面向幼儿园教师的一体化工作平台交互原型（High-fidelity Prototype），涵盖党建管理、综合协调、教研培训与家园社共育四大业务板块，并配套「幼儿保育教育质量综合评估」工具。
 
-本仓库为**纯静态 HTML/CSS/JS 原型**，用于产品设计评审与交互演示，暂不包含后端服务。
+本仓库有**两套同源的画面**，都不含后端服务：
+
+| 形态 | 目录 | 用途 |
+| --- | --- | --- |
+| 网页原型 | `screens/` + `index.html` | 设计评审与交互演示，浏览器直接开 |
+| 微信小程序预览工程 | `miniprogram/` | 同一套 56 屏转成小程序，给园方在开发者工具里点着看 |
+
+`miniprogram/` 是从 `screens/` 机械转换来的，**一个接口都不调**，数据全在 `wx.setStorageSync` 里。它不是生产工程。转换手法与踩过的坑写在 `docs/handoff/2026-08-30-web-prototype-to-miniprogram.md`。
+
+> 2026-08-31：上一版原生小程序工程（带 service 层与 733 个测试）已归档到 `Archive/20260831/`，理由与捡回办法见该目录的 `README.md`。
 
 GitHub 仓库：<https://github.com/Chao0s/hualong-teacher>
 
@@ -28,6 +37,22 @@ python -m http.server 8000
 ```
 
 - `index.html` — **5 屏并排总览页**，将 5 个主 Tab 页面以手机框形式并排展示，可点击交互。
+
+### 小程序预览工程
+
+微信开发者工具 →「导入项目」→ 目录选**仓库根目录**（不是 `miniprogram/`），根目录的
+`project.config.json` 会把 `miniprogramRoot` 指过去。模拟器机型选 390×844，
+调试基础库 3.17.1 以上，**不要勾**「开启 Skyline 渲染调试」——本工程按 WebView 写。
+
+改完跑静态自检，六项全过才算数：
+
+```bash
+npm test          # 等同 node tools/verify-miniprogram.js
+```
+
+它查 JSON、JS 语法、页面四件套齐全、跳转目标已注册、样式类有无落空、base64 图标能否解码、
+`wx:for` 与 `wx:else` 有无写在同一节点。**查不了渲染**：`<editor>`、`canvas`、拖曳、
+翻页动画都要在开发者工具里真点一遍。
 
 ---
 
@@ -77,14 +102,25 @@ python -m http.server 8000
 │   ├── growth-book-section-edit.html  # 新增栏目的 15×24 网格版面编辑器
 │   ├── growth-book-render.js  # 成长册数据模型 + 翻页渲染（成长册各页共用）
 │   └── ...                    # 其余详情页 / 表单页
+├── miniprogram/               # 微信小程序预览工程（由 screens/ 转换而来，55 页）
+│   ├── app.json               # 页面注册表
+│   ├── pages/                 # 每页四件套 index.wxml/wxss/js/json
+│   ├── components/hl-tabbar/  # 底部 5 个 Tab
+│   ├── templates/             # 跨页共用的 wxml 模板（成长册翻页）
+│   ├── styles/                # 跨页共用的 wxss
+│   └── utils/                 # 成长册数据模型、翻页控制、量表、雷达图
+├── captures/                  # 56 页原型的完整源料（HTML/CSS/JS），转换的输入
 ├── docs/                      # 设计文档与契约
 │   ├── backend spec files/    # 后端字段契约，ui= 标注的权威所在
 │   ├── frontend spec files/   # 前端契约（版式、几何、交互）
 │   │   └── growth-book-layout-spec.md  # 成长册 widget 网格版式契约
 │   ├── 3-6岁儿童学习与发展指南——教育部.docx
 │   ├── 资源与案例填写模版.docx
+│   ├── handoff/               # 施工交接：网页原型转小程序的手法与坑
 │   └── Archive/               # 历史归档：信息架构、交互跳转地图、评估指导手册、评估工具数据源
-└── Archive/                   # 历史页面归档
+└── Archive/                   # 历史归档
+    ├── 20260611/              # 历史页面
+    └── 20260831/              # 上一版原生小程序 + 它的 733 个测试与两个校验工具
 ```
 
 ## 文档
@@ -103,11 +139,13 @@ python -m http.server 8000
 
 ## 技术说明
 
-- 纯前端静态原型，无构建步骤、无依赖安装。
+- 网页原型是纯前端静态页，无构建步骤、无依赖安装；`node_modules/` 只服务 `tools/`。
+- 小程序工程原生手写，无第三方框架、无 npm 依赖，`1px` 一律记 `2rpx`（原型视口 390）。
+  唯一例外是成长册的栏目版面编辑器：画布用 px，理由见交接文档第 6 节。
 - 页面以移动端（390×844）为基准设计，适配小程序尺寸。
 - 成长册页面是例外：版面单位是 A4 实体页，手机端 fit-width 显示并**允许缩放**（每格 fit-width 时仅 18.6pt，低于 iOS 建议的 44pt）。
 - `*.artifact.json` 与 `.od-skills/` 已在 `.gitignore` 中忽略。
 
 ## 状态
 
-交互原型阶段 · 用于设计评审与演示 · 成长册版式与综合评估量表已进入契约期，改动须对照 `decision.md` · 2026
+交互原型阶段 · 用于设计评审与演示 · 56 屏已全部转成小程序预览工程（`miniprogram/`，静态自检六项全过） · 成长册版式与综合评估量表已进入契约期，改动须对照 `decision.md` · 2026

@@ -1,228 +1,35 @@
-@import 'styles/tokens.wxss';
-@import 'styles/form-rows.wxss';
-@import 'towxml/style/main.wxss';
-@import 'towxml/style/theme/light.wxss';
-
+/* 设计令牌 —— 逐条抄自设计稿 home.html 的 `:root`。
+ * 网页版的 `:root` 在小程序里对应 `page`。 */
 page {
+  --bg: #f0f5f5;
+  --surface: #ffffff;
+  --fg: #1a1916;
+  --muted: #868686;
+  --border: #e0e8e8;
+  --accent: #189b91;
+  --accent-dark: #067e76;
+  --accent-light: #e8f5f4;
+  --green: #4b9a5a;
+  --green-light: #eaf5ed;
+  --amber: #feaf06;
+  --amber-light: #fff6df;
+  --orange: #f6762f;
+  --orange-light: #fff0e8;
+  --blue: #3388fc;
+  --blue-light: #e8f2fe;
+  --danger: #dc2626;
+  --danger-light: #feecec;
+  --purple: #7c5cff;
+  --purple-light: #f0edff;
+  --radius: 28rpx;
+  --radius-sm: 18rpx;
+
   background: var(--bg);
   color: var(--fg);
-  font-family: var(--font);
-  font-size: 30rpx;
-  line-height: var(--line-cjk);
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
-view, text, button, input, textarea, scroll-view {
+view, text, image {
   box-sizing: border-box;
-}
-
-/* ── Layout ─────────────────────────────────────────────────────────────── */
-
-/* 水平内边距按原型的 `0 16px`（32rpx）取 --space-4；园方 2026-08-26 拍板放宽。
- * 全局只此一处，各页不要自己另写。 */
-.hl-page {
-  min-height: 100vh;
-  padding: var(--space-3) var(--space-4);
-}
-
-.hl-stack > view + view {
-  margin-top: var(--space-3);
-}
-
-/* ── Card ───────────────────────────────────────────────────────────────── */
-
-/*
- * 内容卡 —— 一条 1px 描边，**没有投影**。
- *
- * 2026-08-27 更正。此前是「投影、无描边」，而 56 个原型里 97 张内容卡是描边，只有 4 张
- * 带投影 —— 那 4 张都是浮层（吸底操作条、弹层），不是卡。设计系统那一份
- * `component-showcase.html` 也把 `.entry-card`／`.case-card` 画成
- * `border: 1px solid var(--border)`。
- *
- * 这一处是全 app 每一页都在用的类，所以那个投影出现在每一个二级页面上，也是园方看到的
- * 「二级页面排版都不对」的根源。改这一处，四十来页一起回到原型。
- */
-.hl-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: var(--space-3);
-}
-
-.hl-card__title {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: var(--fg);
-}
-
-.hl-card__meta {
-  margin-top: var(--space-1);
-  font-size: 26rpx;
-  color: var(--muted);
-}
-
-/* ── Section heading ────────────────────────────────────────────────────── */
-
-.hl-section-title {
-  padding: var(--space-2) var(--space-1);
-  font-size: 28rpx;
-  font-weight: 600;
-  color: var(--muted);
-}
-
-/* ── Buttons ────────────────────────────────────────────────────────────── */
-
-.hl-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 88rpx;
-  padding: 0 var(--space-4);
-  border-radius: var(--radius-pill);
-  background: var(--accent);
-  color: #fff;
-  font-size: 32rpx;
-  font-weight: 500;
-  border: none;
-}
-
-.hl-btn::after {
-  border: none;
-}
-
-.hl-btn--hollow {
-  background: var(--accent-light);
-  color: var(--accent-dark);
-}
-
-.hl-btn--block {
-  width: 100%;
-}
-
-.hl-btn[disabled] {
-  background: var(--border);
-  color: var(--muted);
-}
-
-/* ── Press feedback ─────────────────────────────────────────────────────── */
-
-/*
- * 按下去要有反应。
- *
- * 2026-08-28 补。原型给每一个可点的面写了 `:active`（56 个原型里 39 条），而本端一条
- * 也没有 —— 教师点一张卡，屏幕上什么都不动。差的不是某一页，是整套按压反馈。
- *
- * 用 `hover-class` 而不是 WXSS 的 `:active`：本项目走 WebView 渲染
- * （`skylineRenderEnable: false`），`:active` 在 iOS 的 WebView 里要挂上 touch 监听才
- * 会触发，`view` 上并没有；`hover-class` 是平台为这件事给的接口，两端都稳。
- *
- * 选择器写成双类名（`.hl-press.hl-press`）是为了压过页面级 wxss —— 分包页面的样式表在
- * app.wxss 之后加载，同为单类名时页面里那条 `background` 会赢，按下去就看不出变化。
- * 这是提权，不是改样式：两条规则描述的是同一个类。
- */
-
-/* 卡片按压：原型 `.todo-card`／`.resource-card`／`.flow-item` 的
- * `transform: scale(.985); background: #f8fbfb`。 */
-.hl-press.hl-press {
-  transform: scale(0.985);
-  background: var(--pressed);
-}
-
-/* 只换底色、不动几何：原型 `.task-card`／`.sec-head`／`.ind-head`／`.link-card`。
- * 与上一枚分开，是因为原型确实分了两种 —— 列表行按下去不缩，卡片按下去缩。 */
-.hl-press-tint.hl-press-tint {
-  background: var(--pressed);
-}
-
-/* 入口块按压：原型 `.entry-card`／`.hub-card` 用下沉 1px 而不是缩放。 */
-.hl-press-lift.hl-press-lift {
-  transform: translateY(1px);
-  background: var(--pressed);
-}
-
-/* 小按钮按压：原型 `.sbtn` 的 `transform: scale(.96)`，不换底色。 */
-.hl-press-btn.hl-press-btn {
-  transform: scale(0.96);
-}
-
-/* 主按钮按压：原型 `.save-btn` 压深一档主色，不缩放。 */
-.hl-press-solid.hl-press-solid {
-  background: var(--accent-dark);
-}
-
-/* 空心按钮按压。原型没有直接对应的一条 —— 空心钮在原型里多是 `<a class="btn">`，
- * 浏览器给的默认反馈。按同族做法压深底色一档：主色的浅底换成中间那一档淡青，
- * 文字色不动，对比度因此还在。 */
-.hl-press-hollow.hl-press-hollow {
-  background: #d3ebe9;
-}
-
-/* ── Status pill ────────────────────────────────────────────────────────── */
-
-.hl-pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 4rpx 18rpx;
-  border-radius: var(--radius-pill);
-  font-size: 24rpx;
-  line-height: 1.6;
-}
-
-/* 文字色照 component-showcase.html（令牌权威）的 `.state-warn`／`.state-info`／
- * `.done` 逐条转写。2026-08-28 更正两处：`--pending` 此前写 #8a5c00、`--info` 此前
- * 用 --blue(#3388fc)，两个值在 56 个原型里一次也没出现过 —— 原型一律是 #a15d00 与
- * #226ac7。这两枚胶囊遍布全 app 的状态位，所以错的是每一页。 */
-.hl-pill--pending { background: var(--amber-light); color: #a15d00; }
-.hl-pill--ok      { background: var(--green-light); color: var(--green); }
-.hl-pill--danger  { background: var(--danger-light); color: var(--danger); }
-.hl-pill--info    { background: var(--blue-light); color: #226ac7; }
-/* Unknown enum codes must degrade, not crash (§1.1). This is what they wear. */
-.hl-pill--unknown { background: #eee; color: var(--muted); }
-
-/* ── Empty / error / loading states ─────────────────────────────────────── */
-
-.hl-empty {
-  padding: var(--space-6) var(--space-3);
-  text-align: center;
-  color: var(--muted);
-  font-size: 28rpx;
-}
-
-.hl-error {
-  margin: var(--space-2) 0;
-  padding: var(--space-3);
-  border-radius: var(--radius-sm);
-  background: var(--danger-light);
-  color: var(--danger);
-  font-size: 28rpx;
-}
-
-.hl-error__id {
-  display: block;
-  margin-top: var(--space-1);
-  color: var(--muted);
-  font-size: 22rpx;
-}
-
-/* The retry entry inside an error banner. Rendered only when retrying can
- * change anything — a fatal failure offers no retry (ticket 07). */
-.hl-error__retry {
-  display: inline-block;
-  margin-left: var(--space-2);
-  color: var(--accent-dark);
-  font-weight: 600;
-  text-decoration: underline;
-}
-
-.hl-loading {
-  padding: var(--space-4);
-  text-align: center;
-  color: var(--muted);
-  font-size: 26rpx;
-}
-
-/* Hairline separators stay in px so they do not thicken on large screens. */
-.hl-hairline {
-  height: 1px;
-  background: var(--border);
 }

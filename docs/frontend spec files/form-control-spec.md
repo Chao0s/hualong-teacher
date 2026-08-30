@@ -2,6 +2,13 @@
 
 > 定案：2026-08-26（票据 13）。**本文取代原型里的下拉列表（`<select>`）。**
 > 后续所有表单与筛选按本文执行，不再逐页重议。冲突时以 `docs/DO-NOT-BUILD.md` 与 API 契约为准。
+>
+> **2026-08-31 补记：本文引用的实现路径已经搬家。** `hl-picker-row`、`hl-child-picker`、
+> `styles/form-rows.wxss`、`packages/library/…` 指的都是上一版原生小程序，现在在
+> `Archive/20260831/miniprogram/` 下。**判据与形态仍然有效，组件不在原位。**
+> 现在的 `miniprogram/` 是网页原型转出来的预览工程，`<select>` 一律转成
+> `<picker mode="selector">`（见 `docs/handoff/2026-08-30-web-prototype-to-miniprogram.md` 第 6 节），
+> 尚未落地本文定的横排标签形态。
 
 ## 0. 为什么必须定案
 

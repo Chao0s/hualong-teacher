@@ -1,0 +1,111 @@
+<!-- 成长册 —— 对照原型 screens/growth-book.html。
+
+     栏目进度表原型是 <table>，列数由教师勾了几个栏目决定，宽度靠 JS 写 min-width。
+     这里改成网格行放进 scroll-view，列数与总宽都由 js 算好后写进行内 style。
+     原型第一列 position:sticky，scroll-view 里不稳，没有复刻。 -->
+<view class="page">
+
+  <view class="sec sec--first">成长册内容</view>
+
+  <view class="summary-card" hover-class="list-card--hover" hover-stay-time="80" bindtap="onEditTemplate">
+    <view class="summary-card__grow">
+      <text class="summary-card__title">{{sumTitle}}</text>
+      <text class="summary-card__list">{{sumList}}</text>
+    </view>
+    <text class="pill">{{tplState}}</text>
+    <text class="summary-card__enter">编辑样板 ›</text>
+  </view>
+
+  <view class="action-row action-row--gap">
+    <view class="btn" hover-class="btn--hover" bindtap="onSample">成长册样本</view>
+    <!-- 原型未发布时是 disabled + opacity .45，这里照搬透明度，点击在 js 里挡掉 -->
+    <view
+      class="btn btn--primary"
+      style="{{published ? '' : 'opacity:.45'}}"
+      hover-class="btn--hover"
+      bindtap="onOpenFinalize"
+    >全班定稿</view>
+  </view>
+  <text class="hint hint--gate" wx:if="{{!published}}">模版尚未发布，只能预览；请先在编辑样板中完整预览并发布班级模板。</text>
+
+  <view class="chunk">
+    <view class="chunk__head">
+      <view class="chunk__main">
+        <text class="chunk__title">班级定稿进度</text>
+        <text class="hint chunk__note">{{progressNote}}</text>
+      </view>
+      <text class="chunk__value">{{overall}}%</text>
+    </view>
+    <view class="progress-line">
+      <view class="bar"><view class="bar__fill" style="width:{{overall}}%"></view></view>
+    </view>
+  </view>
+
+  <view class="sec">栏目进度</view>
+  <scroll-view class="book-table-wrap" scroll-x>
+    <view class="book-table" style="width:{{tableWidth}}rpx">
+      <view class="prog-row prog-row--head" style="grid-template-columns:{{gridColumns}}">
+        <text class="prog-cell prog-cell--name">幼儿</text>
+        <text class="prog-cell" wx:for="{{colNames}}" wx:key="*this">{{item}}</text>
+      </view>
+      <view
+        class="prog-row"
+        style="grid-template-columns:{{gridColumns}}"
+        wx:for="{{rows}}"
+        wx:key="id"
+        wx:for-item="row"
+      >
+        <text class="prog-cell prog-cell--name">{{row.name}}</text>
+        <view class="prog-cell" wx:for="{{row.states}}" wx:key="index" wx:for-item="state">
+          <view class="dot-cell dot-cell--{{state}}"></view>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+
+  <view class="dot-legend">
+    <view class="dot-legend__item"><view class="dot-cell dot-cell--done"></view>完成</view>
+    <view class="dot-legend__item"><view class="dot-cell dot-cell--miss"></view>未完成</view>
+  </view>
+  <text class="hint hint--foot">只显示在学期编册页中已经勾选的栏目。</text>
+
+</view>
+
+<!-- 全班定稿并开放：问题幼儿置灰，教师可明确跳过 -->
+<view class="sheet-mask" wx:if="{{sheetOpen}}" bindtap="onCloseFinalize"></view>
+<view class="sheet" wx:if="{{sheetOpen}}">
+  <view class="sheet-head">
+    <text class="sheet-head__title">全班定稿并开放</text>
+    <view class="close" bindtap="onCloseFinalize">×</view>
+  </view>
+
+  <view class="check-row" style="{{allDisabled ? 'opacity:.45' : ''}}" bindtap="onToggleAll">
+    <text class="check-row__name">全选</text>
+    <view class="checkbox {{allChecked ? 'checkbox--on' : ''}}">{{allChecked ? '✓' : ''}}</view>
+  </view>
+
+  <scroll-view class="sheet-list" scroll-y>
+    <view
+      class="check-row {{row.ok ? '' : 'check-row--blocked'}}"
+      wx:for="{{sheetRows}}"
+      wx:key="id"
+      wx:for-item="row"
+      wx:for-index="ri"
+      data-index="{{ri}}"
+      bindtap="onToggleRow"
+    >
+      <view class="check-row__main">
+        <text class="check-row__name">{{row.name}}</text>
+        <text class="check-row__desc">{{row.desc}}</text>
+      </view>
+      <view class="checkbox {{row.checked ? 'checkbox--on' : ''}}">{{row.checked ? '✓' : ''}}</view>
+    </view>
+  </scroll-view>
+
+  <text class="hint hint--sheet">问题幼儿默认跳过并保留草稿；请先处理问题，或明确跳过后定稿其余幼儿。</text>
+
+  <view class="sheet-actions">
+    <view class="btn btn--ghost" hover-class="btn--hover" bindtap="onCloseFinalize">取消</view>
+    <view class="btn btn--primary" hover-class="btn--hover" bindtap="onConfirmFinalize">定稿并开放</view>
+  </view>
+</view>

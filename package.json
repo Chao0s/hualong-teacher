@@ -7,15 +7,12 @@
     "mock": "node mock/server.mjs",
     "mock:unbound": "node mock/server.mjs --unbound",
     "mock:no-term": "node mock/server.mjs --no-term",
-    "test": "node --test \"tests/**/*.test.mjs\"",
+    "test": "node tools/verify-miniprogram.js",
     "swagger": "node tools/swagger/server.mjs",
     "docs:api": "node tools/build-api-doc.mjs",
     "spec:inventory": "node tools/spec-inventory.mjs",
-    "verify:build": "node tools/verify-build.mjs",
     "check:remote-scripts": "node scripts/check-remote-scripts.mjs",
-    "hooks:install": "git config core.hooksPath .githooks",
-    "verify:release": "node tools/verify-build.mjs --release",
-    "verify:schema": "node tools/schema-conformance.mjs"
+    "hooks:install": "git config core.hooksPath .githooks"
   },
   "engines": {
     "node": ">=18"

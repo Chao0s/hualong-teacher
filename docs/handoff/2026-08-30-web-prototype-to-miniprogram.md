@@ -1,63 +1,66 @@
 # 交接：网页原型转微信小程序
 
-日期：2026-08-30
-产物目录：`wx-test-home/`
+开工：2026-08-30 · 完工与改组：2026-08-31
+产物目录：`miniprogram/`（2026-08-31 前叫 `wx-test-home/`）
 
 ---
 
+## 0. 2026-08-31 的改组，先读这条
+
+工程搬过一次家，**旧文档里的 `wx-test-home/` 一律读作 `miniprogram/`**。
+
+| 动作 | 从 | 到 |
+|---|---|---|
+| 旧原生小程序归档 | `miniprogram/` | `Archive/20260831/miniprogram/` |
+| 它的 733 个测试一并归档 | `tests/` | `Archive/20260831/tests/` |
+| 两个只服务旧工程的校验工具 | `tools/verify-build.mjs`、`tools/schema-conformance.mjs` | `Archive/20260831/tools/` |
+| **本工程提升接手正统名字** | `wx-test-home/` | `miniprogram/` |
+| 自检脚本改名 | `tools/wx-test-home-verify.js` | `tools/verify-miniprogram.js` |
+| 图标脚本改名 | `tools/wx-test-home-icons.js` | `tools/wx-icons.js` |
+| `npm test` 改指向 | 733 个 `node --test` | `node tools/verify-miniprogram.js` |
+
+归档理由与捡回办法写在 `Archive/20260831/README.md`。
+
 ## 1. 这件事在做什么
 
-把 `https://chao0s.github.io/hualong-teacher/` 这套网页原型（56 个页面）转成一个**独立可运行的微信小程序预览工程**，放在 `wx-test-home/`。
+把 `https://chao0s.github.io/hualong-teacher/` 这套网页原型（56 个页面）转成一个**可运行的微信小程序预览工程**。
 
-目的是让园方在开发者工具里点着看，不是生产工程。它和仓库里原有的 `miniprogram/` **互不影响**，只是复用了同一个 AppID。
+目的是让园方在开发者工具里点着看。**它不调任何接口**，没有 service 层，不是生产工程；数据全在 `wx.setStorageSync` 里。
 
 ## 2. 现在到哪一步
+
+**转完了。**
 
 | 项 | 数 |
 |---|---|
 | 原型页面（已抓取） | 56 |
-| 已转成小程序页面并注册 | 47 |
-| 还没转 | 9 |
-| 工程文件数 | 205 |
-| 工程行数 | 17897 |
+| 已转成小程序页面并注册 | 55 |
+| 没转 | 1（`component-showcase`，设计系统对照表，不是真页面） |
+| 工程文件数 | 241 |
+| 工程行数 | 22687 |
 
-自检全过。用这条命令复现：
+自检全过。用这两条命令任选其一复现：
 
 ```bash
-node tools/wx-test-home-verify.js
+npm test
+node tools/verify-miniprogram.js
 ```
 
-五个底部 Tab 全部可进。整个工程只剩**一个主要功能缺口**：儿童成长档案里的「成长册」入口还是弹提示。
+五个底部 Tab 全部可进，成长册整条线（入口 → 学期编册 → 四个管理页 → 三个翻页预览 → 版面编辑器）全通。
 
 ## 3. 怎么打开看
 
-开发者工具 →「导入项目」→ 目录选 `D:\hualong-teacher\wx-test-home`。
+开发者工具 →「导入项目」→ 目录选 `D:\hualong-teacher`（**仓库根目录**）。
 
-**不要选 `D:\hualong-teacher`**，那是主工程，`miniprogram/` 才是它的根。
+根目录的 `project.config.json` 里 `miniprogramRoot` 是 `miniprogram/`，工具会自己找进去。工程内部不再放第二份 `project.config.json`。
 
 三个设置：模拟器机型选 390×844（iPhone 13/14 一档），**不要勾**「开启 Skyline 渲染调试」（本工程按 WebView 写），调试基础库 3.17.1 以上。
 
-## 4. 还剩的 9 页
+## 4. 唯一没转的一页
 
-| 页面 | 归属 |
-|---|---|
-| `growth-book` | 成长册主页 |
-| `growth-book-time-manage` | 在园时光管理 |
-| `growth-book-task-manage` | 亲子时光管理 |
-| `growth-book-section-materials` | 栏目投稿管理 |
-| `growth-book-view` | 翻页预览 |
-| `growth-book-sample` | 样本预览 |
-| `growth-book-edit` | 学期编册 |
-| `growth-book-section-edit` | 栏目版面编辑器 |
-| `component-showcase` | 组件清单，设计系统对照表，**不是真页面，可以不转** |
+`component-showcase` —— 组件清单，设计系统对照表，不是真页面。
 
-### 建议分两批
-
-**下一批（4 页）**：`growth-book`、`growth-book-time-manage`、`growth-book-task-manage`、`growth-book-section-materials`。
-
-这 4 页**完全不碰 HTML 生成**，共用模块已就位，做法和前面 47 页完全一样。做完「成长册」入口就通了。
-
-**再一批（4 页）**：三个翻页预览页 + 栏目版面编辑器。这批要重写渲染层，见下一节。
+`growth-book-view`（单名幼儿翻页预览）已转，但**站内没有入口**：原型里它就是孤儿页，没有擅自加链接。要看它，在开发者工具用「编译模式」自定义启动页，参数填 `child=wang` 之类。
 
 ## 5. 关键决定：成长册共用模块怎么处理
 
@@ -65,10 +68,12 @@ node tools/wx-test-home-verify.js
 
 已完成的处理（见 `tools/wx-port-growth-book.js`，可重跑）：
 
-1. 搬出 345 行纯逻辑到 `wx-test-home/utils/growth-book.js`，导出 46 个。
-2. 删掉 318 行产 HTML 的代码（17 个函数，名字列在模块头部注释里）。
+1. 搬出 345 行纯逻辑到 `miniprogram/utils/growth-book.js`。
+2. 产 HTML 的 17 个函数没有照搬，**改写成数据版**（名字对照列在模块头部注释里）。
 3. `localStorage` 换成 `wx.getStorageSync` / `wx.setStorageSync`。
-4. **改写了 `buildBookPlan`**：原版每页的 `content` 是 HTML 串，改成数据描述。分页规则、目录层级、兜底逻辑一字未改。
+4. **改写了 `buildBookPlan` 与 `buildBookPages`**：原版每页的 `content` 是 HTML 串，改成数据描述。分页规则、目录层级、兜底逻辑一字未改。
+
+正文 `content` 的四种 `kind`：
 
 ```
 { kind: 'custom',   item, pageIndex }   自定义栏目的第 n 页
@@ -77,22 +82,30 @@ node tools/wx-test-home-verify.js
 { kind: 'empty' }                       该栏目尚未整理入册
 ```
 
-三个预览页要按 `kind` 写 wxml。前置页的 `kind` 有 `cover` / `schoolIntro` / `title` / `toc`。
+`buildBookPages` 再把它包成整册的页面清单，页面 `kind` 六种：
+`cover` / `schoolIntro` / `title` / `toc` / `body` / `backCover`。
 
-模块已用假 `wx` 验证过：12 名幼儿、5 个亲子任务，规划出 4 前置页 + 10 正文页 + 11 条目录，总 15 页，目录两级缩进和页码推算都对。
+渲染分工（三个预览页共用）：
 
-**注意：目前没有任何页面 require 这个模块，它现在是死代码。** 下一批做完 4 个管理页就会用上。
+| 文件 | 管什么 |
+|---|---|
+| `miniprogram/templates/growth-book-page.wxml` | 按 `kind` 摆一页的 `<template name="bookPage">` |
+| `miniprogram/styles/growth-book-viewer.wxss` | 书本样式；五大领域的雷达图分数写死，烘成 base64 SVG |
+| `miniprogram/utils/book-viewer.js` | 翻页控制，搬自原型的 `initBookViewer` |
 
 ## 6. 转换手法（照着做，产物才一致）
 
-每页产出四件套 `index.wxml / index.wxss / index.js / index.json`，放 `wx-test-home/pages/<页面名>/`。
+每页产出四件套 `index.wxml / index.wxss / index.js / index.json`，放 `miniprogram/pages/<页面名>/`。
 
 | 原型 | 小程序 | 备注 |
 |---|---|---|
 | 状态栏、自绘标题栏 | **不复刻** | 微信自己画，标题走 `index.json` 的 `navigationBarTitleText` |
-| `1px` | `2rpx` | 原型视口 390，沿用 `miniprogram/` 现有口径 |
+| `1px` | `2rpx` | 原型视口 390。**例外**：栏目版面编辑器的画布用 px，见第 6 节末尾 |
 | `<div>` `<span>` | `<view>` `<text>` | `<text>` 是行内，要块级得写 `display: block` |
-| `<svg>` | base64 背景图 | 见 `tools/wx-test-home-icons.js`，颜色烘进图里 |
+| `<svg>` | base64 背景图 | 见 `tools/wx-icons.js`，颜色烘进图里 |
+| `contenteditable` + `execCommand` | `<editor>` + `EditorContext.format` | 存取用 delta，与 run 阵列一一对应 |
+| `window.confirm` | `wx.showModal` | 是异步的，原来一步的流程要拆两步 |
+| `pointer` 事件 | `touch` 事件 | 拖曳把 `catchtouchmove` 挂在容器上，别让页面跟着滚 |
 | `<table>` | 网格行 | `.prog-row` + `grid-template-columns`；`rowspan`/`colspan` 用 `grid-row/column: span n` |
 | `<select>` | `<picker mode="selector">` | |
 | 原生 `checkbox` | 自画方框 + 对勾 | 原生的改样式很别扭 |
@@ -103,11 +116,17 @@ node tools/wx-test-home-verify.js
 | 内联 SVG 图表 | `canvas type="2d"` | 见 `utils/radar.js` |
 | 锚点 `href="#x"` | `wx.pageScrollTo` | 要用 `selectViewport().scrollOffset()` 加上已滚距离 |
 
-### 三条踩过的坑
+### 五条踩过的坑
 
 1. **`data` 里的字段别叫 `item`**，会被 `wx:for` 的默认变量覆盖。踩过两次。
 2. **`inset: 0` 简写**老 WebView 不认，四条边分开写。
 3. **长列表折叠时不渲染**。质量评估 120 题、综合评估 124 题都用了这招：折叠的分组 `wx:if` 掉，展开时现渲染。折叠态本来就看不见，行为一致。
+4. **`wx:for` 与 `wx:else` 不能挂在同一个节点上。** 编译器只报「wx:if not found」，看半天看不出问题出在 `for` 上。要分支就套一层 `<block wx:else>`。自检脚本第 6 项现在专查这个。
+5. **类名 `.page` 在成长册预览页是「书里的一页」**，不是页面根容器。那三页的根容器叫 `.screen`。
+
+### 画布为什么用 px 不用 rpx
+
+只有 `growth-book-section-edit` 一页例外。格子边长要精确正方，拖曳位移又要和触摸坐标（`e.touches[0].pageX`，单位是 px）同一把尺；换成 rpx 两者会差百分之几，拖久了就对不上格。代价是画布不随机型宽度缩放——它本来就是一张 A4 文档预览，自带缩放按钮。画布以外照旧 1px 记 2rpx。
 
 ### 大数据怎么办
 
@@ -123,12 +142,14 @@ node tools/wx-test-home-verify.js
 
 | 文件 | 用途 |
 |---|---|
-| `tools/wx-test-home-verify.js` | 静态自检。**每批做完必跑。** 查 JSON、JS 语法、四件套齐全、跳转目标已注册、样式类、base64 图标 |
-| `tools/wx-test-home-icons.js` | 生成 36 个 base64 图标追加到各页 wxss。**重跑前先 git 还原那几个 wxss**，否则会重复追加 |
+| `tools/verify-miniprogram.js` | 静态自检，也是 `npm test`。**每批做完必跑。** 六项：JSON、JS 语法、四件套齐全、跳转目标已注册、样式类、base64 图标、`wx:for`/`wx:else` 冲突 |
+| `tools/wx-icons.js` | 生成 36 个 base64 图标追加到各页 wxss。**重跑前先 git 还原那几个 wxss**，否则会重复追加 |
 | `tools/wx-port-growth-book.js` | 转成长册共用模块，幂等，可重跑 |
 | `tools/wx-extract-capture.js` | 从 `captures/*.txt` 抽出 body/css/js。**转换前的第一步** |
 
-自检脚本自己被修过 5 次 bug，每次都是它先误报、查下去发现是脚本的问题。**它报错时先看是不是真问题，但不要默认它错**——有两次它抓到了真漏写（`teacher-term-evaluation` 少两条规则、`comprehensive-assessment-class-report` 抬头配色整块写错）。
+自检脚本自己被修过 7 次 bug，每次都是它先误报、查下去发现是脚本的问题。**它报错时先看是不是真问题，但不要默认它错**——有两次它抓到了真漏写（`teacher-term-evaluation` 少两条规则、`comprehensive-assessment-class-report` 抬头配色整块写错）。
+
+后加的两项检查值得记一笔：第 6 项（`wx:for` 与 `wx:else` 同节点）是编译报错之后补的，补完拿真 bug 验证过它抓得住；第 4 项现在会把 `<import>` 进来的模板一起并进来查，否则模板里的类名没人管。
 
 ## 8. 原型源料在哪
 
@@ -162,7 +183,7 @@ node "C:/Users/Lin/.claude/skills/web-capture/scripts/capture.js" \
 
 ## 9. 原型自身的三个问题（**没有擅自改**）
 
-1. **首页的评估进度徽标永远显示 0/120。** 首页读 `hualong_assessment_v1`，质量评估工具写 `hualong_assessment_school-quality-120_1.0.0`，两边不是同一个键。原型就是这样，照搬了。要对齐就改 `wx-test-home/pages/home/index.js` 的 `ASSESSMENT_STORAGE_KEY`。
+1. **首页的评估进度徽标永远显示 0/120。** 首页读 `hualong_assessment_v1`，质量评估工具写 `hualong_assessment_school-quality-120_1.0.0`，两边不是同一个键。原型就是这样，照搬了。要对齐就改 `miniprogram/pages/home/index.js` 的 `ASSESSMENT_STORAGE_KEY`。
 
 2. **资源详情和案例详情是另一套配色**（米底 `#f5f4f1`、蓝主色 `#2f6feb`），其余页面是青绿 `#189b91`。原型本来就不一致。
 
@@ -178,18 +199,18 @@ node "C:/Users/Lin/.claude/skills/web-capture/scripts/capture.js" \
 
 **不建议**用 `huashu-design`——这是转换既有原型，不是做新设计。
 
-## 11. 下一批的具体做法
+## 11. 再改这个工程时的做法
 
-1. 抽源料，**不用抓站**：
+56 页已经转完，这一节留给后续改动。
+
+1. 要对着原型改，先抽源料，**不用抓站**：
    ```bash
-   node tools/wx-extract-capture.js growth-book growth-book-time-manage \
-     growth-book-task-manage growth-book-section-materials
+   node tools/wx-extract-capture.js <页面名> [<页面名> ...]
    ```
-2. 逐页读，按第 6 节的对照表转。
-3. 页面 `require('../../utils/growth-book.js')` 取配置和逻辑。
-4. 注册进 `wx-test-home/app.json` 的 `pages`。
-5. 把 `wx-test-home/pages/growth-record/index.js` 里 `ROUTES.book` 从 `null` 改成 `/pages/growth-book/index`。
-6. 跑 `node tools/wx-test-home-verify.js`，必须全过。
-7. 报告时给数字，别说「测试通过」。
+2. 按第 6 节的对照表转，别自创写法——产物一致比聪明重要。
+3. 成长册相关的页面 `require('../../utils/growth-book.js')` 取配置和逻辑，**不要在页面里重写判定**。
+4. 新页面要注册进 `miniprogram/app.json` 的 `pages`。
+5. 跑 `npm test`（即 `node tools/verify-miniprogram.js`），必须全过。
+6. 报告时给数字，别说「测试通过」。
 
-**每批做完让用户在开发者工具里看一眼再往下走。** 这是前面七批一直在用的节奏，有效。
+**静态自检只查得出结构问题。** `<editor>`、`canvas`、拖曳、翻页动画这些都要在开发者工具里真点一遍。改完让用户看一眼再往下走——这是前面九批一直在用的节奏，有效。

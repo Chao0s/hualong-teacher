@@ -1,0 +1,26 @@
+<!-- 成长册预览 —— 对照原型 screens/growth-book-view.html。
+     整本书由 templates/growth-book-page.wxml 渲染，三个预览页共用。
+     根容器不叫 .page —— 那个类名在书本样式里是「书里的一页」。 -->
+<import src="/templates/growth-book-page.wxml" />
+
+<view class="screen">
+
+  <view class="child-bar">
+    <view class="child-bar__main">
+      <text class="child-bar__name">{{childName}}</text>
+      <text class="child-bar__meta">中二班 · 2026 春季学期</text>
+    </view>
+    <text class="ready-tag">{{bookStatus}}</text>
+  </view>
+
+  <view class="book">
+    <template is="bookPage" wx:for="{{pages}}" wx:key="index" wx:for-item="p" data="{{p: p}}" />
+  </view>
+
+  <view class="controls">
+    <view class="nav-btn {{atFirst ? 'nav-btn--off' : ''}}" bindtap="onPrev">‹</view>
+    <text class="page-indicator">{{indicator}}</text>
+    <view class="nav-btn {{atLast ? 'nav-btn--off' : ''}}" bindtap="onNext">›</view>
+  </view>
+
+</view>

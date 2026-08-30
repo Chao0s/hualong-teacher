@@ -1,0 +1,93 @@
+@import '/styles/home-school-common.wxss';
+
+/* 亲子时光管理 —— 本页自己的样式，对照原型 screens/growth-book-task-manage.html 的内联块。1px 记 2rpx。
+ * 共用样式里的 .avatar 是 24rpx 圆角方块，这里是圆形，本页覆盖掉。 */
+
+.page {
+  padding: 24rpx 32rpx 56rpx;
+}
+
+.child-card {
+  margin-bottom: 18rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 26rpx;
+  background: #fff;
+  overflow: hidden;
+}
+
+.child-row {
+  display: flex;
+  align-items: center;
+  gap: 22rpx;
+  padding: 24rpx;
+  background: #fff;
+  color: var(--fg);
+}
+
+.avatar {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 50%;
+  font-size: 24rpx;
+}
+
+.child-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 26rpx;
+  font-weight: 700;
+}
+
+.record-count {
+  color: var(--accent-dark);
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.go {
+  color: var(--muted);
+  font-size: 36rpx;
+}
+
+/* 原型 .child-card.open .go { transform: rotate(90deg) } */
+.go--open {
+  transform: rotate(90deg);
+}
+
+.records {
+  padding: 8rpx 24rpx;
+  border-top: 1rpx solid var(--border);
+  background: #fbfdfd;
+}
+
+.record {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid #eaf0f0;
+}
+
+.record:last-child {
+  border-bottom: 0;
+}
+
+.record__title {
+  flex: 1;
+  min-width: 0;
+  font-size: 24rpx;
+  font-weight: 600;
+}
+
+.record__del {
+  padding: 10rpx;
+  color: var(--danger);
+  font-size: 22rpx;
+}
+
+.empty {
+  padding: 24rpx 0;
+  color: var(--muted);
+  font-size: 22rpx;
+  text-align: center;
+}

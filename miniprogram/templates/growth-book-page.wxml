@@ -1,0 +1,170 @@
+<!-- 成长册的一页 —— 对照原型 screens/growth-book-render.js 里
+     coverPage / schoolIntroPage / titlePage / tocPage / regularPage / buildBookPages
+     那几个拼 HTML 的函数。样本页、查看页、学期编册页三页共用。
+
+     页面数据由 utils/growth-book.js 的 buildBookPages 算好，这里只按 kind 摆。
+     翻页的 bindtap 落在用这个模板的页面上，三页各自实现 onPageTap。 -->
+<template name="bookPage">
+  <view
+    class="page {{p.flipped ? 'page--flipped' : ''}} {{p.kind === 'cover' ? 'page--cover' : ''}} {{p.kind === 'backCover' ? 'page--back' : ''}}"
+    style="z-index:{{p.z}}"
+    data-index="{{p.index}}"
+    bindtap="onPageTap"
+  >
+    <view class="page__seam"></view>
+
+    <!-- 封面 -->
+    <block wx:if="{{p.kind === 'cover'}}">
+      <view class="page-body cover-body--{{p.layout}}">
+        <view class="cover-photo" wx:if="{{p.layout === 'full' || p.layout === 'stack'}}">封面图片</view>
+        <view class="cover-text">
+          <text class="page-kicker">GROWTH BOOK 2026</text>
+          <text class="cover-title">{{p.name}}</text>
+          <text class="cover-title">{{p.title}}</text>
+          <text class="cover-sub">中二班 · 2026 春季学期</text>
+          <text class="cover-sub">华龙第一幼儿园</text>
+        </view>
+        <view class="cover-photo" wx:if="{{p.layout === 'side'}}">封面图片</view>
+      </view>
+      <view class="page-foot"><text>封面</text><text>华龙一幼</text></view>
+    </block>
+
+    <!-- 封底 -->
+    <block wx:elif="{{p.kind === 'backCover'}}">
+      <view class="page-body back-body">
+        <view>
+          <text class="back-title">愿你带着好奇，继续长大</text>
+          <text class="page-text">华龙第一幼儿园 · 中二班</text>
+          <text class="page-text">2026 年 7 月</text>
+        </view>
+      </view>
+      <view class="page-foot"><text>封底</text><text>{{p.page}}</text></view>
+    </block>
+
+    <!-- 其余都是 regularPage：眉标 + 标题 + 正文 + 页脚 -->
+    <block wx:else>
+      <view class="page-body">
+
+        <!-- 园所介绍 -->
+        <block wx:if="{{p.kind === 'schoolIntro'}}">
+          <text class="page-kicker">OUR KINDERGARTEN</text>
+          <text class="page-title">园所介绍</text>
+          <view class="bg-photo bg-photo--intro">园所环境照</view>
+          <text class="page-text page-text--gap">{{p.text}}</text>
+        </block>
+
+        <!-- 扉页 -->
+        <block wx:elif="{{p.kind === 'title'}}">
+          <text class="page-kicker">THIS BOOK BELONGS TO</text>
+          <text class="page-title">{{p.name}}的成长册</text>
+          <view class="kv" wx:for="{{p.rows}}" wx:key="k" wx:for-item="row">
+            <text class="kv__k">{{row.k}}</text>
+            <text class="kv__v">{{row.v}}</text>
+          </view>
+          <text class="page-text page-text--muted page-text--gap">{{p.note}}</text>
+        </block>
+
+        <!-- 目录 -->
+        <block wx:elif="{{p.kind === 'toc'}}">
+          <text class="page-kicker">CONTENTS</text>
+          <text class="page-title">{{p.title}}</text>
+          <block wx:if="{{p.entries.length}}">
+            <view
+              class="kv {{entry.level === 2 ? 'kv--sub' : 'kv--top'}}"
+              wx:for="{{p.entries}}"
+              wx:key="bodyIndex"
+              wx:for-item="entry"
+            >
+              <text class="kv__k">{{entry.level === 2 ? '— ' : ''}}{{entry.title}}</text>
+              <text class="kv__v">{{entry.page}}</text>
+            </view>
+          </block>
+          <text class="page-text" wx:else>正文尚未整理。</text>
+        </block>
+
+        <!-- 正文 -->
+        <block wx:else>
+          <text class="page-kicker">GROWTH BOOK</text>
+          <text class="page-title">{{p.title}}</text>
+
+          <!-- 新增栏目：widget 网格实排 -->
+          <block wx:if="{{p.content.kind === 'custom'}}">
+            <view class="wg-area" wx:if="{{p.content.boxes.length}}">
+              <view
+                class="wg-box {{box.type === 'image' ? 'wg-img' : 'wg-text'}}"
+                wx:for="{{p.content.boxes}}"
+                wx:key="id"
+                wx:for-item="box"
+                style="left:{{box.box.left}}%;top:{{box.box.top}}%;width:{{box.box.width}}%;height:{{box.box.height}}%;{{box.type === 'text' ? 'font-size:' + box.fontSize + 'px;text-align:' + box.align : ''}}"
+              >
+                <block wx:if="{{box.type === 'image'}}">{{box.label}}</block>
+                <!-- wx:for 和 wx:else 不能挂在同一个节点上，套一层 block -->
+                <block wx:else>
+                  <text wx:for="{{box.runs}}" wx:key="index" wx:for-item="run" style="{{run.style}}">{{run.t}}</text>
+                </block>
+              </view>
+            </view>
+            <text class="page-text page-text--muted" wx:else>本页尚未放置组件。</text>
+          </block>
+
+          <!-- 一条在园时光或亲子时光活动 -->
+          <block wx:elif="{{p.content.kind === 'activity'}}">
+            <text class="page-text">{{p.content.text}}</text>
+            <view class="photo-2 photo-2--gap" wx:if="{{p.content.photos.length}}">
+              <view class="bg-photo bg-photo--activity" wx:for="{{p.content.photos}}" wx:key="index">{{item}}</view>
+            </view>
+          </block>
+
+          <!-- 固定栏目 -->
+          <block wx:elif="{{p.content.kind === 'section'}}">
+            <!-- 在园时光 / 亲子时光的汇总块 -->
+            <block wx:if="{{p.content.section.key === 'time' || p.content.section.key === 'task'}}">
+              <text class="page-text page-text--muted" wx:if="{{p.content.section.block.note}}">{{p.content.section.block.note}}</text>
+              <view class="blk" wx:for="{{p.content.section.block.items}}" wx:key="index" wx:for-item="blk">
+                <text class="blk__head">{{blk.title}}<text class="blk__date"> · {{blk.date}}</text></text>
+                <view class="photo-2 photo-2--tight">
+                  <view class="bg-photo bg-photo--block" wx:for="{{blk.photos}}" wx:key="index">{{item}}</view>
+                </view>
+              </view>
+              <text class="page-text page-text--muted" wx:if="{{p.content.section.block.moreText}}">{{p.content.section.block.moreText}}</text>
+            </block>
+
+            <!-- 教师综合评估 -->
+            <block wx:elif="{{p.content.section.key === 'term'}}">
+              <text class="page-text">{{p.content.section.text}}</text>
+              <view class="photo-2 photo-2--gap">
+                <view class="bg-photo bg-photo--term" wx:for="{{p.content.section.photos}}" wx:key="index">{{item}}</view>
+              </view>
+            </block>
+
+            <!-- 五大领域评估 -->
+            <block wx:elif="{{p.content.section.key === 'comp'}}">
+              <view class="comp-row">
+                <view class="mini-radar"></view>
+                <view class="comp-list">
+                  <view class="kv" wx:for="{{p.content.section.scores}}" wx:key="label" wx:for-item="score">
+                    <text class="kv__k">{{score.label}}</text>
+                    <text class="kv__v">{{score.value}}</text>
+                  </view>
+                </view>
+              </view>
+              <text class="page-text page-text--gap">{{p.content.section.note}}</text>
+            </block>
+
+            <!-- 学期寄语 -->
+            <block wx:elif="{{p.content.section.key === 'message'}}">
+              <text class="page-text">{{p.content.section.text}}</text>
+              <text class="page-text page-text--sign">{{p.content.section.sign}}</text>
+            </block>
+          </block>
+
+          <!-- 该栏目尚未整理入册活动 -->
+          <text class="page-text page-text--muted" wx:elif="{{p.content.kind === 'empty'}}">尚未整理入册活动。</text>
+        </block>
+
+      </view>
+      <view class="page-foot"><text>{{p.name}} · 成长册</text><text>{{p.page}}</text></view>
+    </block>
+
+  </view>
+</template>

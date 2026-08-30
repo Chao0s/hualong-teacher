@@ -1,0 +1,357 @@
+@import '/styles/home-school-common.wxss';
+
+/* 栏目版面编辑器 —— 本页自己的样式，对照原型 screens/growth-book-section-edit.html 的内联块。
+ *
+ * 画布内部（.a4 / .grid-area / .grid-line / .wg）用 px：格子边长与触摸坐标要同一把尺，
+ * 换成 rpx 会让拖曳位移和格子对不上。画布以外照旧 1px 记 2rpx。 */
+
+.screen {
+  padding: 24rpx 32rpx 56rpx;
+}
+
+.field-label {
+  display: block;
+  margin: 20rpx 0 10rpx;
+  color: var(--muted);
+  font-size: 22rpx;
+}
+
+.field-ph {
+  color: var(--muted);
+}
+
+/* ── 工具列 ────────────────────────────────────────────────────────────── */
+
+.tool-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 20rpx;
+}
+
+.tool-row__gap {
+  flex: 1;
+}
+
+.tool-btn {
+  flex: 0 0 auto;
+  padding: 14rpx 22rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 999rpx;
+  background: var(--surface);
+  color: var(--fg);
+  font-size: 24rpx;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.tool-btn--on {
+  border-color: var(--accent);
+  background: var(--accent-light);
+  color: var(--accent-dark);
+}
+
+.page-tabs {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+/* scroll-view 里要横排就得是行内块 */
+.page-tabs .tool-btn {
+  display: inline-block;
+  margin-right: 12rpx;
+}
+
+.zoom-label {
+  min-width: 92rpx;
+  color: var(--muted);
+  font-size: 22rpx;
+  text-align: center;
+}
+
+/* ── 画布 ──────────────────────────────────────────────────────────────── */
+
+.warn {
+  margin-bottom: 16rpx;
+  color: var(--danger);
+  font-size: 22rpx;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.warn__line {
+  display: block;
+}
+
+.canvas-wrap {
+  max-height: 860rpx;
+  padding: 20rpx;
+  margin-bottom: 20rpx;
+  border-radius: 28rpx;
+  background: var(--surface);
+}
+
+/* A4 直式，边距放美术边框，内容区才是 15×24 网格 */
+.a4 {
+  position: relative;
+  margin: 0 auto;
+  border-radius: 8rpx;
+  background: #fff;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.12);
+}
+
+.a4-margin {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  border: 1px dashed #dbe6e6;
+  border-radius: 8rpx;
+}
+
+.grid-area {
+  position: absolute;
+}
+
+.grid-line {
+  position: absolute;
+  background: #e3edec;
+  opacity: 0.5;
+}
+
+.grid-line--v {
+  top: 0;
+  width: 1px;
+}
+
+.grid-line--h {
+  left: 0;
+  height: 1px;
+}
+
+.wg {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: rgba(24, 155, 145, 0.1);
+  color: var(--accent-dark);
+  overflow: hidden;
+}
+
+.wg__label {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.wg--text {
+  border-color: var(--blue);
+  background: rgba(51, 136, 252, 0.08);
+  color: #1f4e8c;
+}
+
+.wg--sel {
+  z-index: 5;
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.wg--bad {
+  border-color: var(--danger);
+  background: rgba(214, 69, 69, 0.14);
+  color: var(--danger);
+}
+
+.wg__handle {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px 0 6px 0;
+  background: var(--accent);
+}
+
+.wg--text .wg__handle {
+  background: var(--blue);
+}
+
+.meta-row {
+  margin-bottom: 20rpx;
+  color: var(--muted);
+  font-size: 22rpx;
+  line-height: 1.6;
+}
+
+.meta-row__line {
+  display: block;
+}
+
+/* ── 属性抽屉 ──────────────────────────────────────────────────────────── */
+
+.drawer {
+  padding: 24rpx 28rpx 28rpx;
+  margin-bottom: 24rpx;
+  border-radius: 28rpx;
+  background: var(--surface);
+}
+
+.drawer__title {
+  display: block;
+  margin-bottom: 4rpx;
+  font-size: 26rpx;
+  font-weight: 700;
+}
+
+.seg {
+  display: flex;
+  gap: 12rpx;
+}
+
+.seg__btn {
+  flex: 1;
+  padding: 14rpx 0;
+  border: 1rpx solid var(--border);
+  border-radius: 18rpx;
+  background: #fff;
+  color: var(--fg);
+  font-size: 24rpx;
+  font-weight: 600;
+  text-align: center;
+}
+
+.seg__btn--on {
+  border-color: var(--accent);
+  background: var(--accent-light);
+  color: var(--accent-dark);
+}
+
+/* 文字工具列 */
+.rt-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10rpx;
+  margin-bottom: 12rpx;
+}
+
+.rt-bar--gap {
+  margin-top: 20rpx;
+}
+
+.rt-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 60rpx;
+  height: 60rpx;
+  padding: 0 12rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 16rpx;
+  background: #fff;
+  color: var(--fg);
+  font-size: 24rpx;
+}
+
+.rt-btn--on {
+  border-color: var(--accent);
+  background: var(--accent-light);
+  color: var(--accent-dark);
+}
+
+.rt-btn__b {
+  font-weight: 700;
+}
+
+.rt-btn__i {
+  font-style: italic;
+}
+
+.rt-sep {
+  width: 1rpx;
+  height: 36rpx;
+  background: var(--border);
+}
+
+.rt-sw {
+  width: 44rpx;
+  height: 44rpx;
+  border: 1rpx solid rgba(0, 0, 0, 0.14);
+  border-radius: 50%;
+}
+
+.rt-select {
+  display: flex;
+  align-items: center;
+  height: 60rpx;
+  padding: 0 12rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 16rpx;
+  background: #fff;
+  font-size: 24rpx;
+}
+
+.rt {
+  min-height: 148rpx;
+  padding: 16rpx 20rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 20rpx;
+  background: #fff;
+  line-height: 1.6;
+}
+
+.cap {
+  display: block;
+  margin-top: 10rpx;
+  color: var(--muted);
+  font-size: 22rpx;
+  line-height: 1.5;
+}
+
+.cap--bad {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.btn-del {
+  width: 100%;
+  padding: 18rpx 0;
+  margin-top: 24rpx;
+  border: 1rpx solid #f4cfcf;
+  border-radius: 20rpx;
+  background: #fff;
+  color: var(--danger);
+  font-size: 24rpx;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* ── 底部三个动作 ──────────────────────────────────────────────────────── */
+
+.hint--foot {
+  display: block;
+  padding: 16rpx 4rpx 20rpx;
+}
+
+.state-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20rpx;
+  margin-top: 24rpx;
+}
+
+.state-actions__wide {
+  grid-column: 1 / -1;
+}
+
+.btn--danger {
+  border-color: #f0c8c8;
+  background: #fff;
+  color: var(--danger);
+}

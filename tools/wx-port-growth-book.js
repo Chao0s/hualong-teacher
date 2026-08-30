@@ -18,8 +18,8 @@
 const fs = require('fs');
 const path = require('path');
 
-const SRC = 'D:/hualong-teacher/captures/_extracted/growth-book.growth-book-render.js';
-const OUT = path.join(__dirname, '..', 'wx-test-home', 'utils', 'growth-book.js');
+const SRC = path.join(__dirname, '..', 'captures', '_extracted', 'growth-book.growth-book-render.js');
+const OUT = path.join(__dirname, '..', 'miniprogram', 'utils', 'growth-book.js');
 
 // 产 HTML 的函数，按起始行号删到下一个顶层定义之前
 const DROP = [

@@ -1,0 +1,52 @@
+<!-- 栏目投稿管理 —— 对照原型 screens/growth-book-section-materials.html。
+     页面标题是栏目名，由 js 写进导航栏；原型的 escapeText 是拼 HTML 才需要的，wxml 不用。 -->
+<view class="page">
+
+  <view class="summary">
+    <text class="summary__label">已收齐</text>
+    <text class="summary__value">{{doneCount}} / {{totalCount}}</text>
+  </view>
+
+  <view class="tabs">
+    <view
+      class="tabs__btn {{filter === tab.key ? 'tabs__btn--on' : ''}}"
+      wx:for="{{tabs}}"
+      wx:key="key"
+      wx:for-item="tab"
+      data-key="{{tab.key}}"
+      bindtap="onFilter"
+    >{{tab.label}}</view>
+  </view>
+
+  <view class="submission" wx:for="{{visible}}" wx:key="id" wx:for-item="row" wx:for-index="ri">
+    <view class="row">
+      <view class="avatar">{{row.initial}}</view>
+      <view class="grow">
+        <text class="grow__name">{{row.name}}</text>
+        <text class="meta">{{row.done ? '2 张照片 · 1 段文字' : '未提交'}}</text>
+      </view>
+      <view class="row__btn" wx:if="{{row.done}}" data-index="{{ri}}" bindtap="onToggleDetail">
+        {{row.open ? '收起' : '查看'}}
+      </view>
+      <view class="row__btn row__btn--primary" wx:else data-id="{{row.id}}" bindtap="onRemind">提醒家长</view>
+    </view>
+
+    <view class="detail" wx:if="{{row.done && row.open}}">
+      <view class="photos">
+        <view class="photo" wx:for="{{row.images}}" wx:key="*this">{{item}}</view>
+      </view>
+      <text class="parent-text">{{row.text}}</text>
+    </view>
+  </view>
+  <view class="empty" wx:if="{{!visible.length}}">暂无记录</view>
+
+  <view class="section-actions">
+    <view
+      class="btn btn--danger"
+      style="{{deleteDisabled ? 'opacity:.45' : ''}}"
+      hover-class="btn--hover"
+      bindtap="onDeleteSection"
+    >删除栏目</view>
+  </view>
+
+</view>

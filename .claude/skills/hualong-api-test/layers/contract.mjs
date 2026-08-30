@@ -33,6 +33,11 @@ const KNOWN = JSON.parse(readFileSync(join(HERE_DIR, 'known-gaps.json'), 'utf8')
 
 
 const CLIENTS = [
+  // On 2026-08-31 the teacher client's service layer was archived to
+  // Archive/20260831/miniprogram/services and miniprogram/ was replaced by the
+  // prototype preview build, which calls no API at all. So this path is absent
+  // and the client skips with a reason — that is the truth, not a broken path.
+  // Point it back here the day the teacher client regains a service layer.
   { name: 'hualong-teacher', services: join(REPO, 'miniprogram', 'services') },
   { name: 'hualong-parent', services: resolve(REPO, '..', 'hualong-parent', 'miniprogram', 'services') },
   { name: 'hualong-admin-pc', services: resolve(REPO, '..', 'hualong-admin-pc', 'src', 'services') },

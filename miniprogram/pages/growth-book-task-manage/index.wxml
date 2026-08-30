@@ -1,0 +1,24 @@
+<!-- 亲子时光管理 —— 对照原型 screens/growth-book-task-manage.html。
+     一名幼儿一张卡，点整行展开或收起他的亲子时光；同时只展开一名。 -->
+<view class="page">
+
+  <view class="sec sec--first">幼儿名单</view>
+
+  <view class="child-card" wx:for="{{children}}" wx:key="id" wx:for-item="child">
+    <view class="child-row" hover-class="list-card--hover" hover-stay-time="80" data-id="{{child.id}}" bindtap="onToggleChild">
+      <view class="avatar">{{child.initial}}</view>
+      <text class="child-name">{{child.name}}</text>
+      <text class="record-count">{{child.tasks.length}} 条</text>
+      <text class="go {{child.open ? 'go--open' : ''}}">›</text>
+    </view>
+
+    <view class="records" wx:if="{{child.open}}">
+      <view class="record" wx:for="{{child.tasks}}" wx:key="id" wx:for-item="task">
+        <text class="record__title">{{task.title}}</text>
+        <view class="record__del" data-child="{{child.id}}" data-task="{{task.id}}" bindtap="onRemoveTask">删除</view>
+      </view>
+      <view class="empty" wx:if="{{!child.tasks.length}}">暂无亲子时光</view>
+    </view>
+  </view>
+
+</view>

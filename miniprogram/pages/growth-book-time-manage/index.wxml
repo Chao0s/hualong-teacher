@@ -1,0 +1,98 @@
+<!-- 在园时光管理 —— 对照原型 screens/growth-book-time-manage.html。
+
+     原型每次改动都重画整段 innerHTML，这里改成 data 里存一份算好的列表。
+     重命名的输入框、未归类的勾选框、目标主题下拉都按小程序控件重写，判定口径没变。 -->
+<view class="page">
+
+  <view class="count-line">
+    <view class="count-pill">主题<text class="count-pill__n">{{topicCount}}</text></view>
+    <view class="count-pill">全部活动<text class="count-pill__n">{{activityCount}}</text></view>
+    <view class="count-pill">未归类<text class="count-pill__n">{{ungroupedCount}}</text></view>
+  </view>
+
+  <view class="sec">主题</view>
+  <view class="topic" wx:for="{{topics}}" wx:key="id" wx:for-item="topic" wx:for-index="ti">
+    <view class="topic-head">
+      <block wx:if="{{topic.editing}}">
+        <input
+          class="topic-title-input"
+          maxlength="30"
+          value="{{topic.editTitle}}"
+          data-index="{{ti}}"
+          bindinput="onEditTitleInput"
+        />
+        <view class="text-button" data-index="{{ti}}" bindtap="onSaveRename">保存</view>
+        <view class="text-button" bindtap="onCancelRename">取消</view>
+      </block>
+      <block wx:else>
+        <text class="topic-head__name">{{topic.title}}</text>
+        <text class="topic-head__count">{{topic.count}} 项</text>
+        <view class="text-button" data-index="{{ti}}" bindtap="onRename">重命名</view>
+        <view class="text-button text-button--danger" data-id="{{topic.id}}" bindtap="onDeleteTopic">删除</view>
+      </block>
+    </view>
+
+    <view class="activity" wx:for="{{topic.items}}" wx:key="id" wx:for-item="row">
+      <text class="activity__name">{{row.title}}</text>
+      <text class="activity__date">{{row.date}}</text>
+      <view class="text-button" data-id="{{row.id}}" bindtap="onUndo">撤销</view>
+    </view>
+    <view class="empty" wx:if="{{!topic.items.length}}">暂无活动</view>
+  </view>
+
+  <view class="new-topic">
+    <input
+      class="new-topic__input"
+      maxlength="30"
+      placeholder="输入新主题名称"
+      placeholder-class="new-topic__ph"
+      value="{{newTopicName}}"
+      bindinput="onNewTopicInput"
+      bindconfirm="onCreateTopic"
+    />
+    <view class="new-topic__btn" hover-class="btn--hover" bindtap="onCreateTopic">新建主题</view>
+  </view>
+
+  <view class="sec">未归类成长素材</view>
+  <view class="toolbar">
+    <input
+      class="search"
+      type="text"
+      placeholder="搜索活动名称"
+      placeholder-class="new-topic__ph"
+      value="{{query}}"
+      bindinput="onQueryInput"
+    />
+    <view class="select-all" hover-class="btn--hover" bindtap="onSelectAll">全选结果</view>
+  </view>
+
+  <view class="batch">
+    <text class="batch__count">已选 {{selectedCount}} 项</text>
+    <picker mode="selector" range="{{targetOptions}}" value="{{targetIndex}}" bindchange="onTargetChange">
+      <view class="batch__select">{{targetOptions[targetIndex]}}</view>
+    </picker>
+    <view
+      class="batch__btn"
+      style="{{assignDisabled ? 'opacity:.45' : ''}}"
+      hover-class="btn--hover"
+      bindtap="onAssign"
+    >归入主题</view>
+  </view>
+
+  <view class="pending-list" wx:if="{{ungrouped.length}}">
+    <view class="activity" wx:for="{{ungrouped}}" wx:key="id" wx:for-item="row" wx:for-index="ri">
+      <view
+        class="checkbox {{row.checked ? 'checkbox--on' : ''}}"
+        data-index="{{ri}}"
+        bindtap="onPick"
+      >{{row.checked ? '✓' : ''}}</view>
+      <text class="activity__name">{{row.title}}</text>
+      <text class="activity__date">{{row.date}}</text>
+      <view class="text-button text-button--danger" data-id="{{row.id}}" bindtap="onRemove">
+        {{row.pending ? '确认删除' : '删除'}}
+      </view>
+    </view>
+  </view>
+  <view class="empty empty--round" wx:else>没有匹配的未归类素材</view>
+
+</view>

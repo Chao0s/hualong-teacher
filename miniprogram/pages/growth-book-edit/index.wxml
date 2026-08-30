@@ -1,0 +1,45 @@
+<!-- 2026 春季学期编册 —— 对照原型 screens/growth-book-edit.html。
+     上半是陈小明这一本的实时预览，下半是栏目开关；改一个开关就地重排，停在原页。 -->
+<import src="/templates/growth-book-page.wxml" />
+
+<view class="screen">
+
+  <view class="sec sec--first">实时预览 <text class="preview-label">{{previewName}}</text></view>
+
+  <view class="book book--preview">
+    <template is="bookPage" wx:for="{{pages}}" wx:key="index" wx:for-item="p" data="{{p: p}}" />
+  </view>
+
+  <view class="controls controls--preview">
+    <view class="nav-btn {{atFirst ? 'nav-btn--off' : ''}}" bindtap="onPrev">‹</view>
+    <text class="page-indicator">{{indicator}}</text>
+    <view class="nav-btn {{atLast ? 'nav-btn--off' : ''}}" bindtap="onNext">›</view>
+  </view>
+
+  <view class="sec">
+    栏目管理
+    <text class="more" style="{{locked ? 'opacity:.4' : ''}}" bindtap="onAddSection">＋ 新建栏目</text>
+  </view>
+
+  <view class="section-list">
+    <view class="section-row" wx:for="{{sections}}" wx:key="key" wx:for-item="row" wx:for-index="ri">
+      <view
+        class="checkbox {{row.on ? 'checkbox--on' : ''}}"
+        data-index="{{ri}}"
+        bindtap="onToggleSection"
+      >{{row.on ? '✓' : ''}}</view>
+      <view class="section-link" hover-class="list-card--hover" hover-stay-time="80" data-index="{{ri}}" bindtap="onOpenSection">
+        <text class="section-link__name">{{row.name}}</text>
+        <text class="section-link__go">›</text>
+      </view>
+    </view>
+  </view>
+
+  <view
+    class="btn btn--primary lock-button"
+    style="{{locked ? 'opacity:.45' : ''}}"
+    hover-class="btn--hover"
+    bindtap="onLock"
+  >{{locked ? '已锁定' : '锁定编册'}}</view>
+
+</view>

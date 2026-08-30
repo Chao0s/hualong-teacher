@@ -1,0 +1,385 @@
+/**
+ * 成长册书本样式 —— 对照原型 screens/growth-book-viewer.css。1px 记 2rpx。
+ *
+ * 样本页、单个幼儿查看页、学期编册页三页共用，配套模板见
+ * templates/growth-book-page.wxml。
+ *
+ * 三处和原型不同：
+ *   1. `.page { inset: 0 }` 拆成四条边 —— 老 WebView 不认简写；
+ *   2. 装订线原型用 ::before，这里是真节点 .page__seam；
+ *   3. 五大领域的雷达图原型是内联 <svg>，分数写死，烘成 base64 背景图。
+ */
+
+.book {
+  position: relative;
+  height: 904rpx;
+  margin-bottom: 20rpx;
+  perspective: 3200rpx;
+}
+
+/* 学期编册页的预览小一号：原型 width:300px + aspect-ratio 210/297 */
+.book--preview {
+  width: 600rpx;
+  height: 848rpx;
+  margin: 0 auto 20rpx;
+}
+
+.page {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  border-radius: 24rpx;
+  background: var(--surface);
+  box-shadow: 0 20rpx 52rpx rgba(0, 0, 0, 0.16);
+  overflow: hidden;
+  transform-origin: left center;
+  transform-style: preserve-3d;
+  transition: transform 0.58s cubic-bezier(0.3, 0.5, 0.3, 1);
+}
+
+.page--flipped {
+  transform: rotateY(-172deg);
+}
+
+/* 装订线 */
+.page__seam {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 24rpx;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0));
+}
+
+.page-body {
+  flex: 1;
+  padding: 40rpx 36rpx 32rpx 52rpx;
+  overflow: hidden;
+}
+
+.page-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16rpx 36rpx 24rpx 52rpx;
+  color: var(--muted);
+  font-size: 20rpx;
+}
+
+.page-kicker {
+  display: block;
+  color: var(--accent);
+  font-size: 20rpx;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+.page-title {
+  display: block;
+  margin: 12rpx 0 24rpx;
+  font-size: 38rpx;
+  font-weight: 800;
+}
+
+.page-text {
+  display: block;
+  color: #444;
+  font-size: 24rpx;
+  line-height: 1.75;
+}
+
+.page-text--muted {
+  color: var(--muted);
+}
+
+.page-text--gap {
+  margin-top: 24rpx;
+}
+
+.page-text--sign {
+  margin-top: 40rpx;
+  text-align: right;
+}
+
+/* ── 图片占位 ──────────────────────────────────────────────────────────── */
+
+.bg-photo {
+  display: flex;
+  align-items: flex-end;
+  padding: 16rpx;
+  border-radius: 20rpx;
+  background: linear-gradient(135deg, var(--accent-light), var(--blue-light));
+  color: var(--accent-dark);
+  font-size: 20rpx;
+  font-weight: 600;
+}
+
+.bg-photo--intro {
+  height: 236rpx;
+}
+
+.bg-photo--activity {
+  height: 168rpx;
+}
+
+.bg-photo--block {
+  height: 160rpx;
+}
+
+.bg-photo--term {
+  height: 184rpx;
+}
+
+.photo-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16rpx;
+}
+
+.photo-2--gap {
+  margin-top: 20rpx;
+}
+
+.photo-2--tight {
+  margin-top: 14rpx;
+}
+
+/* ── 活动区块 ──────────────────────────────────────────────────────────── */
+
+.blk {
+  margin-bottom: 24rpx;
+}
+
+.blk__head {
+  display: block;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.blk__date {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+/* ── 键值行 ────────────────────────────────────────────────────────────── */
+
+.kv {
+  display: flex;
+  justify-content: space-between;
+  padding: 14rpx 0;
+  border-bottom: 1rpx solid var(--border);
+  font-size: 24rpx;
+}
+
+.kv:last-child {
+  border-bottom: 0;
+}
+
+.kv__v {
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+
+/* 目录二级条目往里缩 18px */
+.kv--sub {
+  padding-left: 36rpx;
+}
+
+.kv--top .kv__k {
+  font-weight: 700;
+}
+
+/* ── 五大领域 ──────────────────────────────────────────────────────────── */
+
+.comp-row {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+}
+
+/* 原型 bookMiniRadar([4.6,4.1,4.4,3.2,3.8]) 的 SVG，分数写死，颜色烘进图里 */
+.mini-radar {
+  flex: 0 0 auto;
+  width: 208rpx;
+  height: 208rpx;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 208rpx 208rpx;
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIiB3aWR0aD0iMTA0IiBoZWlnaHQ9IjEwNCI+PHBvbHlnb24gcG9pbnRzPSI1MCw0My4yIDU2LjQ2Nyw0Ny44OTkgNTMuOTk3LDU1LjUwMSA0Ni4wMDMsNTUuNTAxIDQzLjUzMyw0Ny44OTkiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2Q3ZTRlNCIvPjxwb2x5Z29uIHBvaW50cz0iNTAsMjkuNiA2OS40MDIsNDMuNjk2IDYxLjk5MSw2Ni41MDQgMzguMDA5LDY2LjUwNCAzMC41OTgsNDMuNjk2IiBmaWxsPSJub25lIiBzdHJva2U9IiNkN2U0ZTQiLz48cG9seWdvbiBwb2ludHM9IjUwLDE2IDgyLjMzNiwzOS40OTMgNjkuOTg1LDc3LjUwNyAzMC4wMTUsNzcuNTA3IDE3LjY2NCwzOS40OTMiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2Q3ZTRlNCIvPjxwb2x5Z29uIHBvaW50cz0iNTAsMTguNzIgNzYuNTE1LDQxLjM4NSA2Ny41ODcsNzQuMjA2IDM3LjIxLDY3LjYwNCAyNS40MjUsNDIuMDE1IiBmaWxsPSJyZ2JhKDI0LDE1NSwxNDUsLjIyKSIgc3Ryb2tlPSIjMTg5YjkxIiBzdHJva2Utd2lkdGg9IjEuOCIvPjwvc3ZnPg==");
+}
+
+.comp-list {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── 新增栏目的 widget 网格 ────────────────────────────────────────────── */
+
+/* 内容区 150 × 240mm，比例必须守住，否则「占几格即长宽比」在预览里就不成立 */
+.wg-area {
+  position: relative;
+  height: 100%;
+  aspect-ratio: 150 / 240;
+  margin: 0 auto;
+}
+
+.wg-box {
+  position: absolute;
+  padding: 8rpx 12rpx;
+  border-radius: 16rpx;
+  overflow: hidden;
+}
+
+.wg-img {
+  display: flex;
+  align-items: flex-end;
+  background: linear-gradient(135deg, var(--accent-light), var(--blue-light));
+  color: var(--accent-dark);
+  font-size: 18rpx;
+  font-weight: 600;
+}
+
+.wg-text {
+  color: #444;
+  line-height: 1.5;
+}
+
+/* ── 封面与封底 ────────────────────────────────────────────────────────── */
+
+.page--cover {
+  background: linear-gradient(150deg, #0f766e, #189b91 55%, #47bcb3);
+  color: #fff;
+}
+
+.page--cover .page-kicker {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.page--cover .page-foot {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.cover-title {
+  display: block;
+  font-size: 52rpx;
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+.cover-sub {
+  display: block;
+  margin-top: 16rpx;
+  font-size: 24rpx;
+  line-height: 1.6;
+  opacity: 0.9;
+}
+
+.cover-photo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 20rpx;
+  background: rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 22rpx;
+}
+
+/* 四套预设版式共用同一组元素，只改排布 */
+.cover-body--full,
+.cover-body--stack {
+  display: flex;
+  flex-direction: column;
+  gap: 28rpx;
+}
+
+.cover-body--full .cover-photo {
+  flex: 1;
+}
+
+.cover-body--stack .cover-photo {
+  flex: 0 0 auto;
+  height: 380rpx;
+}
+
+.cover-body--stack .cover-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.cover-body--side {
+  display: grid;
+  grid-template-columns: 1fr 192rpx;
+  gap: 24rpx;
+  align-items: center;
+}
+
+.cover-body--side .cover-photo {
+  height: 480rpx;
+}
+
+.cover-body--plain {
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+
+.page--back {
+  background: linear-gradient(150deg, #e8f5f4, #f0f5f5);
+}
+
+.back-body {
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+
+.back-title {
+  display: block;
+  margin-bottom: 12rpx;
+  color: var(--accent-dark);
+  font-size: 38rpx;
+  font-weight: 800;
+}
+
+/* ── 翻页控制 ──────────────────────────────────────────────────────────── */
+
+.controls {
+  display: grid;
+  grid-template-columns: 88rpx 1fr 88rpx;
+  align-items: center;
+  gap: 20rpx;
+}
+
+.controls--preview {
+  width: 600rpx;
+  margin: 0 auto;
+}
+
+.nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 80rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 24rpx;
+  background: var(--surface);
+  color: var(--fg);
+  font-size: 36rpx;
+}
+
+.nav-btn--off {
+  opacity: 0.38;
+}
+
+.page-indicator {
+  color: var(--muted);
+  font-size: 24rpx;
+  font-weight: 600;
+  text-align: center;
+}

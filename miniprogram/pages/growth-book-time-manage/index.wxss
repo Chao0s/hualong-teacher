@@ -1,0 +1,259 @@
+@import '/styles/home-school-common.wxss';
+
+/* 在园时光管理 —— 本页自己的样式，对照原型 screens/growth-book-time-manage.html 的内联块。1px 记 2rpx。 */
+
+.page {
+  padding: 24rpx 32rpx 56rpx;
+}
+
+/* ── 三个计数 ──────────────────────────────────────────────────────────── */
+
+.count-line {
+  display: flex;
+  gap: 16rpx;
+  margin-bottom: 28rpx;
+}
+
+.count-pill {
+  flex: 1;
+  padding: 20rpx 24rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 24rpx;
+  background: #fff;
+  color: var(--muted);
+  font-size: 24rpx;
+}
+
+.count-pill__n {
+  display: block;
+  margin-top: 4rpx;
+  color: var(--fg);
+  font-size: 36rpx;
+}
+
+/* ── 主题 ──────────────────────────────────────────────────────────────── */
+
+.topic {
+  margin-bottom: 28rpx;
+}
+
+.topic-head {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 22rpx 24rpx;
+  border-radius: 24rpx 24rpx 0 0;
+  background: var(--accent-light);
+}
+
+.topic-head__name {
+  flex: 1;
+  min-width: 0;
+  font-size: 26rpx;
+  font-weight: 700;
+}
+
+.topic-head__count {
+  color: var(--accent-dark);
+  font-size: 22rpx;
+}
+
+.topic-title-input {
+  flex: 1;
+  min-width: 0;
+  padding: 12rpx 16rpx;
+  border: 1rpx solid var(--accent);
+  border-radius: 16rpx;
+  background: #fff;
+  font-size: 24rpx;
+}
+
+.text-button {
+  padding: 8rpx;
+  color: var(--accent-dark);
+  font-size: 22rpx;
+}
+
+.text-button--danger {
+  color: var(--danger);
+}
+
+.activity {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 22rpx 24rpx;
+  border: 1rpx solid var(--border);
+  border-top: 0;
+  background: #fff;
+}
+
+.activity:last-child {
+  border-radius: 0 0 24rpx 24rpx;
+}
+
+.activity__name {
+  flex: 1;
+  min-width: 0;
+  font-size: 24rpx;
+  font-weight: 600;
+}
+
+.activity__date {
+  color: var(--muted);
+  font-size: 22rpx;
+  white-space: nowrap;
+}
+
+.empty {
+  padding: 32rpx;
+  border: 1rpx dashed var(--border);
+  border-radius: 0 0 24rpx 24rpx;
+  background: #fff;
+  color: var(--muted);
+  font-size: 24rpx;
+  text-align: center;
+}
+
+/* 未归类那一块没有主题头，四角都要圆：原型写的是 style="border-radius:12px" */
+.empty--round {
+  border-radius: 24rpx;
+}
+
+/* ── 新建主题 ──────────────────────────────────────────────────────────── */
+
+.new-topic {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 16rpx;
+  margin: 0 0 36rpx;
+}
+
+.new-topic__input {
+  min-width: 0;
+  padding: 20rpx 24rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 24rpx;
+  background: #fff;
+  font-size: 24rpx;
+}
+
+.new-topic__ph {
+  color: var(--muted);
+}
+
+.new-topic__btn {
+  display: flex;
+  align-items: center;
+  padding: 0 28rpx;
+  border-radius: 24rpx;
+  background: var(--accent);
+  color: #fff;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+/* ── 搜索与批量归类 ────────────────────────────────────────────────────── */
+
+.toolbar {
+  display: flex;
+  gap: 16rpx;
+  margin-bottom: 16rpx;
+}
+
+.search {
+  flex: 1;
+  min-width: 0;
+  padding: 20rpx 24rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 24rpx;
+  background: #fff;
+  font-size: 24rpx;
+}
+
+.select-all {
+  display: flex;
+  align-items: center;
+  padding: 0 22rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 24rpx;
+  background: #fff;
+  color: var(--fg);
+  font-size: 22rpx;
+  white-space: nowrap;
+}
+
+.batch {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 16rpx;
+  align-items: center;
+  padding: 18rpx 20rpx;
+  margin-bottom: 20rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 24rpx;
+  background: #fff;
+}
+
+.batch__count {
+  color: var(--muted);
+  font-size: 22rpx;
+  white-space: nowrap;
+}
+
+.batch__select {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  padding: 16rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 18rpx;
+  background: #fff;
+  font-size: 22rpx;
+}
+
+.batch__btn {
+  display: flex;
+  align-items: center;
+  padding: 16rpx 20rpx;
+  border-radius: 18rpx;
+  background: var(--accent);
+  color: #fff;
+  font-size: 22rpx;
+  white-space: nowrap;
+}
+
+/* ── 未归类列表 ────────────────────────────────────────────────────────── */
+
+.pending-list {
+  margin-bottom: 40rpx;
+}
+
+.pending-list .activity:first-child {
+  border-top: 1rpx solid var(--border);
+  border-radius: 24rpx 24rpx 0 0;
+}
+
+/* 原型用原生 checkbox；小程序的不好改样式，自己画一个方框。 */
+.checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 34rpx;
+  height: 34rpx;
+  border: 2rpx solid var(--border);
+  border-radius: 8rpx;
+  background: #fff;
+  color: #fff;
+  font-size: 22rpx;
+  line-height: 1;
+}
+
+.checkbox--on {
+  border-color: var(--accent);
+  background: var(--accent);
+}

@@ -1,0 +1,203 @@
+<!-- 栏目版面编辑器 —— 对照原型 screens/growth-book-section-edit.html。
+
+     画布里的一切用 px 写，不换成 rpx：格子边长要精确正方，拖曳位移也要和
+     触摸坐标同一把尺。画布外的部分照旧 1px 记 2rpx。
+
+     原型的 contenteditable 换成小程序的 <editor>，加粗／斜体／颜色走
+     EditorContext.format，存取用 delta，见 index.js 的 deltaToRuns / runsToDelta。 -->
+<view class="screen">
+
+  <text class="field-label">栏目名称（同时作为活动标题）</text>
+  <input
+    class="input"
+    maxlength="10"
+    placeholder="如：入学第一天、园长寄语"
+    placeholder-class="field-ph"
+    disabled="{{locked}}"
+    value="{{sectionName}}"
+    bindinput="onNameInput"
+  />
+
+  <text class="field-label">插入位置</text>
+  <picker mode="selector" range="{{anchorOptions}}" value="{{anchorIndex}}" disabled="{{locked}}" bindchange="onAnchorChange">
+    <view class="select">{{anchorOptions[anchorIndex]}}</view>
+  </picker>
+
+  <view class="tool-row">
+    <scroll-view class="page-tabs" scroll-x>
+      <view
+        class="tool-btn {{tab.on ? 'tool-btn--on' : ''}}"
+        wx:for="{{pageTabs}}"
+        wx:key="index"
+        wx:for-item="tab"
+        data-index="{{tab.index}}"
+        bindtap="onPickPage"
+      >第 {{tab.index + 1}} 页</view>
+    </scroll-view>
+    <view class="tool-btn" style="{{locked ? 'opacity:.4' : ''}}" bindtap="onAddPage">+ 页</view>
+    <view class="tool-btn" style="{{delPageDisabled ? 'opacity:.4' : ''}}" bindtap="onDelPage">删页</view>
+  </view>
+
+  <view class="tool-row">
+    <view class="tool-btn" style="{{locked ? 'opacity:.4' : ''}}" bindtap="onAddImage">+ 图片</view>
+    <view class="tool-btn" style="{{locked ? 'opacity:.4' : ''}}" bindtap="onAddText">+ 文字</view>
+    <view class="tool-row__gap"></view>
+    <view class="tool-btn" bindtap="onZoomOut">−</view>
+    <text class="zoom-label">{{zoomLabel}}</text>
+    <view class="tool-btn" bindtap="onZoomIn">+</view>
+  </view>
+
+  <view class="warn" wx:if="{{warns.length}}">
+    <text class="warn__line" wx:for="{{warns}}" wx:key="index">{{item}}</text>
+  </view>
+
+  <scroll-view class="canvas-wrap" scroll-x scroll-y>
+    <view class="a4" style="width:{{geo.pageW}}px;height:{{geo.pageH}}px">
+      <view class="a4-margin"></view>
+      <view
+        class="grid-area"
+        style="left:{{geo.padX}}px;top:{{geo.padY}}px;width:{{geo.contentW}}px;height:{{geo.contentH}}px"
+        bindtouchstart="onAreaTouchStart"
+        catchtouchmove="onTouchMove"
+        bindtouchend="onTouchEnd"
+        bindtouchcancel="onTouchEnd"
+      >
+        <!-- 原型用一张 <svg> 画网格线；这里每条线一个细 view，缩放时随格子边长走 -->
+        <view class="grid-line grid-line--v" wx:for="{{gridV}}" wx:key="index" style="left:{{item}}px;height:{{geo.contentH}}px"></view>
+        <view class="grid-line grid-line--h" wx:for="{{gridH}}" wx:key="index" style="top:{{item}}px;width:{{geo.contentW}}px"></view>
+
+        <view
+          class="wg {{box.isText ? 'wg--text' : ''}} {{box.sel ? 'wg--sel' : ''}} {{box.bad ? 'wg--bad' : ''}}"
+          wx:for="{{boxes}}"
+          wx:key="id"
+          wx:for-item="box"
+          style="left:{{box.left}}px;top:{{box.top}}px;width:{{box.width}}px;height:{{box.height}}px"
+          data-id="{{box.id}}"
+          catchtouchstart="onWidgetTouchStart"
+        >
+          <text class="wg__label">{{box.label}}</text>
+          <view class="wg__handle" wx:if="{{!locked}}" data-id="{{box.id}}" catchtouchstart="onHandleTouchStart"></view>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+
+  <view class="meta-row">
+    <text class="meta-row__line">{{metaCell}}</text>
+    <text class="meta-row__line">{{metaCount}}</text>
+  </view>
+
+  <!-- 属性抽屉：基本控制项在面上，其余进抽屉（W8） -->
+  <view class="drawer" wx:if="{{drawer}}">
+    <text class="drawer__title">{{drawer.title}}</text>
+
+    <text class="field-label">内容来源</text>
+    <picker mode="selector" range="{{drawer.bindOptions}}" range-key="name" value="{{drawer.bindIndex}}" disabled="{{locked}}" bindchange="onBindChange">
+      <view class="select">{{drawer.bindOptions[drawer.bindIndex].name}}</view>
+    </picker>
+
+    <!-- 教师自填文字：加粗／斜体／颜色逐段套用，字级与对齐是整个组件级 -->
+    <block wx:if="{{drawer.showLiteral}}">
+      <text class="field-label">文字内容</text>
+      <view class="rt-bar">
+        <view class="rt-btn {{drawer.boldOn ? 'rt-btn--on' : ''}}" data-cmd="bold" bindtap="onFormat"><text class="rt-btn__b">B</text></view>
+        <view class="rt-btn {{drawer.italicOn ? 'rt-btn--on' : ''}}" data-cmd="italic" bindtap="onFormat"><text class="rt-btn__i">I</text></view>
+        <view class="rt-sep"></view>
+        <view
+          class="rt-sw"
+          wx:for="{{drawer.colors}}"
+          wx:key="*this"
+          style="background:{{item}}"
+          data-color="{{item}}"
+          bindtap="onColor"
+        ></view>
+        <view class="rt-sep"></view>
+        <picker mode="selector" range="{{drawer.sizeOptions}}" value="{{drawer.sizeIndex}}" disabled="{{locked}}" bindchange="onSizeChange">
+          <view class="rt-select">{{drawer.sizeOptions[drawer.sizeIndex]}}</view>
+        </picker>
+        <view class="rt-sep"></view>
+        <view
+          class="rt-btn {{drawer.align === align.v ? 'rt-btn--on' : ''}}"
+          wx:for="{{drawer.aligns}}"
+          wx:key="v"
+          wx:for-item="align"
+          data-align="{{align.v}}"
+          bindtap="onAlign"
+        >{{align.icon}}</view>
+      </view>
+      <editor
+        id="literalEditor"
+        class="rt"
+        style="font-size:{{drawer.size}}px;text-align:{{drawer.align}}"
+        placeholder="输入要印在这一框里的文字"
+        read-only="{{locked}}"
+        bindready="onEditorReady"
+        bindinput="onEditorInput"
+        bindstatuschange="onEditorStatus"
+      ></editor>
+    </block>
+
+    <!-- 征集比例：家长端的裁剪框按此出框 -->
+    <block wx:if="{{drawer.showRatio}}">
+      <text class="field-label">征集比例（家长端的裁剪框按此出框）</text>
+      <view class="seg">
+        <view
+          class="seg__btn {{ratio.on ? 'seg__btn--on' : ''}}"
+          wx:for="{{drawer.ratios}}"
+          wx:key="label"
+          wx:for-item="ratio"
+          data-ratio="{{ratio.label}}"
+          bindtap="onRatio"
+        >{{ratio.label}}</view>
+      </view>
+      <text class="cap">{{drawer.ratioCap}}</text>
+    </block>
+
+    <!-- 文字组件：非 literal 时字级与对齐仍要给 -->
+    <block wx:if="{{drawer.isText}}">
+      <view class="rt-bar rt-bar--gap" wx:if="{{!drawer.showLiteral}}">
+        <picker mode="selector" range="{{drawer.sizeOptions}}" value="{{drawer.sizeIndex}}" disabled="{{locked}}" bindchange="onSizeChange">
+          <view class="rt-select">{{drawer.sizeOptions[drawer.sizeIndex]}}</view>
+        </picker>
+        <view class="rt-sep"></view>
+        <view
+          class="rt-btn {{drawer.align === align.v ? 'rt-btn--on' : ''}}"
+          wx:for="{{drawer.aligns}}"
+          wx:key="v"
+          wx:for-item="align"
+          data-align="{{align.v}}"
+          bindtap="onAlign"
+        >{{align.icon}}</view>
+      </view>
+      <text class="cap {{drawer.capBad ? 'cap--bad' : ''}}">{{drawer.capNote}}</text>
+    </block>
+
+    <!-- 图片组件：雷达图自适应，征集照片已按比例裁好，其余要指定显示方式 -->
+    <text class="cap" wx:elif="{{drawer.assessCap}}">{{drawer.assessCap}}</text>
+    <block wx:elif="{{drawer.showFit}}">
+      <text class="field-label">显示方式</text>
+      <view class="seg">
+        <view
+          class="seg__btn {{fit.on ? 'seg__btn--on' : ''}}"
+          wx:for="{{drawer.fits}}"
+          wx:key="v"
+          wx:for-item="fit"
+          data-fit="{{fit.v}}"
+          bindtap="onFit"
+        >{{fit.label}}</view>
+      </view>
+      <text class="cap">{{drawer.fitCap}}</text>
+    </block>
+
+    <view class="btn-del" bindtap="onDelWidget">删除此组件</view>
+  </view>
+
+  <text class="hint hint--foot">拖动组件移动，拖右下角把手缩放，最小 2 × 2 格。网格 15 × 24 格，一格 10mm；组件占几格就是几公分，长宽比即占格之比。边距 30mm / 28.5mm 留给美术边框，组件不能放进去。</text>
+
+  <view class="state-actions">
+    <view class="btn" style="{{saveDisabled ? 'opacity:.45' : ''}}" hover-class="btn--hover" bindtap="onSave">保存手稿</view>
+    <view class="btn btn--danger" style="{{deleteDisabled ? 'opacity:.45' : ''}}" hover-class="btn--hover" bindtap="onDeleteSection">删除栏目</view>
+    <view class="btn btn--primary state-actions__wide" style="{{saveDisabled ? 'opacity:.45' : ''}}" hover-class="btn--hover" bindtap="onPublish">发布征集</view>
+  </view>
+
+</view>

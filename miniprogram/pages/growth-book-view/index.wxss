@@ -1,0 +1,48 @@
+@import '/styles/home-school-common.wxss';
+@import '/styles/growth-book-viewer.wxss';
+
+/* 成长册预览 —— 本页自己的样式，对照原型 screens/growth-book-view.html 的内联块。1px 记 2rpx。 */
+
+.screen {
+  padding: 24rpx 32rpx 40rpx;
+}
+
+.child-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  padding: 24rpx 28rpx;
+  margin-bottom: 24rpx;
+  border-radius: 28rpx;
+  background: var(--surface);
+}
+
+.child-bar__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.child-bar__name {
+  display: block;
+  font-size: 30rpx;
+  font-weight: 700;
+}
+
+.child-bar__meta {
+  display: block;
+  margin-top: 6rpx;
+  color: var(--muted);
+  font-size: 22rpx;
+}
+
+.ready-tag {
+  flex: 0 0 auto;
+  padding: 8rpx 18rpx;
+  border-radius: 999rpx;
+  background: var(--green-light);
+  color: var(--green);
+  font-size: 22rpx;
+  font-weight: 700;
+  white-space: nowrap;
+}
