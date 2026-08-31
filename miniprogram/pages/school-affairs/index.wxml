@@ -2,7 +2,14 @@
      三块列表结构一样（标记块 + 标题 + 元信息 + 右侧操作），合成一份模板循环三次。 -->
 <view class="page">
 
+  <view class="sec" wx:if="{{loading}}"><text class="sec__title">正在加载党建内容…</text></view>
+  <view class="sec" wx:elif="{{error}}">
+    <text class="sec__title">{{error}}</text>
+    <text class="sec__more" bindtap="onRetry">重试 ›</text>
+  </view>
+
   <swiper
+    wx:if="{{banners.length}}"
     class="banner-wrap"
     autoplay
     circular
@@ -19,7 +26,7 @@
       </view>
     </swiper-item>
   </swiper>
-  <view class="banner-dots">
+  <view class="banner-dots" wx:if="{{banners.length}}">
     <view
       class="banner-dot {{index === bannerIndex ? 'banner-dot--on' : ''}}"
       wx:for="{{banners}}"

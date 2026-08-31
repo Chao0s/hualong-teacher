@@ -1,14 +1,66 @@
-/** 党建活动 · 全部活动 —— 原型 screens/party-activity-list.html 的小程序版本。 */
+/**
+ * 党建活动 · 全部活动 —— 数据来自 `GET /party/activities`。
+ *
+ * 原型把 5 场活动写死在这里；已经删掉。列表行的「日期 · 地点」两段元信息在服务层
+ * 拼好（`db_party_activity` 的 activity_at／activity_location）。
+ *
+ * 教师只读得到已发布（`s3`）的活动；待审核的由服务端挡在范围外。
+ */
+
+const party = require('../../services/party');
+const guard = require('../../utils/guard');
+
+const PAGE_LIMIT = 20;
 
 Page({
   data: {
-    activities: [
-      { id: 'theme-day', title: '“红色故事进课堂”主题党日', meta: ['06-20', '多功能室'] },
-      { id: 'volunteer', title: '党员教师社区志愿服务', meta: ['06-14', '社区广场'] },
-      { id: 'reading', title: '青年教师理论读书会', meta: ['06-07', '党建室'] },
-      { id: 'visit', title: '红色教育基地参访', meta: ['05-29', '区党群中心'] },
-      { id: 'class', title: '党员示范课观摩', meta: ['05-16', '中三班'] },
-    ],
+    activities: [],
+    nextCursor: null,
+    loading: true,
+    loadingMore: false,
+    error: '',
+  },
+
+  onLoad() {
+    this.load();
+  },
+
+  async load() {
+    this.setData({ loading: true, error: '' });
+    try {
+      await guard.requireSession();
+      const page = await party.listActivities({ limit: PAGE_LIMIT });
+      this.setData({ activities: page.items, nextCursor: page.nextCursor, loading: false });
+    } catch (err) {
+      if (guard.endSessionOnAuthFailure(err)) return;
+      this.setData({
+        loading: false,
+        activities: [],
+        error: err.userMessage || '党建活动加载失败，请稍后重试',
+      });
+    }
+  },
+
+  /** 游标为空是结束的唯一信号（契约 §3.1）。 */
+  async onReachBottom() {
+    if (!this.data.nextCursor || this.data.loadingMore) return;
+    this.setData({ loadingMore: true });
+    try {
+      const page = await party.listActivities({ cursor: this.data.nextCursor, limit: PAGE_LIMIT });
+      this.setData({
+        activities: this.data.activities.concat(page.items),
+        nextCursor: page.nextCursor,
+        loadingMore: false,
+      });
+    } catch (err) {
+      this.setData({ loadingMore: false });
+      if (guard.endSessionOnAuthFailure(err)) return;
+      wx.showToast({ title: err.userMessage || '加载更多失败', icon: 'none' });
+    }
+  },
+
+  onRetry() {
+    this.load();
   },
 
   onItemTap(e) {

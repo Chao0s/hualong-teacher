@@ -1,79 +1,85 @@
 /**
- * 党建学习 · 文件预览 —— 原型 screens/party-study-detail.html 的小程序版本。
+ * 党建学习 · 文件预览 —— 数据来自 `GET /party/studies/{study_id}`。
  *
- * 原型用 `?id=` 从两张表里取内容（正文一张、相关视频一张），取不到就回落到
- * work-points。这里口径照抄。
+ * 原型把 5 份文件的正文（每份两段）和 5 组共 10 条视频链接写死在这个文件里；
+ * 已经全部删掉。
  *
- * 「在线预览 / 下载文件」在原型里就是弹提示，不是真下载，照搬。
- * 视频链接原型用剪贴板 API，小程序对应 wx.setClipboardData。
+ * ── 三处按数据实情做的改动 ─────────────────────────────────────────────────
+ *
+ * 1. **正文不再是固定两段。** `db_party_study` 只有一列 `study_content`，契约的
+ *    `PartyStudy` 亦然；原型的 p1/p2 是把一段话拆成两半写的。服务层按空行切段，
+ *    有几段渲染几段 —— 不硬凑成两段。
+ *
+ * 2. **「PDF · 2.4MB」删掉了。** 那是写死在模板里的一串字，`db_file` 上确实有
+ *    大小与类型，但契约的 `PartyStudy.file_refs` 只回 `{file_id, usage_key}`，
+ *    取不到。与其显示一个对每份文件都不对的常数，不如不显示。
+ *
+ * 3. **视频可能一条也没有。** `video_links` 是可空列（三份材料里就有一份是 null），
+ *    没有视频时整块不渲染，而不是画一个空的「相关视频学习」标题。
+ *
+ * 「在线预览 / 下载文件」在原型里就是弹提示。契约里党建学习**没有取档端点**
+ * （资源与案例那边有 `/download-link`，这一族没有），所以它仍然只能说明情况——
+ * 但说的是「还没有取档接口」，不是原型那句含糊的「示例反馈」。
  */
 
-const DOCS = {
-  'work-points': {
-    type: '政策文件', title: '新时代幼儿园党建工作要点', date: '06-18', owner: '办公室',
-    p1: '围绕党建引领幼儿园高质量发展，明确支部学习、党员示范岗、课程建设协同和家园社共育服务四项重点。',
-    p2: '本文件用于教师端学习与园内归档，支持在线预览和下载后线下研读。',
-  },
-  discipline: {
-    type: '学习材料', title: '师德师风专题学习材料', date: '06-12', owner: '党支部',
-    p1: '聚焦教师职业行为规范、儿童保护责任和家园沟通边界，整理近期学习要点。',
-    p2: '教师可在线预览主文件，也可下载后线下研读。',
-  },
-  safety: {
-    type: '制度文件', title: '校园安全责任清单学习', date: '06-05', owner: '综合组',
-    p1: '梳理班级晨检、户外活动、食品安全和离园交接中的责任节点。',
-    p2: '适合在年级组会议前快速预览，并下载给班级教师对照执行。',
-  },
-  meeting: {
-    type: '制度文件', title: '支部会议记录规范', date: '05-28', owner: '党支部',
-    p1: '说明会议纪要、照片材料、签到表和学习反馈的归档要求。',
-    p2: '用于统一会议材料的形成与保存规则。',
-  },
-  archive: {
-    type: '制度文件', title: '党员学习档案整理要求', date: '05-21', owner: '办公室',
-    p1: '规定学习文件命名、分类、责任人和提交时间。',
-    p2: '用于统一园内党建学习材料的电子化沉淀。',
-  },
-};
-
-const VIDEOS = {
-  'work-points': [
-    { name: '党建引领教育高质量发展', url: 'https://www.12371.cn/special/xxzd/' },
-    { name: '新闻联播：教育强国相关报道', url: 'https://tv.cctv.com/lm/xwlb/' },
-  ],
-  discipline: [
-    { name: '师德师风专题学习', url: 'https://www.xuexi.cn/' },
-    { name: '榜样人物学习视频', url: 'https://www.12371.cn/special/by/' },
-  ],
-  safety: [
-    { name: '校园安全公开课', url: 'https://tv.cctv.com/' },
-    { name: '安全教育专题视频', url: 'https://www.xuexi.cn/' },
-  ],
-  meeting: [
-    { name: '基层党建工作案例', url: 'https://www.12371.cn/' },
-    { name: '会议记录规范学习', url: 'https://www.xuexi.cn/' },
-  ],
-  archive: [
-    { name: '党员教育管理学习', url: 'https://www.12371.cn/special/xxzd/' },
-    { name: '资料归档与组织生活学习', url: 'https://www.xuexi.cn/' },
-  ],
-};
+const party = require('../../services/party');
+const guard = require('../../utils/guard');
 
 Page({
   data: {
-    doc: DOCS['work-points'],
-    videos: VIDEOS['work-points'],
+    id: null,
+    doc: null,
+    videos: [],
+    loading: true,
+    error: '',
   },
 
   onLoad(options) {
-    const id = options.id && DOCS[options.id] ? options.id : 'work-points';
-    this.setData({ doc: DOCS[id], videos: VIDEOS[id] });
     wx.setNavigationBarTitle({ title: '文件预览' });
+    const id = Number(options.id);
+    if (!id) {
+      this.setData({ loading: false, error: '缺少文件编号，请从党建学习列表进入。' });
+      return;
+    }
+    this.setData({ id });
+    this.load();
   },
 
+  async load() {
+    this.setData({ loading: true, error: '' });
+    try {
+      await guard.requireSession();
+      const study = await party.getStudy(this.data.id);
+      this.setData({
+        doc: {
+          type: study.type,
+          title: study.title,
+          date: study.date,
+          owner: study.department,
+          paragraphs: study.paragraphs,
+        },
+        videos: study.videos,
+        loading: false,
+      });
+    } catch (err) {
+      if (guard.endSessionOnAuthFailure(err)) return;
+      this.setData({
+        loading: false,
+        error: err.userMessage || '文件加载失败，请稍后重试',
+      });
+    }
+  },
+
+  onRetry() {
+    this.load();
+  },
+
+  /**
+   * 契约的 party 族没有取档端点。说清楚是「接口还没有」，不是「点了没反应」。
+   */
   onAction(e) {
     wx.showToast({
-      title: `${e.currentTarget.dataset.action}：示例反馈，后续接入真实附件`,
+      title: `${e.currentTarget.dataset.action}：党建文件的取档接口尚未开放`,
       icon: 'none',
     });
   },

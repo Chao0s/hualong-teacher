@@ -6,6 +6,11 @@
     <text class="summary__desc">沉淀本园课程特色、环境特色和党建引领实践案例。</text>
   </view>
 
+  <view class="summary" wx:if="{{loading || error}}">
+    <text class="summary__title">{{loading ? '正在加载…' : '加载失败'}}</text>
+    <text class="summary__desc" wx:if="{{error}}" bindtap="onRetry">{{error}}　点此重试</text>
+  </view>
+
   <view class="grid">
     <view
       class="card"

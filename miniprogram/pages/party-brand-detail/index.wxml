@@ -1,28 +1,44 @@
 <!-- 品牌建设 · 图文介绍 —— 对照原型 screens/party-brand-detail.html。
-     图文素材区是四个占位色块（原型没有真图），照搬。 -->
+
+     原型的「图文素材」是四个写着「环境图／活动图／作品图／记录图」的占位色块，
+     没有数据源：契约的 PartyBrand.file_refs 只回 {file_id, usage_key}，这一条的
+     file_refs 又是空的。改成跟着 file_refs 走，理由见 index.js 头注。 -->
 <view class="page">
 
-  <view class="hero">
-    <text class="hero__title">{{brand.title}}</text>
-    <text class="hero__sub">{{brand.sub}}</text>
+  <view class="card" wx:if="{{loading}}">
+    <text class="card__body">正在加载…</text>
   </view>
 
-  <view class="card">
+  <view class="card" wx:elif="{{error}}">
+    <text class="card__body">{{error}}</text>
     <view class="chips">
-      <text class="chip" wx:for="{{brand.chips}}" wx:key="*this">{{item}}</text>
+      <text class="chip" bindtap="onRetry">重试</text>
     </view>
   </view>
 
-  <view class="card">
-    <text class="card__title">主题介绍</text>
-    <text class="card__body">{{brand.body}}</text>
-  </view>
-
-  <view class="card">
-    <text class="card__title">图文素材</text>
-    <view class="gallery">
-      <view class="ph" wx:for="{{gallery}}" wx:key="*this">{{item}}</view>
+  <block wx:else>
+    <view class="hero">
+      <text class="hero__title">{{brand.title}}</text>
+      <text class="hero__sub">{{brand.sub}}</text>
     </view>
-  </view>
+
+    <view class="card" wx:if="{{brand.chips.length}}">
+      <view class="chips">
+        <text class="chip" wx:for="{{brand.chips}}" wx:key="*this">{{item}}</text>
+      </view>
+    </view>
+
+    <view class="card">
+      <text class="card__title">主题介绍</text>
+      <text class="card__body">{{brand.body}}</text>
+    </view>
+
+    <view class="card" wx:if="{{files.length}}">
+      <text class="card__title">图文素材</text>
+      <view class="gallery">
+        <view class="ph" wx:for="{{files}}" wx:key="fileId">{{item.name}}</view>
+      </view>
+    </view>
+  </block>
 
 </view>

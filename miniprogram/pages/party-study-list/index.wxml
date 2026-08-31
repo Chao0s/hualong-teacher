@@ -6,6 +6,11 @@
     <text class="summary__desc">集中查看政策文件、专题学习材料与园内制度学习内容。</text>
   </view>
 
+  <view class="summary" wx:if="{{loading || error}}">
+    <text class="summary__title">{{loading ? '正在加载…' : '加载失败'}}</text>
+    <text class="summary__desc" wx:if="{{error}}" bindtap="onRetry">{{error}}　点此重试</text>
+  </view>
+
   <view class="list">
     <view
       class="item"
