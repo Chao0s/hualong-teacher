@@ -1,48 +1,56 @@
 /**
- * 案例库 —— 原型 screens/case-library.html 的小程序版本。
+ * 案例库 —— 数据来自 `GET /library/cases`。
  *
- * 筛选口径照抄原型脚本：
- *   年级、领域是单选，点哪个就只留哪个；
- *   活动类型是多选，点「全部」会清掉其余选项，取消到一个不剩时自动回到「全部」；
- *   一张卡命中的条件是 年级 且 领域 且 (类型交集非空)。
+ * 原型把 9 条案例写死在这个文件里；已经删掉。三条筛选的取值现在都来自
+ * services/library 的同一份枚举表，页面不再自己抄一份「健康语言社会科学艺术」。
+ *
+ * ── 三条筛选全部走服务端，多选靠并发多发 ───────────────────────────────────
+ *
+ * 契约给了 `case_grade`、`case_field`、`case_area` 三个参数，都用上。前两个是
+ * 单选，直接发。
+ *
+ * 活动类型是**多选**，而契约的 `case_area` 是**单值** enum，列表行也不回这一列
+ * （回了就能在客户端过滤，但它不回）。所以多选被翻译成并发多发：选中几项就发
+ * 几条各自合法的单值查询，再按 `case_id` 去重合并。上限是 5，因为取值就 5 个。
+ * 合并的那一段在 services/library.listCases 里，页面只管把选中的中文数组交出去。
  */
 
-const CASES = [
-  { name: '祠堂里的故事', grade: '大班', field: '社会', types: ['集体教学', '主题探究'], thumb: '祠堂\n探访', tone: 'accent', pills: ['社会', '集体教学', '主题探究'] },
-  { name: '龙舟竞渡', grade: '大班', field: '健康', types: ['集体教学', '区域'], thumb: '龙舟\n竞渡', tone: 'amber', pills: ['健康', '集体教学', '区域'] },
-  { name: '番禺美食地图', grade: '中班', field: '科学', types: ['区域', '数字化'], thumb: '美食\n地图', tone: 'green', pills: ['科学', '区域', '数字化'] },
-  { name: '粤语童谣共唱', grade: '小班', field: '语言', types: ['家园社共育', '区域'], thumb: '童谣\n共唱', tone: 'blue', pills: ['语言', '家园社共育', '区域'] },
-  { name: '砖雕纹样拓印', grade: '中班', field: '艺术', types: ['主题探究', '数字化'], thumb: '纹样\n拓印', tone: 'green', pills: ['艺术', '主题探究', '数字化'] },
-  { name: '桥有多长', grade: '大班', field: '科学', types: ['主题探究', '数字化'], thumb: '桥梁\n测量', tone: 'blue', pills: ['科学', '主题探究', '数字化'] },
-  { name: '我会安全过街', grade: '小班', field: '健康', types: ['家园社共育', '数字化'], thumb: '安全\n路线', tone: 'amber', pills: ['健康', '家园社共育', '数字化'] },
-  { name: '社区小店的一天', grade: '中班', field: '社会', types: ['区域', '集体教学'], thumb: '社区\n小店', tone: 'accent', pills: ['社会', '区域', '集体教学'] },
-  { name: '采访老街坊', grade: '大班', field: '语言', types: ['集体教学', '家园社共育'], thumb: '采访\n记录', tone: 'blue', pills: ['语言', '集体教学', '家园社共育'] },
-];
+const library = require('../../services/library');
+const guard = require('../../utils/guard');
+
+// db_case 只有 10 行；§3.1 的上限是 100。
+const PAGE_LIMIT = 100;
 
 Page({
   data: {
-    grades: ['all', '小班', '中班', '大班'],
-    fields: ['all', '健康', '语言', '社会', '科学', '艺术'],
-    // 原型里「集体教学」这一项的按钮文字是「集体」，值仍是「集体教学」
-    typeOptions: [
-      { value: 'all', label: '全部' },
-      { value: '集体教学', label: '集体' },
-      { value: '区域', label: '区域' },
-      { value: '主题探究', label: '主题探究' },
-      { value: '家园社共育', label: '家园社共育' },
-      { value: '数字化', label: '数字化' },
-    ],
+    grades: ['all'],
+    fields: ['all'],
+    // 原型里「集体教学」这一项的按钮文字是「集体」，值仍是「集体教学」。
+    // 那是显示上的缩写，不是另一个取值，所以缩写留在这里，全称在服务层。
+    typeOptions: [],
 
     grade: 'all',
     field: 'all',
     types: ['all'],
 
-    visible: CASES,
+    visible: [],
     countText: '',
+    loading: true,
+    error: '',
   },
 
   onLoad() {
-    this.applyFilters();
+    this.setData({
+      grades: ['all'].concat(library.gradeFilters().filter((g) => g.key).map((g) => g.label)),
+      fields: ['all'].concat(library.fieldFilters().filter((f) => f.key).map((f) => f.label)),
+      typeOptions: [{ value: 'all', label: '全部' }].concat(
+        library.areaFilters().filter((a) => a.key).map((a) => ({
+          value: a.label,
+          label: a.label === '集体教学' ? '集体' : a.label,
+        }))
+      ),
+    });
+    this.load();
   },
 
   onChipTap(e) {
@@ -50,10 +58,11 @@ Page({
 
     if (group !== 'type') {
       this.setData({ [group]: value });
-      this.applyFilters();
+      this.load();
       return;
     }
 
+    // 多选口径照抄原型：点「全部」清掉其余；取消到一个不剩时自动回到「全部」。
     let types;
     if (value === 'all') {
       types = ['all'];
@@ -63,21 +72,41 @@ Page({
       if (!types.length) types = ['all'];
     }
     this.setData({ types });
-    this.applyFilters();
+    this.load();
   },
 
-  applyFilters() {
-    const { grade, field, types } = this.data;
-    const visible = CASES.filter((item) => {
-      const okGrade = grade === 'all' || item.grade === grade;
-      const okField = field === 'all' || item.field === field;
-      const okType = types.includes('all') || types.some((t) => item.types.includes(t));
-      return okGrade && okField && okType;
-    });
-    this.setData({ visible, countText: `${visible.length} 个案例` });
+  async load() {
+    this.setData({ loading: true, error: '' });
+    try {
+      await guard.requireSession();
+      const { grade, field, types } = this.data;
+      const page = await library.listCases({
+        grade: grade === 'all' ? '' : grade,
+        field: field === 'all' ? '' : field,
+        areas: types.includes('all') ? [] : types,
+        limit: PAGE_LIMIT,
+      });
+      this.setData({
+        visible: page.items,
+        countText: `${page.items.length} 个案例`,
+        loading: false,
+      });
+    } catch (err) {
+      if (guard.endSessionOnAuthFailure(err)) return;
+      this.setData({
+        loading: false,
+        visible: [],
+        countText: '',
+        error: err.userMessage || '案例加载失败，请稍后重试',
+      });
+    }
   },
 
-  onCaseTap() {
-    wx.navigateTo({ url: '/pages/case-detail/index' });
+  onRetry() {
+    this.load();
+  },
+
+  onCaseTap(e) {
+    wx.navigateTo({ url: `/pages/case-detail/index?id=${e.currentTarget.dataset.id}` });
   },
 });

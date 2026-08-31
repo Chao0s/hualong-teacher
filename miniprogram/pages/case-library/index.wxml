@@ -47,7 +47,8 @@
       hover-class="case-card--hover"
       hover-stay-time="80"
       wx:for="{{visible}}"
-      wx:key="name"
+      wx:key="id"
+      data-id="{{item.id}}"
       bindtap="onCaseTap"
     >
       <view class="thumb thumb--{{item.tone}}">{{item.thumb}}</view>
@@ -62,7 +63,9 @@
       </view>
     </view>
   </view>
-  <view class="empty" wx:if="{{!visible.length}}">当前筛选暂无匹配案例，可调整年级、领域或活动类型。</view>
+  <view class="empty" wx:if="{{loading}}">正在加载案例…</view>
+  <view class="empty" wx:elif="{{error}}">{{error}}<text class="empty__retry" bindtap="onRetry">重试</text></view>
+  <view class="empty" wx:elif="{{!visible.length}}">当前筛选暂无匹配案例，可调整年级、领域或活动类型。</view>
 
 </view>
 

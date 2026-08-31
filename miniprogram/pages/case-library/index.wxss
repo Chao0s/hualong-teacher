@@ -185,3 +185,10 @@
   font-size: 24rpx;
   line-height: 1.5;
 }
+
+/* 取数失败时跟在说明后面的重试入口 */
+.empty__retry {
+  margin-left: 16rpx;
+  color: var(--accent);
+  text-decoration: underline;
+}

@@ -1,11 +1,20 @@
 <!-- 案例详情 —— 对照原型 screens/case-detail.html。
      这一页和资源详情共用另一套配色（米底 #f5f4f1、蓝主色 #2f6feb）。
 
-     Word 详案那一段原型是一篇带 h2/h3/ol/ul/table 的 HTML。小程序没有这些标签，
-     所以在 data 里存成一串「块」，每块带 type，下面按 type 渲染。 -->
+     原型下半屏那份「Word版完整详案」已经删掉：db_case 没有任何一列存它，
+     它是 word_file_id 指向的 .docx 的正文。理由见 index.js 头注。 -->
 <view class="page">
 
-  <view class="detail-card">
+  <view class="detail-card" wx:if="{{loading}}">
+    <text class="body-text">正在加载…</text>
+  </view>
+
+  <view class="detail-card" wx:elif="{{error}}">
+    <text class="body-text">{{error}}</text>
+    <text class="link-card__arrow" bindtap="onRetry">重试</text>
+  </view>
+
+  <view class="detail-card" wx:else>
     <text class="detail-title">{{title}}</text>
     <view class="tag-row">
       <text class="tag" wx:for="{{tags}}" wx:key="*this">{{item}}</text>
@@ -16,63 +25,31 @@
       <text class="body-text">{{item.text}}</text>
     </block>
 
-    <view class="link-card" hover-class="link-card--hover" hover-stay-time="80" bindtap="onResourceTap">
+    <!-- 关联资源是 db_case.resource_ids 的正向展开，可能不止一条，也可能没有。 -->
+    <view
+      class="link-card"
+      hover-class="link-card--hover"
+      hover-stay-time="80"
+      wx:for="{{relatedResources}}"
+      wx:key="id"
+      data-id="{{item.id}}"
+      bindtap="onResourceTap"
+    >
       <view class="link-card__body">
-        <text class="link-card__name">{{relatedResource.name}}</text>
-        <text class="link-card__meta">{{relatedResource.meta}}</text>
+        <text class="link-card__name">关联资源：{{item.name}}</text>
+        <text class="link-card__meta">{{item.meta}}</text>
       </view>
       <text class="link-card__arrow">→</text>
     </view>
 
-    <view class="detail-actions">
-      <view class="btn-dl" hover-class="btn-dl--hover" hover-stay-time="80" bindtap="onJumpToPlan">
+    <view class="detail-actions" wx:if="{{hasPlan}}">
+      <view class="btn-dl" hover-class="btn-dl--hover" hover-stay-time="80" bindtap="onDownloadPlan">
         <view class="btn-dl__body">
           <text class="btn-dl__title">下载Word详案</text>
           <text class="btn-dl__note">查看完整活动目标、流程、延伸与评价反思</text>
         </view>
         <text class="btn-dl__arrow">↓</text>
       </view>
-    </view>
-  </view>
-
-  <view class="word-wrap" id="word-plan">
-    <view class="word-label">
-      <text>Word版完整详案</text>
-      <text>.docx 预览</text>
-    </view>
-
-    <view class="word-page">
-      <text class="w-h1">{{plan.title}}</text>
-      <view class="word-meta">
-        <text class="word-meta__item" wx:for="{{plan.meta}}" wx:key="*this">{{item}}</text>
-      </view>
-
-      <block wx:for="{{plan.blocks}}" wx:key="id">
-        <view wx:if="{{item.type === 'h2'}}" class="w-h2">{{item.text}}</view>
-        <view wx:elif="{{item.type === 'h3'}}" class="w-h3">{{item.text}}</view>
-        <text wx:elif="{{item.type === 'p'}}" class="w-p">{{item.text}}</text>
-
-        <view wx:elif="{{item.type === 'ol'}}" class="w-list">
-          <view class="w-li" wx:for="{{item.items}}" wx:for-item="li" wx:for-index="i" wx:key="*this">
-            <text class="w-li__mark">{{i + 1}}.</text>
-            <text class="w-li__text">{{li}}</text>
-          </view>
-        </view>
-
-        <view wx:elif="{{item.type === 'ul'}}" class="w-list">
-          <view class="w-li" wx:for="{{item.items}}" wx:for-item="li" wx:key="*this">
-            <text class="w-li__mark">·</text>
-            <text class="w-li__text">{{li}}</text>
-          </view>
-        </view>
-
-        <view wx:elif="{{item.type === 'table'}}" class="w-table">
-          <view class="w-tr" wx:for="{{item.rows}}" wx:for-item="row" wx:key="head">
-            <text class="w-th">{{row.head}}</text>
-            <text class="w-td">{{row.body}}</text>
-          </view>
-        </view>
-      </block>
     </view>
   </view>
 

@@ -39,15 +39,18 @@
       hover-class="entry--hover"
       hover-stay-time="80"
       wx:for="{{visible}}"
-      wx:key="name"
+      wx:key="id"
+      data-id="{{item.id}}"
       bindtap="onEntryTap"
     >
       <view class="entry__icon entry__icon--{{item.icon}} entry__icon--tone-{{item.tone}}"></view>
       <text class="entry__name">{{item.name}}</text>
-      <text class="entry__tag">{{item.tag}}</text>
+      <text class="entry__tag">{{item.tagLabel}}</text>
     </view>
   </view>
-  <view class="section-note" wx:if="{{!visible.length}}">当前分类暂无匹配资源，可切换其他衣食住行艺分类或使用搜索。</view>
+  <view class="section-note" wx:if="{{loading}}">正在加载资源…</view>
+  <view class="section-note" wx:elif="{{error}}">{{error}}<text class="section-note__retry" bindtap="onRetry">重试</text></view>
+  <view class="section-note" wx:elif="{{!visible.length}}">当前分类暂无匹配资源，可切换其他衣食住行艺分类或使用搜索。</view>
 
 </view>
 

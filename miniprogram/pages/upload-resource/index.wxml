@@ -103,23 +103,16 @@
           <textarea class="textarea" maxlength="200" value="{{resource.trans}}" data-key="trans" bindinput="onResourceInput" />
         </view>
 
-        <view>
-          <text class="field__label">课程应用</text>
-          <view class="pick-row">
-            <view class="pick-row__main">
-              <text class="pick-name">{{selectedCase}}</text>
-              <text class="pick-meta">{{selectedCaseMeta}}</text>
-            </view>
-            <text class="mini-btn" data-picker="case" bindtap="onOpenPicker">选择</text>
-          </view>
-        </view>
+        <!-- 原型这里有一个「课程应用」选择器（给资源挑一个关联案例）。契约的
+             ResourceWrite 没有 case_ids 这一列 —— 关联关系存在 db_case.resource_ids
+             那一侧，方向是案例引用资源。选了也存不下去，所以移除。 -->
 
         <view class="upload-row">
           <view class="upload-row__main">
             <text class="upload-name">Word附件</text>
             <text class="upload-note">资源说明、授权材料或整理文档</text>
           </view>
-          <text class="mini-btn" data-action="已选择Word附件" bindtap="onToast">上传</text>
+          <text class="mini-btn" bindtap="onPickWord">上传</text>
         </view>
       </block>
 
@@ -156,6 +149,25 @@
           </view>
         </view>
 
+        <!-- 活动类型：原型的上传表单没有这一项，但 db_case.case_area 是 TEXT[] NOT NULL，
+             少了它这张表单永远提交不成功（服务端回 422 validation_failed）。多选，
+             取值与案例库的筛选同一份枚举表。 -->
+        <view>
+          <view class="field__labelrow">
+            <text class="field__label">活动类型</text>
+            <text class="limit">可多选</text>
+          </view>
+          <view class="chip-row">
+            <text
+              class="chip {{caseAreas.indexOf(item) > -1 ? 'chip--on' : ''}}"
+              wx:for="{{areaOptions}}"
+              wx:key="*this"
+              data-value="{{item}}"
+              bindtap="onAreaTap"
+            >{{item}}</text>
+          </view>
+        </view>
+
         <!-- 100 字不是 200／300：db_case 的 case_intro 和 case_trans 都是 VARCHAR(100)。
              原型早先写 200／300，教师打满会被数据库退回，已在原型里改掉。 -->
         <view>
@@ -181,7 +193,7 @@
               <text class="pick-name">{{selectedResource}}</text>
               <text class="pick-meta">{{selectedResourceMeta}}</text>
             </view>
-            <text class="mini-btn" data-picker="resource" bindtap="onOpenPicker">选择</text>
+            <text class="mini-btn" bindtap="onOpenPicker">选择</text>
           </view>
         </view>
 
@@ -190,24 +202,25 @@
             <text class="upload-name">Word附件</text>
             <text class="upload-note">活动详案、反思或图文案例文档</text>
           </view>
-          <text class="mini-btn" data-action="已选择Word附件" bindtap="onToast">上传</text>
+          <text class="mini-btn" bindtap="onPickWord">上传</text>
         </view>
       </block>
     </view>
   </view>
 
   <view class="actions">
-    <view class="btn btn--ghost" hover-class="btn--hover" data-action="已保存草稿" bindtap="onToast">保存草稿</view>
-    <view class="btn btn--primary" hover-class="btn--hover" data-action="已提交审核" bindtap="onToast">提交审核</view>
+    <view class="btn btn--ghost" hover-class="btn--hover" bindtap="onSaveDraft">保存草稿</view>
+    <view class="btn btn--primary" hover-class="btn--hover" bindtap="onSubmitReview">提交审核</view>
   </view>
 
 </view>
 
-<!-- 选择课程应用 / 关联资源的底部浮层 -->
+<!-- 选择关联资源的底部浮层。原型还有一个「选择课程应用」的用法，随资源表单那个
+     选择器一起移除了（ResourceWrite 没有 case_ids）。所以这里只剩一条筛选轴。 -->
 <view class="sheet" wx:if="{{picker}}" bindtap="onClosePicker">
   <view class="panel" catchtap="noop">
     <view class="panel-head">
-      <text class="panel-title">{{picker === 'case' ? '选择课程应用' : '选择关联资源'}}</text>
+      <text class="panel-title">选择关联资源</text>
       <view class="close" bindtap="onClosePicker">×</view>
     </view>
 
@@ -216,18 +229,6 @@
         class="chip {{filterA === item ? 'chip--on' : ''}}"
         wx:for="{{filterAOptions}}"
         wx:key="*this"
-        data-group="A"
-        data-value="{{item}}"
-        bindtap="onFilterTap"
-      >{{item}}</view>
-    </scroll-view>
-
-    <scroll-view class="filters" scroll-x enable-flex wx:if="{{filterBOptions.length}}">
-      <view
-        class="chip {{filterB === item ? 'chip--on' : ''}}"
-        wx:for="{{filterBOptions}}"
-        wx:key="*this"
-        data-group="B"
         data-value="{{item}}"
         bindtap="onFilterTap"
       >{{item}}</view>
@@ -238,6 +239,7 @@
         class="option {{item.name === currentSelection ? 'option--on' : ''}}"
         wx:for="{{options}}"
         wx:key="name"
+        data-id="{{item.id}}"
         data-name="{{item.name}}"
         bindtap="onOptionTap"
       >

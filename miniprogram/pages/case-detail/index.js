@@ -1,132 +1,105 @@
 /**
- * 案例详情 —— 原型 screens/case-detail.html 的小程序版本。
+ * 案例详情 —— 数据来自 `GET /library/cases/{case_id}`。
  *
- * 原型的「下载Word详案」是一个 `href="#word-plan"` 的锚点，点了滚到详案那一段。
- * 小程序没有锚点，改成量出该节点的位置再 pageScrollTo。
+ * 两段正文对应 `db_case` 的两列：`case_intro`（活动简介）与 `case_trans`
+ * （活动转化）。小标题逐字保留。
+ *
+ * ── 原型那份 60 块的「Word版完整详案」已经删掉，它不是页面上的数据 ──────────
+ *
+ * 原型在这一页下半屏渲染了一整份教案：活动目标、材料准备表格、六个环节、
+ * 七/八/九三节自评他评反思、十、相关资源。**`db_case` 没有任何一列存这些。**
+ * 契约的 `Case` schema 也只有 `case_intro` 与 `case_trans` 两段正文。
+ *
+ * 那份教案的真身是 `word_file_id` 指向的 .docx 文件 —— 原型把文件正文抄成了
+ * 网页，看起来像页面字段，实际是附件内容。所以这里的做法是：**删掉那份抄件，
+ * 把「下载Word详案」接到 `POST /library/cases/{case_id}/download-link`**，
+ * 而不是发明九个契约里没有的字段去把它填回来。
+ *
+ * 预览环境（db/testdata 的契约服务端）**不接对象存储**：它会真的做完取档授权，
+ * 然后回一个明确标注为假的 URL。所以这里点下去会说明这一点，不谎报成功，也不
+ * 报成失败 —— 授权确实过了。
  */
+
+const library = require('../../services/library');
+const guard = require('../../utils/guard');
 
 Page({
   data: {
-    title: '祠堂里的故事',
-    tags: ['大班', '社会', '乡情'],
-
-    sections: [
-      {
-        title: '活动简介',
-        text: '本活动以番禺沙湾留耕堂（何氏大宗祠）为本土资源载体，引导大班幼儿走近身边的岭南老建筑。活动通过观察祠堂实景、聆听绘本故事、分享家庭团聚经历、合作搭建祠堂模型四个环节，帮助幼儿初步了解祠堂祭祖、团聚、议事的功能，感受其中尊敬祖先、团结家人的情感，萌发对家族与家乡的归属感和认同感。',
-      },
-      {
-        title: '活动转化',
-        text: '祠堂这一资源对大班幼儿而言既是陌生的建筑空间，又是与"家"紧密相连的情感载体。在活动转化上，我采用"从具象到抽象"的阶梯式设计：首先让孩子看一看、摸一摸——用留耕堂实景照片和拓印的砖雕纹样作为感官入口，降低祠堂的距离感；然后让孩子搭一搭——用积木自由搭建"我们的祠堂"，将静态的建筑转化为可操作的建构游戏，在动手过程中理解大门、天井、神龛的空间关系；最后让孩子说一说——通过分享家庭团聚经历，将祠堂中的"家族"概念与幼儿自身的家庭经验对接。',
-      },
-    ],
-
-    relatedResource: {
-      name: '关联资源：沙湾留耕堂',
-      meta: '查看资源解读、获取方式和转化路径',
-    },
-
-    plan: {
-      title: '祠堂里的故事',
-      meta: [
-        '适用年龄：大班',
-        '活动领域：社会',
-        '资源主题：乡情 · 沙湾留耕堂',
-        '活动时长：约35分钟',
-        '活动类型：集体教学',
-        '关联资源：何氏大宗祠、沙湾砖雕',
-      ],
-
-      blocks: [
-        { type: 'h2', text: '一、活动简介' },
-        { type: 'p', text: '本活动以番禺沙湾留耕堂（何氏大宗祠）为本土资源载体，引导大班幼儿走近身边的岭南老建筑。活动通过观察祠堂实景、聆听绘本故事、分享家庭团聚经历、合作搭建祠堂模型四个环节，帮助幼儿初步了解祠堂祭祖、团聚、议事的功能，感受其中尊敬祖先、团结家人的情感，萌发对家族与家乡的归属感和认同感。' },
-
-        { type: 'h2', text: '二、活动转化' },
-        { type: 'p', text: '祠堂这一资源对大班幼儿而言既是陌生的建筑空间，又是与“家”紧密相连的情感载体。在活动转化上，教师采用“从具象到抽象”的阶梯式设计：首先让孩子看一看、摸一摸，用留耕堂实景照片和拓印的砖雕纹样作为感官入口，降低祠堂的距离感；然后让孩子搭一搭，用积木自由搭建“我们的祠堂”，将静态的建筑转化为可操作的建构游戏，在动手过程中理解大门、天井、神龛的空间关系；最后让孩子说一说，通过分享家庭团聚经历，将祠堂中的“家族”概念与幼儿自身的家庭经验对接。' },
-
-        { type: 'h2', text: '三、活动目标' },
-        {
-          type: 'ol',
-          items: [
-            '初步了解祠堂的基本功能，知道祠堂是族人祭祀祖先、团聚议事的场所。',
-            '观察祠堂建筑中的大门、天井、厅堂、砖雕等元素，能用较完整的语言描述自己的发现。',
-            '感受祠堂中蕴含的尊敬祖先、团结家人的情感，愿意分享自己家庭团聚的经历。',
-            '尝试与同伴合作搭建祠堂模型，体验共同完成作品的过程。',
-          ],
-        },
-
-        { type: 'h2', text: '四、材料准备' },
-        {
-          type: 'table',
-          rows: [
-            { head: '教具准备', body: '留耕堂大门、天井、大厅、神龛、砖雕细节照片5-8张；祠堂内部结构简图1张；绘本《祠堂里的故事》。' },
-            { head: '操作材料', body: '积木、纸砖块、画纸、水彩笔、拓印纸、纹样图片若干。' },
-            { head: '环境支持', body: '在语言区布置“番禺老照片”展示角，在建构区预留“我们的祠堂”搭建空间。' },
-            { head: '家园准备', body: '提前邀请家长和幼儿聊一聊家族聚会、清明祭祖、节日团圆等生活经验。' },
-          ],
-        },
-
-        { type: 'h2', text: '五、活动过程' },
-        { type: 'h3', text: '（一）导入环节：看见身边的老建筑' },
-        { type: 'p', text: '教师出示留耕堂大门照片，提问：“小朋友们，你们见过这么大的门吗？猜猜这是什么地方？”鼓励幼儿从门、屋顶、牌匾、石阶等细节进行猜测。教师小结：这是沙湾留耕堂，也叫何氏大宗祠，是很多家人共同记住祖先、团聚商量事情的地方。' },
-        { type: 'h3', text: '（二）观察环节：认识祠堂的空间' },
-        { type: 'p', text: '教师依次展示祠堂照片，引导幼儿按“大门—天井—大厅—神龛”的顺序观察。教师追问：“你发现这个地方和我们平时住的房子有什么不一样？”“天井为什么是空出来的？”“墙上的花纹像什么？”帮助幼儿用“高高的门、宽宽的厅、漂亮的砖雕”等词语表达观察结果。' },
-        { type: 'h3', text: '（三）故事环节：理解祠堂里的情感' },
-        { type: 'p', text: '教师讲述绘本《祠堂里的故事》，重点呈现一家人回到祠堂团聚、祭祖、吃团圆饭的画面。讲述后提问：“故事里的人为什么要回到祠堂？”“他们在祠堂里想念谁？”“一家人在一起时心情怎么样？”引导幼儿理解尊敬祖先、珍惜亲情的意义。' },
-        { type: 'h3', text: '（四）分享环节：连接幼儿生活经验' },
-        { type: 'p', text: '请幼儿围绕“我们家什么时候会一家人聚在一起？”进行交流，可以说春节吃团圆饭、清明扫墓、生日聚会、周末看望爷爷奶奶等经历。教师关注幼儿语言表达中的情感词，如“开心、想念、热闹、舍不得”，并及时回应。' },
-        { type: 'h3', text: '（五）操作环节：合作搭建我们的祠堂' },
-        { type: 'p', text: '幼儿分组使用积木、纸砖块和辅助材料合作搭建“我们的祠堂”。教师提醒幼儿先讨论分工，再搭建大门、天井和大厅。搭建过程中，教师观察幼儿是否能协商材料、调整结构，并用开放性问题支持幼儿继续建构：“如果家人要一起坐下来，哪里可以变成大厅？”' },
-        { type: 'h3', text: '（六）结束环节：展示与表达' },
-        { type: 'p', text: '各组展示搭建作品，介绍“我们的祠堂”里有哪些地方、家人会在里面做什么。教师总结：祠堂是家人记住祖先、团聚交流的地方。我们认识家乡的老建筑，也是在认识自己的家和家乡。' },
-
-        { type: 'h2', text: '六、活动延伸' },
-        { type: 'p', text: '在美工区投放砖雕纹样图片，引导幼儿用拓印或线描的方式创作“祠堂花纹”；在建构区继续保留积木和照片，支持幼儿完善祠堂模型；鼓励家长周末带孩子参观附近祠堂或老建筑，拍照记录后在班级分享。后续可生成“我家的故事”系列主题活动，引导幼儿用绘画、口述、照片墙等方式表达家庭记忆。' },
-
-        { type: 'h2', text: '七、自评' },
-        { type: 'p', text: '本次活动能从幼儿熟悉的“家”切入，把祠堂资源转化为可观察、可讲述、可搭建的经验。幼儿参与度较高，能主动描述建筑细节并分享家庭团聚经历。不足是部分概念仍偏抽象，后续需增加实地参观或视频材料，让经验更真实。' },
-
-        { type: 'h2', text: '八、他评' },
-        { type: 'p', text: '活动选材具有本土特色，环节由观察、故事、分享到建构，层次清晰，符合大班幼儿经验特点。教师提问能引导幼儿表达情感与发现。建议在操作环节增加小组记录单，帮助幼儿把搭建意图、空间名称和家庭活动进一步说清楚。' },
-
-        { type: 'h2', text: '九、活动反思' },
-        { type: 'p', text: '祠堂资源承载建筑、家族、礼俗等多重意义，直接讲解容易超出幼儿理解范围。本活动没有强调知识灌输，而是借助照片观察、绘本情境和建构游戏，让幼儿先形成“这是家人记住祖先、团聚交流的地方”的初步认识。幼儿对砖雕、天井和大门最感兴趣，说明具象细节更能激发探究。分享环节中，多数幼儿能联系春节吃饭、看望老人等经验，情感目标基本达成。后续可邀请家长提供家庭老照片或带幼儿实地走访，让课程延展为持续的家乡文化项目。' },
-
-        { type: 'h2', text: '十、相关资源' },
-        {
-          type: 'ul',
-          items: [
-            '沙湾留耕堂 · 何氏宗祠：可用于社会领域“家乡建筑”“家族记忆”主题。',
-            '沙湾砖雕 · 岭南建筑艺术：可用于艺术领域线描、拓印、纹样创作活动。',
-          ],
-        },
-      ],
-    },
+    id: null,
+    title: '',
+    tags: [],
+    sections: [],
+    relatedResources: [],
+    hasPlan: false,
+    loading: true,
+    error: '',
   },
 
-  /** wx:key 要一个唯一属性，详案的块本身没有，这里按顺序补一个。 */
-  onLoad() {
-    this.setData({
-      'plan.blocks': this.data.plan.blocks.map((block, i) => ({ ...block, id: i })),
-    });
+  onLoad(options) {
+    const id = Number(options.id);
+    if (!id) {
+      this.setData({ loading: false, error: '缺少案例编号，请从案例库进入。' });
+      return;
+    }
+    this.setData({ id });
+    this.load();
   },
 
-  onResourceTap() {
-    wx.navigateTo({ url: '/pages/resource-detail/index' });
-  },
-
-  /**
-   * boundingClientRect 给的 top 是相对视口的，要加上页面当前已滚的距离，
-   * 才是 pageScrollTo 要的绝对位置。
-   */
-  onJumpToPlan() {
-    wx.createSelectorQuery()
-      .select('#word-plan').boundingClientRect()
-      .selectViewport().scrollOffset()
-      .exec((res) => {
-        const [rect, viewport] = res;
-        if (!rect || !viewport) return;
-        wx.pageScrollTo({ scrollTop: rect.top + viewport.scrollTop, duration: 300 });
+  async load() {
+    this.setData({ loading: true, error: '' });
+    try {
+      await guard.requireSession();
+      const detail = await library.getCase(this.data.id);
+      this.setData({
+        title: detail.title,
+        tags: detail.tags,
+        sections: detail.sections,
+        relatedResources: detail.relatedResources,
+        // 没有附件的案例照常显示，只是不出现下载入口。
+        hasPlan: Boolean(detail.wordFileId),
+        loading: false,
       });
+    } catch (err) {
+      if (guard.endSessionOnAuthFailure(err)) return;
+      this.setData({
+        loading: false,
+        error: err.userMessage || '案例加载失败，请稍后重试',
+      });
+    }
+  },
+
+  onRetry() {
+    this.load();
+  },
+
+  onResourceTap(e) {
+    wx.navigateTo({ url: `/pages/resource-detail/index?id=${e.currentTarget.dataset.id}` });
+  },
+
+  async onDownloadPlan() {
+    wx.showLoading({ title: '正在取档', mask: true });
+    try {
+      const link = await library.downloadLink('case', this.data.id);
+      wx.hideLoading();
+      if (link.placeholder) {
+        // 授权过了，但这个环境没有对象存储。说清楚是哪一件事，别让人以为没权限。
+        wx.showModal({
+          title: '取档授权已通过',
+          content: '预览环境不接对象存储，因此没有真实文件可下。接上正式环境后，这里会直接下载 Word 详案。',
+          showCancel: false,
+          confirmText: '知道了',
+        });
+        return;
+      }
+      wx.downloadFile({
+        url: link.url,
+        success: (res) => wx.openDocument({ filePath: res.tempFilePath, fileType: 'docx' }),
+        fail: () => wx.showToast({ title: '文件下载失败，请稍后重试', icon: 'none' }),
+      });
+    } catch (err) {
+      wx.hideLoading();
+      if (guard.endSessionOnAuthFailure(err)) return;
+      wx.showToast({ title: err.userMessage || '取档失败，请稍后重试', icon: 'none' });
+    }
   },
 });

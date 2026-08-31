@@ -152,6 +152,13 @@
   line-height: 1.5;
 }
 
+/* 取数失败时跟在说明后面的重试入口 */
+.section-note__retry {
+  margin-left: 16rpx;
+  color: var(--accent);
+  text-decoration: underline;
+}
+
 /* ── 图标 ──────────────────────────────────────────────────────────────── */
 
 .search-bar__icon {
@@ -162,46 +169,18 @@
   background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNGI5YTVhIiBzdHJva2Utd2lkdGg9IjEuOCI+PHBhdGggZD0iTTcgNGgxMGwzIDUtNCAxMUg4TDQgOWwzLTV6Ii8+PHBhdGggZD0iTTggOWg4Ii8+PHBhdGggZD0iTTEwIDE0aDQiLz48L3N2Zz4=");
 }
 
-.entry__icon--embroidery {
-  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNGI5YTVhIiBzdHJva2Utd2lkdGg9IjEuOCI+PHJlY3QgeD0iNSIgeT0iOCIgd2lkdGg9IjE0IiBoZWlnaHQ9IjExIiByeD0iMiIvPjxwYXRoIGQ9Ik05IDhhMyAzIDAgMDE2IDAiLz48cGF0aCBkPSJNOCAxM2g4Ii8+PC9zdmc+");
-}
-
 .entry__icon--milk {
   background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjOWU2ZjBjIiBzdHJva2Utd2lkdGg9IjEuOCI+PHBhdGggZD0iTTUgMTFoMTRsLTEuNCA4SDYuNEw1IDExeiIvPjxwYXRoIGQ9Ik04IDhoOCIvPjxwYXRoIGQ9Ik05IDVoNiIvPjwvc3ZnPg==");
-}
-
-.entry__icon--honey {
-  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjOWU2ZjBjIiBzdHJva2Utd2lkdGg9IjEuOCI+PHBhdGggZD0iTTEyIDNjMyAzIDYgNi41IDYgMTBhNiA2IDAgMDEtMTIgMGMwLTMuNSAzLTcgNi0xMHoiLz48cGF0aCBkPSJNOSAxNGg2Ii8+PC9zdmc+");
 }
 
 .entry__icon--hall {
   background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDY3ZTc2IiBzdHJva2Utd2lkdGg9IjEuOCI+PHBhdGggZD0iTTMgMjFoMTgiLz48cGF0aCBkPSJNNSAyMVY5bDctNSA3IDV2MTIiLz48cGF0aCBkPSJNOSAyMXYtNmg2djYiLz48L3N2Zz4=");
 }
 
-.entry__icon--town {
-  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNGI5YTVhIiBzdHJva2Utd2lkdGg9IjEuOCI+PHBhdGggZD0iTTQgMjBoMTYiLz48cGF0aCBkPSJNNiAyMFY4bDYtNCA2IDR2MTIiLz48cGF0aCBkPSJNOSAyMHYtNWg2djUiLz48L3N2Zz4=");
-}
-
 .entry__icon--boat {
   background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjOWU2ZjBjIiBzdHJva2Utd2lkdGg9IjEuOCI+PHBhdGggZD0iTTQgMTRjNCAzIDEyIDMgMTYgMCIvPjxwYXRoIGQ9Ik02IDEwaDEybC0yIDVIOGwtMi01eiIvPjxwYXRoIGQ9Ik04IDdoOCIvPjwvc3ZnPg==");
 }
 
-.entry__icon--crossing {
-  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMzM4OGZjIiBzdHJva2Utd2lkdGg9IjEuOCI+PHBhdGggZD0iTTQgMTloMTYiLz48cGF0aCBkPSJNNiAxNWgxMiIvPjxwYXRoIGQ9Ik04IDExaDgiLz48Y2lyY2xlIGN4PSI4IiBjeT0iNiIgcj0iMiIvPjxwYXRoIGQ9Ik04IDh2MyIvPjwvc3ZnPg==");
-}
-
-.entry__icon--song {
-  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMzM4OGZjIiBzdHJva2Utd2lkdGg9IjEuOCI+PHBhdGggZD0iTTkgMThWNWwxMi0ydjEzIi8+PGNpcmNsZSBjeD0iNiIgY3k9IjE4IiByPSIzIi8+PGNpcmNsZSBjeD0iMTgiIGN5PSIxNiIgcj0iMyIvPjwvc3ZnPg==");
-}
-
 .entry__icon--lion {
   background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNGI5YTVhIiBzdHJva2Utd2lkdGg9IjEuOCI+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iOCIvPjxwYXRoIGQ9Ik04IDEyaDgiLz48cGF0aCBkPSJNMTIgOHY4Ii8+PC9zdmc+");
-}
-
-.entry__icon--opera {
-  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMzM4OGZjIiBzdHJva2Utd2lkdGg9IjEuOCI+PHBhdGggZD0iTTQgMThjNC01IDEyLTUgMTYgMCIvPjxwYXRoIGQ9Ik02IDhjMyAzIDkgMyAxMiAwIi8+PHBhdGggZD0iTTEyIDV2MTQiLz48L3N2Zz4=");
-}
-
-.entry__icon--pottery {
-  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDY3ZTc2IiBzdHJva2Utd2lkdGg9IjEuOCI+PHBhdGggZD0iTTggNGg4Ii8+PHBhdGggZD0iTTEwIDRjMCA0LTMgNS0zIDEwYTUgNSAwIDAwMTAgMGMwLTUtMy02LTMtMTAiLz48cGF0aCBkPSJNOSAxNGg2Ii8+PC9zdmc+");
 }
