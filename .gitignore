@@ -29,3 +29,9 @@ dist/
 # 原型抓取的临时抽取目录。captures/*.txt 是源料要留，_extracted/ 是从它们
 # 现抽出来的 body/css/js，一条命令可重建，不进版本库。
 captures/_extracted/
+
+# Cygwin/MSYS 崩溃转储。Git Bash 下有进程崩掉就会就地丢一个 sh.exe.stackdump，
+# 落在当时的工作目录里，所以它会散在仓库各处（已见于根目录、miniprogram/、
+# screens/、Archive/）。内容是崩溃当时的栈回溯，对仓库没有价值。
+# 不写死文件名：崩的不一定是 sh.exe。
+*.stackdump
