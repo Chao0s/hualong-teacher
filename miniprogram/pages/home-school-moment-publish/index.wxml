@@ -2,6 +2,15 @@
      勾选名单会实时改上面的比例、进度条和那张一行的小表。 -->
 <view class="page">
 
+  <view class="chunk" wx:if="{{loading}}">
+    <text class="hint">正在加载班级名单…</text>
+  </view>
+
+  <view class="chunk" wx:elif="{{error}}">
+    <text class="hint" bindtap="onRetry">{{error}}　点此重试</text>
+  </view>
+
+  <block wx:else>
   <view class="chunk">
     <text class="form-label form-label--first">活动名称</text>
     <input class="input" maxlength="50" value="{{title}}" bindinput="onTitleInput" />
@@ -15,12 +24,14 @@
         <text class="plus">+</text>
         <text>添加</text>
       </view>
-      <view class="photo photo-thumb {{item.group ? 'photo-thumb--group' : ''}}" wx:for="{{photos}}" wx:key="label">
+      <view class="photo photo-thumb" wx:for="{{photos}}" wx:key="fileId">
         <text class="photo-label">{{item.label}}</text>
       </view>
     </scroll-view>
 
-    <text class="hint hint--gap">{{saveState}}</text>
+    <!-- 原型这里是「保存中…／已自动保存」。服务端不存草稿之后没有东西可保存，
+         改成说清楚发出去意味着什么 —— 发布前的那次确认弹窗讲的是同一件事。 -->
+    <text class="hint hint--gap">发送后家长即可看到；内容不能修改，只能删除重发。</text>
   </view>
 
   <view class="chunk">
@@ -39,8 +50,10 @@
         <text class="prog-cell">已勾选</text>
         <text class="prog-cell">占比</text>
       </view>
+      <!-- 原型这里写死「小一班」。会话的 scope 只有 class_id，没有 class_name，
+           契约也没给取班名的端点，所以这一格改成表头问的那个数：班级人数。 -->
       <view class="prog-row">
-        <text class="prog-cell prog-cell--name">小一班</text>
+        <text class="prog-cell prog-cell--name">{{children.length}}人</text>
         <text class="prog-cell">{{selectedCount}}人</text>
         <view class="prog-cell">
           <text class="status status--{{rate >= 80 ? 'done' : 'wait'}}">{{rate}}%</text>
@@ -57,7 +70,7 @@
       <view
         class="check-card"
         wx:for="{{children}}"
-        wx:key="name"
+        wx:key="childId"
         data-index="{{index}}"
         bindtap="onToggleChild"
       >
@@ -68,5 +81,6 @@
   </view>
 
   <view class="btn btn--primary sticky-action" hover-class="btn--hover" bindtap="onPublish">发布活动</view>
+  </block>
 
 </view>

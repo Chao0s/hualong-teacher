@@ -1,41 +1,47 @@
 /**
- * 全部活动 —— 原型 screens/home-school-moment-feed.html 的小程序版本。
+ * 全部活动 —— 数据来自 `GET /moments`，照片按需取 `GET /moments/{id}`。
  *
- * 收录状态存在成长册的配置里（原型的 growth-book-render.js，键 hualong.growth-book.v1）。
- * 那个模块 33 KB，管着整本成长册；这一页只动其中的 material 数组，
- * 所以这里只做「读整个对象 → 改 material → 写回」，其余字段一律不碰。
- * 等成长册那批页面转过来时，再换成共用模块。
+ * 原型把 3 条动态连同它们的照片标签写死在这里；已经删掉。
  *
- * 交互照抄原型：
- *   点按钮开浮层，已收录的标题变「调整收录照片」
- *   一张都不选时确认按钮变「移出成长资料」，确认即从 material 里删掉这条
+ * ── 照片怎么来的 ───────────────────────────────────────────────────────────
+ *
+ * 列表端点回 `file_id`（契约的 `Moment` 含这一列），但**只有 id，没有地址** ——
+ * 响应里从来不含可直接访问的地址（G16／F21）。地址要逐张走
+ * `GET /media/files/{file_id}/url`，每次重验 caretaker／当前班级／`s3`，短链
+ * 约 5 分钟过期。
+ *
+ * 所以这一页取图分两段：列表回来先按 `file_id` 画出占位格子（数量是真的），
+ * 再对**每张卡最多前 3 张**并发换地址填进去。不取满 9 张是因为卡片上本来只放
+ * 得下 3 格 —— 一屏 20 条动态若每条换 9 个地址就是 180 次请求，而看得见的只有 60 张。
+ * 余下的在选照片浮层里按需取。
+ *
+ * ── 「涉及 N/M 人 · N 位家长已查看」删掉了 ─────────────────────────────────
+ *
+ * 前半段要 `child_id`，契约的 `Moment` schema 有这一列但**服务端不回**；后半段
+ * 「家长已查看」在契约与 DDL 里都没有任何来源。两个都编不出来，所以那一行改成
+ * 有据可查的：状态 + 日期。
+ *
+ * ── 「加入成长册」仍然只存在本机 ───────────────────────────────────────────
+ *
+ * 契约里**没有「把一条在园时光纳入编册」的端点**。`db_growth_material`
+ * （`source_type='m1'` + `moment_id`）这张表是有的，138 行数据也在，但 28 条
+ * growth-book 端点里管它的一条都没有。所以这个勾选**接不上**，暂时仍写
+ * `wx.setStorageSync`，并登记为契约缺口。
+ *
+ * 补这套端点是后端仓库的工作，而且 `growth-book-time-manage` 那一页要的是同一套
+ * （`GAPS.md` 第 1178 行已把它绑到 `db_growth_material.title`）—— 为这一个勾选
+ * 先补一次、接成长册时再改一次，等于做两遍。所以留待接成长册那条线时一次设计。
  */
 
+const co = require('../../services/co-education');
+const guard = require('../../utils/guard');
+
+// 成长册选择暂存键。接上端点后这里整块删掉，见头注。
 const BOOK_STORE_KEY = 'hualong.growth-book.v1';
 
-const MOMENTS = [
-  {
-    id: 'm1', tone: '', title: '端午手作：艾草香囊', time: '今天 10:20', date: '6月12日',
-    text: '孩子们自己选择艾草、棉布和配绳，能在同伴需要帮助时主动递材料，完成后愿意介绍自己的香囊。',
-    photos: ['穿绳', '装袋', '合影', '选材', '展示'],
-    preview: ['穿绳', '装袋', '合影'],
-    meta: '涉及 24/28 人 · 18 位家长已查看',
-  },
-  {
-    id: 'm2', tone: 'green', title: '户外运动：平衡木挑战', time: '6月10日', date: '6月10日',
-    text: '多数孩子能连续完成平衡木行走，部分幼儿会主动提醒同伴张开手臂保持身体稳定。',
-    photos: ['排队等待', '完成挑战', '加油', '合影'],
-    preview: ['排队等待', '完成挑战'],
-    meta: '涉及 26/28 人 · 22 位家长已查看',
-  },
-  {
-    id: 'm3', tone: 'amber', title: '区域游戏：小小建筑师', time: '6月7日', date: '6月7日',
-    text: '幼儿先画设计图再动手搭建，遇到结构倒塌时能调整底座宽度，愿意向同伴解释自己的想法。',
-    photos: ['设计图', '搭建中', '成品', '讨论', '分享'],
-    preview: ['设计图', '搭建中', '成品'],
-    meta: '涉及 22/28 人 · 20 位家长已查看',
-  },
-];
+const PAGE_LIMIT = 20;
+// 每张卡片上预览几张。卡片只放得下 3 格，多取的地址看不见也会过期。
+const PREVIEW_PHOTOS = 3;
 
 function readBook() {
   try {
@@ -56,41 +62,145 @@ function writeBook(config) {
 
 Page({
   data: {
-    moments: MOMENTS.map((m) => ({ ...m, pickedCount: 0 })),
+    moments: [],
+    nextCursor: null,
+    loading: true,
+    loadingMore: false,
+    error: '',
+
+    // 选照片浮层
     picking: false,
-    pickIndex: -1,
+    pickId: null,
     pickTitle: '加入成长资料',
     pickPhotos: [],
     selected: [],
     confirmText: '加入',
   },
 
-  onShow() {
-    this.syncCards();
+  onLoad() {
+    this.load();
   },
 
-  /** 每条动态显示当前收录了几张 */
+  onShow() {
+    if (!this.data.loading) this.syncCards();
+  },
+
+  async load() {
+    this.setData({ loading: true, error: '' });
+    try {
+      await guard.requireSession();
+      const page = await co.listMoments({ limit: PAGE_LIMIT });
+      this.setData({
+        moments: page.items.map(toCard),
+        nextCursor: page.nextCursor,
+        loading: false,
+      });
+      this.syncCards();
+      this.fillPhotos(page.items);
+    } catch (err) {
+      if (guard.endSessionOnAuthFailure(err)) return;
+      this.setData({
+        loading: false,
+        moments: [],
+        error: err.userMessage || '活动加载失败，请稍后重试',
+      });
+    }
+  },
+
+  /** 游标为空是结束的唯一信号（契约 §3.1）。 */
+  async onReachBottom() {
+    if (!this.data.nextCursor || this.data.loadingMore) return;
+    this.setData({ loadingMore: true });
+    try {
+      const page = await co.listMoments({ cursor: this.data.nextCursor, limit: PAGE_LIMIT });
+      this.setData({
+        moments: this.data.moments.concat(page.items.map(toCard)),
+        nextCursor: page.nextCursor,
+        loadingMore: false,
+      });
+      this.syncCards();
+      this.fillPhotos(page.items);
+    } catch (err) {
+      this.setData({ loadingMore: false });
+      if (guard.endSessionOnAuthFailure(err)) return;
+      wx.showToast({ title: err.userMessage || '加载更多失败', icon: 'none' });
+    }
+  },
+
+  onRetry() {
+    this.load();
+  },
+
+  /**
+   * 把预览格子的地址填上。
+   *
+   * 逐张换地址（§8.4 每次重验），所以这里并发发一批，回来一张填一张 ——
+   * 不等全部到齐，慢的那张不该拖住已经好了的。
+   *
+   * 用 `moment_id` 定位而不是下标：翻页时 `moments` 会变长，等地址回来时下标
+   * 可能已经指向别的卡了。
+   */
+  fillPhotos(items) {
+    items.forEach((m) => {
+      m.fileIds.slice(0, PREVIEW_PHOTOS).forEach(async (fileId, i) => {
+        const url = await co.photoUrl(fileId);
+        if (!url) return;
+        const at = this.data.moments.findIndex((x) => x.id === m.id);
+        if (at < 0) return;
+        this.setData({ [`moments[${at}].photos[${i}].url`]: url });
+      });
+    });
+  },
+
+  /** 每条动态显示当前收录了几张（读本机暂存）。 */
   syncCards() {
     const material = readBook().material || [];
-    const moments = MOMENTS.map((m) => {
-      const hit = material.find((row) => row.id === m.id);
-      return { ...m, pickedCount: hit ? hit.photos.length : 0 };
+    this.setData({
+      moments: this.data.moments.map((m) => {
+        const hit = material.find((row) => row.id === m.id);
+        return { ...m, pickedCount: hit ? hit.photos.length : 0 };
+      }),
     });
-    this.setData({ moments });
   },
 
-  onOpenPick(e) {
-    const index = Number(e.currentTarget.dataset.index);
-    const moment = MOMENTS[index];
-    const hit = (readBook().material || []).find((row) => row.id === moment.id);
+  /**
+   * 打开选照片浮层。
+   *
+   * `file_id` 全套已经在卡片上（列表端点就回了），所以不再拉一次详情；
+   * 这里只补**预览之外那几张**的地址 —— 前 3 张 fillPhotos 已经换过了。
+   */
+  async onOpenPick(e) {
+    const id = Number(e.currentTarget.dataset.id);
+    const card = this.data.moments.find((m) => m.id === id);
+    if (!card) return;
+
+    if (!card.fileIds.length) {
+      wx.showToast({ title: '这条活动没有照片', icon: 'none' });
+      return;
+    }
+
+    const hit = (readBook().material || []).find((row) => row.id === id);
     const selected = hit ? hit.photos.slice() : [];
+    const known = new Map(card.photos.map((p) => [p.fileId, p.url]));
     this.setData({
       picking: true,
-      pickIndex: index,
+      pickId: id,
       pickTitle: hit ? '调整收录照片' : '加入成长资料',
-      pickPhotos: moment.photos,
+      // 契约只给 file_id，没有文件名，所以标签按序号，不编文件名。
+      pickPhotos: card.fileIds.map((fid, i) => ({
+        fileId: fid, label: `照片 ${i + 1}`, url: known.get(fid) || '',
+      })),
       selected,
       confirmText: this.confirmTextFor(selected.length, !!hit),
+    });
+
+    // 剩下那些的地址后补，回来一张填一张。用 pickId 守住：教师可能已经关掉浮层
+    // 又打开了另一条，那时这些回包不该往新浮层里填。
+    card.fileIds.forEach(async (fid, i) => {
+      if (known.get(fid)) return;
+      const url = await co.photoUrl(fid);
+      if (!url || this.data.pickId !== id) return;
+      this.setData({ [`pickPhotos[${i}].url`]: url });
     });
   },
 
@@ -100,22 +210,23 @@ Page({
   },
 
   onTogglePhoto(e) {
-    const label = e.currentTarget.dataset.label;
-    const selected = this.data.selected.includes(label)
-      ? this.data.selected.filter((x) => x !== label)
-      : this.data.selected.concat(label);
-    const existed = !!(readBook().material || []).find((row) => row.id === MOMENTS[this.data.pickIndex].id);
+    const fileId = Number(e.currentTarget.dataset.fileid);
+    const selected = this.data.selected.includes(fileId)
+      ? this.data.selected.filter((x) => x !== fileId)
+      : this.data.selected.concat(fileId);
+    const existed = !!(readBook().material || []).find((row) => row.id === this.data.pickId);
     this.setData({ selected, confirmText: this.confirmTextFor(selected.length, existed) });
   },
 
   onConfirmPick() {
-    const moment = MOMENTS[this.data.pickIndex];
+    const id = this.data.pickId;
+    const card = this.data.moments.find((m) => m.id === id);
     const photos = this.data.selected;
     const config = readBook();
 
-    config.material = (config.material || []).filter((row) => row.id !== moment.id);
+    config.material = (config.material || []).filter((row) => row.id !== id);
     if (photos.length) {
-      config.material.push({ id: moment.id, title: moment.title, date: moment.date, photos });
+      config.material.push({ id, title: card.title, date: card.date, photos });
     }
     writeBook(config);
 
@@ -128,6 +239,96 @@ Page({
   },
 
   onClosePick() {
-    this.setData({ picking: false, pickIndex: -1 });
+    this.setData({ picking: false, pickId: null });
+  },
+
+  /**
+   * 删除自己发布的这条时光。
+   *
+   * **物理删除，不可恢复**，所以先确认。契约 v0.7：教师对自己写的内容有处置权，
+   * 删除会连带解除入册通道与照片引用；周覆盖计数随之回落（那是派生的）。
+   *
+   * 管理员已下架的（`s5`）不给删，按钮在 `can.remove` 为假时就不渲染；即便点到了，
+   * 服务端也会回 409 `admin_action_exists`，这里把它翻成一句人话。
+   */
+  async onDelete(e) {
+    const id = Number(e.currentTarget.dataset.id);
+    const card = this.data.moments.find((m) => m.id === id);
+    if (!card) return;
+
+    const ok = await new Promise((resolve) => {
+      wx.showModal({
+        title: '删除这条活动？',
+        content: `《${card.title}》将被删除，家长立刻看不到。若已加入成长册也会一并移除。此操作不可恢复。`,
+        confirmText: '删除',
+        confirmColor: '#c0392b',
+        cancelText: '取消',
+        success: (res) => resolve(Boolean(res.confirm)),
+        fail: () => resolve(false),
+      });
+    });
+    if (!ok) return;
+
+    wx.showLoading({ title: '正在删除', mask: true });
+    try {
+      await co.remove(id);
+      wx.hideLoading();
+      // 本机那份成长册选择也要跟着清，否则会留下一条指向已删内容的记录。
+      const config = readBook();
+      config.material = (config.material || []).filter((row) => row.id !== id);
+      writeBook(config);
+
+      this.setData({ moments: this.data.moments.filter((m) => m.id !== id) });
+      wx.showToast({ title: '已删除', icon: 'none' });
+    } catch (err) {
+      wx.hideLoading();
+      if (guard.endSessionOnAuthFailure(err)) return;
+      const rule = err.details && err.details.rule;
+      const text = rule === 'admin_action_exists' ? '这条已被管理员下架，请联系管理员'
+        : rule === 'author_is_caller' ? '只能删除自己发布的活动'
+          : rule === 'moment_term_in_progress' ? '该学期已结束，不能再删'
+            : (err.userMessage || '删除失败，请稍后重试');
+      wx.showToast({ title: text, icon: 'none' });
+    }
   },
 });
+
+/** 一条时光 → 一张卡。tone 是配色，原型按位置轮，与内容无关。 */
+const TONES = ['', 'green', 'amber'];
+
+function toCard(m, index) {
+  return {
+    id: m.id,
+    tone: TONES[index % TONES.length],
+    title: m.title,
+    date: m.dateLabel,
+    text: m.content,
+    // 预览格子。数量来自真实的 file_id，地址随后由 fillPhotos 逐张填上 ——
+    // 先有格子后有图，这样布局不会在图片陆续到达时跳动。
+    photos: m.fileIds.slice(0, PREVIEW_PHOTOS).map((fileId) => ({ fileId, url: '' })),
+    // 全部 file_id 留在卡上：选照片浮层直接用，不必再拉一次详情。
+    fileIds: m.fileIds,
+    photoCount: m.fileIds.length,
+    // 超出预览的那些只在选照片浮层里出现，卡片上用一个角标交代还有几张。
+    moreCount: Math.max(0, m.fileIds.length - PREVIEW_PHOTOS),
+    /**
+     * 卡片左下那一行：`YYYY-MM-DD HH:mm`，垃圾桶紧跟其后。
+     *
+     * 原型那句「涉及 24/28 人 · 18 位家长已查看」两半都没有数据源（见头注），
+     * 标题行右上那个短时间戳也去掉了 —— 同一张卡上两个时间只会让人对照着看
+     * 它们是不是一回事。
+     */
+    stamp: m.stamp,
+    /**
+     * 状态只在**不是已发布**时才显示。
+     *
+     * `s3` 是常态，标一句「已发布」等于在重复「一切正常」；而 `s5` 必须显示 ——
+     * 那是管理员下架的结果，此时垃圾桶也不渲染，不写一句的话教师会看到一条
+     * 既不能删也没说为什么的动态。
+     */
+    statusLabel: m.status === 's3' ? '' : m.statusLabel,
+    // 管理员下架的那些不给删（Q59-m1a），按钮据此不渲染。
+    canRemove: m.can.remove,
+    pickedCount: 0,
+  };
+}

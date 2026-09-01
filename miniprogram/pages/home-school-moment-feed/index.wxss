@@ -20,12 +20,111 @@
   margin-top: 16rpx;
 }
 
-.moment-foot .moment-meta {
-  margin-top: 0;
+/* 卡片左下：状态（仅非已发布时）+ 时间戳 + 垃圾桶，三者同一基线居中。 */
+.moment-stamp {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.moment-stamp__status {
+  flex: 0 0 auto;
+  color: var(--danger);
+  font-size: 22rpx;
+  font-weight: 600;
+}
+
+.moment-stamp__time {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  color: var(--muted);
+  font-size: 22rpx;
+  /* 定宽数字，让一列时间戳竖着排能对齐 */
+  font-variant-numeric: tabular-nums;
+}
+
+/* 垃圾桶。破坏性操作做成图标不做成文字按钮：它不该和「加入成长册」抢注意力，
+   真正的把关在点下去之后的确认弹窗。桶身用边框画，盖子与提手用 ::before，
+   两条竖纹用 ::after —— 全部是形状，不引入一张图。 */
+.trash {
+  position: relative;
+  flex: 0 0 auto;
+  width: 26rpx;
+  height: 30rpx;
+  margin-left: 4rpx;
+  /* 桶身：三面边框 + 下方收窄的圆角 */
+  border: 2rpx solid var(--danger);
+  border-top: none;
+  border-radius: 0 0 6rpx 6rpx;
+  opacity: 0.75;
+}
+
+/* 盖子（横条）与提手（上方小凸起） */
+.trash::before {
+  content: '';
+  position: absolute;
+  left: -6rpx;
+  top: -8rpx;
+  width: 34rpx;
+  height: 2rpx;
+  background: var(--danger);
+  box-shadow: 0 -4rpx 0 -1rpx var(--danger);
+}
+
+/* 桶身上的两条竖纹 */
+.trash::after {
+  content: '';
+  position: absolute;
+  left: 7rpx;
+  top: 6rpx;
+  width: 2rpx;
+  height: 14rpx;
+  background: var(--danger);
+  box-shadow: 8rpx 0 0 0 var(--danger);
+}
+
+.trash--hover {
+  opacity: 1;
+}
+
+/* 缩略图。地址是逐张换来的，没换到之前 .feed-photo 的渐变底就是占位。 */
+.feed-photo {
+  position: relative;
+  overflow: hidden;
+  padding: 0;
+}
+
+.feed-photo__img {
+  width: 100%;
+  height: 100%;
+  min-height: 148rpx;
+  display: block;
+}
+
+/* 超出预览的张数角标。卡片只放得下 3 格，其余在选照片浮层里。 */
+.feed-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 148rpx;
+  border-radius: 20rpx;
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.pick-photo__img {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
 }
 
 .add-material {

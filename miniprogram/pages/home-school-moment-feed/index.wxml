@@ -1,34 +1,61 @@
 <!-- 全部活动 —— 对照原型 screens/home-school-moment-feed.html。
-     每条动态右下角的按钮把这条活动收进成长册；已收录的显示已选照片数，再点可调整。 -->
+
+     原型每条动态贴 3-5 张写着「穿绳」「装袋」的占位图。契约的 Moment 只回
+     file_id 数组，没有文件名，本环境也不接对象存储，所以照片改成点开选择器时
+     按序号列出（见 index.js 头注）。缩略图那一格因此不再画。 -->
 <view class="page">
 
   <view class="hint hint--top">点动态右下角的「+ 加入成长册」可将其加入成长资料；加入后会作为成长册「在园时光」栏目的内容（全班共用）。</view>
 
-  <view class="moment-card" wx:for="{{moments}}" wx:key="id" wx:for-item="m" wx:for-index="mi">
+  <view class="moment-card" wx:for="{{moments}}" wx:key="id" wx:for-item="m">
     <view>
       <view class="avatar {{m.tone ? 'avatar--' + m.tone : ''}}">时</view>
     </view>
     <view>
+      <!-- 标题行右上原本还有一个短时间戳，已删：同一张卡上两个时间只会让人
+           对照着看它们是不是一回事。时间统一放在左下那一行。 -->
       <view class="moment-head">
         <text class="moment-head__title">{{m.title}}</text>
-        <text class="moment-head__time">{{m.time}}</text>
       </view>
       <text class="moment-body__text">{{m.text}}</text>
 
-      <view class="photo-grid {{m.photos.length <= 2 ? 'photo-grid--two' : ''}}">
-        <view class="feed-photo" wx:for="{{m.preview}}" wx:key="*this" wx:for-item="label">{{label}}</view>
+      <!-- 缩略图。格子数来自真实的 file_id，地址随后逐张填上（§8.4 每次重验），
+           所以 url 为空时先显示灰底，不让布局在图片陆续到达时跳动。 -->
+      <view class="photo-grid {{m.photos.length <= 2 ? 'photo-grid--two' : ''}}" wx:if="{{m.photos.length}}">
+        <view class="feed-photo" wx:for="{{m.photos}}" wx:key="fileId" wx:for-item="p">
+          <image class="feed-photo__img" wx:if="{{p.url}}" src="{{p.url}}" mode="aspectFill" lazy-load />
+        </view>
+        <view class="feed-more" wx:if="{{m.moreCount}}">+{{m.moreCount}}</view>
       </view>
 
       <view class="moment-foot">
-        <text class="moment-meta">{{m.meta}}</text>
+        <!-- `YYYY-MM-DD HH:mm` + 垃圾桶。删除是破坏性动作，做成图标不做成文字按钮：
+             它不该和「加入成长册」抢注意力，点下去还有一道确认（见 onDelete）。
+             管理员已下架的不渲染垃圾桶，改由左边那个状态字说明原因。 -->
+        <view class="moment-stamp">
+          <text class="moment-stamp__status" wx:if="{{m.statusLabel}}">{{m.statusLabel}}</text>
+          <text class="moment-stamp__time">{{m.stamp}}</text>
+          <view
+            class="trash"
+            wx:if="{{m.canRemove}}"
+            hover-class="trash--hover"
+            hover-stay-time="80"
+            data-id="{{m.id}}"
+            bindtap="onDelete"
+          ></view>
+        </view>
         <view
           class="add-material {{m.pickedCount ? 'add-material--on' : ''}}"
-          data-index="{{mi}}"
+          data-id="{{m.id}}"
           bindtap="onOpenPick"
         >{{m.pickedCount ? '✓ 已加入（' + m.pickedCount + ' 张）' : '+ 加入成长册'}}</view>
       </view>
     </view>
   </view>
+
+  <view class="hint hint--top" wx:if="{{loading}}">正在加载活动…</view>
+  <view class="hint hint--top" wx:elif="{{error}}" bindtap="onRetry">{{error}}　点此重试</view>
+  <view class="hint hint--top" wx:elif="{{!moments.length}}">本班本学期还没有在园时光记录。</view>
 
 </view>
 
@@ -43,14 +70,15 @@
 
   <scroll-view class="pick-grid" scroll-y>
     <view
-      class="pick-photo {{selected.indexOf(item) > -1 ? 'pick-photo--sel' : ''}}"
+      class="pick-photo {{selected.indexOf(item.fileId) > -1 ? 'pick-photo--sel' : ''}}"
       wx:for="{{pickPhotos}}"
-      wx:key="*this"
-      data-label="{{item}}"
+      wx:key="fileId"
+      data-fileid="{{item.fileId}}"
       bindtap="onTogglePhoto"
     >
-      <text>{{item}}</text>
-      <view class="pick-photo__tick" wx:if="{{selected.indexOf(item) > -1}}">✓</view>
+      <image class="pick-photo__img" wx:if="{{item.url}}" src="{{item.url}}" mode="aspectFill" lazy-load />
+      <text wx:else>{{item.label}}</text>
+      <view class="pick-photo__tick" wx:if="{{selected.indexOf(item.fileId) > -1}}">✓</view>
     </view>
   </scroll-view>
 

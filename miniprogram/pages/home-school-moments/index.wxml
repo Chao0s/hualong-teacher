@@ -11,18 +11,24 @@
     <text class="more" bindtap="onFeed">全部活动</text>
   </view>
 
-  <view class="table-wrap">
+  <view class="table-wrap" wx:if="{{rows.length}}">
     <view class="prog-row prog-row--head">
       <text class="prog-cell prog-cell--name">幼儿</text>
       <text class="prog-cell">第一次</text>
       <text class="prog-cell">第二次</text>
     </view>
-    <view class="prog-row" wx:for="{{rows}}" wx:key="name" wx:for-item="row">
+    <view class="prog-row" wx:for="{{rows}}" wx:key="childId" wx:for-item="row">
       <text class="prog-cell prog-cell--name">{{row.name}}</text>
       <view class="prog-cell" wx:for="{{row.cells}}" wx:key="text" wx:for-item="cell">
         <text class="status status--{{cell.state}}">{{cell.text}}</text>
       </view>
     </view>
   </view>
+
+  <text class="hint hint--gap" wx:if="{{loading}}">正在加载本周进度…</text>
+  <text class="hint hint--gap" wx:elif="{{error}}" bindtap="onRetry">{{error}}　点此重试</text>
+  <!-- 契约 Q59-n3／n4a 要求页面标示这一点，不得宣称为当周名册快照。 -->
+  <text class="hint hint--gap" wx:elif="{{rows.length}}">以上为目前班级幼儿在本周的记录。每名幼儿达到 2 次记为完成。</text>
+  <text class="hint hint--gap" wx:else>本班暂无在园幼儿。</text>
 
 </view>

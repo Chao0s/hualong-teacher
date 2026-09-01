@@ -119,6 +119,19 @@ function formatDay(value) {
   return `${pad(p.month)}-${pad(p.day)}`;
 }
 
+/**
+ * `2026-08-19T14:03:22+08:00` -> `2026-08-19 14:03`. Display only.
+ *
+ * 与 `formatLong` 的差别只是分隔符：那个是给正文读的中文写法，这个是列表里对齐
+ * 用的定宽写法 —— 定长零填充，一列时间戳竖着排能对齐，也不会因为「8月」与
+ * 「12月」宽度不同而参差。
+ */
+function formatStamp(value) {
+  const p = parseWireTimestamp(value);
+  if (!p) return value || '';
+  return `${p.year}-${pad(p.month)}-${pad(p.day)} ${pad(p.hour)}:${pad(p.minute)}`;
+}
+
 /** `2026-08-19T14:03:22+08:00` -> `2026年8月19日 14:03`. Display only. */
 function formatLong(value) {
   const p = parseWireTimestamp(value);
@@ -169,6 +182,38 @@ function currentMonthKey(nowMs) {
 }
 
 /**
+ * 园所墙上日历的今天，`YYYY-MM-DD`（裸日期，契约的 `LocalDate`）。
+ *
+ * 与 `currentMonthKey` 是同一段算术，只是取到日：`nowMs` 是与时区无关的时刻，
+ * `+8` 是字面偏移量而非换算，全程整数、一个 `Date` 也不建（理由见 `currentMonthKey`
+ * 的注释——`new Date(ms).getDate()` 会按运行机器的时区读回来，那正是 §1.2 要消掉
+ * 的歧义）。
+ *
+ * **`nowMs` 必填，本模块不读时钟。** 读时钟的那一句在调用方，只有一处，页面可以
+ * 注入它——不可注入就测不了跨日。
+ */
+function todayLocalDate(nowMs) {
+  if (typeof nowMs !== 'number' || Number.isNaN(nowMs)) {
+    throw new Error('todayLocalDate 需要一个时刻（UTC 毫秒）。本模块不读时钟。');
+  }
+  const c = civilFromDays(Math.floor((nowMs + 8 * 3600 * 1000) / 86400000));
+  return `${c.year}-${pad(c.month)}-${pad(c.day)}`;
+}
+
+/**
+ * 把一个裸日期夹进 `[from, to]`。三者都是 `YYYY-MM-DD`。
+ *
+ * 定长零填充的日期串，字典序等于时间序，所以直接比字符串，不解析成数字，也不建
+ * `Date` —— 与本模块其余部分同一条规矩。
+ */
+function clampLocalDate(date, from, to) {
+  if (!WIRE_DATE.test(date || '')) return date;
+  if (from && WIRE_DATE.test(from) && date < from) return from;
+  if (to && WIRE_DATE.test(to) && date > to) return to;
+  return date;
+}
+
+/**
  * 「1970-01-01 以来的第几天」换成公历年月日，纯整数。
  *
  * Howard Hinnant 的 `civil_from_days`：把纪元挪到 3 月 1 日，闰日因此落在一年的末尾，
@@ -199,7 +244,10 @@ module.exports = {
   parseWireTimestamp,
   formatShort,
   formatDay,
+  formatStamp,
   formatLong,
   isPeriodKey,
   currentMonthKey,
+  todayLocalDate,
+  clampLocalDate,
 };

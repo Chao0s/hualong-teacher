@@ -87,13 +87,6 @@
     linear-gradient(135deg, var(--accent-light), var(--green-light));
 }
 
-.photo-thumb--group {
-  background:
-    radial-gradient(circle at 34% 38%, #46b0a7 0 16rpx, transparent 18rpx),
-    radial-gradient(circle at 58% 34%, #85c48f 0 16rpx, transparent 18rpx),
-    linear-gradient(150deg, var(--green-light), var(--blue-light));
-}
-
 /* ── 涉及幼儿 ──────────────────────────────────────────────────────────── */
 
 .selected-head {
