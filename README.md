@@ -2,16 +2,21 @@
 
 > 面向幼儿园教师的一体化工作平台交互原型（High-fidelity Prototype），涵盖党建管理、综合协调、教研培训与家园社共育四大业务板块，并配套「幼儿保育教育质量综合评估」工具。
 
-本仓库有**两套同源的画面**，都不含后端服务：
+本仓库有**两套同源的画面**：
 
 | 形态 | 目录 | 用途 |
 | --- | --- | --- |
 | 网页原型 | `screens/` + `index.html` | 设计评审与交互演示，浏览器直接开 |
-| 微信小程序预览工程 | `miniprogram/` | 同一套 56 屏转成小程序，给园方在开发者工具里点着看 |
+| 微信小程序工程 | `miniprogram/` | 55 页，其中 **15 页调真实 API**，40 页仍是写死的字面量 |
 
-`miniprogram/` 是从 `screens/` 机械转换来的，**一个接口都不调**，数据全在 `wx.setStorageSync` 里。它不是生产工程。转换手法与踩过的坑写在 `docs/handoff/2026-08-30-web-prototype-to-miniprogram.md`。
+`miniprogram/` 从 `screens/` 转换而来，转换手法见 `docs/handoff/2026-08-30-web-prototype-to-miniprogram.md`。
 
-> 2026-08-31：上一版原生小程序工程（带 service 层与 733 个测试）已归档到 `Archive/20260831/`，理由与捡回办法见该目录的 `README.md`。
+**已接 API 的 15 页**：资源与案例库 5 页、党建 7 页、在园时光 3 页。判断某一页属于哪一类，
+看 `index.js` 里有没有 `require('../../services/`。接线方式见 `CLAUDE.md`。
+
+后端在 `hualong-backend` 仓库，两者靠 `api/openapi.yaml` 连起来。本地跑法见 `CLAUDE.md` §5。
+
+`Archive/20260831/` 存着一套原生小程序工程，含 service 层与 733 个测试，说明见该目录的 `README.md`。
 
 GitHub 仓库：<https://github.com/Chao0s/hualong-teacher>
 
@@ -47,12 +52,27 @@ python -m http.server 8000
 改完跑静态自检，六项全过才算数：
 
 ```bash
-npm test          # 等同 node tools/verify-miniprogram.js
+npm test                        # 结构自检，等同 node tools/verify-miniprogram.js
+node tools/scan-orphans.mjs     # 孤儿样式，补 npm test 的盲点
 ```
 
-它查 JSON、JS 语法、页面四件套齐全、跳转目标已注册、样式类有无落空、base64 图标能否解码、
-`wx:for` 与 `wx:else` 有无写在同一节点。**查不了渲染**：`<editor>`、`canvas`、拖曳、
-翻页动画都要在开发者工具里真点一遍。
+`npm test` 查 JSON、JS 语法、页面四件套齐全、跳转目标已注册、样式类有无落空、
+base64 图标能否解码、`wx:for` 与 `wx:else` 有无写在同一节点。
+
+**改了接线还要跑接口探针**（先起后端，见 `CLAUDE.md` §5）：
+
+```bash
+node tools/probe-session.mjs        # 登录与会话恢复
+node tools/probe-library.mjs        # 资源与案例库（只读）
+node tools/probe-library-write.mjs  # 资源与案例库（写入，自己收拾）
+node tools/probe-party.mjs          # 党建 7 条端点
+node tools/probe-moments.mjs        # 在园时光（写入，自己收拾）
+```
+
+探针桩掉 `wx.*` 之后加载未经修改的发布代码，所以路径写错、字段改名、枚举译反都会红。
+
+**三者都查不了渲染**：`<image>`、`<editor>`、`canvas`、拖曳、翻页动画都要在开发者工具里
+真点一遍。
 
 ---
 
@@ -102,13 +122,16 @@ npm test          # 等同 node tools/verify-miniprogram.js
 │   ├── growth-book-section-edit.html  # 新增栏目的 15×24 网格版面编辑器
 │   ├── growth-book-render.js  # 成长册数据模型 + 翻页渲染（成长册各页共用）
 │   └── ...                    # 其余详情页 / 表单页
-├── miniprogram/               # 微信小程序预览工程（由 screens/ 转换而来，55 页）
+├── miniprogram/               # 微信小程序工程（55 页，15 页调 API）
 │   ├── app.json               # 页面注册表
+│   ├── config.js              # 环境（baseUrl）与预览身份 devSubjectId
 │   ├── pages/                 # 每页四件套 index.wxml/wxss/js/json
+│   ├── services/              # 一个契约模块一个文件：library / party / co-education
+│   ├── utils/                 # request（唯一 HTTP 出口）/ auth / guard / session
+│   │                          #   errors / derived / time，及成长册与量表的数据模型
 │   ├── components/hl-tabbar/  # 底部 5 个 Tab
 │   ├── templates/             # 跨页共用的 wxml 模板（成长册翻页）
-│   ├── styles/                # 跨页共用的 wxss
-│   └── utils/                 # 成长册数据模型、翻页控制、量表、雷达图
+│   └── styles/                # 跨页共用的 wxss
 ├── captures/                  # 56 页原型的完整源料（HTML/CSS/JS），转换的输入
 ├── docs/                      # 设计文档与契约
 │   ├── backend spec files/    # 后端字段契约，ui= 标注的权威所在
@@ -118,9 +141,9 @@ npm test          # 等同 node tools/verify-miniprogram.js
 │   ├── 资源与案例填写模版.docx
 │   ├── handoff/               # 施工交接：网页原型转小程序的手法与坑
 │   └── Archive/               # 历史归档：信息架构、交互跳转地图、评估指导手册、评估工具数据源
-└── Archive/                   # 历史归档
-    ├── 20260611/              # 历史页面
-    └── 20260831/              # 上一版原生小程序 + 它的 733 个测试与两个校验工具
+└── Archive/                   # 归档
+    ├── 20260611/              # 页面存档
+    └── 20260831/              # 原生小程序工程 + 733 个测试 + 两个校验工具
 ```
 
 ## 文档

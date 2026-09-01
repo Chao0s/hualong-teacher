@@ -25,6 +25,25 @@ OpenAPI 契约连起来。
 
 **先说结论，再说依据。** 我要先知道结果是什么，再知道你怎么得出来的。
 
+### 写位置就只写现状
+
+记录某样东西**在哪**的时候，直接写它现在在哪。不要写它以前在哪、什么时候搬的、
+旧的那份还在不在。
+
+```
+不要：utils/ 原本只有成长册的数据模型，service 层接入后新增了 request 与 auth，
+      旧的那套已归档到 Archive/20260831/
+要　：utils/ —— request（唯一 HTTP 出口）、auth、guard、session、errors、
+      derived、time，及成长册与量表的数据模型
+```
+
+沿革只写在**记录决策理由的地方**：`decision.md`、`docs/handoff/`、后端的
+`DECISIONS.md` 与 `db/GAPS.md`、以及 `API-CONTRACT.md` 的修订记录。那些文件的
+用途就是回答「为什么会变成这样」。
+
+README、目录树、文件头注、代码注释里的路径说明，一律只写现状。读的人要的是
+「东西在哪」，不是「东西怎么走到这儿的」。
+
 ---
 
 ## 2. 改了前后端之间的关系，就要更新 API 文档
@@ -80,9 +99,6 @@ node db/tools/check-all.mjs
 | 资源与案例库 | `resource-library`、`resource-detail`、`case-library`、`case-detail`、`upload-resource` |
 | 党建 | `school-affairs`、`party-study-list/detail`、`party-activity-list/detail`、`party-brand-list/detail` |
 | 在园时光 | `home-school-moments`、`home-school-moment-feed`、`home-school-moment-publish` |
-
-**`README.md` 有一句已过期**：它写着 `miniprogram/` 「一个接口都不调」。那是 15 页
-接通之前的状态。
 
 ---
 
