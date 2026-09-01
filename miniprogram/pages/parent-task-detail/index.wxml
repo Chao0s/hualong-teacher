@@ -1,34 +1,64 @@
-<!-- 亲子任务 · 任务详情 —— 对照原型 screens/parent-task-detail.html。 -->
+<!-- 亲子任务 · 任务详情 —— 数据来自 GET /home-school/parent-tasks/{id} 与 …/submissions。
+     原型的「已读」与「提交预览」两列没有数据源，不渲染，理由见 index.js 头注。 -->
 <view class="page">
 
-  <view class="chunk">
-    <text class="pill">6月8日 · 寻找家乡的老建筑</text>
-    <view class="metric-row metric-row--gap">
-      <view class="metric" wx:for="{{metrics}}" wx:key="label">
-        <text class="metric__n">{{item.value}}</text>
-        <text class="metric__l">{{item.label}}</text>
+  <view class="hint" wx:if="{{loading}}">正在加载任务…</view>
+  <view class="hint" wx:elif="{{error}}" bindtap="onRetry">{{error}}　点此重试</view>
+
+  <block wx:if="{{task}}">
+    <view class="chunk">
+      <text class="pill">{{task.typeLabel}}任务 · {{task.statusLabel}}</text>
+      <text class="task-title">{{task.title}}</text>
+
+      <view class="task-field" wx:if="{{task.background}}">
+        <text class="task-field__label">任务背景</text>
+        <text class="task-field__text">{{task.background}}</text>
+      </view>
+      <view class="task-field">
+        <text class="task-field__label">任务详情</text>
+        <text class="task-field__text">{{task.detail}}</text>
+      </view>
+      <view class="task-field">
+        <text class="task-field__label">时间</text>
+        <text class="task-field__text">
+          {{task.startLabel}} 开始{{task.hasDue ? '，' + task.dueLabel + ' 截止' : '，不设截止'}}
+        </text>
+      </view>
+
+      <view class="metric-row metric-row--gap">
+        <view class="metric" wx:for="{{metrics}}" wx:key="label">
+          <text class="metric__n">{{item.value}}</text>
+          <text class="metric__l">{{item.label}}</text>
+        </view>
+      </view>
+      <view class="progress-line">
+        <view class="bar"><view class="bar__fill" style="width: {{rate}}%"></view></view>
+        <text class="status status--done">{{rate}}%</text>
+      </view>
+      <text class="task-note">「班级人数」是目前班上在园的幼儿数，不是发布当时的名册。</text>
+    </view>
+
+    <view class="sec">家长提交情况</view>
+    <view class="table-wrap">
+      <view class="prog-row prog-row--head">
+        <text class="prog-cell prog-cell--name">幼儿</text>
+        <text class="prog-cell">状态</text>
+        <text class="prog-cell prog-cell--time">提交时间</text>
+      </view>
+      <view class="prog-row" wx:for="{{rows}}" wx:key="childId" wx:for-item="row">
+        <text class="prog-cell prog-cell--name">{{row.name}}</text>
+        <view class="prog-cell"><text class="status status--{{row.stateTone}}">{{row.stateLabel}}</text></view>
+        <text class="prog-cell prog-cell--time">{{row.submittedLabel}}</text>
       </view>
     </view>
-    <view class="progress-line">
-      <view class="bar"><view class="bar__fill" style="width: {{rate}}%"></view></view>
-      <text class="status status--done">{{rate}}%</text>
-    </view>
-  </view>
 
-  <view class="sec">家长提交情况</view>
-  <view class="table-wrap">
-    <view class="prog-row prog-row--head">
-      <text class="prog-cell prog-cell--name">幼儿</text>
-      <text class="prog-cell">已读</text>
-      <text class="prog-cell">已完成</text>
-      <text class="prog-cell">提交预览</text>
-    </view>
-    <view class="prog-row" wx:for="{{rows}}" wx:key="name" wx:for-item="row">
-      <text class="prog-cell prog-cell--name">{{row.name}}</text>
-      <view class="prog-cell"><text class="status status--{{row.read.state}}">{{row.read.text}}</text></view>
-      <view class="prog-cell"><text class="status status--{{row.done.state}}">{{row.done.text}}</text></view>
-      <text class="prog-cell">{{row.preview}}</text>
-    </view>
-  </view>
+    <view
+      class="btn btn--ghost task-close"
+      wx:if="{{task.can.close}}"
+      hover-class="btn--hover"
+      bindtap="onClose"
+    >{{closing ? '正在结束…' : '结束任务'}}</view>
+    <text class="task-note" wx:elif="{{task.closed}}">这个任务已经结束，不能重新开启。</text>
+  </block>
 
 </view>

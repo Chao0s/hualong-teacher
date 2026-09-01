@@ -1,8 +1,12 @@
 /**
- * 家园社共育 —— 在园时光部分（`/moments` 共 5 条端点）。
+ * 家园社共育 —— 在园时光（`/moments` 5 条）与亲子任务（`/home-school/parent-tasks` 7 条）。
  *
  * Boundary: 契约的 home-school 模块。页面 require 本模块、把返回值直接 setData，
  * **不在页面里拼 URL、不在页面里译枚举、不在页面里判状态机**。
+ *
+ * 两族的状态机形状完全不同，所以各有一张迁移表、各有一份枚举表，中间用分隔线隔开：
+ * 在园时光**一次提交即 `s3`、可删不可改**；亲子任务**三态两边、可改草稿、不可删**。
+ * 把它们合成一张表只会让两边都读不懂。
  *
  * ── 一次提交，可删，不可改（契约 v0.7） ────────────────────────────────────
  *
@@ -297,6 +301,349 @@ function whyCannotPublish({ title, content, childIds, fileIds }) {
   return '';
 }
 
+/* ══ 亲子任务 ═══════════════════════════════════════════════════════════════
+ *
+ *   GET    /home-school/parent-tasks                        列表（含草稿）
+ *   POST   /home-school/parent-tasks                        建草稿（NONE→s1）
+ *   GET    /home-school/parent-tasks/{id}                   详情
+ *   PATCH  /home-school/parent-tasks/{id}                   改草稿，仅 s1
+ *   POST   /home-school/parent-tasks/{id}/publication       发布（s1→s2）
+ *   POST   /home-school/parent-tasks/{id}/closure           结束（s2→s3）
+ *   GET    /home-school/parent-tasks/{id}/submissions        完成情况看板
+ *
+ * ── 三态两边，一条回头路都没有 ─────────────────────────────────────────────
+ *
+ * `s1 → s2 → s3`，契约里只有这两条边（F16）。**没有 `s2→s1`，也没有 `s3→s2`**：
+ * 发布后时间、正文、附件与 `term_id` 全部唯读，要改只能关掉旧任务再建一个新的。
+ * 所以「改」这个动作只在 `s1` 上存在。
+ *
+ * ── 计划时刻是这一族多出来的东西 ───────────────────────────────────────────
+ *
+ * `start_at`／`due_at` 是 §1.2 白名单上的**计划时刻**：由教师挑，客户端提交，
+ * 必须带 `+08:00` 字面量。裸串与别的偏移服务端一律回 422 且**不做转换** ——
+ * 转换会把教师设的 18:00 截止悄悄变成隔天 02:00。组装走 `utils/time.fromPickerParts`，
+ * 那里的偏移量是字面量不是换算。
+ *
+ * `term_id` **不由客户端提交**：发布时服务端按 `start_at` 落在哪个园历区间派生并写死，
+ * 落不进任何学期就拒绝发布（409 `no_active_term`）。它是不透明字符串，
+ * **不当日期解析**（§1.2）—— `2025-2026-1` 不是日期。
+ *
+ * ── 看板读不到家长写了什么 ─────────────────────────────────────────────────
+ *
+ * `GET …/submissions` 按契约只回五个字段，**不含家长正文**，也不含单笔提交的 id。
+ * 于是原型详情页的「提交预览」列没有数据源，「已读」列更是全库没有 `read_at` ——
+ * 两列都不渲染（`docs/DO-NOT-BUILD.md` 的口径：没有数据源就不要渲染，更不要编一个）。
+ * 已登记为 `hualong-backend/db/GAPS.md` **G70**。
+ *
+ * DO-NOT-BUILD 12：亲子任务**不出现视频入口**，与在园时光同一条理由。
+ */
+
+const TASK_PATH = '/home-school/parent-tasks';
+
+// db_parent_task.parent_task_type —— 权威是 01_schema.sql 的列注释。
+const TASK_TYPE = { t1: '日常', t2: '社区' };
+
+// db_parent_task.publish_status。
+const TASK_STATUS = { s1: '草稿', s2: '已发布', s3: '已结束' };
+
+// db_parent_task_submission.submission_status。
+const SUBMISSION_STATUS = { c1: '已完成', c2: '未完成' };
+
+/** 契约的字段上限，与 DDL 的 VARCHAR 长度一致。 */
+const TASK_LIMITS = { title: 100, background: 500, detail: 1000 };
+
+/* ── 状态机 ──────────────────────────────────────────────────────────────── */
+
+/**
+ * 某个状态下允许哪些动作。写成表而不是一串 if：三个状态两条边，表比条件式好核对，
+ * 也能被探针逐格打一遍。
+ *
+ * `edit` 只在 `s1` 为真 —— 发布后一切唯读（F16）。`close` 只在 `s2`：草稿没什么可
+ * 结束的，`s3` 已经是终局。**没有任何一格给 `delete`**：契约里没有删除亲子任务的
+ * 端点，这与在园时光正好相反，不要照着那边抄一个。
+ */
+const TASK_TRANSITIONS = {
+  s1: { edit: true, publish: true, close: false },
+  s2: { edit: false, publish: false, close: true },
+  s3: { edit: false, publish: false, close: false },
+};
+
+function allowedTaskActions(status) {
+  // 未知编码降级为「什么都不给做」（§1.1 要求客户端容忍未知编码）：不崩溃，
+  // 也不全放开 —— 放开只会显示一个必然被拒的按钮。
+  return TASK_TRANSITIONS[status] || { edit: false, publish: false, close: false };
+}
+
+/* ── 读 ──────────────────────────────────────────────────────────────────── */
+
+/**
+ * 列表行与详情共用的形状。每个值都可以直接 `setData`。
+ *
+ * 完成率两个数（`done_count`／`roster_count`）是服务端的**派生值**，同口径同集合：
+ * `roster_count` 与看板的行数是同一个集合。它**不是发布当时的名册快照** ——
+ * 发布后转入的幼儿计进分母且没有提交行，于是显示未完成。所以文案只能说
+ * 「目前班级幼儿」，**不得说成当时名册或历史稽核数**。
+ */
+function decorateTask(row) {
+  const status = row.publish_status;
+  const done = Number(row.done_count) || 0;
+  const roster = Number(row.roster_count) || 0;
+  return {
+    id: row.parent_task_id,
+    type: row.parent_task_type,
+    typeLabel: TASK_TYPE[row.parent_task_type] || '未知类型',
+    community: row.parent_task_type === 't2',
+    title: row.parent_task_title || '（未命名）',
+    background: row.task_background || '',
+    detail: row.task_detail || '',
+
+    // 线上原值留着回填表单（picker 要拆回年月日时分），标签给渲染。
+    startAt: row.start_at || '',
+    startLabel: row.start_at ? time.formatStamp(row.start_at) : '',
+    dueAt: row.due_at || '',
+    dueLabel: row.due_at ? time.formatStamp(row.due_at) : '',
+    hasDue: Boolean(row.due_at),
+
+    status,
+    statusLabel: TASK_STATUS[status] || '未知状态',
+    isDraft: status === 's1',
+    published: status === 's2',
+    closed: status === 's3',
+
+    // 期间键是不透明串，原样带过去（§1.2）。草稿还没有它。
+    termId: row.term_id || '',
+    publishedAt: row.published_at || '',
+    publishedLabel: row.published_at ? time.formatDay(row.published_at) : '',
+
+    doneCount: done,
+    rosterCount: roster,
+    // 草稿一条提交都不会有，`0/N 完成` 是一个必然的 0，显示它没有信息量。
+    showProgress: status !== 's1',
+    doneLabel: `${roster} 人中 ${done} 人完成`,
+    donePercent: roster ? Math.round((done / roster) * 100) : 0,
+
+    can: allowedTaskActions(status),
+  };
+}
+
+/**
+ * 一页亲子任务。
+ *
+ * 契约给的筛选：`publish_status` 与 `parent_task_type`。两个都**缺席即不加该条
+ * predicate** —— 「全部」不是一个列值，不要发 `all` 之类的字符串。
+ * `class_id` 是 derived，教师端不发。
+ *
+ * 排序是服务端定的 `updated_at DESC, parent_task_id DESC`，客户端不重排。
+ */
+async function listTasks({ status, type, cursor, limit } = {}) {
+  const page = await api.getPage(TASK_PATH, {
+    cursor,
+    limit,
+    publish_status: status,
+    parent_task_type: type,
+  });
+  return { items: page.items.map(decorateTask), nextCursor: page.nextCursor };
+}
+
+/** 一条亲子任务，整取。 */
+async function getTask(taskId) {
+  return decorateTask(await api.get(`${TASK_PATH}/${taskId}`));
+}
+
+/**
+ * 完成情况看板：本班每名在园幼儿一行。
+ *
+ * 名册型集合，整取不分页（§3.5）。缺提交行等价 `c2`，服务端已经折算好。
+ *
+ * 三档而不是两档：`under_content_check` 为真时**优先显示「审核中」** ——
+ * 那一笔正在微信内容检查里，既不是已完成也不是家长没交，对教师来说是第三种情况。
+ * 状态编码本身仍照实带出去。
+ */
+async function submissionBoard(taskId) {
+  const items = await api.getRoster(`${TASK_PATH}/${taskId}/submissions`);
+  const rows = items.map((row) => {
+    const underCheck = Boolean(row.under_content_check);
+    const isDone = row.submission_status === 'c1';
+    return {
+      childId: row.child_id,
+      name: row.child_name,
+      status: row.submission_status,
+      done: isDone,
+      underCheck,
+      // 单一显示值，页面不再判一次。类名沿用 home-school-common.wxss 的三档。
+      stateLabel: underCheck ? '审核中' : (SUBMISSION_STATUS[row.submission_status] || '未知状态'),
+      stateTone: underCheck ? 'wait' : (isDone ? 'done' : 'miss'),
+      submittedLabel: row.submitted_at ? time.formatStamp(row.submitted_at) : '—',
+    };
+  });
+  const done = rows.filter((r) => r.done).length;
+  return {
+    rows,
+    summary: {
+      total: rows.length,
+      done,
+      undone: rows.length - done,
+      underCheck: rows.filter((r) => r.underCheck).length,
+      percent: rows.length ? Math.round((done / rows.length) * 100) : 0,
+    },
+  };
+}
+
+/* ── 写 ──────────────────────────────────────────────────────────────────── */
+
+// api/action-registry.tsv 的 action_key。
+const TASK_ACTIONS = {
+  create: 'parent_task.create',
+  updateDraft: 'parent_task.update_draft',
+  publish: 'parent_task.publish',
+  close: 'parent_task.close',
+};
+
+/**
+ * 写入体。
+ *
+ * **不含 school_id／class_id／teacher_id／term_id／published_at** —— 全是 derived
+ * 或服务端派生（§7.3，DO-NOT-BUILD 8）。`utils/derived.js` 还会再剥一层。
+ * `start_at`／`due_at` **不在**那份剥离清单上，它们是计划时刻，要发出去。
+ *
+ * `undefined` 表示本次不带这个字段（PATCH 的「不改」），`null` 表示清空。
+ * 两者必须分开：`?? null` 会把「不改」变成「清空」。
+ */
+function taskWriteBody({ type, title, background, detail, startAt, dueAt }) {
+  const body = {};
+  if (type !== undefined) body.parent_task_type = type;
+  if (title !== undefined) body.parent_task_title = title;
+  if (background !== undefined) body.task_background = background;
+  if (detail !== undefined) body.task_detail = detail;
+  if (startAt !== undefined) body.start_at = startAt;
+  if (dueAt !== undefined) body.due_at = dueAt;
+  return body;
+}
+
+/** 建草稿（NONE→s1）。草稿没有 `term_id`，发布时才派生。 */
+async function createTaskDraft(form) {
+  return decorateTask(await api.post(TASK_PATH, {
+    action: TASK_ACTIONS.create,
+    body: taskWriteBody(form),
+  }));
+}
+
+/** 改草稿（仅 s1）。非 s1 服务端回 409 `state_precondition_failed`。 */
+async function updateTaskDraft(taskId, form) {
+  return decorateTask(await api.patch(`${TASK_PATH}/${taskId}`, {
+    action: TASK_ACTIONS.updateDraft,
+    body: taskWriteBody(form),
+  }));
+}
+
+/**
+ * 发布（s1→s2）。请求体为空 —— 内容在草稿阶段已经写好，这一步只做状态转移与派生。
+ *
+ * 服务端在同一事务里按 `start_at` 派生 `term_id` 并写死。此后跨学期改 `start_at`
+ * 一律拒绝，提交晚于学期边界也不改变归属。
+ */
+async function publishTask(taskId) {
+  return decorateTask(await api.post(`${TASK_PATH}/${taskId}/publication`, {
+    action: TASK_ACTIONS.publish,
+  }));
+}
+
+/**
+ * 结束（s2→s3）。**没有回头路**，契约里没有 `s3→s2` 这条边，要重开只能新建（F16）。
+ *
+ * 关闭后尚未提交的那几笔立即退出家长端待处理提醒，且**不得冒充完成** ——
+ * 家园共育历史保留一列并标示「已结束・未提交」（F11／Q60-l）。
+ */
+async function closeTask(taskId) {
+  return decorateTask(await api.post(`${TASK_PATH}/${taskId}/closure`, {
+    action: TASK_ACTIONS.close,
+  }));
+}
+
+/* ── 表单辅助 ────────────────────────────────────────────────────────────── */
+
+/**
+ * 新任务默认的开始时刻，`YYYY-MM-DDTHH:mm:ss+08:00`。
+ *
+ * 取园所今天的 08:00。**不夹进学期** —— 与在园时光的 `moment_date` 不同，草稿的
+ * `start_at` 落在哪一天契约都不管，只有**发布**那一步要求它落进某个学期区间。
+ * 夹进当前学期反而会在假期里把默认值推到上学期最后一天，那不是教师想要的开始日。
+ * 落不进学期时服务端在发布时回 409，`publishFailureText()` 把它译成看得懂的一句。
+ *
+ * @param {number} nowMs 时刻（UTC 毫秒）。必填，本模块不读时钟。
+ */
+function defaultTaskStart(nowMs) {
+  return time.fromPickerParts(time.todayLocalDate(nowMs), '08:00');
+}
+
+/**
+ * 把 `<picker>` 的两个字符串拼成线上值。`date` 是 `YYYY-MM-DD`，`clock` 是 `HH:mm`。
+ *
+ * 页面只管把 picker 给的两个串交上来，偏移量与格式在这里定 —— 页面不拼时间戳。
+ */
+function taskWireTime(date, clock) {
+  return time.fromPickerParts(date, clock);
+}
+
+/**
+ * 把线上值拆回 picker 要的两个串。`{ date, clock }`，拆不开就回空串。
+ *
+ * 走 `parseWireTimestamp` 逐字段读，**不建 Date** —— `new Date(str).getHours()` 会按
+ * 运行这台机器的时区读回来，那正是 §1.2 要消掉的歧义。
+ */
+function taskPickerParts(wire) {
+  const p = time.parseWireTimestamp(wire);
+  if (!p) return { date: '', clock: '' };
+  const pad2 = (n) => String(n).padStart(2, '0');
+  return {
+    date: `${p.year}-${pad2(p.month)}-${pad2(p.day)}`,
+    clock: `${pad2(p.hour)}:${pad2(p.minute)}`,
+  };
+}
+
+/**
+ * 建立／保存前的本地检查。
+ *
+ * **预检不是校验**：服务端独立再验一次，缺项回 422 并指名字段。这里存在的意义是让
+ * 教师在点下去之前就知道缺什么。两边的规则必须一致，改一边就要改另一边。
+ *
+ * 必填以 DDL 的 `NOT NULL` 为准：`parent_task_type`、`parent_task_title`、
+ * `task_detail`、`start_at` 四个。`task_background` 与 `due_at` 可空 ——
+ * 原型的表单没有时间输入框，那是原型漏了一个 `NOT NULL` 列，不是契约不要它。
+ */
+function whyCannotSaveTask({ type, title, detail, startAt, dueAt }) {
+  if (!TASK_TYPE[type]) return '请选择任务类型';
+  if (!String(title || '').trim()) return '请填写任务名称';
+  if (String(title).length > TASK_LIMITS.title) return `任务名称最多 ${TASK_LIMITS.title} 字`;
+  if (!String(detail || '').trim()) return '请填写任务详情';
+  if (String(detail).length > TASK_LIMITS.detail) return `任务详情最多 ${TASK_LIMITS.detail} 字`;
+  if (!time.isWireTimestamp(startAt)) return '请选择开始时间';
+  if (dueAt && !time.isWireTimestamp(dueAt)) return '截止时间格式不对';
+  // 定长零填充的时间串，字典序等于时间序，所以直接比串。
+  if (dueAt && dueAt <= startAt) return '截止时间要晚于开始时间';
+  return '';
+}
+
+/**
+ * 把发布失败译成教师看得懂的一句。
+ *
+ * 只译这一族**特有**的两个码，其余交回 `errors.js` 的通用文案：
+ *
+ *   `no_active_term`             通用文案是「当前没有进行中的学期」，在这里是错的 ——
+ *                                服务端拒绝的理由是**这个任务的开始时间**落不进任何
+ *                                学期区间，跟「今天是不是假期」无关。
+ *   `state_precondition_failed`  这个任务已经不是草稿了（多半是另一处已经发过）。
+ */
+function publishFailureText(err) {
+  if (err && err.code === 'no_active_term') {
+    return '开始时间不在任何一个学期内，请改到学期内的日期再发布';
+  }
+  if (err && err.code === 'state_precondition_failed') {
+    return '这个任务已经发布过了，请返回列表刷新';
+  }
+  return (err && err.userMessage) || '发布失败，请稍后重试';
+}
+
 module.exports = {
   MOMENT_STATUS,
   MAX_PHOTOS,
@@ -311,4 +658,23 @@ module.exports = {
   publish,
   remove,
   whyCannotPublish,
+
+  // 亲子任务
+  TASK_TYPE,
+  TASK_STATUS,
+  SUBMISSION_STATUS,
+  TASK_LIMITS,
+  allowedTaskActions,
+  listTasks,
+  getTask,
+  submissionBoard,
+  createTaskDraft,
+  updateTaskDraft,
+  publishTask,
+  closeTask,
+  defaultTaskStart,
+  taskWireTime,
+  taskPickerParts,
+  whyCannotSaveTask,
+  publishFailureText,
 };

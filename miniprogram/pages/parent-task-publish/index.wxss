@@ -44,6 +44,37 @@
   margin-top: 0;
 }
 
+/* 日期与时刻两个 picker 并排。日期串比时刻串长，所以 2:1。 */
+.time-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16rpx;
+  margin-top: 12rpx;
+}
+
+.select--empty {
+  color: var(--muted);
+}
+
+.time-clear {
+  display: block;
+  margin-top: 12rpx;
+  color: var(--accent-dark);
+  font-size: 22rpx;
+}
+
+.time-note {
+  display: block;
+  margin-top: 20rpx;
+  color: var(--muted);
+  font-size: 22rpx;
+  line-height: 1.5;
+}
+
+.btn--second {
+  margin-top: 16rpx;
+}
+
 .submit-note {
   margin-top: 20rpx;
   padding: 20rpx 24rpx;

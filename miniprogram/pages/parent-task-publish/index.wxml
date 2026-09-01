@@ -1,36 +1,100 @@
-<!-- 发布新任务 —— 对照原型 screens/parent-task-publish.html。
-     切换任务类型会把三个输入框整套换成该类型的示例文案，和原型一致。 -->
+<!-- 发布新任务 —— 带 ?id= 进来是改草稿。两个按钮对应契约的两步，见 index.js 头注。
+     「开始时间」是 db_parent_task.start_at（NOT NULL），原型的表单漏了这一格。 -->
 <view class="page">
 
-  <view class="sec sec--first">任务类型</view>
-  <view class="chunk">
-    <view class="task-type-grid">
-      <view
-        class="task-type {{type === item.key ? 'task-type--active' : ''}}"
-        wx:for="{{types}}"
-        wx:key="key"
-        data-key="{{item.key}}"
-        bindtap="onTypeTap"
-      >
-        <text class="task-type__title">{{item.title}}</text>
-        <text class="task-type__desc">{{item.desc}}</text>
+  <view class="hint" wx:if="{{loading}}">正在加载…</view>
+  <view class="hint" wx:elif="{{error}}" bindtap="onRetry">{{error}}</view>
+
+  <block wx:if="{{!loading && !error}}">
+    <view class="sec sec--first">任务类型</view>
+    <view class="chunk">
+      <view class="task-type-grid">
+        <view
+          class="task-type {{type === item.key ? 'task-type--active' : ''}}"
+          wx:for="{{types}}"
+          wx:key="key"
+          data-key="{{item.key}}"
+          bindtap="onTypeTap"
+        >
+          <text class="task-type__title">{{item.title}}</text>
+          <text class="task-type__desc">{{item.desc}}</text>
+        </view>
       </view>
     </view>
-  </view>
 
-  <view class="sec">任务信息</view>
-  <view class="chunk">
-    <text class="form-label form-label--first">任务名称</text>
-    <input class="input" maxlength="100" value="{{form.title}}" data-key="title" bindinput="onInput" />
+    <view class="sec">任务信息</view>
+    <view class="chunk">
+      <text class="form-label form-label--first">任务名称</text>
+      <input
+        class="input"
+        maxlength="{{limits.title}}"
+        placeholder="例如：和家人一起做端午香囊"
+        value="{{title}}"
+        data-key="title"
+        bindinput="onInput"
+      />
 
-    <text class="form-label">任务背景</text>
-    <textarea class="textarea" maxlength="500" value="{{form.background}}" data-key="background" bindinput="onInput" />
+      <text class="form-label">任务背景</text>
+      <textarea
+        class="textarea"
+        maxlength="{{limits.background}}"
+        placeholder="可不填。写给家长看的缘由。"
+        value="{{background}}"
+        data-key="background"
+        bindinput="onInput"
+      />
 
-    <text class="form-label">任务详情</text>
-    <textarea class="textarea" maxlength="1000" value="{{form.detail}}" data-key="detail" bindinput="onInput" />
+      <text class="form-label">任务详情</text>
+      <textarea
+        class="textarea"
+        maxlength="{{limits.detail}}"
+        placeholder="请家长做什么、怎么交。"
+        value="{{detail}}"
+        data-key="detail"
+        bindinput="onInput"
+      />
+    </view>
 
-    <view class="btn btn--green sticky-action" hover-class="btn--hover" bindtap="onSubmit">{{submitText}}</view>
-    <view class="submit-note" wx:if="{{noteShown}}">已生成任务草稿，可在发布前继续调整。</view>
-  </view>
+    <view class="sec">任务时间</view>
+    <view class="chunk">
+      <text class="form-label form-label--first">开始时间</text>
+      <view class="time-row">
+        <picker mode="date" value="{{startDate}}" bindchange="onStartDate">
+          <view class="select">{{startDate}}</view>
+        </picker>
+        <picker mode="time" value="{{startClock}}" bindchange="onStartClock">
+          <view class="select">{{startClock}}</view>
+        </picker>
+      </view>
+
+      <text class="form-label">截止时间</text>
+      <view class="time-row" wx:if="{{dueDate}}">
+        <picker mode="date" value="{{dueDate}}" bindchange="onDueDate">
+          <view class="select">{{dueDate}}</view>
+        </picker>
+        <picker mode="time" value="{{dueClock}}" bindchange="onDueClock">
+          <view class="select">{{dueClock}}</view>
+        </picker>
+      </view>
+      <picker mode="date" value="{{startDate}}" bindchange="onDueDate" wx:else>
+        <view class="select select--empty">不设截止，点此选择</view>
+      </picker>
+      <text class="time-clear" wx:if="{{dueDate}}" bindtap="onClearDue">改回不设截止</text>
+
+      <text class="time-note">开始时间决定这个任务归哪个学期，发布后不能再改。</text>
+    </view>
+
+    <view class="chunk">
+      <view class="btn btn--green" hover-class="btn--hover" bindtap="onPublish">
+        {{saving ? '请稍候…' : '发布给家长'}}
+      </view>
+      <view class="btn btn--ghost btn--second" hover-class="btn--hover" bindtap="onSaveDraft">
+        存为草稿
+      </view>
+      <view class="submit-note">
+        草稿只有你看得到，家长看不到。存好之后可以从任务列表点回来接着改。
+      </view>
+    </view>
+  </block>
 
 </view>

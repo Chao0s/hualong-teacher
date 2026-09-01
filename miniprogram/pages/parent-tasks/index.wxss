@@ -67,3 +67,18 @@
   color: var(--green);
   background: var(--green-light);
 }
+
+/* 状态标签。只在非「已发布」的卡片上出现：草稿要能一眼认出来，已结束的也要。
+   与 type-pill 同一个形状、不同底色，因为它们是两个维度而不是两个值。 */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44rpx;
+  padding: 0 16rpx;
+  border-radius: 999rpx;
+  color: var(--muted);
+  background: var(--bg);
+  font-size: 22rpx;
+  font-weight: 600;
+}
