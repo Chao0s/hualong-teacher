@@ -71,9 +71,19 @@ cd /d/hualong-backend
 node db/tools/check-all.mjs
 ```
 
-**Swagger 站点不用手工改。** 它由 `npm run docs:api` 从 `api/openapi.yaml` 生成，
-本仓库只读契约、从不复制一份（`tools/openapi-source.mjs` 的头注写明了理由：
-一份复制品会悄悄过期，而过期的契约比没有契约更糟）。
+**Swagger 站点不用手工改，也没有一份要同步的副本。** 本仓库只读契约、从不复制一份
+（`tools/openapi-source.mjs` 的头注写明了理由：一份复制品会悄悄过期，而过期的契约比
+没有契约更糟）。三处各自取一次：
+
+| 哪一份 | 读谁 | 什么时候更新 |
+|---|---|---|
+| `npm run swagger`（本机看） | 每次请求现读 `D:\hualong-backend\api\openapi.yaml` | 改完契约存盘即生效，刷新页面就有 |
+| `npm run docs:api`（生成静态站） | 同上，写到 `dist/`（已 gitignore，**产物从不提交**） | 手动跑才生成 |
+| GitHub Pages 上那份 | CI 从 **GitHub 上的 `hualong-backend`** 现 checkout | 推前端 master，或后端触发 `contract-changed` |
+
+**所以线上那份跟的是后端 remote，不是本机。** 契约改完只提交在本地时，线上仍是旧的；
+只推前端也不行 —— CI 会重建，但它 checkout 的后端 remote 还是旧 HEAD，站点照样是旧的，
+看起来像「我明明改了却没生效」。**要先推后端。**
 
 ### 顺序不能反
 
@@ -195,9 +205,12 @@ node server/server.mjs          # → http://localhost:3860/api/v1
 
 2026-09-01 撞过一次：当时有**两份**后端克隆，D 盘一份、Google Drive 一份，
 候选表把 D 盘排在前面，而 D 盘那份落后两个提交。于是 `npm run spec:inventory`
-报的是 v0.6 的 128/153，`npm run docs:api` 生成的是 v0.6 的 Swagger 站点，
+报的是 v0.6 的 128/153，`npm run docs:api` 在本机生成的也是 v0.6 的站点，
 **全程没有任何报错**。候选表里那条备用路径已经删掉：一份复制品不是冗余，
 是一次静默过期。**要么只有一份，要么当场失败。**
+
+**线上那份没受影响** —— CI 从 GitHub checkout 后端，碰不到本机这两份克隆。
+受影响的只有在这台机器上跑的命令。
 
 判断读到的是哪一份：`node tools/spec-inventory.mjs` 第一行会打印契约文件的绝对路径，
 计数应为 **125 paths / 150 operations / 135 schemas**。对不上就是读错了文件。

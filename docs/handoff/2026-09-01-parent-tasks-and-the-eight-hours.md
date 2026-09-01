@@ -205,7 +205,8 @@ node server/server.mjs          # → http://localhost:3860/api/v1
 D 盘那份落后两个提交，于是：
 
 - `npm run spec:inventory` 报 **128 paths / 153 operations**（v0.6 的数），实际是 125/150；
-- `npm run docs:api` 生成的 Swagger 站点是 **v0.6**；
+- `npm run docs:api` 在本机生成的 Swagger 站点是 **v0.6**（**线上那份没受影响**：
+  CI 从 GitHub checkout 后端，碰不到本机的克隆）；
 - **全程没有任何报错。**
 
 这正是 `openapi-source.mjs` 头注自己警告的「一份复制品会悄悄过期」，只不过复制品
