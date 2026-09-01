@@ -7,11 +7,11 @@
 | 形态 | 目录 | 用途 |
 | --- | --- | --- |
 | 网页原型 | `screens/` + `index.html` | 设计评审与交互演示，浏览器直接开 |
-| 微信小程序工程 | `miniprogram/` | 55 页，其中 **15 页调真实 API**，40 页仍是写死的字面量 |
+| 微信小程序工程 | `miniprogram/` | 55 页，其中 **18 页调真实 API**，37 页仍是写死的字面量 |
 
 `miniprogram/` 从 `screens/` 转换而来，转换手法见 `docs/handoff/2026-08-30-web-prototype-to-miniprogram.md`。
 
-**已接 API 的 15 页**：资源与案例库 5 页、党建 7 页、在园时光 3 页。判断某一页属于哪一类，
+**已接 API 的 18 页**：资源与案例库 5 页、党建 7 页、在园时光 3 页、亲子任务 3 页。判断某一页属于哪一类，
 看 `index.js` 里有没有 `require('../../services/`。接线方式见 `CLAUDE.md`。
 
 后端在 `hualong-backend` 仓库，两者靠 `api/openapi.yaml` 连起来。本地跑法见 `CLAUDE.md` §5。
@@ -122,7 +122,7 @@ node tools/probe-moments.mjs        # 在园时光（写入，自己收拾）
 │   ├── growth-book-section-edit.html  # 新增栏目的 15×24 网格版面编辑器
 │   ├── growth-book-render.js  # 成长册数据模型 + 翻页渲染（成长册各页共用）
 │   └── ...                    # 其余详情页 / 表单页
-├── miniprogram/               # 微信小程序工程（55 页，15 页调 API）
+├── miniprogram/               # 微信小程序工程（55 页，18 页调 API）
 │   ├── app.json               # 页面注册表
 │   ├── config.js              # 环境（baseUrl）与预览身份 devSubjectId
 │   ├── pages/                 # 每页四件套 index.wxml/wxss/js/json

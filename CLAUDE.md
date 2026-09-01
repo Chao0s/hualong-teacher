@@ -67,7 +67,7 @@ README、目录树、文件头注、代码注释里的路径说明，一律只�
 然后跑后端仓库的 harness：
 
 ```bash
-cd "G:/My Drive/Personal Materials/App Dev/Hualong/hualong-backend"
+cd /d/hualong-backend
 node db/tools/check-all.mjs
 ```
 
@@ -89,7 +89,7 @@ node db/tools/check-all.mjs
 
 ## 3. 现状
 
-`miniprogram/` 共 **55 页**，**15 页已接 API**，**40 页仍是写死的字面量**。
+`miniprogram/` 共 **55 页**，**18 页已接 API**，**37 页仍是写死的字面量**。
 
 判断某一页属于哪一类：看 `index.js` 里有没有 `require('../../services/`。
 在开发者工具里看 Network 面板有没有 `/api/v1/...` 请求，是同一件事的另一种查法。
@@ -99,6 +99,7 @@ node db/tools/check-all.mjs
 | 资源与案例库 | `resource-library`、`resource-detail`、`case-library`、`case-detail`、`upload-resource` |
 | 党建 | `school-affairs`、`party-study-list/detail`、`party-activity-list/detail`、`party-brand-list/detail` |
 | 在园时光 | `home-school-moments`、`home-school-moment-feed`、`home-school-moment-publish` |
+| 亲子任务 | `parent-tasks`、`parent-task-detail`、`parent-task-publish` |
 
 ---
 
@@ -133,7 +134,7 @@ services/*.js          一个契约模块一个文件
 ```bash
 # 1. PostgreSQL（本地 5432）要在跑
 # 2. 薄契约服务端
-cd "G:/My Drive/Personal Materials/App Dev/Hualong/hualong-backend/db/testdata"
+cd /d/hualong-backend/db/testdata
 node server/server.mjs          # → http://localhost:3860/api/v1
 ```
 
@@ -157,7 +158,7 @@ node server/server.mjs          # → http://localhost:3860/api/v1
 | **渲染** | **开发者工具里真点** | **上面全部查不出来** |
 
 探针在 `tools/`：`probe-session`、`probe-library`、`probe-library-write`、`probe-party`、
-`probe-moments`。它们桩掉 `wx.*` 之后**加载未经修改的发布代码**，所以路径写错、字段
+`probe-moments`、`probe-parent-task`。它们桩掉 `wx.*` 之后**加载未经修改的发布代码**，所以路径写错、字段
 改名、枚举译反都会红。
 
 **先写探针再改页面。** 前三条线都靠这个顺序在改页之前就抓到了真问题：
@@ -187,21 +188,27 @@ node server/server.mjs          # → http://localhost:3860/api/v1
 （否则 `isLoggedIn()` 从此说谎）。`probe-session.mjs` 是这两条的回归测试，**带超时**——
 死锁会红，不会挂住。
 
-### 7.3 后端在 Google Drive 虚拟盘上，会卸载
+### 7.3 契约只能有一份，不要留第二份当备份
 
-`db/testdata` 在 `G:\My Drive\...`，按需同步。**它会无预警卸载**：2026-08-31 发生过一次，
-`testdata.sql`、`dataset.json`、`server/server.mjs` 同时消失，3860 服务端随之死掉。
+后端在 `D:\hualong-backend`，与本仓库是兄弟目录。`tools/openapi-source.mjs` 与
+`tools/lib/testdata-path.mjs` 都按 `../hualong-backend` 找它，**不复制一份**。
 
-别误判：**PostgreSQL 不在 G 盘**，数据一行没少；本仓库在 D 盘，不受影响。
-文件在云端，等同步回来即可。**不要重灌库。**
+2026-09-01 撞过一次：当时有**两份**后端克隆，D 盘一份、Google Drive 一份，
+候选表把 D 盘排在前面，而 D 盘那份落后两个提交。于是 `npm run spec:inventory`
+报的是 v0.6 的 128/153，`npm run docs:api` 生成的是 v0.6 的 Swagger 站点，
+**全程没有任何报错**。候选表里那条备用路径已经删掉：一份复制品不是冗余，
+是一次静默过期。**要么只有一份，要么当场失败。**
 
-同一个盘还有两个后果：
+判断读到的是哪一份：`node tools/spec-inventory.mjs` 第一行会打印契约文件的绝对路径，
+计数应为 **125 paths / 150 operations / 135 schemas**。对不上就是读错了文件。
 
-- `db/testdata/pentest/` 不可读（`Permission denied`）。它会打断 `git rebase`——
-  在 `hualong-backend` 里**不要用 `pull --rebase`**，用 `git merge`。
-- `node db/tools/check-all.mjs` 会**静默截短** `db/spec/ui-binding.tsv`（833 行 → 334 行）：
-  生成器按兄弟目录找 `../hualong-teacher`，而它在 D 盘，找不到就产出一份残缺的，
-  而且**八项检查全绿**。跑完 harness 记得 `git checkout -- db/spec/`。
+`node db/tools/check-all.mjs` 现在会重新生成 `db/spec/ui-binding.tsv` 且**行数正确**
+（833 行，前后端在同一个盘上、生成器找得到前端了）。但它会刷新 70 行标签文案，
+那是生成物的正常更新、不是你的改动，**跑完 `git checkout -- db/spec/`**。
+
+`check-consistency` 这一步现在**是红的**，与本仓库无关：生成器终于看得见前端的
+`captures/_extracted/`，于是发现 `screens.tsv` 少覆盖 65 个 markup 文件。
+它在 `b7373a7` 原样跑同样红。那是后端 spec 的登记欠账，不要当成自己刚弄坏的东西。
 
 ### 7.4 范围判定不是 bug
 
@@ -213,6 +220,22 @@ id 不在里面」，只写「N 条」的话范围判定改坏了也可能照样
 
 删除、状态迁移这类动作，**状态码对不算过**，还要回库里核对行数／状态没变。一个回
 409 却真的删了行的实作，只看状态码是看不出来的。
+
+### 7.6 断言形状 ≠ 断言值
+
+`^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+08:00$` 对 `12:00` 和 `20:00` 一样通过。
+
+2026-09-01 撞过一次：服务端的 `fmtAt` 把裸值当本地时间转成 UTC 再缀上 `+08:00`，
+**每个端点的每个 `*_at` 都早 8 小时**（库里 `2026-04-21 16:18:00`，线上
+`2026-04-21T08:18:00+08:00`）。五支探针 212 项断言**一支都没抓到**，因为它们断言的
+是格式。同一个根因还偏了游标的边界。
+
+所以：**时间、计数、枚举这类有确定答案的值，断言要钉到库里的那一行**，
+不是钉到回包的形状。`probe-parent-task.mjs` 的写法是拿
+`to_char(start_at, 'YYYY-MM-DD"T"HH24:MI:SS') || '+08:00'` 与回包逐条比。
+
+这与 §7.4「范围断言两头钉」、上一轮那条「回包不带某一列时，只看回包会把『没落库』
+读成『没这个字段』」是同一条教训的三种形态。
 
 ---
 
