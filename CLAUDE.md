@@ -206,19 +206,21 @@ node server/server.mjs          # → http://localhost:3860/api/v1
 （833 行，前后端在同一个盘上、生成器找得到前端了）。但它会刷新 70 行标签文案，
 那是生成物的正常更新、不是你的改动，**跑完 `git checkout -- db/spec/`**。
 
-`check-consistency` 这一步现在**是红的**，不是本仓库弄坏的：它扫前端所有 `.html` 与
-`.wxml`，问每个文件有没有 `screens.tsv` 的登记行。以前后端在 G 盘、找不到前端，
-扫出 0 个文件所以过；两个仓库同盘之后翻出 **65 个没有登记行**：
+`check-all.mjs` 现在 **8 项全过**。它的 `check-consistency` 一步曾经红过一阵：那一步扫
+前端所有 `.html` 与 `.wxml`，问每个文件有没有 `screens.tsv` 的登记行，而登记表只认原型
+文件名（`screens/home.html`），不认识 `miniprogram/pages/home/index.wxml`。
+2026-09-01 已修：`screens.tsv` 加了 `mp_file` 列，一个屏幕一行、两个定位符。
 
-| 磁盘上的 markup | 有登记行吗 |
+**本仓库的目录名因此进了后端的检查逻辑**，改动这三处要留意：
+
+| 目录 | 后端怎么看它 |
 |---|---|
-| 56 个 `screens/*.html`（网页原型） | 有，57 行 |
-| **57 个 `miniprogram/**/*.wxml`** | **没有** |
-| **8 个 `captures/_extracted/*.body.html`**（web-capture 的中间产物） | **没有** |
+| `miniprogram/pages/<名>/index.wxml` | `screens.tsv` 的 `mp_file` 逐行指着它。**新增页面要在后端登记一行**，否则 `check-consistency` 报未登记 |
+| `captures/`、`miniprogram/components/`、`miniprogram/templates/` | 按「不是页面」排除，报告里会打印排除的数目 |
 
-意思是**后端那张屏幕登记表还停在原型时代**：2026-08-30 原型转成小程序之后，表没跟着
-改，它只认识 `screens/home.html`，不认识 `miniprogram/pages/home/index.wxml`。
-在 `b7373a7` 原样跑同样红。修它是后端仓库的活，`captures/` 那 8 个本来就不是屏幕。
+`check-all.mjs --with-frontend` 仍有一项红（`check-ui-binding`）：小程序的 wxml 一个
+`data-ui` 都没带，而它要求每个写入控件都带。CLAUDE.md 与后端 §2 让你跑的是**不带**
+`--with-frontend` 的那条命令，补那一条等于给 55 页的写入控件逐个补标注。
 
 ### 7.4 范围判定不是 bug
 

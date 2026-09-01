@@ -31,7 +31,7 @@
 | 越权测试 | `node authz-tests/run.mjs --base http://localhost:3860/api/v1` | 879 次探针，七组全过 |
 | 数据库 | 探针自己对账 | 逐表与 `STATS.md` 一致 |
 | 渲染 | 开发者工具里真点 | 三页无问题（使用者过的，探针查不出这一类） |
-| 后端 harness | `node db/tools/check-all.mjs` | **8 项中 1 项红**，见 §6.2 —— 不是本轮造成的 |
+| 后端 harness | `node db/tools/check-all.mjs` | **8 项全过**（先修好 §6.2 那条才全过的） |
 
 单支探针：session 8、library 47、library-write 20、party 64、moments 73、
 **parent-task 113**。
@@ -213,7 +213,7 @@ D 盘那份落后两个提交，于是：
 
 判断读到的是哪一份：`spec-inventory` 第一行打印契约文件的绝对路径。
 
-### 6.2 `check-consistency` 现在是红的，且不是本轮造成的
+### 6.2 屏幕登记表还停在原型时代（已修，后端 `51daba8`）
 
 `check-consistency` 扫前端全部 `.html` 与 `.wxml`，问每个文件有没有 `screens.tsv` 的
 登记行。前后端同盘之后它终于找得到前端，翻出 **65 个没有登记行**：
@@ -221,19 +221,34 @@ D 盘那份落后两个提交，于是：
 | 磁盘上的 markup | 有登记行吗 |
 |---|---|
 | 56 个 `screens/*.html`（网页原型） | 有，57 行（多的 1 行是登记了但还没建的屏幕） |
-| **57 个 `miniprogram/**/*.wxml`** | **没有** |
+| **55 个 `miniprogram/pages/*/index.wxml`** ＋ 1 组件 ＋ 1 模板 | **没有** |
 | **8 个 `captures/_extracted/*.body.html`**（web-capture 的中间产物） | **没有** |
 
 57 + 8 = 65。真正的意思是：**后端那张屏幕登记表还停在原型时代。**
 2026-08-30 原型转成小程序之后，表没跟着改，它只认识 `screens/home.html`，
-不认识 `miniprogram/pages/home/index.wxml`。
+不认识 `miniprogram/pages/home/index.wxml`。反向查过：**55 个小程序页面里，
+screens.tsv 没有对应行的是 0 个** —— 每个页面本来都有行，只是键写的是原型文件名。
 
-已用 `git stash` 在原样的 `b7373a7` 上复跑确认：**同样红，同样是那 65 个**。
-在 G 盘时它报的是「front-end not scanned」所以过。**这是后端 spec 的登记欠账，
-不要当成刚弄坏的东西。**
+已用 `git stash` 在原样的 `b7373a7` 上复跑确认过它不是本轮造成的。
 
-修法两条，都是后端仓库的活：给每行补上小程序页面的路径；或者让扫描只认
-`screens/`，顺手排除 `captures/` 这类工具产物 —— 那 8 个本来就不是屏幕。
+**修法：加一列 `mp_file`，不是换掉 `screen_file`。** 换掉的话 56 个原型 html 变成未
+登记，65 红换成 56 红。原型不是历史包袱 —— `data-ui` 标注长在它身上（22 个文件带
+标注），整套 UI↔列绑定契约以它为键。一个屏幕两处落地，一行两个定位符。
+
+`mp_file` 插在 `screen_file` 之后而不是追加到末尾：有 7 行省略了尾部的空 `notes`，
+追加会让那 7 行的 `mp_file` 落进 `notes` 的位置。
+
+另一条路（让扫描只认 `screens/`）没选：它用缩小提问范围换绿灯，将来有人加第 56 个
+小程序页面而不登记，没有任何东西会响。同批把三类不是页面的 markup 排除
+（`captures/`、`components/`、`templates/`），**并把排除的数目打印在报告里** ——
+静默跳过换来的绿灯与静默截短是同一种毛病。
+
+**对本仓库的影响：新增小程序页面要在后端 `screens.tsv` 登记一行**，否则
+`check-consistency` 会报未登记。已写进 `CLAUDE.md` §7.3。
+
+`check-all.mjs --with-frontend` 仍有一项红（`check-ui-binding`）：小程序的 wxml 一个
+`data-ui` 都没带，而它要求每个写入控件都带。那一条本轮之前就红，与这次改动无关，
+补它等于给 55 页的写入控件逐个补标注。**平时跑的是不带 `--with-frontend` 的那条。**
 
 另外 harness 会刷新 `db/spec/ui-binding.tsv` 的 **70 行标签文案**（「主页」→「入口页」
 之类），行数仍是 833。那是生成物追上前端措辞，不是结构变化 —— 本轮已
@@ -264,5 +279,7 @@ D 盘那份落后两个提交，于是：
 - **G70／G71 只登记，没补。** 两条都不阻断本轮这 7 条端点。
 - **列表页没有筛选 UI。** service 的 `listTasks({ status, type })` 支持，原型没有这个
   控件，本轮不发明一个。草稿靠卡片上的状态标签认。
-- **`db/spec/screens.tsv` 那 65 个未覆盖的 markup** 没动（§6.2）。
+- **`check-all --with-frontend` 的 `check-ui-binding` 仍是红的**（§6.2 末段）：小程序的
+  wxml 一个 `data-ui` 都没带。补它是给 55 页上的写入控件逐个补标注，是一整条线的活。
+  家长端与管理端 27 行的 `mp_file` 也还是空的 —— 那两个仓库现在只有原型。
 - **`data/guide-scale.json` 与两个页面内题库**仍是三份，仍是一个要先问的决策。
