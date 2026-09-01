@@ -206,9 +206,19 @@ node server/server.mjs          # → http://localhost:3860/api/v1
 （833 行，前后端在同一个盘上、生成器找得到前端了）。但它会刷新 70 行标签文案，
 那是生成物的正常更新、不是你的改动，**跑完 `git checkout -- db/spec/`**。
 
-`check-consistency` 这一步现在**是红的**，与本仓库无关：生成器终于看得见前端的
-`captures/_extracted/`，于是发现 `screens.tsv` 少覆盖 65 个 markup 文件。
-它在 `b7373a7` 原样跑同样红。那是后端 spec 的登记欠账，不要当成自己刚弄坏的东西。
+`check-consistency` 这一步现在**是红的**，不是本仓库弄坏的：它扫前端所有 `.html` 与
+`.wxml`，问每个文件有没有 `screens.tsv` 的登记行。以前后端在 G 盘、找不到前端，
+扫出 0 个文件所以过；两个仓库同盘之后翻出 **65 个没有登记行**：
+
+| 磁盘上的 markup | 有登记行吗 |
+|---|---|
+| 56 个 `screens/*.html`（网页原型） | 有，57 行 |
+| **57 个 `miniprogram/**/*.wxml`** | **没有** |
+| **8 个 `captures/_extracted/*.body.html`**（web-capture 的中间产物） | **没有** |
+
+意思是**后端那张屏幕登记表还停在原型时代**：2026-08-30 原型转成小程序之后，表没跟着
+改，它只认识 `screens/home.html`，不认识 `miniprogram/pages/home/index.wxml`。
+在 `b7373a7` 原样跑同样红。修它是后端仓库的活，`captures/` 那 8 个本来就不是屏幕。
 
 ### 7.4 范围判定不是 bug
 

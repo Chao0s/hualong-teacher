@@ -30,6 +30,7 @@
 | 接口探针 | `node tools/probe-{session,library,library-write,party,moments,parent-task}.mjs` | **325 项断言，0 失败** |
 | 越权测试 | `node authz-tests/run.mjs --base http://localhost:3860/api/v1` | 879 次探针，七组全过 |
 | 数据库 | 探针自己对账 | 逐表与 `STATS.md` 一致 |
+| 渲染 | 开发者工具里真点 | 三页无问题（使用者过的，探针查不出这一类） |
 | 后端 harness | `node db/tools/check-all.mjs` | **8 项中 1 项红**，见 §6.2 —— 不是本轮造成的 |
 
 单支探针：session 8、library 47、library-write 20、party 64、moments 73、
@@ -214,12 +215,25 @@ D 盘那份落后两个提交，于是：
 
 ### 6.2 `check-consistency` 现在是红的，且不是本轮造成的
 
-前后端同盘之后，生成器终于看得见前端的 `captures/_extracted/`，于是发现
-`screens.tsv` **少覆盖 65 个 markup 文件**（growth-book 那一族为主）。
+`check-consistency` 扫前端全部 `.html` 与 `.wxml`，问每个文件有没有 `screens.tsv` 的
+登记行。前后端同盘之后它终于找得到前端，翻出 **65 个没有登记行**：
+
+| 磁盘上的 markup | 有登记行吗 |
+|---|---|
+| 56 个 `screens/*.html`（网页原型） | 有，57 行（多的 1 行是登记了但还没建的屏幕） |
+| **57 个 `miniprogram/**/*.wxml`** | **没有** |
+| **8 个 `captures/_extracted/*.body.html`**（web-capture 的中间产物） | **没有** |
+
+57 + 8 = 65。真正的意思是：**后端那张屏幕登记表还停在原型时代。**
+2026-08-30 原型转成小程序之后，表没跟着改，它只认识 `screens/home.html`，
+不认识 `miniprogram/pages/home/index.wxml`。
 
 已用 `git stash` 在原样的 `b7373a7` 上复跑确认：**同样红，同样是那 65 个**。
 在 G 盘时它报的是「front-end not scanned」所以过。**这是后端 spec 的登记欠账，
 不要当成刚弄坏的东西。**
+
+修法两条，都是后端仓库的活：给每行补上小程序页面的路径；或者让扫描只认
+`screens/`，顺手排除 `captures/` 这类工具产物 —— 那 8 个本来就不是屏幕。
 
 另外 harness 会刷新 `db/spec/ui-binding.tsv` 的 **70 行标签文案**（「主页」→「入口页」
 之类），行数仍是 833。那是生成物追上前端措辞，不是结构变化 —— 本轮已
@@ -240,8 +254,10 @@ D 盘那份落后两个提交，于是：
 
 ## 7. 没做的
 
-- **渲染一次都没在开发者工具里验过。** 探针桩掉了全部 UI 调用，两组 `<picker>` 的
-  样式、三列表格的列宽、两个按钮的间距、确认弹窗的文案换行，全部测不到。
+> **渲染已由使用者在开发者工具里看过，三页无问题**（2026-09-01）。探针测不到的那些
+> —— 两组 `<picker>` 的样式、三列表格的列宽、两个按钮的间距、确认弹窗的文案换行 ——
+> 是人眼过的，不在下面这张清单里。
+
 - **`/publication` 的状态转移与提交行播种不在同一个交易里。** 播种失败会留下一个
   `s2` 却没有提交行的任务。这是本轮之前就有的写法，不在这次的改动范围内 ——
   修它要把 `UPDATE` 与 `INSERT` 一起塞进 `tx()`。
