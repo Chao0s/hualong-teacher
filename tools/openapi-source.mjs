@@ -2,12 +2,18 @@
  * Locates and loads the API contract, which lives in a DIFFERENT repository.
  *
  * `api/openapi.yaml` belongs to hualong-backend and is the machine-readable
- * truth for 126 paths / 149 operations. This repo reads it; it never copies it.
+ * truth for 125 paths / 150 operations. This repo reads it; it never copies it.
  * A copy would go stale silently, and a stale contract is worse than none.
  *
- * The path is not a simple `../hualong-backend` any more: this repo moved to
- * D:\hualong-teacher on 2026-08-25 while the backend stayed on the Google Drive
- * virtual disk, so the two are no longer siblings. Hence the candidate list.
+ * The two repos are siblings: `D:\hualong-teacher` and `D:\hualong-backend`.
+ *
+ * The Google Drive path used to sit in the candidate list below it, as a
+ * fallback. It was removed on 2026-09-01, and the removal is the whole point:
+ * for a while BOTH existed, the sibling won, and the sibling was two commits
+ * behind — so `spec:inventory` reported the v0.6 counts and `npm run docs:api`
+ * generated a v0.6 Swagger site, silently. A fallback to a second copy of the
+ * contract is not resilience; it is the stale-copy failure this file's second
+ * paragraph warns about, wearing a different hat. **One copy, or fail loudly.**
  *
  * Override with HUALONG_OPENAPI=<absolute path>.
  */
@@ -23,7 +29,6 @@ const REPO = resolve(HERE, '..');
 const CANDIDATES = [
   process.env.HUALONG_OPENAPI,
   resolve(REPO, '..', 'hualong-backend', 'api', 'openapi.yaml'),
-  'G:/My Drive/Personal Materials/App Dev/Hualong/hualong-backend/api/openapi.yaml',
 ].filter(Boolean);
 
 /** @returns {string} absolute path to the contract */

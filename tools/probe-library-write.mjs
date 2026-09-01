@@ -17,13 +17,13 @@ import { createRequire } from 'node:module';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { installWxStub, scoreboard } from './lib/wx-stub.mjs';
+import { testdataPath, DB_URL } from './lib/testdata-path.mjs';
 
 installWxStub();
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const MP = resolve(HERE, '..', 'miniprogram');
-const TESTDATA = 'G:/My Drive/Personal Materials/App Dev/Hualong/hualong-backend/db/testdata';
-const DB_URL = 'postgres://postgres:postgres@localhost:5432/hualong_test';
+const TESTDATA = testdataPath();
 
 const require_ = createRequire(import.meta.url);
 const library = require_(resolve(MP, 'services', 'library.js'));
