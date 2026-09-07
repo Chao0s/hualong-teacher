@@ -27,3 +27,23 @@
   text-align: center;
   font-size: 26rpx;
 }
+
+/* 两个 picker 并排：日期宽、钟点窄。与发布新任务那一页同一个比例 */
+.time-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16rpx;
+  margin-top: 12rpx;
+}
+
+/* 期间那一格是派生值，不给控件 —— 做成不可点的样子，别让人以为能改 */
+.select--readonly {
+  color: var(--muted);
+  background: var(--accent-light);
+}
+
+/* 表单底下那句说明 */
+.hint--gap {
+  display: block;
+  margin-top: 16rpx;
+}

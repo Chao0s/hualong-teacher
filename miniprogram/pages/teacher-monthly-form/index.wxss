@@ -52,3 +52,14 @@
   border-radius: inherit;
   background: rgba(24, 155, 145, 0.28);
 }
+
+/* 勾选标记常驻，未选中时藏起来 —— 不用 wx:if，见 index.wxml 那一段的注解 */
+.album-photo__tick--off {
+  display: none;
+}
+
+/* 没有图片地址时显示的序号标签，压在图片层之上免得被盖住 */
+.album-photo__label {
+  position: relative;
+  z-index: 1;
+}

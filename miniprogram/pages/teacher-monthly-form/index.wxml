@@ -64,19 +64,32 @@
   <view class="empty-hint" wx:elif="{{!visibleGroups.length}}">这个孩子还没有被在园时光标注过，相册是空的。</view>
 
   <scroll-view class="album-scroll" scroll-y wx:else>
-    <view class="album-group" wx:for="{{visibleGroups}}" wx:key="title" wx:for-item="group">
+    <!-- 选中与否读的是每一行自己的 `sel`，**不在模板里算 indexOf**：
+         这是嵌套 wx:for（外层 group、内层默认 item），模板作用域里那个表达式
+         取不到值，边框与勾选标记会一起失效。见 index.js 的 onTogglePhoto 头注。
+
+         定位用两级下标 gi/pi，不用 fileId —— 那是我自己发的整数，不经 dataset 转换。 -->
+    <view
+      class="album-group"
+      wx:for="{{visibleGroups}}"
+      wx:key="title"
+      wx:for-item="group"
+      wx:for-index="gi"
+    >
       <text class="group-title">{{group.title}}</text>
       <view class="album-grid">
         <view
-          class="album-photo {{picked.indexOf(item.fileId) > -1 ? 'album-photo--sel' : ''}}"
+          class="album-photo {{item.sel ? 'album-photo--sel' : ''}}"
           wx:for="{{group.photos}}"
           wx:key="fileId"
-          data-fileid="{{item.fileId}}"
+          wx:for-index="pi"
+          data-gi="{{gi}}"
+          data-pi="{{pi}}"
           bindtap="onTogglePhoto"
         >
           <image class="album-photo__img" wx:if="{{item.url}}" src="{{item.url}}" mode="aspectFill" lazy-load />
-          <text wx:else>{{item.label}}</text>
-          <view class="album-photo__tick" wx:if="{{picked.indexOf(item.fileId) > -1}}">✓</view>
+          <text class="album-photo__label" wx:else>{{item.label}}</text>
+          <view class="album-photo__tick {{item.sel ? '' : 'album-photo__tick--off'}}">✓</view>
         </view>
       </view>
     </view>

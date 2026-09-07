@@ -812,24 +812,59 @@ const PARENT_EVAL_STATUS = { p0: '待填写', p1: '草稿', p2: '已提交', p3:
 // 服务端折算后的两档（completion_map）。
 const COMPLETION = { c1: '已完成', c2: '未完成' };
 
+// api/action-registry.tsv 的 action_key。
+const PARENT_EVAL_ACTIONS = { openWindow: 'parent_evaluation.open_window' };
+
 /**
- * 发起一次家长评价（NONE→p0）。
+ * 发起一次家长评价（NONE→p0），**全班 fan-out**（F26 解 G50）。
  *
- * **服务端目前回 501。** 契约把这条操作标了 `x-hualong-blocked-on: G50`：
- * 一次开窗到底为**哪些幼儿**建行 —— 全班在园名册 fan-out、教师勾选子集、
- * 还是家长首次进入时惰性建行？没人定过。连带未定的还有名册指纹要不要重算、
- * 幂等键是否必带、开窗后转入的幼儿补不补行。
+ * 服务端给**发起当下**本班全部在园（`e1`）幼儿各建一行，一人一行。
+ * **不发 child_id** —— 对象集合由服务端算，不由客户端指定。
  *
- * **仍然真的发这一请求**，不在客户端预先拦下：G50 一旦拍板、实作跟上，
- * 调用方不用改就能用；本地拦下的话，那天没人会记得回来把拦截删掉。
- * 调用方按 `err.code === 'not_implemented'` 把原因说给教师听。
+ * **重复发起是安全的**：唯一键 `(child_id, evaluation_type, evaluation_period)`
+ * 加 `ON CONFLICT DO NOTHING`，缺行补上、已有行原样不动。**已有行的提示语不会被覆盖**
+ * —— 家长可能已经照着旧提示写了一半。所以这一发不必带幂等键。
  *
- * `requested_by_teacher_id` 是 derived，**不发**（§7.3，DO-NOT-BUILD 8）。
+ * **开窗后转入的幼儿不补行**（与亲子任务 F16 一致），因此完成情况的分母是
+ * 那一期真实的行数，不是查询当下的班级人数。
+ *
+ * 回包是本次开窗涉及的全部行（新建的与已存在的都在内），调用方据此立刻显示分母。
+ *
+ * `requested_by_teacher_id`／`school_id`／`class_id` 是 derived，**不发**
+ * （§7.3，DO-NOT-BUILD 8）。`start_at`／`due_at` 不在剥离清单上 —— 它们是计划时刻。
  */
-function openParentEvaluationWindow({ type, prompt }) {
-  return api.post(PARENT_EVAL_PATH, {
-    body: { evaluation_type: type, evaluation_prompt: prompt },
+async function openParentEvaluationWindow({ type, period, title, prompt, startAt, dueAt }) {
+  const body = {
+    evaluation_type: type,
+    evaluation_period: period,
+    evaluation_title: title,
+    evaluation_prompt: prompt || null,
+    start_at: startAt,
+  };
+  if (dueAt !== undefined) body.due_at = dueAt;
+  const page = await api.post(PARENT_EVAL_PATH, {
+    action: PARENT_EVAL_ACTIONS.openWindow,
+    body,
   });
+  return (page.items || []).length;
+}
+
+/**
+ * 开窗前的本地检查。**预检不是校验**：服务端独立再验一次。
+ *
+ * 必填以 DDL 的 `NOT NULL` 为准：`evaluation_type`／`evaluation_period`／
+ * `evaluation_title`／`start_at` 四个。**原型的表单只有类型与说明两格** ——
+ * 那张表单在原型里根本提交不成功，与上一轮亲子任务缺 `start_at` 是同一类。
+ */
+function whyCannotOpenWindow({ type, period, title, startAt, dueAt }) {
+  if (!PARENT_EVAL_TYPE[type]) return '请选择评价类型';
+  if (!period) return '算不出评价期间，请检查当前学期';
+  if (!String(title || '').trim()) return '请填写评价标题';
+  if (!time.isWireTimestamp(startAt)) return '请选择开始时间';
+  if (dueAt && !time.isWireTimestamp(dueAt)) return '截止时间格式不对';
+  // 定长零填充的时间串，字典序等于时间序，所以直接比串。
+  if (dueAt && dueAt <= startAt) return '截止时间要晚于开始时间';
+  return '';
 }
 
 /**
@@ -1233,9 +1268,11 @@ module.exports = {
   PARENT_EVAL_TYPE,
   PARENT_EVAL_STATUS,
   COMPLETION,
+  evalPeriodLabelOf: evalPeriodLabel,
   listParentEvaluations,
   parentEvalPeriods,
   openParentEvaluationWindow,
+  whyCannotOpenWindow,
 
   // 月度评价矩阵
   MONTH_EVAL_STATUS,

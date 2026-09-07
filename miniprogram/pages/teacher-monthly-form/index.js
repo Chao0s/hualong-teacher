@@ -183,12 +183,19 @@ Page({
     try {
       // E7：相册 = 该幼儿被标注过的 moment 的全部照片，按 week_key 分组。
       const page = await co.listMoments({ childId: child.childId, limit: 100 });
+      const already = this.data.imported.map((p) => p.fileId);
       const byWeek = new Map();
       for (const m of page.items) {
         const key = m.weekKey || m.dateLabel || '其他';
         if (!byWeek.has(key)) byWeek.set(key, []);
         m.fileIds.forEach((fid, i) => {
-          byWeek.get(key).push({ fileId: fid, label: `${m.dateLabel} ${i + 1}`, url: '' });
+          byWeek.get(key).push({
+            fileId: fid,
+            label: `${m.dateLabel} ${i + 1}`,
+            url: '',
+            // 已经选进来的那些要显示成选中。sel 是这一行自己的状态，模板直接读。
+            sel: already.indexOf(fid) > -1,
+          });
         });
       }
       const groups = [...byWeek.entries()]
@@ -209,26 +216,51 @@ Page({
     }
   },
 
+  /**
+   * 切换一张照片的选中。
+   *
+   * **用两级下标定位，不用 fileId**：`data-gi`／`data-pi` 是我自己发的整数，
+   * 不经过 dataset 的取值转换。
+   *
+   * **选中标记写进每一行数据（`sel`），不在模板里算** ——
+   * 模板里写 `picked.indexOf(item.fileId) > -1` 在**嵌套 `wx:for`** 下取不到值：
+   * 外层 `wx:for-item="group"`、内层用默认 `item`，那个表达式恒为 false，
+   * 于是边框与勾选标记一起失效，而底部的计数（读的是 `picked.length`）照常在变 ——
+   * 三次改样式都没修好，因为病根不在样式。
+   *
+   * 顺带也更合规矩：CLAUDE.md §4 说页面里不判状态，模板里更不该。
+   */
   onTogglePhoto(e) {
-    const fileId = Number(e.currentTarget.dataset.fileid);
-    const picked = this.data.picked.indexOf(fileId) > -1
-      ? this.data.picked.filter((id) => id !== fileId)
-      : this.data.picked.concat(fileId);
-    this.setData({ picked, confirmText: `确定（${picked.length}）` });
+    const gi = Number(e.currentTarget.dataset.gi);
+    const pi = Number(e.currentTarget.dataset.pi);
+    const groups = this.data.visibleGroups;
+    if (!groups[gi] || !groups[gi].photos[pi]) return;
+
+    const next = !groups[gi].photos[pi].sel;
+    this.setData({ [`visibleGroups[${gi}].photos[${pi}].sel`]: next }, () => {
+      // picked 由数据推出来，不再是另一份要同步的状态。
+      const picked = [];
+      this.data.visibleGroups.forEach((g) => g.photos.forEach((p) => {
+        if (p.sel) picked.push(p.fileId);
+      }));
+      this.setData({ picked, confirmText: `确定（${picked.length}）` });
+    });
   },
 
   onCloseAlbum() {
     this.setData({ albumOpen: false });
   },
 
+  /** 确定：把打了 `sel` 的那些收进 imported，顺带把已经取到的地址带过去。 */
   onConfirmAlbum() {
-    const known = new Map();
-    this.data.visibleGroups.forEach((g) => g.photos.forEach((p) => known.set(p.fileId, p.url)));
-    this.data.imported.forEach((p) => { if (p.url) known.set(p.fileId, p.url); });
+    const chosen = [];
+    this.data.visibleGroups.forEach((g) => g.photos.forEach((p) => {
+      if (p.sel) chosen.push(p);
+    }));
     this.setData({
       albumOpen: false,
-      imported: this.data.picked.map((fid, i) => ({
-        fileId: fid, label: `照片 ${i + 1}`, url: known.get(fid) || '',
+      imported: chosen.map((p, i) => ({
+        fileId: p.fileId, label: `照片 ${i + 1}`, url: p.url || '',
       })),
     });
   },

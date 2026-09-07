@@ -55,6 +55,10 @@ const restore = [];
 /** 本轮建的月评行，跑完删掉。 */
 const madeMonthEvals = [];
 const BASE_MONTH_EVAL = 420;
+/** 本轮开的窗，跑完整期删掉。 */
+const openedPeriods = [];
+const BASE_PARENT_EVAL = 90;
+const BASE_PARENT_EVAL_ALL = 540;
 
 async function scalar(sql, params = []) {
   const r = await db.query(sql, params);
@@ -630,17 +634,7 @@ async function evalDetailSection() {
   check('分母不是写死的班级人数（各组行数可以不同）',
     groups.every((g) => g.total === byKey.get(g.key).n), '有一组的分母对不上');
 
-  /* 发起开窗仍被 G50 阻断，客户端不预先拦下，照实回 501。 */
-  let openCode = '(没被拒)';
-  try {
-    await co.openParentEvaluationWindow({ type: 't1', prompt: '探针不该写进去' });
-  } catch (err) { openCode = err.code; }
-  check('发起家长评价回 not_implemented（G50 未闭合，客户端不预先拦下）',
-    openCode === 'not_implemented', `实际 ${openCode}`);
-  const noNewRows = await scalar(
-    'SELECT count(*)::int FROM db_parent_evaluation WHERE class_id = $1', [CLASS_ID],
-  );
-  check('被拒之后没有凭空多出行', noNewRows === 90, `实际 ${noNewRows} 行`);
+  await openWindowSection(groups);
 
   const boardRows = await co.listParentEvaluations({ limit: 5 });
   check('看板行仍然不带正文（一次发全班正文没道理）',
@@ -755,7 +749,137 @@ async function monthEvalWriteSection() {
     co.whyCannotSaveMonthEval({ childId: 1, month: MONTH, text: 'x'.repeat(501) }) !== '');
 }
 
+/* ── 发起家长评价：全班 fan-out（F26 解 G50，会改库） ─────────────────────── */
+
+async function openWindowSection(groups) {
+  const before = await scalar(
+    'SELECT count(*)::int FROM db_parent_evaluation WHERE class_id = $1', [CLASS_ID],
+  );
+  check(`1 班基线 ${BASE_PARENT_EVAL} 笔家长评价`, before === BASE_PARENT_EVAL, `实际 ${before}`);
+
+  const roster = await scalar(
+    "SELECT count(*)::int FROM db_child WHERE class_id = $1 AND enrollment_status = 'e1'",
+    [CLASS_ID],
+  );
+
+  /* 全班 fan-out：一次开窗给每名在园幼儿各建一行。 */
+  // 刻意用一个真实操作绝不会产生的期间：页面按园所今天算期间，
+  // 撞上的话探针的基线断言会被人为操作弄红（2026-09-07 真撞过一次）。
+  const PERIOD = '2099-01';
+  const form = {
+    type: 't1',
+    period: PERIOD,
+    title: '探针开的窗（可删）',
+    prompt: '探针写的说明。',
+    startAt: '2026-09-01T08:00:00+08:00',
+    dueAt: '2026-09-08T21:00:00+08:00',
+  };
+  const n = await co.openParentEvaluationWindow(form);
+  openedPeriods.push({ type: 't1', period: PERIOD });
+  check(`开窗回本次涉及的 ${roster} 行（全班在园人数）`, n === roster, `实际 ${n}`);
+
+  const after = await scalar(
+    'SELECT count(*)::int FROM db_parent_evaluation WHERE class_id = $1', [CLASS_ID],
+  );
+  check(`库里多出 ${roster} 行`, after === before + roster, `${before} → ${after}`);
+
+  /* 建的正是在园那些，且逐列与发出去的一致。 */
+  const made = await db.query(
+    `SELECT e.child_id, e.evaluation_title, e.evaluation_prompt, e.evaluation_status,
+            e.requested_by_teacher_id, e.school_id, e.class_id,
+            to_char(e.start_at, 'YYYY-MM-DD"T"HH24:MI:SS') || '+08:00' AS start_wire,
+            to_char(e.due_at,   'YYYY-MM-DD"T"HH24:MI:SS') || '+08:00' AS due_wire,
+            ch.enrollment_status
+       FROM db_parent_evaluation e JOIN db_child ch ON ch.child_id = e.child_id
+      WHERE e.evaluation_period = $1 AND e.class_id = $2`,
+    [PERIOD, CLASS_ID],
+  );
+  check('每一行都建给在园（e1）幼儿',
+    made.rows.every((r) => r.enrollment_status === 'e1'),
+    `实际 ${[...new Set(made.rows.map((r) => r.enrollment_status))].join(',')}`);
+  check('新建的行都是 p0（p0 从此有生产者了）',
+    made.rows.every((r) => r.evaluation_status === 'p0'),
+    `实际 ${[...new Set(made.rows.map((r) => r.evaluation_status))].join(',')}`);
+  check('标题与说明逐行与发出去的相同',
+    made.rows.every((r) => r.evaluation_title === form.title && r.evaluation_prompt === form.prompt),
+    '有行的标题或说明对不上');
+  // 计划时刻钉到库里的裸值，不是钉形状（§7.6）。
+  check('start_at 原样落库（不是 now()，也没有偏移换算）',
+    made.rows.every((r) => r.start_wire === form.startAt),
+    `实际 ${made.rows[0] && made.rows[0].start_wire}`);
+  check('due_at 同样一秒不差',
+    made.rows.every((r) => r.due_wire === form.dueAt),
+    `实际 ${made.rows[0] && made.rows[0].due_wire}`);
+  check('school_id/class_id/requested_by_teacher_id 由服务端派生为 1/1/1',
+    made.rows.every((r) => r.school_id === 1 && r.class_id === 1 && r.requested_by_teacher_id === 1),
+    JSON.stringify(made.rows[0]));
+
+  /* 别班一行都不该多出来 —— 范围两头钉。 */
+  const spill = await scalar(
+    'SELECT count(*)::int FROM db_parent_evaluation WHERE evaluation_period = $1 AND class_id <> $2',
+    [PERIOD, CLASS_ID],
+  );
+  check('别班没有凭空多出行', spill === 0, `多了 ${spill} 行`);
+
+  /* 重复发起：缺行 INSERT／已有行 skip，且不覆盖已有的说明。 */
+  const again = await co.openParentEvaluationWindow({ ...form, prompt: '改过的说明，不该覆盖。' });
+  check('重复发起回同样的行数（幂等）', again === roster, `实际 ${again}`);
+  const afterAgain = await scalar(
+    'SELECT count(*)::int FROM db_parent_evaluation WHERE class_id = $1', [CLASS_ID],
+  );
+  check('重复发起没有再多出行（ON CONFLICT DO NOTHING）',
+    afterAgain === after, `${after} → ${afterAgain}`);
+  const prompts = await db.query(
+    'SELECT DISTINCT evaluation_prompt AS p FROM db_parent_evaluation WHERE evaluation_period = $1',
+    [PERIOD],
+  );
+  check('已有行的说明**没有被覆盖**（不做 take over，家长可能照旧提示写了一半）',
+    prompts.rows.length === 1 && prompts.rows[0].p === form.prompt,
+    JSON.stringify(prompts.rows.map((r) => r.p)));
+
+  /* 计划时刻格式不符一律 422，且不做转换。 */
+  for (const [label, v] of [['裸串', '2026-09-01 08:00:00'], ['Z', '2026-09-01T08:00:00Z']]) {
+    let code = '(没被拒)';
+    try {
+      await co.openParentEvaluationWindow({ ...form, period: '2099-02', startAt: v });
+    } catch (err) { code = err.code; }
+    check(`start_at 是 ${label} 时回 422 timestamp_not_accepted`,
+      code === 'timestamp_not_accepted', `实际 ${code}`);
+  }
+  const strayPeriod = await scalar(
+    "SELECT count(*)::int FROM db_parent_evaluation WHERE evaluation_period = '2099-02'",
+  );
+  check('被拒的那两发一行都没建成', strayPeriod === 0, `实际 ${strayPeriod} 行`);
+
+  /* 本地预检与服务端规则一致。 */
+  check('缺标题时拦下', co.whyCannotOpenWindow({ ...form, title: ' ' }) !== '');
+  check('缺开始时间时拦下', co.whyCannotOpenWindow({ ...form, startAt: '' }) !== '');
+  check('截止早于开始时拦下',
+    co.whyCannotOpenWindow({ ...form, dueAt: '2026-08-01T08:00:00+08:00' }) !== '');
+  check('齐全时放行', co.whyCannotOpenWindow(form) === '', co.whyCannotOpenWindow(form));
+
+  /* 新开的这一期要出现在按期间分组里，且分母 = 那一期真实的行数。 */
+  const nowGroups = await co.parentEvalPeriods({});
+  const mine = nowGroups.find((g) => g.period === PERIOD);
+  check('新开的一期出现在按期间分组里', Boolean(mine), '没找到');
+  check(`那一组的分母是本次真实建的行数 ${roster}`,
+    mine && mine.total === roster, mine && String(mine.total));
+  check('分组数比开窗前多一组',
+    nowGroups.length === groups.length + 1, `${groups.length} → ${nowGroups.length}`);
+}
+
 async function cleanup() {
+  for (const w of openedPeriods) {
+    await db.query(
+      'DELETE FROM db_parent_evaluation WHERE evaluation_type = $1 AND evaluation_period = $2',
+      [w.type, w.period],
+    );
+  }
+  await db.query("SELECT setval('db_parent_evaluation_parent_evaluation_id_seq', (SELECT max(parent_evaluation_id) FROM db_parent_evaluation))");
+  const evals = await scalar('SELECT count(*)::int FROM db_parent_evaluation');
+  check(`db_parent_evaluation 回到 STATS.md 的基线（${BASE_PARENT_EVAL_ALL}）`,
+    evals === BASE_PARENT_EVAL_ALL, `实际 ${evals}`);
+
   for (const id of madeMonthEvals) {
     await db.query("DELETE FROM db_file_ref WHERE owner_object = 'db_month_eval' AND owner_id = $1", [id]);
     await db.query('DELETE FROM db_month_eval WHERE month_eval_id = $1', [id]);

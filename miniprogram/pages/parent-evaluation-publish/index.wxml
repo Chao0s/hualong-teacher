@@ -3,8 +3,9 @@
      教师在这里写的是给家长看的「评价说明」（db_parent_evaluation.evaluation_prompt），
      不是家长回填的 evaluation_text —— 那两个控件在家长端的月度／学期评价页。
 
-     底下的历史列表是真数据；顶上的「发布给家长」服务端回 501（缺口 G50），
-     按下去照实说明原因，不假装成功。 -->
+     原型只有「评价类型」与「评价说明」两格，而 DDL 上 evaluation_period、
+     evaluation_title、start_at 都是 NOT NULL —— 那张表单在原型里根本提交不成功。
+     期间派生不给控件（它是不透明字符串，不当日期解析），标题与时间补了控件。 -->
 <view class="page">
 
   <view class="chunk">
@@ -13,12 +14,32 @@
       <view class="select">{{types[typeIndex]}}</view>
     </picker>
 
+    <text class="form-label">评价期间</text>
+    <view class="select select--readonly">{{periodLabel || '算不出期间，请检查当前学期'}}</view>
+    <text class="hint">按类型自动算：月度取本月，学期取当前学期。一名幼儿一个期间只有一份。</text>
+
+    <text class="form-label">评价标题</text>
+    <input class="input" maxlength="100" value="{{title}}" bindinput="onTitleInput" />
+
+    <!-- 只挑日期。库里仍存一个钟点（TIMESTAMP NOT NULL），但那个钟点对家长
+         没有区别，固定成开始 08:00、截止 21:00，见 index.js 的 START_CLOCK。 -->
+    <text class="form-label">开始日期</text>
+    <picker mode="date" value="{{startDate}}" bindchange="onStartDate">
+      <view class="select">{{startDate}}</view>
+    </picker>
+
+    <text class="form-label">截止日期</text>
+    <picker mode="date" value="{{dueDate}}" bindchange="onDueDate">
+      <view class="select">{{dueDate}}</view>
+    </picker>
+
     <text class="form-label">评价说明</text>
     <textarea class="textarea" maxlength="1000" value="{{prompt}}" bindinput="onPromptInput" />
 
     <view class="btn btn--primary full full--gap" hover-class="btn--hover" bindtap="onPublish">
-      {{publishing ? '正在发布…' : '发布给家长'}}
+      {{publishing ? '正在发起…' : '发起给全班家长'}}
     </view>
+    <text class="hint hint--gap">一次给本班每名在园幼儿各开一份。已经开过的那些不会被覆盖。</text>
   </view>
 
   <view class="sec">过往进度</view>

@@ -120,6 +120,28 @@ function formatDay(value) {
 }
 
 /**
+ * 裸日期加 N 天，`YYYY-MM-DD` 进、`YYYY-MM-DD` 出。
+ *
+ * **走 civil 日历算，不建 Date** —— `new Date('2026-03-01')` 在不同宿主上会被当成
+ * UTC 或本地时间，加完天数再格式化回来可能差一天（§1.2 要消掉的正是这种歧义）。
+ * 这里借 `civilFromDays` 的逆运算：先把年月日折成「儒略日序号」，加完再折回来。
+ */
+function addLocalDays(date, days) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date || '');
+  if (!m) return date || '';
+  const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  // days-from-civil（Howard Hinnant 的算法），纯整数运算。
+  const yy = y - (mo <= 2 ? 1 : 0);
+  const era = Math.floor(yy / 400);
+  const yoe = yy - era * 400;
+  const doy = Math.floor((153 * (mo + (mo > 2 ? -3 : 9)) + 2) / 5) + d - 1;
+  const doe = yoe * 365 + Math.floor(yoe / 4) - Math.floor(yoe / 100) + doy;
+  // civilFromDays 回的是 { year, month, day } 对象，这里要的是裸日期串。
+  const c = civilFromDays(era * 146097 + doe - 719468 + days);
+  return `${c.year}-${pad(c.month)}-${pad(c.day)}`;
+}
+
+/**
  * `2026-08-19T14:03:22+08:00` -> `2026-08-19`. Display only.
  *
  * 与 `formatDay` 的差别只有一个年份，而那个年份在详情页是必须的：亲子任务可以属于
@@ -287,6 +309,7 @@ function wholeMonthsOfTerm(startDate, endDate) {
 
 module.exports = {
   wholeMonthsOfTerm,
+  addLocalDays,
   formatFullDay,
   OFFSET,
   SCHEDULED_TIME_COLUMNS,
