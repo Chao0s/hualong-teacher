@@ -236,3 +236,18 @@
   line-height: 1.5;
   color: var(--muted);
 }
+
+/* 加载中、取数失败、这场还没有公开反馈，三种情况共用 */
+.hint {
+  padding: 32rpx;
+  color: var(--muted);
+  text-align: center;
+  font-size: 26rpx;
+}
+
+/* 撤回之后的说明。材料、会议入口、公开反馈三块都不画，这一句代替它们 */
+.withdrawn {
+  color: var(--danger);
+  font-size: 26rpx;
+  line-height: 1.6;
+}

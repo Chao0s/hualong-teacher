@@ -136,7 +136,7 @@ node db/tools/check-all.mjs
 
 ## 3. 现状
 
-`miniprogram/` 共 **55 页**，**22 页已接 API**，**33 页仍是写死的字面量**。
+`miniprogram/` 共 **55 页**，**26 页已接 API**，**29 页仍是写死的字面量**。
 
 判断某一页属于哪一类：看 `index.js` 里有没有 `require('../../services/`。
 在开发者工具里看 Network 面板有没有 `/api/v1/...` 请求，是同一件事的另一种查法。
@@ -148,6 +148,8 @@ node db/tools/check-all.mjs
 | 在园时光 | `home-school-moments`、`home-school-moment-feed`、`home-school-moment-publish` |
 | 亲子任务 | `parent-tasks`、`parent-task-detail`、`parent-task-publish` |
 | 社区与评价 | `community-coeducation`、`parent-evaluation-detail`、`teacher-monthly-evaluation`、`teacher-monthly-form` |
+| 家长评价开窗 | `parent-evaluation-publish` |
+| 教研培训 | `training-list`、`training-detail`、`my-training` |
 
 ### 提到页面就写它在屏幕上叫什么、怎么走到
 
@@ -185,11 +187,15 @@ node db/tools/check-all.mjs
 | `parent-task-publish` | 发布新任务 | 亲子任务 → 发布新任务（点草稿进来是改草稿） |
 | `community-coeducation` | 社区共育 | 家园社共育 → 社区共育 |
 | `growth-record` | 儿童成长档案 | 家园社共育 → 成长档案 |
-| `parent-evaluation-publish` | 发布家长测评 | 成长档案 → 发布家长评价 |
-| `parent-evaluation-detail` | 测评进度 | 发布家长测评 → 进入测评进度 |
+| `parent-evaluation-detail` | 测评进度 | 发布家长测评 → 点某一期 |
 | `teacher-evaluation` | 教师评价 | 成长档案 → 教师评价 |
 | `teacher-monthly-evaluation` | 教师月度评价 | 教师评价 → 月度评价 |
 | `teacher-monthly-form` | 填写月度评价 | 教师月度评价 → 点任一圆点；也可从首页「本月评价」直达 |
+| `parent-evaluation-publish` | 发布家长测评 | 成长档案 → 发布家长评价 |
+| `training-center` | 教研培训部 | 底部导航「教研培训」（**这一页本身还没接 API**，只是路径上的一站） |
+| `training-list` | 教研培训 | 教研培训部 → 教研培训 |
+| `training-detail` | 研修详情 | 教研培训 → 点某一场研修 |
+| `my-training` | 我的研修 | 教研培训 → 我的研修（「我的档案」那一格） |
 
 **两个「任务详情」重名**：`parent-task-detail`（亲子任务的，家园社共育那条线）与
 `teacher-task-detail`（待办任务的，首页那条线）标题逐字相同。提到时必须写目录名。
@@ -254,7 +260,7 @@ node server/server.mjs          # → http://localhost:3860/api/v1
 | **渲染** | **开发者工具里真点** | **上面全部查不出来** |
 
 探针在 `tools/`：`probe-session`、`probe-library`、`probe-library-write`、`probe-party`、
-`probe-moments`、`probe-parent-task`、`probe-coeducation`。它们桩掉 `wx.*` 之后**加载未经修改的发布代码**，所以路径写错、字段
+`probe-moments`、`probe-parent-task`、`probe-coeducation`、`probe-training`。它们桩掉 `wx.*` 之后**加载未经修改的发布代码**，所以路径写错、字段
 改名、枚举译反都会红。
 
 **先写探针再改页面。** 前三条线都靠这个顺序在改页之前就抓到了真问题：

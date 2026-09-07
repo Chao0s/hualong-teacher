@@ -1,83 +1,105 @@
 <!-- 研修详情 —— 对照原型 screens/training-detail.html。
-     三块的显隐规则照抄原型：
-       线上会议：这场研修有会议链接才显示
-       报名入口：不是历史场次才显示
-       研修反馈：是历史场次、且本人参加过才显示 -->
+
+     四块的显隐**都读服务端回的值**，不读 URL 参数：原型靠 ?type=history 决定，
+     那是改一下地址栏就能让页面显示不该显示的块。
+
+       研修材料  files 非空（撤回的活动服务端不给材料）
+       线上会议  hasMeeting（url 与 title 同空同非空）
+       报名入口  can.register || can.cancel（状态机在 service 里，页面不判）
+       研修反馈  已过（phase=history）且本人已完成（myStatus=s3）
+
+     会议链接只复制、不跳转 —— 不内嵌外站（F9）。 -->
 <view class="page">
 
-  <view class="head">
-    <text class="kicker">{{training.status}}</text>
-    <text class="head__title">{{training.title}}</text>
-    <text class="meta">{{training.meta}}</text>
-    <text class="meta">{{training.summary}}</text>
-  </view>
+  <view class="hint" wx:if="{{loading}}">正在加载…</view>
+  <view class="hint" wx:elif="{{error}}" bindtap="onRetry">{{error}}　点此重试</view>
 
-  <view class="sec">
-    <text class="sec__title">研修材料</text>
-    <text class="sec__hint">预览 / 下载</text>
-  </view>
-  <view class="chunk">
-    <view class="file" wx:for="{{training.materials}}" wx:key="*this" wx:for-item="file">
-      <text class="file-name">{{file}}</text>
-      <text class="action" data-action="预览：{{file}}" bindtap="onToast">预览</text>
-      <text class="action" data-action="下载：{{file}}" bindtap="onToast">下载</text>
+  <block wx:elif="{{detail}}">
+    <view class="head">
+      <text class="kicker">{{detail.phaseLabel}}{{detail.statusNote ? ' · ' + detail.statusNote : ''}}</text>
+      <text class="head__title">{{detail.title}}</text>
+      <text class="meta">{{detail.hasEnd ? detail.startStamp + ' — ' + detail.endStamp : detail.startStamp}}</text>
+      <text class="meta" wx:if="{{detail.location}}">{{detail.location}}</text>
+      <text class="meta" wx:if="{{detail.speaker}}">主讲：{{detail.speaker}}</text>
+      <text class="meta">{{detail.content}}</text>
     </view>
-  </view>
 
-  <block wx:if="{{training.meeting}}">
-    <view class="sec">
-      <text class="sec__title">线上会议</text>
-      <text class="sec__hint">复制后打开</text>
+    <!-- 撤回之后材料、会议入口、公开回馈服务端一律不给，这里说明一句，不画空区块 -->
+    <view class="chunk withdrawn" wx:if="{{detail.withdrawn}}">
+      这场研修已被撤回。原有的研修材料、会议入口与公开反馈都不再提供。
     </view>
-    <view class="chunk meeting">
-      <text class="meeting__title">{{training.meeting.title}}</text>
-      <text class="meeting__url">{{training.meeting.url}}</text>
-      <text class="meeting__hint">请复制链接到浏览器或会议 App 打开。</text>
-      <view class="ghost" hover-class="ghost--hover" bindtap="onCopyMeeting">复制会议链接</view>
-    </view>
-  </block>
 
-  <block wx:if="{{!isHistory}}">
-    <view class="sec">
-      <text class="sec__title">报名入口</text>
-      <text class="sec__hint">最新研修</text>
-    </view>
-    <view class="chunk signup">
-      <text class="signup__desc">报名后将自动记录到教师个人研修档案。请确认时间安排后提交报名。</text>
-      <view class="primary" hover-class="primary--hover" bindtap="onSignup">{{registered ? '取消报名' : '立即报名'}}</view>
-    </view>
-  </block>
-
-  <block wx:if="{{isHistory && training.completedParticipant}}">
-    <view class="sec">
-      <text class="sec__title">研修反馈</text>
-      <text class="sec__hint">{{feedbacks.length}} 条</text>
-    </view>
-    <view class="chunk">
-      <view class="feedback" wx:for="{{feedbacks}}" wx:key="text" wx:for-item="fb">
-        <view class="feedback__top">
-          <text class="feedback__teacher">{{fb.teacher}}</text>
-          <text class="feedback__time">{{fb.time}}</text>
+    <block wx:if="{{detail.files.length}}">
+      <view class="sec">
+        <text class="sec__title">研修材料</text>
+        <text class="sec__hint">{{detail.files.length}} 份</text>
+      </view>
+      <view class="chunk">
+        <view class="file" wx:for="{{detail.files}}" wx:key="fileId" wx:for-item="f">
+          <text class="file-name">{{f.name}}</text>
+          <text class="action" data-name="{{f.name}}" bindtap="onFileTap">下载</text>
         </view>
-        <text class="feedback__text">{{fb.text}}</text>
       </view>
+    </block>
 
-      <view class="ghost" hover-class="ghost--hover" bindtap="onMoreFeedback">加载更多反馈</view>
-
-      <view class="input">
-        <input
-          class="input__field"
-          placeholder="写下你的研修反馈（最多 1000 字）..."
-          placeholder-class="input__ph"
-          maxlength="1000"
-          value="{{draft}}"
-          disabled="{{submitted}}"
-          bindinput="onDraftInput"
-        />
-        <view class="input__send" bindtap="onSubmitFeedback">{{submitted ? '已提交' : '提交'}}</view>
+    <block wx:if="{{detail.hasMeeting}}">
+      <view class="sec">
+        <text class="sec__title">线上会议</text>
+        <text class="sec__hint">复制后打开</text>
       </view>
-      <text class="feedback-hint">不保存草稿；提交后内容不可修改，审核通过后公开。</text>
-    </view>
+      <view class="chunk meeting">
+        <text class="meeting__title">{{detail.meetingTitle}}</text>
+        <text class="meeting__url">{{detail.meetingUrl}}</text>
+        <text class="meeting__hint">请复制链接到浏览器或会议 App 打开。</text>
+        <view class="ghost" hover-class="ghost--hover" bindtap="onCopyMeeting">复制会议链接</view>
+      </view>
+    </block>
+
+    <block wx:if="{{detail.can.register || detail.can.cancel}}">
+      <view class="sec">
+        <text class="sec__title">报名入口</text>
+        <text class="sec__hint">{{detail.myStatusLabel || '尚未报名'}}</text>
+      </view>
+      <view class="chunk signup">
+        <text class="signup__desc">报名后会记录到你的研修档案。活动开始后报名状态就不能再改了。</text>
+        <view class="primary" hover-class="primary--hover" bindtap="onSignup">
+          {{acting ? '请稍候…' : (detail.can.cancel ? '取消报名' : '立即报名')}}
+        </view>
+      </view>
+    </block>
+
+    <block wx:if="{{detail.phase === 'history' && detail.myStatus === 's3'}}">
+      <view class="sec">
+        <text class="sec__title">研修反馈</text>
+        <text class="sec__hint">{{detail.feedbackCount}} 条</text>
+      </view>
+      <view class="chunk">
+        <view class="feedback" wx:for="{{feedbacks}}" wx:key="id" wx:for-item="fb">
+          <view class="feedback__top">
+            <text class="feedback__teacher">{{fb.name}}</text>
+            <text class="feedback__time">{{fb.publishedLabel}}</text>
+          </view>
+          <text class="feedback__text">{{fb.text}}</text>
+        </view>
+        <view class="hint" wx:if="{{!feedbacks.length}}">这场研修还没有公开的反馈。</view>
+
+        <view class="ghost" wx:if="{{feedbackCursor}}" hover-class="ghost--hover" bindtap="onMoreFeedback">加载更多反馈</view>
+
+        <view class="input">
+          <input
+            class="input__field"
+            placeholder="写下你的研修反馈（最多 1000 字）..."
+            placeholder-class="input__ph"
+            maxlength="1000"
+            value="{{draft}}"
+            disabled="{{submitted}}"
+            bindinput="onDraftInput"
+          />
+          <view class="input__send" bindtap="onSubmitFeedback">{{submitted ? '已提交' : '提交'}}</view>
+        </view>
+        <text class="feedback-hint">一人一场一份，提交后不能修改也不能撤回；审核通过后以真名公开。提交之后你查不到自己那一份的审核状态。</text>
+      </view>
+    </block>
   </block>
 
 </view>

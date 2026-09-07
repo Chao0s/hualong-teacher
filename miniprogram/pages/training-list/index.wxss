@@ -143,3 +143,11 @@
 .profile-icon--book {
   background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDY3ZTc2IiBzdHJva2Utd2lkdGg9IjIiPjxwYXRoIGQ9Ik00IDE5LjVBMi41IDIuNSAwIDAgMSA2LjUgMTdIMjAiLz48cGF0aCBkPSJNNi41IDJIMjB2MjBINi41QTIuNSAyLjUgMCAwIDEgNCAxOS41di0xNUEyLjUgMi41IDAgMCAxIDYuNSAyeiIvPjwvc3ZnPg==");
 }
+
+/* 加载中、取数失败、某一区为空，三种情况共用 */
+.hint {
+  padding: 32rpx;
+  color: var(--muted);
+  text-align: center;
+  font-size: 26rpx;
+}

@@ -19,19 +19,22 @@
     </view>
   </view>
 
-  <block wx:for="{{groups}}" wx:key="title" wx:for-item="group">
+  <view class="hint" wx:if="{{loading}}">正在加载研修…</view>
+  <view class="hint" wx:elif="{{error}}" bindtap="onRetry">{{error}}　点此重试</view>
+
+  <!-- wx:for 与 wx:else 不能挂同一个节点（npm test 第 6 项），所以外面套一层 block。 -->
+  <block wx:else>
+  <block wx:for="{{groups}}" wx:key="key" wx:for-item="group">
     <view class="sec">
       <text class="sec__title">{{group.title}}</text>
-      <text class="sec__more" data-name="{{group.title}}" bindtap="onNotYet">更多</text>
     </view>
     <view
       class="card"
       hover-class="card--hover"
       hover-stay-time="80"
       wx:for="{{group.items}}"
-      wx:key="title"
+      wx:key="id"
       data-id="{{item.id}}"
-      data-type="{{item.type}}"
       bindtap="onTrainingTap"
     >
       <view class="card-top">
@@ -44,6 +47,8 @@
         <text class="pill" wx:for="{{item.pills}}" wx:key="*this" wx:for-item="pill">{{pill}}</text>
       </view>
     </view>
+    <view class="hint" wx:if="{{!group.items.length}}">这一区暂时没有研修。</view>
+  </block>
   </block>
 
 </view>

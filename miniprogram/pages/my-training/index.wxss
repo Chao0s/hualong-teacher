@@ -80,3 +80,11 @@
   font-size: 20rpx;
   color: var(--muted);
 }
+
+/* 加载中、取数失败、一条都没有，三种情况共用 */
+.hint {
+  padding: 32rpx;
+  color: var(--muted);
+  text-align: center;
+  font-size: 26rpx;
+}

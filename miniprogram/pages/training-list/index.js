@@ -1,14 +1,34 @@
 /**
- * 教研培训 —— 原型 screens/training-list.html 的小程序版本。
+ * 教研培训 —— 研修活动列表，数据来自 `GET /trainings`。
  *
- * 「更多」在原型里链回本页带查询参数（?section=latest&view=all），
- * 没有独立页面，所以这里保持弹提示。
+ * ── 两区是服务端切的，不是本地筛的 ─────────────────────────────────────────
+ *
+ * 「最新研修」发 `phase=latest`（upcoming + ongoing），「历史研修」发 `phase=history`。
+ * **客户端一个日期都不推** —— 阶段由服务端按**园所时区**算（DO-NOT-BUILD 9），
+ * 本地按 `start_at` 比大小会用设备时区，跨日那一刻两边就不一致了。
+ *
+ * 两区各发一次请求。合成一次再本地分是省不了的：游标是按分区绑指纹的，
+ * 混在一起翻页会撞 `cursor_filter_mismatch`。
+ *
+ * ── 卡片上那三样都有据可查 ─────────────────────────────────────────────────
+ *
+ * 徽章读派生的 `training_phase`，不是另存的类型（F9 已删 `training_type`）；
+ * 摘要是服务端从正文截的 `excerpt`；「已报名」读 `my_participation_status`。
+ *
+ * 原型卡片脚上那两个胶囊写着「研修材料 4」「反馈 24」—— **列表端点两个都不回**，
+ * 材料数与回馈数只在详情里有。硬要显示就得给每张卡各打一次详情，那是 N+1。
+ * 所以列表脚上改放**有据可查的三样**：地点、主讲、本人参与状态。
  */
+
+const training = require('../../services/training');
+const guard = require('../../utils/guard');
 
 const PROFILE_ROUTES = {
   user: '/pages/teacher-profile/index',
   book: '/pages/my-training/index',
 };
+
+const PAGE_LIMIT = 20;
 
 Page({
   data: {
@@ -17,46 +37,43 @@ Page({
       { key: 'book', title: '我的研修', desc: '参与记录、提交材料与研修成果' },
     ],
 
-    groups: [
-      {
-        title: '最新研修',
-        items: [
-          {
-            id: 'game-course', type: 'latest',
-            title: '幼儿园课程游戏化的理论与实践', badge: '即将开始',
-            meta: '6月28日 14:00 · 多功能厅 · 主讲：陈园长',
-            summary: '围绕游戏化课程设计、材料投放和教师观察支持展开。',
-            pills: ['研修材料 4', '开放报名'],
-          },
-          {
-            id: 'lingnan', type: 'latest',
-            title: '岭南文化融入幼儿园课程专题研修', badge: '报名中',
-            meta: '7月8日 09:30 · 区教师发展中心 · 主讲：外聘专家',
-            summary: '从地方文化资源采集、活动转化和课程评价三个层面展开。',
-            pills: ['研修材料 4', '开放报名'],
-          },
+    groups: [],
+    loading: true,
+    error: '',
+  },
+
+  onShow() {
+    this.load();
+  },
+
+  async load() {
+    this.setData({ loading: true, error: '' });
+    try {
+      await guard.requireSession();
+      // 两区互不依赖，没有理由排队。
+      const [latest, history] = await Promise.all([
+        training.listTrainings({ phase: 'latest', limit: PAGE_LIMIT }),
+        training.listTrainings({ phase: 'history', limit: PAGE_LIMIT }),
+      ]);
+      this.setData({
+        loading: false,
+        groups: [
+          { key: 'latest', title: '最新研修', items: latest.items.map(toCard) },
+          { key: 'history', title: '历史研修', items: history.items.map(toCard) },
         ],
-      },
-      {
-        title: '历史研修',
-        items: [
-          {
-            id: 'observation', type: 'history',
-            title: '幼儿行为观察与记录方法', badge: '已完成',
-            meta: '6月12日 15:00 · 会议室二 · 主讲：李老师',
-            summary: '练习轶事记录、时间取样和事件取样，并形成班级观察记录样例。',
-            pills: ['研修材料 5', '反馈 24'],
-          },
-          {
-            id: 'home-connect', type: 'history',
-            title: '家园沟通技巧与案例分享', badge: '已完成',
-            meta: '5月30日 10:00 · 线上会议 · 主讲：王主任',
-            summary: '聚焦家长沟通边界、正向反馈和争议场景的回应策略。',
-            pills: ['研修材料 3', '反馈 21'],
-          },
-        ],
-      },
-    ],
+      });
+    } catch (err) {
+      if (guard.endSessionOnAuthFailure(err)) return;
+      this.setData({
+        loading: false,
+        groups: [],
+        error: err.userMessage || '研修列表加载失败，请稍后重试',
+      });
+    }
+  },
+
+  onRetry() {
+    this.load();
   },
 
   onProfileTap(e) {
@@ -64,11 +81,29 @@ Page({
   },
 
   onTrainingTap(e) {
-    const { id, type } = e.currentTarget.dataset;
-    wx.navigateTo({ url: `/pages/training-detail/index?id=${id}&type=${type}` });
-  },
-
-  onNotYet(e) {
-    wx.showToast({ title: `${e.currentTarget.dataset.name}（预览工程未接入）`, icon: 'none' });
+    wx.navigateTo({ url: `/pages/training-detail/index?id=${e.currentTarget.dataset.id}` });
   },
 });
+
+/**
+ * 一张卡片。**所有判断都在这里做完**，模板只读属性。
+ *
+ * 模板里不写 `indexOf` 之类的方法调用 —— 那个表达式在真机上算不出来，
+ * 选照片那两页撞过（见 `home-school-moment-feed` 的 onTogglePhoto 头注）。
+ */
+function toCard(t) {
+  const pills = [];
+  if (t.location) pills.push(t.location);
+  if (t.speaker) pills.push(`主讲：${t.speaker}`);
+  if (t.myStatusLabel) pills.push(t.myStatusLabel);
+  return {
+    id: t.id,
+    title: t.title,
+    // 徽章就是派生阶段：未开始／进行中／已结束。
+    badge: t.phaseLabel,
+    // 时间在前，地点主讲挪到脚上的胶囊里，一行不塞三样。
+    meta: t.hasEnd ? `${t.startStamp} — ${t.endStamp}` : t.startStamp,
+    summary: t.excerpt,
+    pills,
+  };
+}
