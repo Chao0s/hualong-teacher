@@ -30,6 +30,17 @@ page {
   -webkit-font-smoothing: antialiased;
 }
 
-view, text, image {
+/*
+ * `width: 100%` 的控件必须一并算上内边距与边框，否则会宽出容器。
+ *
+ * **`input`／`textarea`／`picker` 原来不在这张表里** —— 它们是原生表单标签，
+ * 不是 `view`。于是 `.input`／`.textarea` 那条规则（宽 100% + 内边距 24rpx +
+ * 边框）实际宽度是 100% 再加两边，边框整条溢出到卡片外面。
+ * 边框还是 1rpx 时溢出量小、看不太出来；改成 2rpx 之后就明显了。
+ *
+ * 发布家长测评、填写月度评价、填写学期评价、教师寄语、发布新任务五处都是这一条。
+ */
+view, text, image,
+input, textarea, picker {
   box-sizing: border-box;
 }
