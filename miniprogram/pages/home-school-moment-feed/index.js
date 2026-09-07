@@ -40,6 +40,22 @@ const PAGE_LIMIT = 20;
 // 每张卡片上预览几张。卡片只放得下 3 格，多取的地址看不见也会过期。
 const PREVIEW_PHOTOS = 3;
 
+/**
+ * 只留已发布（`s3`）的那些。
+ *
+ * 草稿与已撤回**整条不进这一页**：这一页叫「全部活动」，读的人当它是「发出去的东西」。
+ * 草稿家长根本看不到；已撤回是管理员下架的结果，教师既不能删也不能改。
+ * 两者混在流里，教师会以为家长也看得到。
+ *
+ * 服务端仍然回它们（契约的范围是 `s1`／`s3`／`s5` 都可读），**筛在客户端**：
+ * 「哪些该出现在这一页」是这一页的取舍，不是可见性规则。真要服务端筛，
+ * 得给 `GET /moments` 的 `publish_status` 参数发一个值 —— 那会让这一页
+ * 拿不到总数，将来若要显示「另有 N 条草稿」就得再改回来。
+ */
+function publishedOnly(items) {
+  return items.filter((m) => m.published);
+}
+
 function readBook() {
   try {
     const saved = wx.getStorageSync(BOOK_STORE_KEY);
@@ -88,12 +104,12 @@ Page({
       await guard.requireSession();
       const page = await co.listMoments({ limit: PAGE_LIMIT });
       this.setData({
-        moments: page.items.map(toCard),
+        moments: publishedOnly(page.items).map(toCard),
         nextCursor: page.nextCursor,
         loading: false,
       });
       this.syncCards();
-      this.fillPhotos(page.items);
+      this.fillPhotos(publishedOnly(page.items));
     } catch (err) {
       if (guard.endSessionOnAuthFailure(err)) return;
       this.setData({
@@ -111,12 +127,12 @@ Page({
     try {
       const page = await co.listMoments({ cursor: this.data.nextCursor, limit: PAGE_LIMIT });
       this.setData({
-        moments: this.data.moments.concat(page.items.map(toCard)),
+        moments: this.data.moments.concat(publishedOnly(page.items).map(toCard)),
         nextCursor: page.nextCursor,
         loadingMore: false,
       });
       this.syncCards();
-      this.fillPhotos(page.items);
+      this.fillPhotos(publishedOnly(page.items));
     } catch (err) {
       this.setData({ loadingMore: false });
       if (guard.endSessionOnAuthFailure(err)) return;

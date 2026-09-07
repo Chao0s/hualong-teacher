@@ -5,7 +5,7 @@
      按序号列出（见 index.js 头注）。缩略图那一格因此不再画。 -->
 <view class="page">
 
-  <view class="hint hint--top">点动态右下角的「+ 加入成长册」可将其加入成长资料；加入后会作为成长册「在园时光」栏目的内容（全班共用）。草稿与已撤回的动态没有这个按钮。</view>
+  <view class="hint hint--top">点动态右下角的「+ 加入成长册」可将其加入成长资料；加入后会作为成长册「在园时光」栏目的内容（全班共用）。这一页只列已发布的动态。</view>
 
   <view class="moment-card" wx:for="{{moments}}" wx:key="id" wx:for-item="m">
     <view>
@@ -44,12 +44,10 @@
             bindtap="onDelete"
           ></view>
         </view>
-        <!-- **只有已发布的才给「加入成长册」。**
-             草稿家长根本看不到，撤回的是管理员下架的内容 —— 两者都不该进成长册，
-             那本册子给家长看。原型不分状态一律画这个按钮，是原型没考虑这两态。 -->
+        <!-- 这一页只列已发布的动态（草稿与已撤回在 index.js 的 publishedOnly 里筛掉），
+             所以这个按钮不必再判状态。 -->
         <view
           class="add-material {{m.pickedCount ? 'add-material--on' : ''}}"
-          wx:if="{{m.published}}"
           data-id="{{m.id}}"
           bindtap="onOpenPick"
         >{{m.pickedCount ? '✓ 已加入（' + m.pickedCount + ' 张）' : '+ 加入成长册'}}</view>

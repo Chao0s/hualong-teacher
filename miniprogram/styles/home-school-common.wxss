@@ -392,12 +392,19 @@
   font-size: 24rpx;
 }
 
+/*
+ * 填写类控件的边框用 **2rpx**，不跟其余分隔线的 1rpx 走。
+ *
+ * 1rpx 在 2 倍屏上是 0.5 物理像素，配 --border 这种浅灰（#e0e8e8）几乎看不见 ——
+ * 分隔线看不清没关系，**输入框看不清边界就不知道该点哪里、能写多长**。
+ * 这一条只管 .input／.textarea／.select 三个，页面上其余的 1rpx 发丝线不动。
+ */
 .input,
 .textarea,
 .select {
   width: 100%;
   padding: 22rpx 24rpx;
-  border: 1rpx solid var(--border);
+  border: 2rpx solid var(--border);
   border-radius: 24rpx;
   background: var(--surface);
   color: var(--fg);
