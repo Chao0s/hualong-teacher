@@ -399,10 +399,23 @@ function decorateTask(row) {
 
     // 线上原值留着回填表单（picker 要拆回年月日时分），标签给渲染。
     startAt: row.start_at || '',
-    startLabel: row.start_at ? time.formatStamp(row.start_at) : '',
     dueAt: row.due_at || '',
-    dueLabel: row.due_at ? time.formatStamp(row.due_at) : '',
     hasDue: Boolean(row.due_at),
+
+    /*
+     * 两套标签，用途不同：
+     *
+     *   startLabel／dueLabel        到分（`YYYY-MM-DD HH:mm`），列表卡片用
+     *   startDayLabel／dueDayLabel  **只到日**，详情页用
+     *
+     * 详情页读的是「这个任务哪天开始、哪天截止」，钟点是噪音 —— 教师挑 15:00 还是
+     * 15:30 对家长没有区别。但**库里存的仍是完整时刻**（`start_at` 是 TIMESTAMP，
+     * 且在 §1.2 的计划时刻白名单上），这里只是不把它全部显示出来。
+     */
+    startLabel: row.start_at ? time.formatStamp(row.start_at) : '',
+    dueLabel: row.due_at ? time.formatStamp(row.due_at) : '',
+    startDayLabel: row.start_at ? time.formatFullDay(row.start_at) : '',
+    dueDayLabel: row.due_at ? time.formatFullDay(row.due_at) : '',
 
     status,
     statusLabel: TASK_STATUS[status] || '未知状态',
@@ -464,19 +477,34 @@ async function submissionBoard(taskId) {
   const rows = items.map((row) => {
     const underCheck = Boolean(row.under_content_check);
     const isDone = row.submission_status === 'c1';
+    const read = Boolean(row.read_at);
     return {
       childId: row.child_id,
       name: row.child_name,
       status: row.submission_status,
       done: isDone,
       underCheck,
-      // 单一显示值，页面不再判一次。类名沿用 home-school-common.wxss 的三档。
-      stateLabel: underCheck ? '审核中' : (SUBMISSION_STATUS[row.submission_status] || '未知状态'),
-      stateTone: underCheck ? 'wait' : (isDone ? 'done' : 'miss'),
-      submittedLabel: row.submitted_at ? time.formatStamp(row.submitted_at) : '—',
+      read,
+      readAt: row.read_at || '',
+
+      /*
+       * **两列，不是一列。** 「读没读」与「做没做」是两件独立的事，教师看板上各占一格：
+       * 挤进同一格就得造出「已读未完成」这种复合词，而它把两个维度压成一个枚举，
+       * 多一种状态就要多一个词。
+       *
+       * 已完成的那些「已读」恒为真（打不开就交不了），所以第一列在那几行没有信息量 ——
+       * 但保持列的语意一致比省几个字重要。
+       */
+      readLabel: read ? '已读' : '未读',
+      readTone: read ? 'done' : 'miss',
+
+      // 完成情况：审核中压过其余判断，那一笔还在微信内容检查里。
+      doneLabel: underCheck ? '审核中' : (SUBMISSION_STATUS[row.submission_status] || '未知状态'),
+      doneTone: underCheck ? 'wait' : (isDone ? 'done' : 'miss'),
     };
   });
   const done = rows.filter((r) => r.done).length;
+  const unread = rows.filter((r) => !r.read).length;
   return {
     rows,
     summary: {
@@ -484,6 +512,9 @@ async function submissionBoard(taskId) {
       done,
       undone: rows.length - done,
       underCheck: rows.filter((r) => r.underCheck).length,
+      // 未读：这份名单才是教师要去催的人（F24）。
+      unread,
+      readUndone: rows.filter((r) => r.read && !r.done).length,
       percent: rows.length ? Math.round((done / rows.length) * 100) : 0,
     },
   };
@@ -644,6 +675,521 @@ function publishFailureText(err) {
   return (err && err.userMessage) || '发布失败，请稍后重试';
 }
 
+/* ══ 社区共育 feed ═══════════════════════════════════════════════════════════
+ *
+ *   GET /home-school/community-feed                                    投稿流
+ *   PUT /teacher/growth-book/task-submissions/{id}/inclusion           教师分支进册
+ *
+ * ── 一行是一笔投稿，不是一条任务 ───────────────────────────────────────────
+ *
+ * 社区共育**不是独立实体**（B11 拔除了 `db_community_submission`），是亲子任务与
+ * 家长提交的 feed 视图。一条任务对 N 笔投稿，所以 feed 的一行是**一笔家长交上来的
+ * 东西**：家长写的正文、家长拍的照片、交的时刻。
+ *
+ * 契约的行形状是 `ParentTaskSubmissionFeedRow` —— 在提交行上多带四项渲染卡片必需的
+ * 上下文（幼儿姓名、任务标题、任务类别、教师分支进册状态），四项都是服务端派生、不落列。
+ *
+ * ── 只列真的交了的 ─────────────────────────────────────────────────────────
+ *
+ * 服务端固定筛 `submission_status='c1'`。发布时按名册预建的 `c2` 空行没有正文、
+ * 没有照片、也没有 `submitted_at`，在投稿流上没有任何可显示的东西。
+ * **「谁还没交」在亲子任务详情的完成情况看板上看**，两页口径刻意不同。
+ *
+ * ── 两个筛选都不推日期 ─────────────────────────────────────────────────────
+ *
+ * `time_window` 只发 `week`／`month`／`earlier` 三个字面量，**窗口边界由服务端按园所
+ * 时区算**（契约原话：前端不得自行推日期）。「全部时间」与「全部任务」都表示
+ * 不加该条 predicate，不是某个列值 —— 不要发 `all` 之类的字符串。
+ *
+ * DO-NOT-BUILD 12：与亲子任务同一条理由，**不出现视频入口**。
+ */
+
+const FEED_PATH = '/home-school/community-feed';
+const INCLUSION_PATH = '/teacher/growth-book/task-submissions';
+
+/** 契约的 `time_window` 枚举。缺席＝不加这条筛选。 */
+const TIME_WINDOWS = { week: '本周', month: '本月', earlier: '更早' };
+
+/**
+ * feed 的一行。每个值都可以直接 `setData`。
+ *
+ * `underCheck` 为真时**不带出正文与照片**：那一笔还在微信内容检查里，没过闸门的内容
+ * 不该显示出来。卡片改显示一行说明。这与完成情况看板把「审核中」当第三档是同一个口径，
+ * 只是看板本来就不回正文，没有可藏的东西。
+ */
+function decorateFeedRow(row) {
+  const underCheck = Boolean(row.under_content_check);
+  return {
+    id: row.parent_task_submission_id,
+    taskId: row.parent_task_id,
+    childId: row.child_id,
+
+    // 卡片头部。契约不回家长姓名（也不该回），所以按幼儿姓名称呼「某某家长」。
+    author: `${row.child_name}家长`,
+    initial: String(row.child_name || '').slice(0, 1),
+
+    taskTitle: row.parent_task_title || '（未命名）',
+    type: row.parent_task_type,
+    typeLabel: TASK_TYPE[row.parent_task_type] || '未知类型',
+
+    underCheck,
+    text: underCheck ? '' : (row.submission_text || ''),
+    // 只有 id，没有地址。地址逐张走 photoUrl()，每次重验、5 分钟签名（§8.4）。
+    fileIds: underCheck ? [] : (row.file_id || []),
+
+    submittedAt: row.submitted_at || '',
+    submittedLabel: row.submitted_at ? time.formatStamp(row.submitted_at) : '',
+
+    // 「加入成长册」按钮的当前状态。写它走 setBookInclusion()。
+    included: Boolean(row.teacher_book_included),
+  };
+}
+
+/**
+ * 一页社区共育 feed，新的在前。
+ *
+ * 排序是服务端定的 `submitted_at DESC, parent_task_submission_id DESC`，客户端不重排。
+ * `type` 与 `timeWindow` 都进服务端的游标指纹：换了筛选却沿用旧游标会回
+ * 400 `cursor_filter_mismatch`，不会静默返回错乱结果。
+ */
+async function listCommunityFeed({ type, timeWindow, cursor, limit } = {}) {
+  const page = await api.getPage(FEED_PATH, {
+    cursor,
+    limit,
+    parent_task_type: type,
+    time_window: timeWindow,
+  });
+  return { items: page.items.map(decorateFeedRow), nextCursor: page.nextCursor };
+}
+
+/**
+ * 把一笔家长投稿收进成长册（教师分支），或整笔移出。
+ *
+ * **两支各自独立**（F17 `task_book_branch`）：这一支不动家长那一支，也不动来源附件。
+ * 有效收录 = 教师分支 OR 家长分支，两支皆 false 才完全移出。
+ *
+ * `fileIds` 是**整份替换**，且必须是该笔提交已冻结附件的子集 —— 服务端复验，
+ * 混进别处的 file_id 回 422。移出时传空数组。
+ *
+ * 删除入册记录**只解除关系**：绝不删原任务、家庭提交或附件（F19）。
+ */
+function setBookInclusion(submissionId, { included, fileIds }) {
+  return api.put(`${INCLUSION_PATH}/${submissionId}/inclusion`, {
+    action: 'parent_task_submission.book_include_teacher',
+    body: { teacher_book_included: included, file_id: fileIds || [] },
+  });
+}
+
+/* ══ 家长评价完成情况 ═══════════════════════════════════════════════════════
+ *
+ *   GET /home-school/parent-evaluations                        完成情况看板
+ *
+ * 教师这一侧只看得到**谁交了、谁没交**。折算由服务端做（§4 规则 3）：
+ * `p2 → c1 已完成`，`p0｜p1｜p3｜NULL → c2 未完成`。回包同时带折算值 `completion`
+ * 与原始编码 `evaluation_status`，两者不能只留一个 —— 原始状态是家长端要显示的事实。
+ *
+ * ── 两列不渲染 ─────────────────────────────────────────────────────────────
+ *
+ * 原型的表格有四列，这里只画得出两列：
+ *
+ *   已读        全库没有任何「家长读过某条评价」的落点，没有 `read_at`。与亲子任务
+ *               详情页删掉的那一列同一个理由（G70 同族）。
+ *   提交内容预览 契约明写看板**不回 `evaluation_text`**，理由是「逐条阅读走详情端点」——
+ *               但那个详情端点是 `x-hualong-roles: [parent]`，**教师到不了**。
+ *               契约在这里自相矛盾，已登记为 G73。
+ *
+ * 没有数据源就不要渲染它，更不要编一个出来。
+ */
+
+const PARENT_EVAL_PATH = '/home-school/parent-evaluations';
+
+// db_parent_evaluation.evaluation_type。权威是 01_schema.sql 的列注释。
+const PARENT_EVAL_TYPE = { t1: '月度评价', t2: '学期评价' };
+
+// db_parent_evaluation.evaluation_status —— 原始编码，家长端那一侧的事实。
+const PARENT_EVAL_STATUS = { p0: '待填写', p1: '草稿', p2: '已提交', p3: '已逾期' };
+
+// 服务端折算后的两档（completion_map）。
+const COMPLETION = { c1: '已完成', c2: '未完成' };
+
+/**
+ * 发起一次家长评价（NONE→p0）。
+ *
+ * **服务端目前回 501。** 契约把这条操作标了 `x-hualong-blocked-on: G50`：
+ * 一次开窗到底为**哪些幼儿**建行 —— 全班在园名册 fan-out、教师勾选子集、
+ * 还是家长首次进入时惰性建行？没人定过。连带未定的还有名册指纹要不要重算、
+ * 幂等键是否必带、开窗后转入的幼儿补不补行。
+ *
+ * **仍然真的发这一请求**，不在客户端预先拦下：G50 一旦拍板、实作跟上，
+ * 调用方不用改就能用；本地拦下的话，那天没人会记得回来把拦截删掉。
+ * 调用方按 `err.code === 'not_implemented'` 把原因说给教师听。
+ *
+ * `requested_by_teacher_id` 是 derived，**不发**（§7.3，DO-NOT-BUILD 8）。
+ */
+function openParentEvaluationWindow({ type, prompt }) {
+  return api.post(PARENT_EVAL_PATH, {
+    body: { evaluation_type: type, evaluation_prompt: prompt },
+  });
+}
+
+/**
+ * 按期间分组的完成情况，新的在前。
+ *
+ * 「发布家长测评」那一页底下的历史列表读这个：一名幼儿一个周期一份，所以整个班取回来
+ * 是**多期混在一起**，要按 `evaluation_type + evaluation_period` 折成一组一行。
+ *
+ * **每一组的分母是那一组真实的行数**，不是班级人数 —— 中途转入的幼儿可能没有上个月
+ * 那一份，写死班级人数会让分母比分子大得莫名其妙。
+ */
+async function parentEvalPeriods({ limit } = {}) {
+  const board = await listParentEvaluations({ limit: limit || 100 });
+  const groups = [];
+  const seen = new Map();
+  for (const row of board.rows) {
+    const key = `${row.type}|${row.period}`;
+    if (!seen.has(key)) {
+      const g = {
+        key,
+        type: row.type,
+        typeLabel: row.typeLabel,
+        period: row.period,
+        periodLabel: row.periodLabel,
+        total: 0,
+        done: 0,
+        read: 0,
+      };
+      seen.set(key, g);
+      groups.push(g);
+    }
+    const g = seen.get(key);
+    g.total += 1;
+    if (row.done) g.done += 1;
+    if (row.read) g.read += 1;
+  }
+  return groups.map((g) => ({
+    ...g,
+    percent: g.total ? Math.round((g.done / g.total) * 100) : 0,
+    // 卡片左侧那个小方块。月度评价显示月份数字，学期评价没有月份，显示「学期」。
+    mark: /^\d{4}-\d{2}$/.test(g.period) ? `${Number(g.period.slice(5, 7))}月` : '学期',
+    title: `${g.periodLabel}${g.typeLabel}`,
+    meta: `完成 ${g.percent}% · ${g.done}/${g.total} 已提交 · ${g.read}/${g.total} 已读`,
+  }));
+}
+
+/**
+ * 期间键的显示文案。
+ *
+ * `evaluation_period` 是**不透明字符串**，两种形状：月度评价用 `YYYY-MM`，
+ * 学期评价用 `term_id`（`2025-2026-2` 之类）。
+ *
+ * **只有确认是 `YYYY-MM` 时才拆**，其余原样显示 —— `2025-2026-2` 不是日期，
+ * 拿日期函数去解析它会得到一个看似合理的错答案（§1.2）。
+ */
+function evalPeriodLabel(period) {
+  const m = /^(\d{4})-(\d{2})$/.exec(period || '');
+  return m ? `${m[1]}年${Number(m[2])}月` : (period || '');
+}
+
+/**
+ * 一页家长评价完成情况。
+ *
+ * `period` 是**不透明字符串**（`YYYY-MM` 或 `term_id`），原样带过去，**不当日期解析**
+ * （§1.2）—— `2025-2026-2` 不是日期。
+ */
+async function listParentEvaluations({ type, period, cursor, limit } = {}) {
+  const page = await api.getPage(PARENT_EVAL_PATH, {
+    cursor,
+    limit,
+    evaluation_type: type,
+    evaluation_period: period,
+  });
+  const rows = page.items.map((row) => {
+    const done = row.completion === 'c1';
+    return {
+      id: row.parent_evaluation_id,
+      childId: row.child_id,
+      name: row.child_name,
+      type: row.evaluation_type,
+      typeLabel: PARENT_EVAL_TYPE[row.evaluation_type] || '未知类型',
+      period: row.evaluation_period || '',
+      periodLabel: evalPeriodLabel(row.evaluation_period),
+      // 原始编码照实带出去，客户端必须容忍未知值（§1.1）。
+      status: row.evaluation_status,
+      statusLabel: PARENT_EVAL_STATUS[row.evaluation_status] || '未知状态',
+      completion: row.completion,
+      done,
+      // 已读（F24）。`read_at` 为 null 就是未读，不是错误也不是缺字段。
+      read: Boolean(row.read_at),
+      readLabel: row.read_at ? '已读' : '未读',
+      readTone: row.read_at ? 'done' : 'miss',
+      readAt: row.read_at || '',
+      // 单一显示值，页面不再判一次。类名沿用 home-school-common.wxss 的三档。
+      stateLabel: COMPLETION[row.completion] || '未知状态',
+      stateTone: done ? 'done' : 'miss',
+      submittedLabel: row.submitted_at ? time.formatStamp(row.submitted_at) : '—',
+    };
+  });
+  const done = rows.filter((r) => r.done).length;
+  const unread = rows.filter((r) => !r.read).length;
+  return {
+    rows,
+    nextCursor: page.nextCursor,
+    summary: {
+      total: rows.length,
+      done,
+      undone: rows.length - done,
+      unread,
+      percent: rows.length ? Math.round((done / rows.length) * 100) : 0,
+    },
+  };
+}
+
+/**
+ * 一份家长评价的详情，含**家长写的正文**。
+ *
+ * 教师端在此之前读不到任何一笔正文：看板明写不回 `evaluation_text`，而它指的
+ * 「详情端点」只对家长开放。本端点是那个缺口（G73）的解，逐条读、不在列表里
+ * 发全班正文。
+ *
+ * **只有 `p2`（已提交）才有正文。** `p0` 没填、`p1` 还在草稿、`p3` 逾期未交，
+ * 服务端一律置空 —— 家长写到一半的东西不是交给教师的东西。
+ */
+async function getParentEvaluation(evaluationId) {
+  const row = await api.get(`${PARENT_EVAL_PATH}/${evaluationId}`);
+  const done = row.completion === 'c1';
+  return {
+    id: row.parent_evaluation_id,
+    childId: row.child_id,
+    name: row.child_name,
+    title: row.evaluation_title || '',
+    prompt: row.evaluation_prompt || '',
+    // 没有正文时给空串，页面据此显示说明，**不编一句出来**。
+    text: row.evaluation_text || '',
+    hasText: Boolean(row.evaluation_text),
+    type: row.evaluation_type,
+    typeLabel: PARENT_EVAL_TYPE[row.evaluation_type] || '未知类型',
+    period: row.evaluation_period || '',
+    periodLabel: evalPeriodLabel(row.evaluation_period),
+    status: row.evaluation_status,
+    statusLabel: PARENT_EVAL_STATUS[row.evaluation_status] || '未知状态',
+    done,
+    stateLabel: COMPLETION[row.completion] || '未知状态',
+    stateTone: done ? 'done' : 'miss',
+    read: Boolean(row.read_at),
+    readLabel: row.read_at ? time.formatStamp(row.read_at) : '未读',
+    windowLabel: row.start_at && row.due_at
+      ? `${time.formatStamp(row.start_at)} — ${time.formatStamp(row.due_at)}`
+      : '',
+    submittedLabel: row.submitted_at ? time.formatStamp(row.submitted_at) : '—',
+  };
+}
+
+/* ══ 月度评价矩阵 ═══════════════════════════════════════════════════════════
+ *
+ *   GET /home-school/month-evals                               完成情况矩阵
+ *
+ * 矩阵是**幼儿 × 月份**。月份栏由「已存在评价记录的月份」动态生成，
+ * **不写死月份清单**，也不假设 2—7 月／9—1 月（E1／E4）。
+ *
+ * 对外**一律二元**：`e3 → 已完成`，`e1｜e2｜无记录 → 未完成`。草稿态不对外显示 ——
+ * `e1` 与 `e2` 的分界没有任何决策定义（G51），所以客户端一格都不能靠它分。
+ */
+
+const MONTH_EVAL_PATH = '/home-school/month-evals';
+
+// db_month_eval.month_eval_status。三档只在内部用，对外折成上面那两档。
+const MONTH_EVAL_STATUS = { e1: '草稿', e2: '已保存', e3: '已发布' };
+
+/** 对外二元：只有 `e3` 算完成。未知编码一律按未完成，不放行。 */
+function monthEvalDone(status) {
+  return status === 'e3';
+}
+
+/**
+ * 幼儿 × 月份的完成情况矩阵。
+ *
+ * 服务端按 `eval_month DESC, child_id ASC` 排，一页 100 行整取（本班一学期的量级）。
+ * 分页仍是游标：拿不完就继续按 `nextCursor` 取，直到它为空（§3.1）。
+ *
+ * 月份列**从回包里出现过的月份推**，不写死，也不补齐中间没有记录的月份 ——
+ * 补一个空列等于宣称那个月该有评价，而那是园所的排程，客户端不知道。
+ */
+async function monthEvalBoard({ month, childId, limit, termId } = {}) {
+  // 缺省取会话里的当前学期。假期中没有进行中的学期，此时不加这条筛选、回全部月份。
+  const term = session.getCurrentTerm();
+  const useTerm = termId === undefined ? (term ? term.term_id : undefined) : termId;
+
+  const items = [];
+  let cursor;
+  do {
+    const page = await api.getPage(MONTH_EVAL_PATH, {
+      cursor,
+      limit: limit || 100,
+      term_id: useTerm,
+      eval_month: month,
+      child_id: childId,
+    });
+    items.push(...page.items);
+    cursor = page.nextCursor;
+  } while (cursor);
+
+  /*
+   * 月份列 = **本学期完整覆盖的那几个月**，不是「回包里出现过的月份」。
+   *
+   * 两者不同，而且差别正是这张表要显示的东西：5 月、6 月还没有人写评价，
+   * 回包里一行都没有 —— 但它们是本学期的月份，**该显示成一整列未完成**。
+   * 按回包推列会让「整月没写」这件事从表上消失。
+   *
+   * 规则与服务端 `term_id` 的过滤逐字相同（契约里写着）：盖满整月才算。
+   * `probe-coeducation.mjs` 断言「服务端回的月份全在客户端算出的列里」，
+   * 两边漂开会当场红。
+   */
+  let months = [];
+  if (useTerm && term && term.term_id === useTerm) {
+    months = time.wholeMonthsOfTerm(term.start_date, term.end_date);
+  }
+  // 拿不到学期边界（换了别的学期、或假期中）就退回按数据推，倒序去重。
+  if (!months.length) {
+    for (const row of items) {
+      if (row.eval_month && months.indexOf(row.eval_month) === -1) months.push(row.eval_month);
+    }
+  }
+  // 单月筛选时只留那一列。
+  if (month) months = months.filter((m) => m === month);
+
+  /*
+   * 行 = **本班在园名册**，不是「回包里出现过的幼儿」。
+   *
+   * 两者不同，差别同样是这张表要显示的东西：一名幼儿一整个学期没被写过任何评价，
+   * 回包里一行都没有 —— 而他恰恰是最该出现在表上的那一个。按回包推行会让
+   * 「这个孩子一次都没写」从表上消失，正好把最需要发现的情况藏起来。
+   *
+   * 先铺名册，再把有记录的格子填进去。
+   */
+  const byChild = new Map();
+  for (const child of await classRoster()) {
+    // 指名了某个幼儿就只铺他一行 —— 名册补齐不能把筛选盖掉。
+    if (childId && child.childId !== childId) continue;
+    byChild.set(child.childId, { childId: child.childId, name: child.name, cells: new Map() });
+  }
+  for (const row of items) {
+    if (!byChild.has(row.child_id)) {
+      // 名册上没有、却有评价记录：多半是已转班或离园的幼儿。照实列出来，不吞掉。
+      byChild.set(row.child_id, { childId: row.child_id, name: row.child_name, cells: new Map() });
+    }
+    byChild.get(row.child_id).cells.set(row.eval_month, row);
+  }
+
+  const rows = [...byChild.values()]
+    .sort((a, b) => a.childId - b.childId)
+    .map((child) => ({
+      childId: child.childId,
+      name: child.name,
+      states: months.map((m) => {
+        const cell = child.cells.get(m);
+        return cell && monthEvalDone(cell.month_eval_status) ? 'done' : 'miss';
+      }),
+      // 点某一格要跳去填写页，那一格对应的 month_eval_id（没有记录就是 0）。
+      evalIds: months.map((m) => {
+        const cell = child.cells.get(m);
+        return cell ? cell.month_eval_id : 0;
+      }),
+    }));
+
+  const cells = rows.length * months.length;
+  const done = rows.reduce((n, r) => n + r.states.filter((s) => s === 'done').length, 0);
+  return {
+    months,
+    // 表头只显示月份数字，`2026-04` -> `4`。逐字段读，不建 Date（§1.2）。
+    monthLabels: months.map((m) => String(Number((m || '').slice(5, 7)) || '')),
+    rows,
+    summary: { total: cells, done, undone: cells - done },
+  };
+}
+
+/* ── 月评写入 ────────────────────────────────────────────────────────────── */
+
+// api/action-registry.tsv 的 action_key。
+const MONTH_EVAL_ACTIONS = {
+  saveDraft: 'month_eval.save_draft',
+  publish: 'month_eval.publish',
+};
+
+/** 契约与 DDL 的上限，`db_month_eval.eval_text` 是 VARCHAR(500) 且 NOT NULL。 */
+const MONTH_EVAL_TEXT_MAX = 500;
+
+/**
+ * 保存月度评价草稿（F25 解 G51）。
+ *
+ * 按 `child_id + eval_month` **upsert**：没有行就建一行，有行就覆盖正文。
+ * **草稿一直是 `e1`**，`e2` 作废。`saved_at` **不在这一步写** —— 它由发布那一步写，
+ * 因为家长端报告上那个日期取的正是它，而家长该看到的是发布日。
+ *
+ * 已发布（`e3`）的不能再存草稿，服务端回 409 `state_precondition_failed`。
+ *
+ * `teacher_id`／`class_id` 是 derived，**不发**（§7.3，DO-NOT-BUILD 8）。
+ */
+function saveMonthEvalDraft({ childId, month, text, fileIds }) {
+  const body = { child_id: childId, eval_month: month, eval_text: text };
+  // 缺席＝不动照片，空数组＝清空。两者必须分开，`?? []` 会把前者变成后者。
+  if (fileIds !== undefined) body.file_id = fileIds;
+  return api.put(MONTH_EVAL_PATH, { action: MONTH_EVAL_ACTIONS.saveDraft, body });
+}
+
+/**
+ * 精确取某个幼儿某个月的那一笔月评，含正文与照片引用。
+ *
+ * 走的是同一条列表端点，两个筛选都钉死之后最多回一行 —— 契约里**没有**单笔详情端点，
+ * 而按 `child_id + eval_month` 唯一（DDL 的 `uk_month_eval`），所以列表就是详情。
+ * 取不到就回 `null`，调用方据此当新建处理，不抛错。
+ */
+async function monthEvalRow({ childId, month }) {
+  const page = await api.getPage(MONTH_EVAL_PATH, {
+    limit: 2, child_id: childId, eval_month: month,
+  });
+  const row = page.items[0];
+  if (!row) return null;
+  const done = monthEvalDone(row.month_eval_status);
+  return {
+    id: row.month_eval_id,
+    childId: row.child_id,
+    name: row.child_name,
+    month: row.eval_month || '',
+    text: row.eval_text || '',
+    fileIds: row.file_id || [],
+    status: row.month_eval_status,
+    statusLabel: MONTH_EVAL_STATUS[row.month_eval_status] || '未知状态',
+    // 对外二元：只有 e3 算已发布。e1／e2 都是没发出去的（F25）。
+    published: done,
+    savedLabel: row.saved_at ? time.formatStamp(row.saved_at) : '—',
+  };
+}
+
+/**
+ * 发布月度评价（`e1｜e2 → e3`）。**没有回头路**，与亲子任务结束后不可重开同一条规矩。
+ *
+ * 服务端在同一笔事务里写 `saved_at`（F25）。请求体为空 —— 正文在草稿阶段已经写好。
+ */
+function publishMonthEval(monthEvalId) {
+  return api.post(`${MONTH_EVAL_PATH}/${monthEvalId}/publication`, {
+    action: MONTH_EVAL_ACTIONS.publish,
+  });
+}
+
+/**
+ * 存／发之前的本地检查。**预检不是校验**：服务端独立再验一次。
+ *
+ * 必填以 DDL 的 `NOT NULL` 为准：`eval_text` 是 `VARCHAR(500) NOT NULL`，所以空评语
+ * 存不进去 —— 不要照原型的表单，那里可以留空。
+ */
+function whyCannotSaveMonthEval({ childId, month, text }) {
+  if (!childId) return '请选择幼儿';
+  if (!time.isPeriodKey(month) && !/^\d{4}-\d{2}$/.test(month || '')) return '请选择月份';
+  if (!String(text || '').trim()) return '请填写评语';
+  if (String(text).length > MONTH_EVAL_TEXT_MAX) return `评语最多 ${MONTH_EVAL_TEXT_MAX} 字`;
+  return '';
+}
+
 module.exports = {
   MOMENT_STATUS,
   MAX_PHOTOS,
@@ -677,4 +1223,30 @@ module.exports = {
   taskPickerParts,
   whyCannotSaveTask,
   publishFailureText,
+
+  // 社区共育 feed
+  TIME_WINDOWS,
+  listCommunityFeed,
+  setBookInclusion,
+
+  // 家长评价完成情况
+  PARENT_EVAL_TYPE,
+  PARENT_EVAL_STATUS,
+  COMPLETION,
+  listParentEvaluations,
+  parentEvalPeriods,
+  openParentEvaluationWindow,
+
+  // 月度评价矩阵
+  MONTH_EVAL_STATUS,
+  MONTH_EVAL_TEXT_MAX,
+  monthEvalDone,
+  monthEvalBoard,
+  monthEvalRow,
+  saveMonthEvalDraft,
+  publishMonthEval,
+  whyCannotSaveMonthEval,
+
+  // 家长评价详情
+  getParentEvaluation,
 };

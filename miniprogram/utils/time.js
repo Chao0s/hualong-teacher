@@ -120,6 +120,22 @@ function formatDay(value) {
 }
 
 /**
+ * `2026-08-19T14:03:22+08:00` -> `2026-08-19`. Display only.
+ *
+ * 与 `formatDay` 的差别只有一个年份，而那个年份在详情页是必须的：亲子任务可以属于
+ * 上学期，`04-13` 不带年在翻旧任务时分不出是哪一年。入口页的卡片放不下年份，
+ * 所以两个都留着，各用各的。
+ *
+ * 与 `formatStamp` 的差别是**不带钟点**：详情页读的是「哪天开始、哪天截止」，
+ * 教师挑 15:00 还是 15:30 对家长没有区别。库里存的仍是完整时刻，这里只是不全显示。
+ */
+function formatFullDay(value) {
+  const p = parseWireTimestamp(value);
+  if (!p) return value || '';
+  return `${p.year}-${pad(p.month)}-${pad(p.day)}`;
+}
+
+/**
  * `2026-08-19T14:03:22+08:00` -> `2026-08-19 14:03`. Display only.
  *
  * 与 `formatLong` 的差别只是分隔符：那个是给正文读的中文写法，这个是列表里对齐
@@ -234,7 +250,44 @@ function civilFromDays(days) {
   return { year: yoe + era * 400 + (month <= 2 ? 1 : 0), month, day };
 }
 
+/**
+ * 一个学期**完整覆盖**了哪几个自然月，倒序，`['2026-06','2026-05',…]`。
+ *
+ * 规则与服务端 `GET /home-school/month-evals` 的 `term_id` 逐字相同（契约里写着）：
+ * **学期盖满整个自然月才算这个月在内。** 本园本学期 `2026-02-23`→`2026-07-10`
+ * 因此是 3／4／5／6 —— 2 月只上 6 天、7 月只上 10 天，两头都不当一个评价月。
+ *
+ * 为什么客户端也算一遍：服务端只回**有记录的**月份，而矩阵的列要包含**还没写的**
+ * 那些月（那正是「未完成」）。两处必须给出同一答案，`probe-coeducation.mjs`
+ * 因此断言「服务端回的月份全都在客户端算出的列里」—— 两边漂开会当场红。
+ *
+ * 纯字符串运算，不建 Date，不读时钟（§1.2）。入参是两个 `YYYY-MM-DD` 裸日期。
+ */
+function wholeMonthsOfTerm(startDate, endDate) {
+  const s = /^(\d{4})-(\d{2})-(\d{2})$/.exec(startDate || '');
+  const e = /^(\d{4})-(\d{2})-(\d{2})$/.exec(endDate || '');
+  if (!s || !e) return [];
+
+  const [sy, sm, sd] = [Number(s[1]), Number(s[2]), Number(s[3])];
+  const [ey, em, ed] = [Number(e[1]), Number(e[2]), Number(e[3])];
+
+  // 起日不是 1 号，这个月没盖满，从下个月起算。
+  let lo = sd === 1 ? sy * 12 + (sm - 1) : sy * 12 + sm;
+  // 止日不是当月最后一天，这个月没盖满，退到上个月。
+  const lastDay = [31, ((ey % 4 === 0 && ey % 100 !== 0) || ey % 400 === 0) ? 29 : 28,
+    31, 30, 31, 30, 31, 31, 30, 31, 30, 31][em - 1];
+  let hi = ed === lastDay ? ey * 12 + (em - 1) : ey * 12 + (em - 2);
+
+  const out = [];
+  for (let k = hi; k >= lo; k -= 1) {
+    out.push(`${Math.floor(k / 12)}-${pad((k % 12) + 1)}`);
+  }
+  return out;
+}
+
 module.exports = {
+  wholeMonthsOfTerm,
+  formatFullDay,
   OFFSET,
   SCHEDULED_TIME_COLUMNS,
   SCHEDULED_TIME_FIELDS,
