@@ -10,7 +10,7 @@ const ROUTES = {
 Page({
   data: {
     entries: [
-      { key: 'monthly', label: '月度评价', primary: true },
+      { key: 'monthly', label: '月度评价' },
       { key: 'term', label: '学期评价' },
       { key: 'comprehensive', label: '综合评估' },
       { key: 'message', label: '教师寄语' },

@@ -10,3 +10,45 @@
 .form-label--first {
   margin-top: 0;
 }
+
+/* ── 这一格现在的状态 ──────────────────────────────────────────────────── */
+
+.state-line {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 24rpx;
+}
+
+.state-line__note {
+  color: var(--muted);
+  font-size: 22rpx;
+}
+
+/* 真实照片铺满格子并**垫在底层**，地址逐张到达（§8.4 每次重验、5 分钟签名）。
+   绝对定位而不是 width/height:100% —— 后者在 flex 格子里高度解析不出来，
+   而且静态定位的图片会把绝对定位的勾选标记盖住，选中了看不出来。 */
+.photo__img,
+.album-photo__img {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  border-radius: inherit;
+  z-index: 0;
+}
+
+/* 已选中的照片压一层半透明蒙版。照片本身花花绿绿，只靠一圈边框看不出来 */
+.album-photo--sel::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  border-radius: inherit;
+  background: rgba(24, 155, 145, 0.28);
+}

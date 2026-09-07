@@ -10,9 +10,20 @@
   margin-top: 28rpx;
 }
 
-/* 四列：幼儿 / 已读 / 已完成 / 提交内容预览 */
+/* 加载中、取数失败、本班没有记录，三种情况共用一块占位 */
+.empty {
+  padding: 40rpx;
+  border-radius: 32rpx;
+  background: var(--surface);
+  color: var(--muted);
+  text-align: center;
+  font-size: 26rpx;
+}
+
+/* 三列：幼儿 / 已读 / 完成情况。
+   原型是四列，「提交内容预览」不做成列——正文点行才取，见 index.wxml 头注。 */
 .prog-row {
-  grid-template-columns: 120rpx 96rpx 128rpx 1fr;
+  grid-template-columns: 1.2fr 1fr 1.2fr;
 }
 
 .prog-cell {
@@ -22,4 +33,92 @@
 
 .prog-cell--name {
   padding-left: 16rpx;
+}
+
+/* 表格底下那句说明 */
+.hint--gap {
+  display: block;
+  margin-top: 16rpx;
+}
+
+/* 整行可点，给一点按下去的反馈 —— 不做成箭头图标，那会再占一列 */
+.prog-row--tap:active {
+  background: var(--accent-light);
+}
+
+/* ── 逐条读正文的底部弹层 ──────────────────────────────────────────────── */
+
+.sheet-mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 20;
+  background: rgba(26, 25, 22, 0.45);
+  display: flex;
+  align-items: flex-end;
+}
+
+.sheet {
+  width: 100%;
+  max-height: 78vh;
+  overflow-y: auto;
+  padding: 32rpx 32rpx 56rpx;
+  border-radius: 32rpx 32rpx 0 0;
+  background: var(--bg);
+}
+
+.sheet__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24rpx;
+}
+
+.sheet__title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.sheet__close {
+  padding: 8rpx 16rpx;
+  color: var(--muted);
+  font-size: 26rpx;
+}
+
+.sheet__meta {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 20rpx;
+}
+
+.sheet__line {
+  margin-bottom: 10rpx;
+  color: var(--muted);
+  font-size: 24rpx;
+}
+
+.sheet__sec {
+  margin: 28rpx 0 12rpx;
+  color: var(--accent-dark);
+  font-size: 24rpx;
+  font-weight: 600;
+}
+
+.sheet__body {
+  display: block;
+  padding: 24rpx;
+  border-radius: 24rpx;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 26rpx;
+  line-height: 1.7;
+}
+
+/* 没有正文时那一段说明，压低一点，别看着像家长真写了这句 */
+.sheet__body--muted {
+  color: var(--muted);
 }

@@ -5,7 +5,7 @@
   <view class="sec sec--first">评价入口</view>
   <view class="eval-entry-grid">
     <view
-      class="eval-entry {{item.primary ? 'eval-entry--primary' : ''}}"
+      class="eval-entry"
       hover-class="list-card--hover"
       hover-stay-time="80"
       wx:for="{{entries}}"

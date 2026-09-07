@@ -29,12 +29,6 @@
   line-height: 1.3;
 }
 
-.eval-entry--primary {
-  border-color: #a7f3d0;
-  background: #ecfdf5;
-  color: #047857;
-}
-
 /* 五列：幼儿 + 四个进度圆点 */
 .prog-row {
   grid-template-columns: 124rpx repeat(4, 1fr);

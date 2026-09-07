@@ -6,7 +6,9 @@
   padding: 24rpx 32rpx 56rpx;
 }
 
-/* 五列：幼儿 + 四个月份 */
+/* 幼儿 + N 个月份。**列数由数据决定**，所以 grid-template-columns 由页面按
+   monthLabels.length 现算，写在行的 style 上。这里只给一个兜底值：
+   数据没到之前表格不渲染，兜底只在 style 缺席时用得上。 */
 .prog-row {
   grid-template-columns: 140rpx repeat(4, 1fr);
 }
@@ -18,4 +20,14 @@
 .hint--gap {
   display: block;
   margin-top: 16rpx;
+}
+
+/* 加载中、取数失败、本班没有记录，三种情况共用一块占位 */
+.empty {
+  padding: 40rpx;
+  border-radius: 32rpx;
+  background: var(--surface);
+  color: var(--muted);
+  text-align: center;
+  font-size: 26rpx;
 }

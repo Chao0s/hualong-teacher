@@ -17,3 +17,13 @@
 .full--gap {
   margin-top: 24rpx;
 }
+
+/* 加载中、取数失败、本班没有记录，三种情况共用一块占位 */
+.empty {
+  padding: 40rpx;
+  border-radius: 32rpx;
+  background: var(--surface);
+  color: var(--muted);
+  text-align: center;
+  font-size: 26rpx;
+}

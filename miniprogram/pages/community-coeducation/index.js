@@ -1,77 +1,69 @@
 /**
- * 社区共育 —— 原型 screens/community-coeducation.html 的小程序版本。
+ * 社区共育 —— 家长投稿的 feed。
  *
- * 「加入成长册」写的是成长册配置里的 material 数组（键 hualong.growth-book.v1），
- * 和「全部活动」那一页是同一条通道，所以两边的收录状态互相可见。
- * 那套配置由 33 KB 的 growth-book-render.js 管着，这里同样只读整个对象、
- * 改 material、写回，其余字段不碰。
+ * 数据全部来自 `GET /home-school/community-feed`，经 `services/co-education.js`
+ * 的 `listCommunityFeed()`。页面不拼 URL、不译枚举、不格式化时间。
  *
- * 和「全部活动」不同的是：这一页没有选照片的浮层，点一下就把该条的全部照片收进去，
- * 再点一下整条移出，照抄原型。
+ * ── 一张卡片是一笔家长投稿 ─────────────────────────────────────────────────
+ *
+ * 社区共育不是独立实体，是亲子任务与家长提交的 feed 视图（B11）。一条任务对 N 笔
+ * 投稿，所以卡片的主体是**家长写的正文与家长拍的照片**，任务标题只是卡片脚上的出处。
+ *
+ * 服务端固定只回已提交的那些。**「谁还没交」不在这一页**，在亲子任务详情的完成情况
+ * 看板上 —— 两页口径刻意不同。
+ *
+ * ── 两个筛选都不在本地做 ───────────────────────────────────────────────────
+ *
+ * 时间与任务类别都发给服务端，重新取一页。时间窗的边界由服务端按园所时区算，
+ * **这一页一个日期都不推**（契约原话：前端不得自行推日期）。
+ * 两个「全部」表示不发该参数，不是发一个 `all` 字符串。
+ *
+ * ── 「加入成长册」写的是教师分支 ───────────────────────────────────────────
+ *
+ * `PUT /teacher/growth-book/task-submissions/{id}/inclusion`。教师这一支与家长那一支
+ * **各自独立**（F17）：收进来不影响家长的选择，移出也不删原提交与照片。
+ * 照抄原型的交互：点一下把该条全部照片收进去，再点一下整条移出，没有选照片的浮层。
+ *
+ * ── 照片地址逐张取 ─────────────────────────────────────────────────────────
+ *
+ * 列表只回 `file_id`，不回地址。地址走 `photoUrl()` 每次重验、5 分钟签名（§8.4），
+ * 所以不能缓存进列表数据当长期可用。格子数先按 file_id 铺好，地址随后逐张填上，
+ * 图片陆续到达时布局不跳。
  */
 
-const BOOK_STORE_KEY = 'hualong.growth-book.v1';
+const co = require('../../services/co-education');
 
-const POSTS = [
-  {
-    id: 'c1', initial: '陈', tone: '', author: '陈小明家长', time: '今天 09:18',
-    time_key: 'week', type: 'community', typeLabel: '社区任务', task: '社区建筑里的纹样',
-    text: '小明在祠堂门口找到木雕花纹，说“像衣服上的花边”。我们一起数了屋檐上的图案，并拍下他最喜欢的一处。',
-    photos: ['门楼', '木雕', '记录'],
-  },
-  {
-    id: 'c2', initial: '李', tone: 'green', author: '李雨萱家长', time: '昨天 18:42',
-    time_key: 'week', type: 'daily', typeLabel: '日常任务', task: '我会安全过街',
-    text: '从幼儿园到公交站，我们让孩子标记红绿灯、斑马线和需要牵手的位置。她能主动提醒大人“这里要等绿灯”。',
-    photos: ['路线图', '过街点'],
-  },
-  {
-    id: 'c3', initial: '张', tone: 'amber', author: '张力轩家长', time: '6月18日',
-    time_key: 'month', type: 'community', typeLabel: '社区任务', task: '社区里的食物来源',
-    text: '孩子观察了鱼档和蔬菜档，能说出“先问价格再付款”。回家后用图画记录了买菜流程。',
-    photos: ['鱼档', '蔬菜', '流程画'],
-  },
-  {
-    id: 'c4', initial: '王', tone: 'blue', author: '王子涵家长', time: '6月6日',
-    time_key: 'older', type: 'community', typeLabel: '社区任务', task: '社区建筑里的纹样',
-    text: '子涵注意到祠堂前的石阶很高，会比较“以前的人和现在的小朋友走路有什么不一样”。我们补充了关于礼仪空间的讨论。',
-    photos: ['石阶', '合照'],
-  },
-];
+/** 卡片上最多铺几格。其余用角标表示，与在园时光 feed 同一个口径。 */
+const PREVIEW_PHOTOS = 3;
 
-function readBook() {
-  try {
-    const saved = wx.getStorageSync(BOOK_STORE_KEY);
-    return saved && typeof saved === 'object' ? saved : {};
-  } catch (e) {
-    return {};
-  }
-}
+/** 头像底色，按幼儿姓名散列。原型里是写死的四种，这里按第一个字取，稳定且不用存。 */
+const TONES = ['', 'green', 'amber', 'blue'];
 
-function writeBook(config) {
-  try {
-    wx.setStorageSync(BOOK_STORE_KEY, config);
-  } catch (e) {
-    /* 存不进去就算了，和原型一样静默 */
-  }
+function toneOf(name) {
+  let n = 0;
+  for (const ch of String(name || '')) n = (n + ch.charCodeAt(0)) % TONES.length;
+  return TONES[n];
 }
 
 Page({
   data: {
+    // key 就是发给服务端的值；`all` 表示不发这个参数。
     timeOptions: [
       { key: 'all', label: '全部时间' },
       { key: 'week', label: '本周' },
       { key: 'month', label: '本月' },
-      { key: 'older', label: '更早' },
+      { key: 'earlier', label: '更早' },
     ],
     timeIndex: 0,
     typeOptions: [
       { key: 'all', label: '全部任务' },
-      { key: 'daily', label: '日常任务' },
-      { key: 'community', label: '社区任务' },
+      { key: 't1', label: '日常任务' },
+      { key: 't2', label: '社区任务' },
     ],
     typeIndex: 0,
     visible: [],
+    loading: true,
+    failed: '',
   },
 
   onShow() {
@@ -88,36 +80,81 @@ Page({
     this.refresh();
   },
 
-  refresh() {
-    const time = this.data.timeOptions[this.data.timeIndex].key;
-    const type = this.data.typeOptions[this.data.typeIndex].key;
-    const material = readBook().material || [];
+  async refresh() {
+    const timeKey = this.data.timeOptions[this.data.timeIndex].key;
+    const typeKey = this.data.typeOptions[this.data.typeIndex].key;
 
-    const visible = POSTS
-      .filter((post) => (time === 'all' || post.time_key === time) && (type === 'all' || post.type === type))
-      .map((post) => ({ ...post, added: material.some((row) => row.id === post.id) }));
-
-    this.setData({ visible });
+    this.setData({ loading: true, failed: '' });
+    try {
+      // 缺席＝不加这条筛选。`all` 是页面自己的标记，不发给服务端。
+      const page = await co.listCommunityFeed({
+        type: typeKey === 'all' ? undefined : typeKey,
+        timeWindow: timeKey === 'all' ? undefined : timeKey,
+        limit: 100,
+      });
+      const visible = page.items.map((row) => ({
+        id: row.id,
+        initial: row.initial,
+        tone: toneOf(row.author),
+        author: row.author,
+        time: row.submittedLabel,
+        text: row.text,
+        underCheck: row.underCheck,
+        typeLabel: row.typeLabel,
+        taskTitle: row.taskTitle,
+        // 格子先按 file_id 铺好，地址随后填。
+        photos: row.fileIds.slice(0, PREVIEW_PHOTOS).map((fid) => ({ fileId: fid, url: '' })),
+        moreCount: Math.max(0, row.fileIds.length - PREVIEW_PHOTOS),
+        photoCount: row.fileIds.length,
+        fileIds: row.fileIds,
+        included: row.included,
+      }));
+      this.setData({ visible, loading: false });
+      this.fillPhotos(visible);
+    } catch (err) {
+      this.setData({ visible: [], loading: false, failed: err.userMessage || '社区共育加载失败，请稍后重试' });
+    }
   },
 
-  onToggleMaterial(e) {
-    const post = this.data.visible[Number(e.currentTarget.dataset.index)];
-    const config = readBook();
-    const added = (config.material || []).some((row) => row.id === post.id);
-
-    config.material = (config.material || []).filter((row) => row.id !== post.id);
-    if (added) {
-      wx.showToast({ title: '已移出成长册', icon: 'none' });
-    } else {
-      config.material.push({
-        id: post.id,
-        title: `${post.task}（${post.author}）`,
-        date: post.time,
-        photos: post.photos,
+  /** 逐张换地址，回来一张填一张。列表可能已经换过筛选，所以按 id 找回位置。 */
+  fillPhotos(items) {
+    items.forEach((post) => {
+      post.photos.forEach(async (photo, i) => {
+        const url = await co.photoUrl(photo.fileId);
+        if (!url) return;
+        const at = this.data.visible.findIndex((x) => x.id === post.id);
+        if (at < 0) return;
+        this.setData({ [`visible[${at}].photos[${i}].url`]: url });
       });
-      wx.showToast({ title: `已加入成长册（${post.photos.length} 张照片）`, icon: 'none' });
+    });
+  },
+
+  /**
+   * 收进成长册，或整条移出。
+   *
+   * 收进去时把**该条全部照片**交上去（不只是卡片上铺出来那三张），照抄原型。
+   * 服务端复验 file_id 是该笔提交已冻结附件的子集。
+   */
+  async onToggleMaterial(e) {
+    const post = this.data.visible[Number(e.currentTarget.dataset.index)];
+    if (!post) return;
+
+    const next = !post.included;
+    try {
+      await co.setBookInclusion(post.id, {
+        included: next,
+        fileIds: next ? post.fileIds : [],
+      });
+    } catch (err) {
+      wx.showToast({ title: err.userMessage || '操作失败，请稍后重试', icon: 'none' });
+      return;
     }
-    writeBook(config);
-    this.refresh();
+
+    const at = this.data.visible.findIndex((x) => x.id === post.id);
+    this.setData({ [`visible[${at}].included`]: next });
+    wx.showToast({
+      title: next ? `已加入成长册（${post.photoCount} 张照片）` : '已移出成长册',
+      icon: 'none',
+    });
   },
 });

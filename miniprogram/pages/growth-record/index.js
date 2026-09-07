@@ -15,7 +15,7 @@ const ROUTES = {
 Page({
   data: {
     entries: [
-      { key: 'parent-eval', label: '发布家长评价', primary: true },
+      { key: 'parent-eval', label: '发布家长评价' },
       { key: 'teacher-eval', label: '教师评价' },
       { key: 'book', label: '成长册' },
     ],

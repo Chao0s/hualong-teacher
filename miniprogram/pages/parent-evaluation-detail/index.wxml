@@ -1,33 +1,80 @@
-<!-- 家长测评进度 —— 对照原型 screens/parent-evaluation-detail.html。 -->
+<!-- 家长评价完成情况 —— 对照原型 screens/parent-evaluation-detail.html。
+
+     原型是四列：幼儿 / 已读 / 已完成 / 提交内容预览。
+     这里画三列：「已读」F24 之后有落点了；「提交内容预览」不做成列 ——
+     契约的看板行不回正文（一次发全班正文没道理），改成点一行取一笔，弹层显示。 -->
 <view class="page">
 
-  <view class="chunk">
-    <text class="pill">2026年6月 · 家长月度评价</text>
-    <view class="metric-row metric-row--gap">
-      <view class="metric" wx:for="{{metrics}}" wx:key="label">
-        <text class="metric__n">{{item.value}}</text>
-        <text class="metric__l">{{item.label}}</text>
+  <view class="empty" wx:if="{{loading}}">加载中…</view>
+  <view class="empty" wx:elif="{{failed}}">{{failed}}</view>
+
+  <block wx:elif="{{rows.length}}">
+    <view class="chunk">
+      <text class="pill">{{title}}</text>
+      <view class="metric-row metric-row--gap">
+        <view class="metric" wx:for="{{metrics}}" wx:key="label">
+          <text class="metric__n">{{item.value}}</text>
+          <text class="metric__l">{{item.label}}</text>
+        </view>
+      </view>
+      <view class="progress-line">
+        <view class="bar"><view class="bar__fill" style="width: {{rate}}%"></view></view>
+        <text class="status status--done">{{rate}}%</text>
       </view>
     </view>
-    <view class="progress-line">
-      <view class="bar"><view class="bar__fill" style="width: {{rate}}%"></view></view>
-      <text class="status status--done">{{rate}}%</text>
-    </view>
-  </view>
 
-  <view class="sec">每个孩子家长情况</view>
-  <view class="table-wrap">
-    <view class="prog-row prog-row--head">
-      <text class="prog-cell prog-cell--name">幼儿</text>
-      <text class="prog-cell">已读</text>
-      <text class="prog-cell">已完成</text>
-      <text class="prog-cell">提交内容预览</text>
+    <view class="sec">每个孩子家长情况</view>
+    <view class="table-wrap">
+      <view class="prog-row prog-row--head">
+        <text class="prog-cell prog-cell--name">幼儿</text>
+        <text class="prog-cell">已读</text>
+        <text class="prog-cell">完成情况</text>
+      </view>
+      <view
+        class="prog-row prog-row--tap"
+        wx:for="{{rows}}"
+        wx:key="id"
+        wx:for-item="row"
+        data-id="{{row.id}}"
+        bindtap="onRowTap"
+      >
+        <text class="prog-cell prog-cell--name">{{row.name}}</text>
+        <view class="prog-cell"><text class="status status--{{row.readState}}">{{row.readText}}</text></view>
+        <view class="prog-cell"><text class="status status--{{row.state}}">{{row.text}}</text></view>
+      </view>
     </view>
-    <view class="prog-row" wx:for="{{rows}}" wx:key="name" wx:for-item="row">
-      <text class="prog-cell prog-cell--name">{{row.name}}</text>
-      <view class="prog-cell"><text class="status status--{{row.read.state}}">{{row.read.text}}</text></view>
-      <view class="prog-cell"><text class="status status--{{row.done.state}}">{{row.done.text}}</text></view>
-      <text class="prog-cell">{{row.preview}}</text>
+    <text class="hint hint--gap">点某一行可以看这位家长写的内容。只有已提交的才有正文——草稿不给教师看。</text>
+  </block>
+
+  <view class="empty" wx:else>本班暂无家长评价记录</view>
+
+  <!-- 底部弹层：逐条读正文 -->
+  <view class="sheet-mask" wx:if="{{sheet}}" bindtap="onCloseSheet" catchtouchmove="noop">
+    <view class="sheet" catchtap="noop">
+      <view class="sheet__head">
+        <text class="sheet__title">{{detail ? detail.name : '家长评价'}}</text>
+        <text class="sheet__close" bindtap="onCloseSheet">关闭</text>
+      </view>
+
+      <view class="empty" wx:if="{{sheetLoading}}">加载中…</view>
+      <view class="empty" wx:elif="{{sheetError}}">{{sheetError}}</view>
+
+      <block wx:elif="{{detail}}">
+        <view class="sheet__meta">
+          <text class="pill">{{detail.periodLabel}} · {{detail.typeLabel}}</text>
+          <text class="status status--{{detail.stateTone}}">{{detail.stateLabel}}</text>
+        </view>
+        <view class="sheet__line">填写窗口　{{detail.windowLabel}}</view>
+        <view class="sheet__line">家长打开　{{detail.readLabel}}</view>
+        <view class="sheet__line">提交时间　{{detail.submittedLabel}}</view>
+
+        <view class="sheet__sec">教师出的题</view>
+        <text class="sheet__body">{{detail.prompt || '（开窗时没有写提示）'}}</text>
+
+        <view class="sheet__sec">家长写的</view>
+        <text class="sheet__body" wx:if="{{detail.hasText}}">{{detail.text}}</text>
+        <text class="sheet__body sheet__body--muted" wx:else>这位家长还没有提交。草稿不对教师显示。</text>
+      </block>
     </view>
   </view>
 
