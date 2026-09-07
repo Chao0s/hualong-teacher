@@ -14,6 +14,7 @@
 
 .imported .remove {
   position: absolute;
+  z-index: 2;
   top: 8rpx;
   right: 8rpx;
   display: flex;
@@ -135,9 +136,11 @@
   border-color: var(--accent);
 }
 
-/* 原型用 ::after 画这个对勾，这里用真实节点，方便按选中状态显隐 */
+/* 原型用 ::after 画这个对勾，这里用真实节点，方便按选中状态显隐。
+   z-index 必须给：格子里可能垫着一张真实照片，不抬层级会被盖住。 */
 .album-photo__tick {
   position: absolute;
+  z-index: 2;
   top: 10rpx;
   right: 10rpx;
   display: flex;

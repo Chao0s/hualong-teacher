@@ -211,7 +211,10 @@ async function main() {
   const board = await co.submissionBoard(published.id);
   check(`看板回全班 ${CLASS_SIZE} 行`, board.rows.length === CLASS_SIZE,
     `实际 ${board.rows.length} 行`);
-  has(board.rows[0], ['childId', 'name', 'status', 'done', 'underCheck', 'stateLabel', 'stateTone'], '看板行');
+  has(board.rows[0], [
+    'childId', 'name', 'status', 'done', 'underCheck',
+    'read', 'readLabel', 'readTone', 'doneLabel', 'doneTone',
+  ], '看板行');
   check('看板不回家长正文（契约的 BoardRow 没有这一列）',
     board.rows.every((r) => !('submissionText' in r) && !('submission_text' in r)),
     '正文漏出来了');
@@ -219,9 +222,23 @@ async function main() {
   check('状态只出现 c1/c2',
     board.rows.every((r) => ['c1', 'c2'].includes(r.status)),
     `实际 ${[...new Set(board.rows.map((r) => r.status))].join(',')}`);
-  check('三档文案只出现 已完成／未完成／审核中',
-    board.rows.every((r) => ['已完成', '未完成', '审核中'].includes(r.stateLabel)),
-    `实际 ${[...new Set(board.rows.map((r) => r.stateLabel))].join(',')}`);
+  // **两列，不是一列**：「读没读」与「做没做」是两个独立维度，各占一格。
+  check('已读列只出现 已读／未读',
+    board.rows.every((r) => ['已读', '未读'].includes(r.readLabel)),
+    `实际 ${[...new Set(board.rows.map((r) => r.readLabel))].join(',')}`);
+  check('完成情况列只出现 已完成／未完成／审核中',
+    board.rows.every((r) => ['已完成', '未完成', '审核中'].includes(r.doneLabel)),
+    `实际 ${[...new Set(board.rows.map((r) => r.doneLabel))].join(',')}`);
+  check('已完成的那些「已读」恒为真（打不开就交不了）',
+    board.rows.filter((r) => r.done).every((r) => r.read === true),
+    '有已完成的行显示成未读');
+  // 任务详情只显示到日：教师挑 15:00 还是 15:30 对家长没区别。
+  check('任务时间有到日的标签，且不带钟点',
+    /^\d{4}-\d{2}-\d{2}$/.test(published.startDayLabel),
+    published.startDayLabel);
+  check('到分的标签仍然在（列表卡片用它）',
+    published.startLabel.length > published.startDayLabel.length,
+    `${published.startDayLabel} vs ${published.startLabel}`);
 
   const dbBoard = await db.query(
     `SELECT count(*)::int AS n FROM db_parent_task_submission
