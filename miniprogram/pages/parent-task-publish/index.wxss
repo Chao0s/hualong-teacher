@@ -44,14 +44,6 @@
   margin-top: 0;
 }
 
-/* 日期与时刻两个 picker 并排。日期串比时刻串长，所以 2:1。 */
-.time-row {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 16rpx;
-  margin-top: 12rpx;
-}
-
 .select--empty {
   color: var(--muted);
 }

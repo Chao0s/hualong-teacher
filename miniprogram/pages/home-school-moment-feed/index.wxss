@@ -50,16 +50,18 @@
 /* 垃圾桶。破坏性操作做成图标不做成文字按钮：它不该和「加入成长册」抢注意力，
    真正的把关在点下去之后的确认弹窗。桶身用边框画，盖子与提手用 ::before，
    两条竖纹用 ::after —— 全部是形状，不引入一张图。 */
+/* 桶身：三面边框 + 下方收窄的圆角。
+   **整体高度对齐旁边那行 22rpx 的字**：桶身 16rpx + 盖子与提手约 6rpx。
+   原来桶身就 30rpx、加上盖子近 40rpx，比字高了将近一倍。 */
 .trash {
   position: relative;
   flex: 0 0 auto;
-  width: 26rpx;
-  height: 30rpx;
+  width: 16rpx;
+  height: 16rpx;
   margin-left: 4rpx;
-  /* 桶身：三面边框 + 下方收窄的圆角 */
   border: 2rpx solid var(--danger);
   border-top: none;
-  border-radius: 0 0 6rpx 6rpx;
+  border-radius: 0 0 4rpx 4rpx;
   opacity: 0.75;
 }
 
@@ -67,24 +69,24 @@
 .trash::before {
   content: '';
   position: absolute;
-  left: -6rpx;
-  top: -8rpx;
-  width: 34rpx;
+  left: -4rpx;
+  top: -5rpx;
+  width: 22rpx;
   height: 2rpx;
   background: var(--danger);
-  box-shadow: 0 -4rpx 0 -1rpx var(--danger);
+  box-shadow: 0 -3rpx 0 -0.5rpx var(--danger);
 }
 
 /* 桶身上的两条竖纹 */
 .trash::after {
   content: '';
   position: absolute;
-  left: 7rpx;
-  top: 6rpx;
+  left: 4rpx;
+  top: 3rpx;
   width: 2rpx;
-  height: 14rpx;
+  height: 8rpx;
   background: var(--danger);
-  box-shadow: 8rpx 0 0 0 var(--danger);
+  box-shadow: 5rpx 0 0 0 var(--danger);
 }
 
 .trash--hover {
@@ -247,4 +249,9 @@
   grid-template-columns: 1fr 1fr;
   gap: 20rpx;
   margin-top: 28rpx;
+}
+
+/* 勾选标记常驻，未选中时藏起来 —— 与填写月度评价那一页同一种写法 */
+.pick-photo__tick--off {
+  display: none;
 }

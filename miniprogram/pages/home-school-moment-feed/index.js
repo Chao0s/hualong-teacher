@@ -184,8 +184,15 @@ Page({
       pickId: id,
       pickTitle: hit ? '调整收录照片' : '加入成长资料',
       // 契约只给 file_id，没有文件名，所以标签按序号，不编文件名。
+      // `sel` 是每一行自己的选中态，模板直接读它。
+      // **不要在模板里写 `selected.indexOf(item.fileId) > -1`** —— 那个表达式在真机上
+      // 算不出来，选中了边框与勾选标记一起不显示，而底部的计数（读的是数组长度）
+      // 照常在变，于是看起来像样式问题，其实不是。填写月度评价那一页撞过同一个坑。
       pickPhotos: card.fileIds.map((fid, i) => ({
-        fileId: fid, label: `照片 ${i + 1}`, url: known.get(fid) || '',
+        fileId: fid,
+        label: `照片 ${i + 1}`,
+        url: known.get(fid) || '',
+        sel: selected.indexOf(fid) > -1,
       })),
       selected,
       confirmText: this.confirmTextFor(selected.length, !!hit),
@@ -206,13 +213,21 @@ Page({
     return existed ? '移出成长资料' : '加入';
   },
 
+  /**
+   * 切换一张照片的选中。
+   *
+   * **用下标定位，不用 fileId**：`data-i` 是我自己发的整数，不经 dataset 的取值转换。
+   * 选中态写进那一行的 `sel`，`selected` 由它推出来，不再是另一份要同步的状态。
+   */
   onTogglePhoto(e) {
-    const fileId = Number(e.currentTarget.dataset.fileid);
-    const selected = this.data.selected.includes(fileId)
-      ? this.data.selected.filter((x) => x !== fileId)
-      : this.data.selected.concat(fileId);
-    const existed = !!(readBook().material || []).find((row) => row.id === this.data.pickId);
-    this.setData({ selected, confirmText: this.confirmTextFor(selected.length, existed) });
+    const i = Number(e.currentTarget.dataset.i);
+    const row = this.data.pickPhotos[i];
+    if (!row) return;
+    this.setData({ [`pickPhotos[${i}].sel`]: !row.sel }, () => {
+      const selected = this.data.pickPhotos.filter((p) => p.sel).map((p) => p.fileId);
+      const existed = !!(readBook().material || []).find((r) => r.id === this.data.pickId);
+      this.setData({ selected, confirmText: this.confirmTextFor(selected.length, existed) });
+    });
   },
 
   onConfirmPick() {

@@ -5,7 +5,7 @@
      按序号列出（见 index.js 头注）。缩略图那一格因此不再画。 -->
 <view class="page">
 
-  <view class="hint hint--top">点动态右下角的「+ 加入成长册」可将其加入成长资料；加入后会作为成长册「在园时光」栏目的内容（全班共用）。</view>
+  <view class="hint hint--top">点动态右下角的「+ 加入成长册」可将其加入成长资料；加入后会作为成长册「在园时光」栏目的内容（全班共用）。草稿与已撤回的动态没有这个按钮。</view>
 
   <view class="moment-card" wx:for="{{moments}}" wx:key="id" wx:for-item="m">
     <view>
@@ -44,8 +44,12 @@
             bindtap="onDelete"
           ></view>
         </view>
+        <!-- **只有已发布的才给「加入成长册」。**
+             草稿家长根本看不到，撤回的是管理员下架的内容 —— 两者都不该进成长册，
+             那本册子给家长看。原型不分状态一律画这个按钮，是原型没考虑这两态。 -->
         <view
           class="add-material {{m.pickedCount ? 'add-material--on' : ''}}"
+          wx:if="{{m.published}}"
           data-id="{{m.id}}"
           bindtap="onOpenPick"
         >{{m.pickedCount ? '✓ 已加入（' + m.pickedCount + ' 张）' : '+ 加入成长册'}}</view>
@@ -69,16 +73,20 @@
   <text class="sheet-sub">活动文字将全部收录；请选择要收录的照片（可多选）。</text>
 
   <scroll-view class="pick-grid" scroll-y>
+    <!-- 选中与否读的是每一行自己的 `sel`，**不在模板里算 indexOf** ——
+         那个表达式在真机上算不出来，边框与勾选标记会一起失效，
+         而底部的计数照常在变，看起来像样式问题其实不是。见 index.js 的 onTogglePhoto。 -->
     <view
-      class="pick-photo {{selected.indexOf(item.fileId) > -1 ? 'pick-photo--sel' : ''}}"
+      class="pick-photo {{item.sel ? 'pick-photo--sel' : ''}}"
       wx:for="{{pickPhotos}}"
       wx:key="fileId"
-      data-fileid="{{item.fileId}}"
+      wx:for-index="i"
+      data-i="{{i}}"
       bindtap="onTogglePhoto"
     >
       <image class="pick-photo__img" wx:if="{{item.url}}" src="{{item.url}}" mode="aspectFill" lazy-load />
       <text wx:else>{{item.label}}</text>
-      <view class="pick-photo__tick" wx:if="{{selected.indexOf(item.fileId) > -1}}">✓</view>
+      <view class="pick-photo__tick {{item.sel ? '' : 'pick-photo__tick--off'}}">✓</view>
     </view>
   </scroll-view>
 

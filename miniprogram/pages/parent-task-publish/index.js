@@ -20,7 +20,11 @@
  *
  * `db_parent_task.start_at` 是 `NOT NULL`，而原型的表单里根本没有时间输入框 ——
  * 那张表单在原型里提交不成功。必填以 DDL 为准（CLAUDE.md §4），所以这里补上
- * 「开始时间」（必填）与「截止时间」（可空）两组 picker。
+ * 「开始日期」（必填）与「截止日期」（可空）两个 picker。
+ *
+ * **只挑日期，不挑钟点。** 库里那两列是 `TIMESTAMP`，所以还得存一个钟点，
+ * 但教师挑 15:00 还是 15:30 对家长没有区别 —— 任务详情页也只显示到日。
+ * 钟点因此固定成开始 08:00、截止 21:00，与发布家长测评同一个口径。
  *
  * 组装走 `services/co-education.taskWireTime()`：`+08:00` 是**字面量不是换算**，
  * 页面不拼时间戳。发布时服务端按 `start_at` 派生 `term_id`，落不进任何学期就拒绝，
@@ -38,6 +42,16 @@
 const co = require('../../services/co-education');
 const guard = require('../../utils/guard');
 
+/**
+ * 钟点固定，不给控件。
+ *
+ * `start_at`／`due_at` 在库里是 `TIMESTAMP`，必须有一个钟点；但教师挑 15:00 还是 15:30
+ * 对家长没有区别 —— 任务详情页也只显示到日。取 08:00 开、21:00 截，
+ * 与发布家长测评同一个口径。
+ */
+const START_CLOCK = '08:00';
+const DUE_CLOCK = '21:00';
+
 Page({
   data: {
     types: [
@@ -50,9 +64,7 @@ Page({
     detail: '',
 
     startDate: '',
-    startClock: '08:00',
     dueDate: '',
-    dueClock: '18:00',
 
     limits: co.TASK_LIMITS,
     editing: false,          // 带 id 进来的是改草稿
@@ -68,13 +80,9 @@ Page({
       if (this.taskId) {
         await this.loadDraft();
       } else {
-        // 新建：开始时间默认园所今天 08:00，截止留空（`due_at` 可空）。
+        // 新建：开始日期默认园所今天，截止留空（`due_at` 可空）。
         const parts = co.taskPickerParts(co.defaultTaskStart(Date.now()));
-        this.setData({
-          startDate: parts.date,
-          startClock: parts.clock,
-          loading: false,
-        });
+        this.setData({ startDate: parts.date, loading: false });
       }
       wx.setNavigationBarTitle({ title: this.taskId ? '编辑草稿' : '发布新任务' });
     } catch (err) {
@@ -101,10 +109,10 @@ Page({
       title: task.title,
       background: task.background,
       detail: task.detail,
+      // 回填只取日期。库里那个钟点原样留着，但表单不再显示、也不再让人改 ——
+      // 改草稿时会被下面的常量重写成 08:00／21:00，这是有意的：口径统一到一处。
       startDate: start.date,
-      startClock: start.clock || '08:00',
       dueDate: due.date,
-      dueClock: due.clock || '18:00',
       loading: false,
     });
   },
@@ -123,9 +131,7 @@ Page({
   },
 
   onStartDate(e) { this.setData({ startDate: e.detail.value }); },
-  onStartClock(e) { this.setData({ startClock: e.detail.value }); },
   onDueDate(e) { this.setData({ dueDate: e.detail.value }); },
-  onDueClock(e) { this.setData({ dueClock: e.detail.value }); },
 
   /** 截止时间可空，所以给一个清掉它的入口 —— 设了之后没法取消才是问题。 */
   onClearDue() {
@@ -134,14 +140,15 @@ Page({
 
   /** 表单 → service 的写入形状。`dueAt` 为 null 表示不设截止／清空。 */
   formValues() {
-    const { startDate, startClock, dueDate, dueClock } = this.data;
+    const { startDate, dueDate } = this.data;
     return {
       type: this.data.type,
       title: this.data.title,
       background: this.data.background,
       detail: this.data.detail,
-      startAt: startDate ? co.taskWireTime(startDate, startClock) : '',
-      dueAt: dueDate ? co.taskWireTime(dueDate, dueClock) : null,
+      // 钟点是常量，不是教师挑的 —— 见 START_CLOCK 的注解。
+      startAt: startDate ? co.taskWireTime(startDate, START_CLOCK) : '',
+      dueAt: dueDate ? co.taskWireTime(dueDate, DUE_CLOCK) : null,
     };
   },
 

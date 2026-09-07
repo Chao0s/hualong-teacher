@@ -371,12 +371,31 @@ id 不在里面」，只写「N 条」的话范围判定改坏了也可能照样
 
 ## 9. 两个不要清的题库
 
-`README.md` 明写「题库不得在页面里另抄一份」：
+**两份是两套不同的量表，不是同一份抄了两遍**：
 
-| 文件 | 内容 |
-|---|---|
-| `miniprogram/pages/assessment-tool/assessment-data.js` | 办园质量评估 120 题 |
-| `miniprogram/pages/comprehensive-assessment-form/questions.js` | 《指南》教师评定量表 124 题 |
+| 文件 | 内容 | 权威 |
+|---|---|---|
+| `miniprogram/pages/assessment-tool/assessment-data.js` | **办园质量评估** 120 题，评的是幼儿园／班级／教师 | 无外部权威，developer 维护的版本化代码资产（F17） |
+| `miniprogram/pages/comprehensive-assessment-form/questions.js` | **《指南》教师评定量表** 124 题，评的是幼儿 | `data/guide-scale.json` |
 
-权威是 `data/guide-scale.json`。数据集里 `db_scale_item` 正好 124 行，所以「改成从接口
-取」可行——**但那是一个要先问的决策**，不要自己拍。
+两者曾共用一张表，那是个错误，见后端 `db/GAPS.md` 的 G5。
+
+### 124 题那一份删不掉，所以给它装了闸门
+
+`data/guide-scale.json` 是权威，但它**在 `miniprogram/` 之外** —— 小程序打不进包，
+页面 `require` 不到。所以 `questions.js` 里那一份**删不掉**。
+
+删不掉就让它漂开时当场失败：`npm test` 的第 7 段**逐题比对提问与三档锚点**，
+不一致就红。这是 §7.3 那条的同一个应用 —— **一份复制品不是冗余，是一次静默过期；
+要么只有一份，要么当场失败。**
+
+闸门验过会红：改一个字，`npm test` 当场报 `H1-1-1 的提问与权威不同`。
+
+**第三份在后端**（`db/rubric/guide-scale-v1.json`，灌数据集用），三份内容目前逐字相同。
+后端那份没有进这个闸门 —— 跨仓库比对要先解决「两个仓库各在什么版本」，暂未做。
+
+### 要真正只留一份，就得改成从接口取
+
+数据集里 `db_scale_item` 正好 124 行，所以可行。**但那是一个要先问的决策**，
+不要自己拍：它会牵出 G5（五维分数无处存）、G15（量表无模板表）、G27（身高体重题
+无评分规则），还要定领域代码 `H/L/S/K/A` 与 `f1..f5` 哪一套是权威。

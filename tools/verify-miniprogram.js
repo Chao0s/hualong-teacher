@@ -153,5 +153,52 @@ for (const file of wxmls) {
 }
 console.log(`  ${wxmls.length} 个 wxml、${tags} 个标签检查过`);
 
+// 7) 《指南》124 题的两份副本必须逐字相同。
+//
+//    `data/guide-scale.json` 是权威（CLAUDE.md §9），但它在 `miniprogram/` 之外 ——
+//    小程序打不进包，页面 require 不到，所以 `questions.js` 里那一份**删不掉**。
+//
+//    删不掉就只能让它漂开时当场失败。这正是 CLAUDE.md §7.3 的那条：
+//    **一份复制品不是冗余，是一次静默过期。要么只有一份，要么当场失败。**
+//    2026-09-01 撞过一次同类的事：两个后端克隆，读到旧的那份，全程没有任何报错。
+//
+//    要真正只留一份，得把题库改成从接口取（db_scale_item 正好 124 行）——
+//    那会牵出 G5／G15／G27 与领域代码两套并存，是另一条线。
+console.log('[7] 《指南》量表两份副本一致');
+{
+  const SCALE = ROOT + '../data/guide-scale.json';
+  const PAGE = ROOT + 'pages/comprehensive-assessment-form/questions.js';
+  if (!fs.existsSync(SCALE)) {
+    bad(`找不到权威题库 ${SCALE}`);
+  } else {
+    const flat = (j) => {
+      const out = [];
+      for (const d of j.domains) for (const a of d.aspects) for (const g of a.goals) out.push(...g.items);
+      return out;
+    };
+    const authority = flat(JSON.parse(fs.readFileSync(SCALE, 'utf8')));
+    const copy = [];
+    for (const d of require(require('path').resolve(PAGE))) copy.push(...d.items);
+
+    let diff = 0;
+    if (authority.length !== copy.length) {
+      bad(`题数不同：权威 ${authority.length}，questions.js ${copy.length}`);
+      diff++;
+    }
+    const byId = new Map(copy.map((x) => [x.id, x]));
+    for (const a of authority) {
+      const b = byId.get(a.item_id);
+      if (!b) { bad(`questions.js 缺题 ${a.item_id}`); diff++; continue; }
+      if ((a.question || '') !== (b.q || '')) { bad(`${a.item_id} 的提问与权威不同`); diff++; }
+      for (const k of ['1', '3', '5']) {
+        if (((a.anchors || {})[k] || '') !== ((b.a || {})[k] || '')) {
+          bad(`${a.item_id} 的 ${k} 分锚点与权威不同`); diff++;
+        }
+      }
+    }
+    console.log(`  ${authority.length} 题逐题比对（提问 + 三档锚点），不一致 ${diff} 处`);
+  }
+}
+
 console.log(fail === 0 ? '\n=== 全部通过 ===' : `\n=== 失败 ${fail} 项 ===`);
 process.exit(fail ? 1 : 0);

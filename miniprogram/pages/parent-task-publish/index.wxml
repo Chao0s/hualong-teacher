@@ -57,31 +57,23 @@
 
     <view class="sec">任务时间</view>
     <view class="chunk">
-      <text class="form-label form-label--first">开始时间</text>
-      <view class="time-row">
-        <picker mode="date" value="{{startDate}}" bindchange="onStartDate">
-          <view class="select">{{startDate}}</view>
-        </picker>
-        <picker mode="time" value="{{startClock}}" bindchange="onStartClock">
-          <view class="select">{{startClock}}</view>
-        </picker>
-      </view>
+      <!-- 只挑日期。库里那两列是 TIMESTAMP，仍要存一个钟点，但那个钟点对家长
+           没有区别（详情页也只显示到日），固定成 08:00／21:00，见 index.js。 -->
+      <text class="form-label form-label--first">开始日期</text>
+      <picker mode="date" value="{{startDate}}" bindchange="onStartDate">
+        <view class="select">{{startDate}}</view>
+      </picker>
 
-      <text class="form-label">截止时间</text>
-      <view class="time-row" wx:if="{{dueDate}}">
-        <picker mode="date" value="{{dueDate}}" bindchange="onDueDate">
-          <view class="select">{{dueDate}}</view>
-        </picker>
-        <picker mode="time" value="{{dueClock}}" bindchange="onDueClock">
-          <view class="select">{{dueClock}}</view>
-        </picker>
-      </view>
+      <text class="form-label">截止日期</text>
+      <picker mode="date" value="{{dueDate}}" bindchange="onDueDate" wx:if="{{dueDate}}">
+        <view class="select">{{dueDate}}</view>
+      </picker>
       <picker mode="date" value="{{startDate}}" bindchange="onDueDate" wx:else>
         <view class="select select--empty">不设截止，点此选择</view>
       </picker>
       <text class="time-clear" wx:if="{{dueDate}}" bindtap="onClearDue">改回不设截止</text>
 
-      <text class="time-note">开始时间决定这个任务归哪个学期，发布后不能再改。</text>
+      <text class="time-note">开始日期决定这个任务归哪个学期，发布后不能再改。</text>
     </view>
 
     <view class="chunk">
