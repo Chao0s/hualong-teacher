@@ -13,6 +13,9 @@
  *     `<editor>`、canvas、拖曳、翻页动画一概测不到**，那些只能在开发者工具里真点。
  */
 
+import { readFileSync } from 'node:fs';
+import { basename } from 'node:path';
+
 const storage = new Map();
 
 /**
@@ -22,7 +25,7 @@ const storage = new Map();
  * fileType」，那一条是由库里 `db_file.file_type` 决定的，所以断言仍然钉在库里
  * 那一行上。**真的能不能打开，只有开发者工具里真点才知道。**
  */
-export const wxCalls = { downloadFile: [], openDocument: [], previewImage: [] };
+export const wxCalls = { downloadFile: [], openDocument: [], previewImage: [], uploadFile: [] };
 
 export function installWxStub() {
   globalThis.wx = {
@@ -49,6 +52,30 @@ export function installWxStub() {
     },
     previewImage({ urls }) {
       wxCalls.previewImage.push({ urls });
+    },
+    /**
+     * 上传**真的送字节**，与上面三个只记录不动字节的桩不同。
+     *
+     * 不得不这样：`POST /media/files` 落库前要求「这张票据真的收到过字节，且不少于
+     * 声明的长度」，桩成「总是成功」就永远走不到落库那一步，而落库那一行才是
+     * 探针要钉的东西。字节取自探针自己在磁盘上造的那个小文件。
+     *
+     * 顺序照 `formData` 的插入顺序放前面、文件字段放最后 —— 与真机上
+     * `wx.uploadFile` 的形状一致（COS 表单上传的硬要求）。
+     */
+    uploadFile({ url, filePath, name, formData, success, fail }) {
+      wxCalls.uploadFile.push({ url, filePath, name, formData });
+      const form = new FormData();
+      Object.keys(formData || {}).forEach((k) => form.append(k, String(formData[k])));
+      form.append(name || 'file', new Blob([readFileSync(filePath)]), basename(filePath));
+      fetch(url, { method: 'POST', body: form })
+        .then(async (res) => {
+          const text = await res.text();
+          let data = text;
+          try { data = JSON.parse(text); } catch { /* 保留原文 */ }
+          success({ statusCode: res.status, data });
+        })
+        .catch((err) => fail({ errMsg: String(err && err.message ? err.message : err) }));
     },
     request({ url, method, header, data, success, fail }) {
       fetch(url, {

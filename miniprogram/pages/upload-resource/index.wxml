@@ -67,7 +67,7 @@
         <view class="image-upload">
           <text class="image-upload__title">封面图片</text>
           <view class="image-box" bindtap="onPickCover">
-            <text class="upload-note">{{coverPicked ? '已选择封面图片' : '未选择文件'}}</text>
+            <text class="upload-note">{{coverNote}}</text>
             <text class="mini-btn">上传封面</text>
           </view>
         </view>
@@ -111,8 +111,12 @@
           <view class="upload-row__main">
             <text class="upload-name">Word附件</text>
             <text class="upload-note">资源说明、授权材料或整理文档</text>
+            <!-- 上传状态另起一行，选没选到、传没传上都写在这里。 -->
+            <text class="upload-note" wx:if="{{wordNote}}">{{wordNote}}</text>
           </view>
-          <text class="mini-btn" bindtap="onPickWord">上传</text>
+          <!-- 「从聊天选」不是「上传」的美化说法：小程序只读得到微信聊天里的文件，
+               见 index.js 头注第 2 条。按钮写实情，教师才知道要先把文档发进聊天。 -->
+          <text class="mini-btn" bindtap="onPickWord">从聊天选</text>
         </view>
       </block>
 
@@ -129,7 +133,7 @@
         <view class="image-upload">
           <text class="image-upload__title">封面图片</text>
           <view class="image-box" bindtap="onPickCover">
-            <text class="upload-note">{{coverPicked ? '已选择封面图片' : '未选择文件'}}</text>
+            <text class="upload-note">{{coverNote}}</text>
             <text class="mini-btn">上传封面</text>
           </view>
         </view>
@@ -201,8 +205,9 @@
           <view class="upload-row__main">
             <text class="upload-name">Word附件</text>
             <text class="upload-note">活动详案、反思或图文案例文档</text>
+            <text class="upload-note" wx:if="{{wordNote}}">{{wordNote}}</text>
           </view>
-          <text class="mini-btn" bindtap="onPickWord">上传</text>
+          <text class="mini-btn" bindtap="onPickWord">从聊天选</text>
         </view>
       </block>
     </view>

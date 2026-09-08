@@ -323,41 +323,59 @@ const ACTIONS = {
 };
 
 /**
+ * 封面与 Word 详案的 file_id，只在真的有的时候才进请求体。
+ *
+ * 两列都是 `db_resource`／`db_case` 上的**直接外键列**（`fk_res_cover`／
+ * `fk_res_word`／`fk_case_cover`／`fk_case_word`），两列都可空，**没有 `db_file_ref`
+ * 行**。发一个 `null` 与不发这一格在服务端是同一件事，所以不发 —— 请求体越小，
+ * 422 时指的那一格越准。
+ *
+ * 服务端会复验这个 id 是不是**本人上传的**成品：别人的 id 回 422 `validation_failed`。
+ */
+function fileIdInto(body, key, fileId) {
+  if (fileId) body[key] = fileId;
+  return body;
+}
+
+/**
  * 新建一条资源草稿。
  *
  * **不发 `school_id`、`class_id`、`created_by`** —— 那三个是 derived 层
  * （§7.3，DO-NOT-BUILD 8），服务端从登录上下文自己填。utils/derived.js 会在
  * 发出前剥掉它们，这里连传都不传。
+ *
+ * `coverFileId`／`wordFileId` 是 `services/media.js` 的 `uploadFile()` 落库之后
+ * 回的那个 id，页面原样传进来。
  */
-function createResource({ name, tag, grade, type, explain, access, trans }) {
-  return api.post(RESOURCE_PATH, {
-    action: ACTIONS.resourceCreate,
-    body: {
-      resource_name: name,
-      resource_tag: codeOf(RESOURCE_TAG, tag),
-      resource_type: codeOf(RESOURCE_TYPE, type) || 'r1',
-      grade: (grade || []).map((g) => codeOf(GRADE, g)).filter(Boolean),
-      resource_explain: explain,
-      resource_access: access,
-      resource_trans: trans,
-    },
-  });
+function createResource({ name, tag, grade, type, explain, access, trans, coverFileId, wordFileId }) {
+  const body = {
+    resource_name: name,
+    resource_tag: codeOf(RESOURCE_TAG, tag),
+    resource_type: codeOf(RESOURCE_TYPE, type) || 'r1',
+    grade: (grade || []).map((g) => codeOf(GRADE, g)).filter(Boolean),
+    resource_explain: explain,
+    resource_access: access,
+    resource_trans: trans,
+  };
+  fileIdInto(body, 'cover_file_id', coverFileId);
+  fileIdInto(body, 'word_file_id', wordFileId);
+  return api.post(RESOURCE_PATH, { action: ACTIONS.resourceCreate, body });
 }
 
 /** 新建一条案例草稿。同样不发 derived 三件套。 */
-function createCase({ name, grade, field, areas, intro, trans, resourceIds }) {
-  return api.post(CASE_PATH, {
-    action: ACTIONS.caseCreate,
-    body: {
-      case_name: name,
-      case_grade: codeOf(GRADE, grade),
-      case_field: codeOf(CASE_FIELD, field),
-      case_area: (areas || []).map((a) => codeOf(CASE_AREA, a)).filter(Boolean),
-      case_intro: intro,
-      case_trans: trans,
-      resource_ids: resourceIds || [],
-    },
-  });
+function createCase({ name, grade, field, areas, intro, trans, resourceIds, coverFileId, wordFileId }) {
+  const body = {
+    case_name: name,
+    case_grade: codeOf(GRADE, grade),
+    case_field: codeOf(CASE_FIELD, field),
+    case_area: (areas || []).map((a) => codeOf(CASE_AREA, a)).filter(Boolean),
+    case_intro: intro,
+    case_trans: trans,
+    resource_ids: resourceIds || [],
+  };
+  fileIdInto(body, 'cover_file_id', coverFileId);
+  fileIdInto(body, 'word_file_id', wordFileId);
+  return api.post(CASE_PATH, { action: ACTIONS.caseCreate, body });
 }
 
 /*

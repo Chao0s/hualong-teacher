@@ -421,13 +421,6 @@
       "updated_at": "2026-09-08"
     },
     {
-      "key": "home-school-moment-publish:L1:<view class=\"photo add-photo\"> bindtap=\"onAddPhoto\"",
-      "status": "接",
-      "reason": "→ #2",
-      "author": "Lin",
-      "updated_at": "2026-09-08"
-    },
-    {
       "key": "party-brand-detail:L2:<text class=\"chip\">",
       "status": "误报",
       "reason": "品牌详情第 27 行的 .chips 里是只读标签；同页第 15 行的 .chip 带 bindtap=\"onRetry\" 是真按钮。同一个类名两用，词表分不开 —— 全仓 15 处 class=\"chip\" 里 9 处是筛选器或重试，删掉这个词那 9 处就没有任何分支兜得住",
@@ -515,20 +508,6 @@
       "key": "teacher-term-form:L6:screens.tsv writes=yes",
       "status": "接",
       "reason": "审核人对 screens.tsv 的理解见 #24；→ #26",
-      "author": "Lin",
-      "updated_at": "2026-09-08"
-    },
-    {
-      "key": "upload-resource:L1:<text class=\"mini-btn\"> bindtap=\"onPickWord\"「上传」",
-      "status": "阻于",
-      "reason": "第 115／205 行同一 handler（资源／案例表单块）；→ #2",
-      "author": "Lin",
-      "updated_at": "2026-09-08"
-    },
-    {
-      "key": "upload-resource:L1:<view class=\"image-box\"> bindtap=\"onPickCover\"",
-      "status": "接",
-      "reason": "→ #2",
       "author": "Lin",
       "updated_at": "2026-09-08"
     }

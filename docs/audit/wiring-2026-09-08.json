@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-08T18:55:29.201Z",
+  "generatedAt": "2026-09-08T20:35:54.657Z",
   "contract": "G:\\My Drive\\Workplace\\China KG Platform\\hualong-backend\\api\\openapi.yaml",
   "pages": [
     {
@@ -40,112 +40,7 @@
         "listeners": 4,
         "links": 0
       },
-      "findings": [
-        {
-          "key": "upload-resource:L1:<view class=\"image-box\"> bindtap=\"onPickCover\"",
-          "level": "likely",
-          "layer": "L1",
-          "line": 69,
-          "what": "<view class=\"image-box\"> bindtap=\"onPickCover\"",
-          "detail": "handler 改了本地状态，但带「开发中／本环境不接」字样",
-          "verdict": {
-            "key": "upload-resource:L1:<view class=\"image-box\"> bindtap=\"onPickCover\"",
-            "status": "接",
-            "reason": "→ #2",
-            "author": "Lin",
-            "updated_at": "2026-09-08"
-          },
-          "falsePositive": false,
-          "context": {
-            "page": "upload-resource",
-            "title": "上传资料",
-            "path": "首页 → 上传资源",
-            "module": "资源库",
-            "role": "教师上传资源或案例：填表、选封面、附 Word",
-            "flow": "教师作者填表 → 存草稿（s1）或提交审核（s2）→ 管理端审核通过（s3）／驳回（s4）→ 通过后全园可见",
-            "button": "",
-            "note": "选封面图并上传，同上，媒体族未接。"
-          }
-        },
-        {
-          "key": "upload-resource:L1:<text class=\"mini-btn\"> bindtap=\"onPickWord\"「上传」",
-          "level": "likely",
-          "layer": "L1",
-          "line": 115,
-          "what": "<text class=\"mini-btn\"> bindtap=\"onPickWord\"「上传」",
-          "detail": "占位 handler（提示「尚未开放／开发中」一类）",
-          "verdict": {
-            "key": "upload-resource:L1:<text class=\"mini-btn\"> bindtap=\"onPickWord\"「上传」",
-            "status": "阻于",
-            "reason": "第 115／205 行同一 handler（资源／案例表单块）；→ #2",
-            "author": "Lin",
-            "updated_at": "2026-09-08"
-          },
-          "falsePositive": false,
-          "context": {
-            "page": "upload-resource",
-            "title": "上传资料",
-            "path": "首页 → 上传资源",
-            "module": "资源库",
-            "role": "教师上传资源或案例：填表、选封面、附 Word",
-            "flow": "教师作者填表 → 存草稿（s1）或提交审核（s2）→ 管理端审核通过（s3）／驳回（s4）→ 通过后全园可见",
-            "button": "上传",
-            "note": "选 Word 附件并上传。上传走 /media/upload-credentials + /media/files 那一族，本地契约服务端不接对象存储，所以现在只弹提示。"
-          }
-        },
-        {
-          "key": "upload-resource:L1:<view class=\"image-box\"> bindtap=\"onPickCover\"",
-          "level": "likely",
-          "layer": "L1",
-          "line": 131,
-          "what": "<view class=\"image-box\"> bindtap=\"onPickCover\"",
-          "detail": "handler 改了本地状态，但带「开发中／本环境不接」字样",
-          "verdict": {
-            "key": "upload-resource:L1:<view class=\"image-box\"> bindtap=\"onPickCover\"",
-            "status": "接",
-            "reason": "→ #2",
-            "author": "Lin",
-            "updated_at": "2026-09-08"
-          },
-          "falsePositive": false,
-          "context": {
-            "page": "upload-resource",
-            "title": "上传资料",
-            "path": "首页 → 上传资源",
-            "module": "资源库",
-            "role": "教师上传资源或案例：填表、选封面、附 Word",
-            "flow": "教师作者填表 → 存草稿（s1）或提交审核（s2）→ 管理端审核通过（s3）／驳回（s4）→ 通过后全园可见",
-            "button": "",
-            "note": "选封面图并上传，同上，媒体族未接。"
-          }
-        },
-        {
-          "key": "upload-resource:L1:<text class=\"mini-btn\"> bindtap=\"onPickWord\"「上传」",
-          "level": "likely",
-          "layer": "L1",
-          "line": 205,
-          "what": "<text class=\"mini-btn\"> bindtap=\"onPickWord\"「上传」",
-          "detail": "占位 handler（提示「尚未开放／开发中」一类）",
-          "verdict": {
-            "key": "upload-resource:L1:<text class=\"mini-btn\"> bindtap=\"onPickWord\"「上传」",
-            "status": "阻于",
-            "reason": "第 115／205 行同一 handler（资源／案例表单块）；→ #2",
-            "author": "Lin",
-            "updated_at": "2026-09-08"
-          },
-          "falsePositive": false,
-          "context": {
-            "page": "upload-resource",
-            "title": "上传资料",
-            "path": "首页 → 上传资源",
-            "module": "资源库",
-            "role": "教师上传资源或案例：填表、选封面、附 Word",
-            "flow": "教师作者填表 → 存草稿（s1）或提交审核（s2）→ 管理端审核通过（s3）／驳回（s4）→ 通过后全园可见",
-            "button": "上传",
-            "note": "选 Word 附件并上传。上传走 /media/upload-credentials + /media/files 那一族，本地契约服务端不接对象存储，所以现在只弹提示。"
-          }
-        }
-      ]
+      "findings": []
     },
     {
       "name": "teacher-tasks",
@@ -497,7 +392,34 @@
         "listeners": 0,
         "links": 0
       },
-      "findings": []
+      "findings": [
+        {
+          "key": "party-brand-detail:L2:<text class=\"chip\">",
+          "level": "likely",
+          "layer": "L2",
+          "line": 27,
+          "what": "<text class=\"chip\">",
+          "detail": "类名像按钮，没有点击事件",
+          "verdict": {
+            "key": "party-brand-detail:L2:<text class=\"chip\">",
+            "status": "误报",
+            "reason": "品牌详情第 27 行的 .chips 里是只读标签；同页第 15 行的 .chip 带 bindtap=\"onRetry\" 是真按钮。同一个类名两用，词表分不开 —— 全仓 15 处 class=\"chip\" 里 9 处是筛选器或重试，删掉这个词那 9 处就没有任何分支兜得住",
+            "author": "Lin",
+            "updated_at": "2026-09-09"
+          },
+          "falsePositive": true,
+          "context": {
+            "page": "party-brand-detail",
+            "title": "图文介绍",
+            "path": "党建管理 → 品牌建设 → 点条目",
+            "module": "党建管理",
+            "role": "一篇品牌建设图文",
+            "flow": "管理端发布 → 教师只读",
+            "button": "",
+            "note": ""
+          }
+        }
+      ]
     },
     {
       "name": "comprehensive-coordination",
@@ -846,7 +768,7 @@
         "role": "一份资源的详情与 Word 详案下载",
         "flow": "作者教师上传、管理端审核通过 → 全园教师阅读、下载（签 30 分钟短链）"
       },
-      "events": 2,
+      "events": 3,
       "prototype": {
         "buttons": 0,
         "listeners": 0,
@@ -882,12 +804,12 @@
           "detail": "screens/case-library.html 有这个按钮，index.wxml 里找不到这段文案",
           "verdict": {
             "key": "case-library:L5:原型按钮「小班」",
-            "status": "接",
-            "reason": "是的，是filter；→ #21",
+            "status": "误报",
+            "reason": "13 个筛选片小程序里全都在，由 wx:for 从 services/library 的枚举表渲染（index.wxml:6-37），文案不在 wxml 字面量里 —— L5 只查文本包含。真缺陷在服务端忽略 case_field 与 case_area（13 片里 10 片点了不筛），已由后端 G84 修毕；→ #21",
             "author": "Lin",
-            "updated_at": "2026-09-08"
+            "updated_at": "2026-09-09"
           },
-          "falsePositive": false,
+          "falsePositive": true,
           "context": {
             "page": "case-library",
             "title": "案例库",
@@ -908,12 +830,12 @@
           "detail": "screens/case-library.html 有这个按钮，index.wxml 里找不到这段文案",
           "verdict": {
             "key": "case-library:L5:原型按钮「中班」",
-            "status": "接",
-            "reason": "是的，是filter；→ #21",
+            "status": "误报",
+            "reason": "13 个筛选片小程序里全都在，由 wx:for 从 services/library 的枚举表渲染（index.wxml:6-37），文案不在 wxml 字面量里 —— L5 只查文本包含。真缺陷在服务端忽略 case_field 与 case_area（13 片里 10 片点了不筛），已由后端 G84 修毕；→ #21",
             "author": "Lin",
-            "updated_at": "2026-09-08"
+            "updated_at": "2026-09-09"
           },
-          "falsePositive": false,
+          "falsePositive": true,
           "context": {
             "page": "case-library",
             "title": "案例库",
@@ -934,12 +856,12 @@
           "detail": "screens/case-library.html 有这个按钮，index.wxml 里找不到这段文案",
           "verdict": {
             "key": "case-library:L5:原型按钮「大班」",
-            "status": "接",
-            "reason": "是的，是filter；→ #21",
+            "status": "误报",
+            "reason": "13 个筛选片小程序里全都在，由 wx:for 从 services/library 的枚举表渲染（index.wxml:6-37），文案不在 wxml 字面量里 —— L5 只查文本包含。真缺陷在服务端忽略 case_field 与 case_area（13 片里 10 片点了不筛），已由后端 G84 修毕；→ #21",
             "author": "Lin",
-            "updated_at": "2026-09-08"
+            "updated_at": "2026-09-09"
           },
-          "falsePositive": false,
+          "falsePositive": true,
           "context": {
             "page": "case-library",
             "title": "案例库",
@@ -960,12 +882,12 @@
           "detail": "screens/case-library.html 有这个按钮，index.wxml 里找不到这段文案",
           "verdict": {
             "key": "case-library:L5:原型按钮「区域」",
-            "status": "接",
-            "reason": "是的，是filter；→ #21",
+            "status": "误报",
+            "reason": "13 个筛选片小程序里全都在，由 wx:for 从 services/library 的枚举表渲染（index.wxml:6-37），文案不在 wxml 字面量里 —— L5 只查文本包含。真缺陷在服务端忽略 case_field 与 case_area（13 片里 10 片点了不筛），已由后端 G84 修毕；→ #21",
             "author": "Lin",
-            "updated_at": "2026-09-08"
+            "updated_at": "2026-09-09"
           },
-          "falsePositive": false,
+          "falsePositive": true,
           "context": {
             "page": "case-library",
             "title": "案例库",
@@ -986,12 +908,12 @@
           "detail": "screens/case-library.html 有这个按钮，index.wxml 里找不到这段文案",
           "verdict": {
             "key": "case-library:L5:原型按钮「主题探究」",
-            "status": "接",
-            "reason": "是的，是filter；→ #21",
+            "status": "误报",
+            "reason": "13 个筛选片小程序里全都在，由 wx:for 从 services/library 的枚举表渲染（index.wxml:6-37），文案不在 wxml 字面量里 —— L5 只查文本包含。真缺陷在服务端忽略 case_field 与 case_area（13 片里 10 片点了不筛），已由后端 G84 修毕；→ #21",
             "author": "Lin",
-            "updated_at": "2026-09-08"
+            "updated_at": "2026-09-09"
           },
-          "falsePositive": false,
+          "falsePositive": true,
           "context": {
             "page": "case-library",
             "title": "案例库",
@@ -1012,12 +934,12 @@
           "detail": "screens/case-library.html 有这个按钮，index.wxml 里找不到这段文案",
           "verdict": {
             "key": "case-library:L5:原型按钮「家园社共育」",
-            "status": "接",
-            "reason": "是的，是filter；→ #21",
+            "status": "误报",
+            "reason": "13 个筛选片小程序里全都在，由 wx:for 从 services/library 的枚举表渲染（index.wxml:6-37），文案不在 wxml 字面量里 —— L5 只查文本包含。真缺陷在服务端忽略 case_field 与 case_area（13 片里 10 片点了不筛），已由后端 G84 修毕；→ #21",
             "author": "Lin",
-            "updated_at": "2026-09-08"
+            "updated_at": "2026-09-09"
           },
-          "falsePositive": false,
+          "falsePositive": true,
           "context": {
             "page": "case-library",
             "title": "案例库",
@@ -1038,12 +960,12 @@
           "detail": "screens/case-library.html 有这个按钮，index.wxml 里找不到这段文案",
           "verdict": {
             "key": "case-library:L5:原型按钮「数字化」",
-            "status": "接",
-            "reason": "是的，是filter；→ #21",
+            "status": "误报",
+            "reason": "13 个筛选片小程序里全都在，由 wx:for 从 services/library 的枚举表渲染（index.wxml:6-37），文案不在 wxml 字面量里 —— L5 只查文本包含。真缺陷在服务端忽略 case_field 与 case_area（13 片里 10 片点了不筛），已由后端 G84 修毕；→ #21",
             "author": "Lin",
-            "updated_at": "2026-09-08"
+            "updated_at": "2026-09-09"
           },
-          "falsePositive": false,
+          "falsePositive": true,
           "context": {
             "page": "case-library",
             "title": "案例库",
@@ -1155,34 +1077,7 @@
         "listeners": 5,
         "links": 0
       },
-      "findings": [
-        {
-          "key": "home-school-moment-publish:L1:<view class=\"photo add-photo\"> bindtap=\"onAddPhoto\"",
-          "level": "likely",
-          "layer": "L1",
-          "line": 23,
-          "what": "<view class=\"photo add-photo\"> bindtap=\"onAddPhoto\"",
-          "detail": "handler 改了本地状态，但带「开发中／本环境不接」字样",
-          "verdict": {
-            "key": "home-school-moment-publish:L1:<view class=\"photo add-photo\"> bindtap=\"onAddPhoto\"",
-            "status": "接",
-            "reason": "→ #2",
-            "author": "Lin",
-            "updated_at": "2026-09-08"
-          },
-          "falsePositive": false,
-          "context": {
-            "page": "home-school-moment-publish",
-            "title": "发布活动",
-            "path": "在园时光 → 发布活动",
-            "module": "在园时光",
-            "role": "发布一条在园时光：标题、日期、幼儿、评语、照片",
-            "flow": "教师填写并一次发布（无草稿）→ 家长端可见。照片上传走 /media 族，本环境不接对象存储",
-            "button": "",
-            "note": "选照片上传，媒体族未接。"
-          }
-        }
-      ]
+      "findings": []
     },
     {
       "name": "parent-tasks",
@@ -1332,12 +1227,12 @@
           "detail": "screens/teacher-monthly-form.html 有这个按钮，index.wxml 里找不到这段文案",
           "verdict": {
             "key": "teacher-monthly-form:L5:原型按钮「保存评价」",
-            "status": "接",
-            "reason": "→ #23",
+            "status": "误报",
+            "reason": "原型只有一个按钮，状态机要两个：month_eval.save_draft（PUT /home-school/month-evals，NONE|e1→e1）与 month_eval.publish（POST …/publication，e1|e2→e3）。保留「保存草稿」「发布给家长」两个按钮，「草稿」取自 DDL 的 e1=draft草稿（F25）",
             "author": "Lin",
-            "updated_at": "2026-09-08"
+            "updated_at": "2026-09-09"
           },
-          "falsePositive": false,
+          "falsePositive": true,
           "context": {
             "page": "teacher-monthly-form",
             "title": "填写月度评价",
@@ -1609,34 +1504,7 @@
         "listeners": 0,
         "links": 1
       },
-      "findings": [
-        {
-          "key": "parent-evaluation-publish:L5:原型按钮「发布给家长」",
-          "level": "review",
-          "layer": "L5",
-          "line": 0,
-          "what": "原型按钮「发布给家长」",
-          "detail": "screens/parent-evaluation-publish.html 有这个按钮，index.wxml 里找不到这段文案",
-          "verdict": {
-            "key": "parent-evaluation-publish:L5:原型按钮「发布给家长」",
-            "status": "接",
-            "reason": "→ #23",
-            "author": "Lin",
-            "updated_at": "2026-09-08"
-          },
-          "falsePositive": false,
-          "context": {
-            "page": "parent-evaluation-publish",
-            "title": "发布家长测评",
-            "path": "成长档案 → 发布家长评价",
-            "module": "家长评价",
-            "role": "发起一期家长评价（开窗），并列出往期",
-            "flow": "教师开窗（POST，全班 fan-out，每幼儿一行 p0）→ 家长填写 → 教师看进度",
-            "button": "发布给家长",
-            "note": ""
-          }
-        }
-      ]
+      "findings": []
     },
     {
       "name": "parent-evaluation-detail",
@@ -2256,61 +2124,8 @@
     },
     {
       "file": "/miniprogram/services/library.js",
-      "calls": 10,
-      "findings": [
-        {
-          "level": "review",
-          "line": 359,
-          "what": "submitForReview() 第 359 行 POST `${path}/${contentId}/submission`",
-          "detail": "路径前缀由变量决定，按后缀匹配到 2 条契约操作：/library/resources/{resource_id}/submission、/library/cases/{case_id}/submission",
-          "key": "service:/miniprogram/services/library.js:submitForReview() 第 359 行 POST `${path}/${contentId}/submission`",
-          "layer": "L3",
-          "verdict": {
-            "key": "service:/miniprogram/services/library.js:submitForReview() 第 359 行 POST `${path}/${contentId}/submission`",
-            "status": "接",
-            "reason": "→ #10",
-            "author": "Lin",
-            "updated_at": "2026-09-08"
-          },
-          "falsePositive": false,
-          "context": {
-            "fn": "submitForReview",
-            "doc": "草稿 s1 -> 待审核 s2。",
-            "callers": [
-              "upload-resource（上传资料） 的 submit()"
-            ],
-            "what": "把一份资源或案例从草稿（s1）提交审核（s2）",
-            "where": "upload-resource（上传资料）勾「同时提交审核」时，紧接 createResource／createCase 调用",
-            "who": "教师作者发起 → 管理端审核队列（通过 s3 全园可见／驳回 s4 作者可撤回成草稿再改）"
-          }
-        },
-        {
-          "level": "review",
-          "line": 376,
-          "what": "downloadLink() 第 376 行 POST `${path}/${contentId}/download-link`",
-          "detail": "路径前缀由变量决定，按后缀匹配到 2 条契约操作：/library/resources/{resource_id}/download-link、/library/cases/{case_id}/download-link",
-          "key": "service:/miniprogram/services/library.js:downloadLink() 第 376 行 POST `${path}/${contentId}/download-link`",
-          "layer": "L3",
-          "verdict": {
-            "key": "service:/miniprogram/services/library.js:downloadLink() 第 376 行 POST `${path}/${contentId}/download-link`",
-            "status": "接",
-            "reason": "→ #10",
-            "author": "Lin",
-            "updated_at": "2026-09-08"
-          },
-          "falsePositive": false,
-          "context": {
-            "fn": "downloadLink",
-            "doc": "取一次性的取档短链（Word 详案）。",
-            "callers": [
-              "case-detail（案例详情） 的 onDownloadPlan()"
-            ],
-            "what": "签发一次性的 Word 详案下载短链（30 分钟）",
-            "where": "case-detail（案例详情）「下载」；resource-detail 应同样调它",
-            "who": "任何 active 教师对已通过（s3）的内容发起 → 服务端授权后回短链；本地服务端回的是假域名，页面据此提示「预览环境不接对象存储」"
-          }
-        }
-      ],
+      "calls": 12,
+      "findings": [],
       "unusedExports": []
     },
     {
@@ -2329,7 +2144,7 @@
     },
     {
       "file": "/miniprogram/services/media.js",
-      "calls": 1,
+      "calls": 3,
       "findings": [],
       "unusedExports": [
         "fileUrl"
@@ -2398,7 +2213,7 @@
         "pageTitle": "资源详情",
         "path": "底部导航「教研培训」 → 资源详情",
         "button": "撤回",
-        "who": "作者教师把待审／已通过／被驳回的资源撤回成草稿（s2|s3|s4→s1）。撤回已通过的会立刻停止全园查看与下载。教师端目前没有「我的上传」列表，所以没地方放这个按钮"
+        "who": "F27 已推翻这条分支：教师端只有「保存草稿」与「提交审核」，没有作者撤回。被驳回（s4）的资源直接改、直接重交。这条端点待删，见 db/GAPS.md G74 与 #32"
       }
     },
     {
@@ -2462,7 +2277,7 @@
         "pageTitle": "案例详情",
         "path": "底部导航「首页」 → 案例详情",
         "button": "撤回",
-        "who": "作者教师撤回成草稿。同资源，缺「我的上传」入口"
+        "who": "同资源：F27 已推翻，教师端不做撤回按钮。这条端点待删，见 G74 与 #32"
       }
     },
     {
@@ -3580,10 +3395,10 @@
     "pages": 55,
     "wired": 26,
     "sure": 0,
-    "likely": 30,
-    "review": 15,
-    "falsePositives": 1,
-    "decided": 80,
+    "likely": 25,
+    "review": 4,
+    "falsePositives": 10,
+    "decided": 73,
     "contractTeacherOps": 92,
     "contractUnused": 43
   }
