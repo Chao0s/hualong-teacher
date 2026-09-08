@@ -35,3 +35,6 @@ captures/_extracted/
 # screens/、Archive/）。内容是崩溃当时的栈回溯，对仓库没有价值。
 # 不写死文件名：崩的不一定是 sh.exe。
 *.stackdump
+
+# 子代理的临时 worktree
+.claude/worktrees/

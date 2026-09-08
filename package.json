@@ -11,6 +11,7 @@
     "swagger": "node tools/swagger/server.mjs",
     "docs:api": "node tools/build-api-doc.mjs",
     "spec:inventory": "node tools/spec-inventory.mjs",
+    "scan:wiring": "node tools/scan-wiring.mjs",
     "check:remote-scripts": "node scripts/check-remote-scripts.mjs",
     "hooks:install": "git config core.hooksPath .githooks"
   },

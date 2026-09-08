@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>接线扫描检视器</title>
+<!--
+  tools/scan-wiring.mjs 生成 docs/audit/wiring-<日期>.html 时，把报告 JSON 塞进下面的 /*__DATA__*/。
+  这个文件本身是模板，直接打开只会看到「没有数据」。
+
+  审核结论存在浏览器 localStorage（键带契约路径与生成日期，不同报告不串）。
+  「导出 allowlist.json」产出的文件放回 docs/audit/wiring.allowlist.json，下次扫描会自动带上。
+-->
+<style>
+  :root { --sure:#c62828; --likely:#ef6c00; --review:#1565c0; --ink:#1f2328; --mute:#6a737d; --line:#e3e6ea; --bg:#f6f7f9; }
+  * { box-sizing: border-box; }
+  body { margin:0; font: 14px/1.55 -apple-system, "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; color:var(--ink); background:var(--bg); }
+  header { position: sticky; top:0; z-index:5; background:#fff; border-bottom:1px solid var(--line); padding:12px 20px; display:flex; flex-wrap:wrap; gap:10px 16px; align-items:center; }
+  header h1 { font-size:18px; margin:0 12px 0 0; }
+  header .meta { color:var(--mute); font-size:12px; }
+  main { max-width: 1720px; margin: 0 auto; padding: 16px 24px 80px; }
+  .cards { display:grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap:10px; margin: 8px 0 18px; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:8px; padding:10px 12px; }
+  .card b { display:block; font-size:22px; }
+  .card small { color:var(--mute); }
+  .card.sure b { color:var(--sure); } .card.likely b { color:var(--likely); } .card.review b { color:var(--review); }
+  .toolbar { display:flex; flex-wrap:wrap; gap:8px 12px; align-items:center; background:#fff; border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin-bottom:14px; }
+  .toolbar label { display:inline-flex; align-items:center; gap:4px; }
+  .toolbar input[type=search] { padding:5px 8px; border:1px solid var(--line); border-radius:6px; min-width:220px; }
+  button { font: inherit; padding:5px 10px; border:1px solid #c9ced4; border-radius:6px; background:#fff; cursor:pointer; }
+  button.primary { background:#1f6feb; color:#fff; border-color:#1f6feb; }
+  button:hover { filter: brightness(.97); }
+  section.group { background:#fff; border:1px solid var(--line); border-radius:8px; margin-bottom:14px; overflow:hidden; }
+  section.group > h2 { font-size:15px; margin:0; padding:10px 14px; background:#fafbfc; border-bottom:1px solid var(--line); cursor:pointer; display:flex; justify-content:space-between; }
+  section.group > h2 .n { color:var(--mute); font-weight:normal; font-size:13px; }
+  section.group.closed > .body { display:none; }
+  .eli { background:#fff8e1; border-left:3px solid #f9a825; padding:8px 12px; margin:10px 14px; font-size:13px; }
+  .eli.hidden, .hidden { display:none !important; }
+  .page { border-top:1px solid var(--line); }
+  .page > h3 { font-size:14px; margin:0; padding:9px 14px; display:flex; gap:10px; align-items:baseline; flex-wrap:wrap; }
+  .page > h3 .sub { color:var(--mute); font-size:12px; font-weight:normal; }
+  /* 固定布局：右侧审核栏永远 320px，长路径与长句子在自己的格子里断行，不把表格撑出容器 */
+  table { width:100%; border-collapse:collapse; font-size:13px; table-layout: fixed; }
+  col.c-lv { width:56px; } col.c-layer { width:44px; } col.c-line { width:48px; } col.c-what { width:22%; } col.c-rev { width:320px; }
+  th, td { text-align:left; vertical-align:top; padding:7px 10px; border-top:1px solid var(--line); overflow-wrap:anywhere; word-break:break-word; }
+  td code { white-space:normal; overflow-wrap:anywhere; }
+  th { color:var(--mute); font-weight:600; background:#fafbfc; }
+  td.lv { white-space:nowrap; font-weight:600; }
+  tr.sure td.lv { color:var(--sure);} tr.likely td.lv { color:var(--likely);} tr.review td.lv { color:var(--review);}
+  tr.fp { opacity:.45; }
+  td.what code, td code { font: 12px/1.4 ui-monospace, Consolas, monospace; background:#f0f2f4; padding:1px 4px; border-radius:4px; }
+  td .eli10 { color:#6d4c00; background:#fff8e1; border-radius:4px; padding:4px 8px; margin-top:6px; font-size:12px; }
+  td .eli10.hidden { display:none; }
+  td .ctx { background:#eef4ff; border-left:3px solid #1f6feb; border-radius:4px; padding:5px 8px; margin-top:6px; font-size:12px; color:#1c3a6e; }
+  td .ctx b { color:#0b2a5c; }
+  td .ctx div + div { margin-top:2px; }
+  .page > h3 .flow { flex-basis:100%; color:#1c3a6e; font-size:12px; font-weight:normal; }
+  td.rev { width:320px; }
+  td.rev select { width:100%; }
+  td.rev select { font: inherit; padding:3px 6px; border:1px solid var(--line); border-radius:6px; margin-bottom:4px; }
+  td.rev textarea { width:100%; min-height:44px; font: inherit; font-size:12px; padding:5px 7px; border:1px solid var(--line); border-radius:6px; resize:vertical; }
+  td.rev .who { display:flex; gap:6px; margin-top:4px; }
+  td.rev .who input { flex:1; font: inherit; font-size:12px; padding:3px 6px; border:1px solid var(--line); border-radius:6px; }
+  td.rev .pre { font-size:11px; color:var(--mute); margin-top:3px; }
+  .empty { padding:12px 14px; color:var(--mute); }
+  footer { color:var(--mute); font-size:12px; text-align:center; padding:20px; }
+  @media print { header, .toolbar, td.rev select, td.rev .who { display:none; } td.rev textarea { border:none; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>接线扫描检视器</h1>
+  <span class="meta" id="meta"></span>
+  <span style="flex:1"></span>
+  <label><input type="checkbox" id="eliToggle" checked> 十岁小孩也看得懂的解释</label>
+  <button id="btnImport">导入 allowlist.json</button>
+  <input type="file" id="fileImport" accept="application/json" class="hidden">
+  <button id="btnExportJson" class="primary">导出 allowlist.json</button>
+  <button id="btnExportMd">导出 Markdown</button>
+  <button id="btnExportCsv">导出 CSV</button>
+</header>
+
+<main>
+  <div class="cards" id="cards"></div>
+
+  <div class="eli" id="eliIntro">
+    <b>这个报告在查什么？</b> 小程序里每个能点的东西，理想上是一条链：<b>按钮 → 点击事件 → 页面里的函数 → service 文件 → 后端契约（openapi.yaml）</b>。
+    就像家里的开关到灯泡要一路有电线。扫描器顺着这条线摸一遍，哪一段没接上就报哪一段。
+    反过来它也查：后端说「教师可以调这些接口」，小程序里有没有一个都没人用的——那就是「我们不知道它存在」的接口。
+    <br><b>三个等级</b>：<span style="color:var(--sure)">确定</span> = 机器能证明坏了（比如按钮指向一个不存在的函数）；
+    <span style="color:var(--likely)">高疑</span> = 看起来像能用但其实只是摆设（比如点了只弹「开发中」）；
+    <span style="color:var(--review)">待审</span> = 需要人判断是「故意不做」还是「忘了做」。
+    <br><b>怎么用</b>：每一行右边有下拉框和留言框。选「接／不建／阻于 Gnn／误报」，写一句为什么，填名字。填的内容自动存在这台浏览器里；点右上「导出 allowlist.json」，把文件放到 <code>docs/audit/wiring.allowlist.json</code>，下次扫描就会记得你的结论。
+  </div>
+
+  <div class="toolbar">
+    <label><input type="checkbox" class="flt-level" value="sure" checked> 确定</label>
+    <label><input type="checkbox" class="flt-level" value="likely" checked> 高疑</label>
+    <label><input type="checkbox" class="flt-level" value="review" checked> 待审</label>
+    <span style="color:var(--line)">|</span>
+    <label>层 <select id="fltLayer"><option value="">全部</option><option>L1</option><option>L2</option><option>L3</option><option>L4</option><option>L5</option><option>L6</option></select></label>
+    <label><input type="checkbox" id="fltUndecided"> 只看没结论的</label>
+    <label><input type="checkbox" id="fltHideFp" checked> 隐藏已判误报</label>
+    <input type="search" id="fltText" placeholder="搜页面名／元素／路径…">
+    <span class="meta" id="shown"></span>
+  </div>
+
+  <div id="root"></div>
+</main>
+<footer>tools/scan-wiring.mjs · 结论只存在本机浏览器，导出后才算落地</footer>
+
+<script id="data" type="application/json">/*__DATA__*/null</script>
+<script>
+(() => {
+  const DATA = JSON.parse(document.getElementById('data').textContent);
+  const root = document.getElementById('root');
+  if (!DATA) { root.innerHTML = '<div class="empty">没有数据。用 node tools/scan-wiring.mjs 生成 docs/audit/wiring-&lt;日期&gt;.html 再打开。</div>'; return; }
+
+  const LEVEL = { sure: '确定', likely: '高疑', review: '待审' };
+  const STATUSES = ['', '接', '不建', '阻于', '误报'];
+  const date = DATA.generatedAt.slice(0, 10);
+  const STORE_KEY = `wiring-review:${DATA.contract}`;
+  const store = JSON.parse(localStorage.getItem(STORE_KEY) || '{}');
+  const save = () => localStorage.setItem(STORE_KEY, JSON.stringify(store));
+  // 扫描器已经带进来的结论（allowlist 命中）先灌进本地，本地已有的不覆盖
+  const seedVerdict = (f) => { if (f.verdict && !store[f.key]) store[f.key] = { status: f.verdict.status, reason: f.verdict.reason || '', author: f.verdict.author || '', updated_at: f.verdict.updated_at || '' }; };
+
+  /* ── 十岁小孩版解释 ───────────────────────────────────────────────── */
+  const LAYER_ELI = {
+    L1: '页面上的按钮说「点我就叫 X 函数」。我们去页面的 JS 里找 X：找不到，就是坏开关；找到了但它只会弹一句「开发中」，就是装饰用的假开关。',
+    L2: '有些东西长得就像按钮（原生控件、按下会变色、写着「提交」「下载」），但没有绑任何点击事件——像一个画在墙上的开关。',
+    L3: 'service 文件是小程序真正打电话给后端的地方。我们把每一次通话的号码（路径）、动词、动作键、要说的话（请求体字段）跟后端的电话本（openapi.yaml）逐条核对。',
+    L4: '反过来看：后端电话本里写着「教师可以打这些号码」，小程序里却一个都没打过。要么是我们忘了，要么是决定不做，要么是被别的问题挡着。',
+    L5: '最早的网页原型（screens/*.html）是设计稿。原型里有的按钮或跳转，小程序里找不到，可能是搬家时掉了。',
+    L6: '后端登记表（screens.tsv）说这一页「会写数据」，但页面里连一次 POST／PUT／PATCH／DELETE 都没有，说明写的那一半还没做。',
+  };
+  const ELI_RULES = [
+    [/没有这个方法/, '按钮指着一个不存在的函数。点了什么也不会发生。修法：在 index.js 里补这个方法，或把 WXML 的 bind 改成正确的名字。'],
+    [/占位 handler/, '点了只会弹一句「尚未开放」。它在等真正的 API。修法：去 L4 表里找对应的接口，接上；或在结论里写「不建」并注明依据。'],
+    [/只弹提示或为空/, '这个函数里什么都没做。要么补功能，要么把这个按钮拿掉，别让人白点。'],
+    [/带「开发中／本环境不接」/, '它改了点本地状态假装成功，但字里写着「还没接」。真数据没发出去。'],
+    [/GAP-W/, '按钮把 this.data 里的值发给后端，但输入框改了字不会写回 this.data。结果：用户改了，发出去的还是旧值。修法：给输入框加 bindinput（或 model:value）。'],
+    [/原生交互控件 <\w+> 没有绑定任何事件/, '这是一个输入框／选择器之类的控件，但用户填了什么页面不会记下来。补 bindinput／bindchange。'],
+    [/hover-class/, '按下去会变色，看起来能点，但没有点击事件。要么加事件，要么去掉 hover-class 别误导人。'],
+    [/文案像按钮/, '写着「提交」「下载」这类字，但自己和外层都没有点击事件。确认是按钮就补事件；只是标题就当误报。'],
+    [/类名像按钮/, '样式类名里有 btn／more 这种字，可能只是样式。看一眼决定。'],
+    [/契约里没有这条路径/, '小程序打的这个电话号码在后端电话本里不存在。服务端会回 404 或 501。要么改路径，要么先在 openapi.yaml 加端点。'],
+    [/但没有 \w+（允许/, '路径对了但动词不对（比如契约只允许 GET，代码发了 POST）。'],
+    [/不含 teacher/, '这个接口不给教师用。教师调会被 403 拒绝。'],
+    [/x-hualong-action 是/, '动作键写错了。请求头里的动作名和契约登记的不一致，幂等与审计都会对不上。'],
+    [/调用没带 action/, '这条写入操作契约有动作键，但代码没带。幂等键就不会自动补上，重复点可能重复写。'],
+    [/schema 没有这些键/, '发出去的字段后端 schema 里没有。契约写了 additionalProperties:false，服务端会直接回 422。删掉多余字段或改名。'],
+    [/请求体缺/, '契约说这些字段必填，代码里没看到。可能在别的分支补上了，确认一下。'],
+    [/路径前缀由变量决定/, '路径的前半段是运行时按类型挑的，静态看不出来。按后缀匹配到了几条契约操作，多半没问题。'],
+    [/路径表达式静态算不出/, '路径拼得太动态，机器算不出。人看一眼。'],
+    [/原型按钮/, '设计稿里有这个按钮，小程序页面和 JS 里都找不到这几个字。是改了措辞，还是掉了功能？'],
+    [/原型跳转/, '设计稿从这一页能跳到那一页，小程序这一页没有这条跳转。'],
+    [/没有 require 任何 service/, '登记表说这页会写数据，但这页还是写死的样例数据，一行真实 API 都没接。这是整页待接。'],
+    [/没有调到任何 POST/, '这页接了读接口，但登记表说它还要写数据，写的那部分没做。或者登记错了，把 writes 改成 no。'],
+    [/WXML 没有任何元素绑到它/, 'JS 里有个 onXxx 函数，页面上没有任何东西会触发它。多半是删元素时忘了删函数。'],
+    [/handler 名由表达式算出/, '事件名是运行时拼出来的，机器查不了，人看一眼。'],
+    [/vm 加载失败/, '这一页的 JS 在沙箱里跑不起来，方法名改用正则抓，可能漏抓。'],
+  ];
+  const eliFor = (f) => { for (const [re, t] of ELI_RULES) if (re.test(f.detail || '')) return t; return LAYER_ELI[f.layer] || ''; };
+
+  /** 「这是什么」块：页面发现 → 按钮文字＋handler 注解；L3 → 函数头注＋谁在调；L4 → 契约描述＋登记表＋该放在哪一页。 */
+  const ctxHtml = (r) => {
+    const c = r.context;
+    if (!c) return '';
+    const line = (k, v) => (v ? `<div><b>${k}：</b>${esc(v)}</div>` : '');
+    if (r.layer === 'L4') {
+      const reg = c.registry ? `${c.registry.table}　${c.registry.from} → ${c.registry.to}${c.registry.precondition ? `　前置 ${c.registry.precondition}` : ''}${c.registry.authority ? `　依据 ${c.registry.authority}` : ''}` : '';
+      return `<div class="ctx">${line('该放在哪一页', c.page ? `${c.page}${c.pageTitle ? `（${c.pageTitle}）` : ''}` : '')}${line('怎么走到', c.path)}${line('按钮写什么', c.button)}${line('谁发起→谁看／审', c.who)}${line('动作登记', reg)}${line('契约说明', c.description)}</div>`;
+    }
+    if (r.layer === 'L3' && c.fn) {
+      return `<div class="ctx">${line('这个函数', `${c.fn}()${c.doc ? `：${c.doc}` : ''}`)}${line('做什么', c.what)}${line('在哪一页', c.where)}${line('谁在调', c.callers.length ? c.callers.join('；') : '没有页面调它')}${line('谁发起→谁看／审', c.who)}</div>`;
+    }
+    const parts = [line('在哪一页', `${c.page}${c.title ? `（${c.title}）` : ''}`), line('怎么走到', c.path), line('按钮写什么', c.button), line('这页做什么', c.role), line('谁发起→谁看／审', c.flow), line('这个动作', c.note)];
+    return `<div class="ctx">${parts.join('')}</div>`;
+  };
+  const ELI_CONTRACT = '后端说教师可以调这个接口，小程序里没有任何地方调过。三种可能：该接但还没接；已经决定不做（查 DO-NOT-BUILD.md）；被某个缺口挡着（看「阻断于」那一列，或 GAPS.md）。';
+
+  /* ── 拼扁平的行列表 ────────────────────────────────────────────── */
+  const rows = [];
+  for (const s of DATA.services) for (const f of s.findings) { seedVerdict(f); rows.push({ group: 'L3', groupTitle: '一、service → 契约（L3）', sub: s.file, ...f }); }
+  for (const u of DATA.contractUnused) {
+    seedVerdict(u);
+    rows.push({ group: 'L4', groupTitle: '二、契约有、客户端没调的教师端操作（L4）', sub: u.tags, key: u.key, level: 'review', layer: 'L4', line: 0,
+      what: `${u.method} ${u.path}`, detail: `${u.summary}${u.action ? `　动作键 ${u.action}` : ''}${u.blockedOn ? `　阻断于 ${u.blockedOn}` : ''}`, verdict: u.verdict, falsePositive: u.falsePositive, context: u.context, eli: ELI_CONTRACT });
+  }
+  for (const p of DATA.pages) for (const f of p.findings) { seedVerdict(f); rows.push({ group: p.wired ? 'wired' : 'unwired', groupTitle: p.wired ? '三、已接 service 的页面（这里的缺口最意外）' : '四、未接 service 的页面（缺口是预期的，这里是待办清单）', page: p, sub: `${p.name}（${p.title || '无标题'}）`, ...f }); }
+  save();
+
+  /* ── 渲染 ───────────────────────────────────────────────────────── */
+  const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const codeify = (s) => esc(s).replace(/(&lt;[\w-]+[^&]*?&gt;|`[^`]+`|\/[\w/{}*?-]+|[a-zA-Z_]\w*\(\))/g, (m) => `<code>${m.replace(/^`|`$/g, '')}</code>`);
+  document.getElementById('meta').textContent = `生成 ${DATA.generatedAt.replace('T', ' ').slice(0, 16)} · 契约 ${DATA.contract}`;
+
+  const S = DATA.summary;
+  document.getElementById('cards').innerHTML = [
+    ['', S.pages, `页面（已接 ${S.wired}，未接 ${S.pages - S.wired}）`],
+    ['sure', S.sure, '确定'], ['likely', S.likely, '高疑'], ['review', S.review, '待审'],
+    ['', `${S.contractUnused}/${S.contractTeacherOps}`, '契约教师操作：未调／可调'],
+    ['', S.decided ?? 0, `已有结论（误报 ${S.falsePositives ?? 0}）`],
+  ].map(([c, n, t]) => `<div class="card ${c}"><b>${n}</b><small>${t}</small></div>`).join('');
+
+  const GROUPS = ['L3', 'L4', 'wired', 'unwired'];
+  function render() {
+    const levels = new Set([...document.querySelectorAll('.flt-level:checked')].map((x) => x.value));
+    const layer = document.getElementById('fltLayer').value;
+    const undecided = document.getElementById('fltUndecided').checked;
+    const hideFp = document.getElementById('fltHideFp').checked;
+    const q = document.getElementById('fltText').value.trim().toLowerCase();
+    const showEli = document.getElementById('eliToggle').checked;
+    document.getElementById('eliIntro').classList.toggle('hidden', !showEli);
+    let shown = 0;
+    root.innerHTML = '';
+    for (const g of GROUPS) {
+      const list = rows.filter((r) => r.group === g).filter((r) => {
+        const v = store[r.key] || {};
+        const fp = v.status === '误报';
+        if (!levels.has(r.level)) return false;
+        if (layer && r.layer !== layer) return false;
+        if (undecided && v.status) return false;
+        if (hideFp && fp) return false;
+        if (q && !`${r.sub} ${r.what} ${r.detail}`.toLowerCase().includes(q)) return false;
+        return true;
+      });
+      const sec = document.createElement('section');
+      sec.className = 'group' + (list.length ? '' : ' closed');
+      const title = rows.find((r) => r.group === g)?.groupTitle || g;
+      sec.innerHTML = `<h2><span>${esc(title)}</span><span class="n">${list.length} 条</span></h2><div class="body"></div>`;
+      sec.querySelector('h2').onclick = () => sec.classList.toggle('closed');
+      const body = sec.querySelector('.body');
+      if (showEli) body.insertAdjacentHTML('beforeend', `<div class="eli">${esc(g === 'wired' || g === 'unwired' ? '按页面分组。每一页的表头写了它接没接 service、登记表说它写不写数据、原型里有几个按钮。' : LAYER_ELI[g])}</div>`);
+      if (!list.length) body.insertAdjacentHTML('beforeend', '<div class="empty">这一组在当前筛选下没有条目。</div>');
+      const bySub = new Map();
+      for (const r of list) { if (!bySub.has(r.sub)) bySub.set(r.sub, []); bySub.get(r.sub).push(r); }
+      for (const [sub, items] of bySub) {
+        const p = items[0].page;
+        const div = document.createElement('div');
+        div.className = 'page';
+        const subMeta = p ? `已接 service ${p.wired ? '是' : '否'} · writes ${p.writes} · WXML 事件 ${p.events}` + (p.prototype ? ` · 原型：按钮 ${p.prototype.buttons}、监听 ${p.prototype.listeners}、跳转 ${p.prototype.links}` : '') : '';
+        const pc = p && p.context;
+        const flow = pc ? `<span class="flow"><b>怎么走到：</b>${esc(pc.path)}${pc.role ? `　<b>这页做什么：</b>${esc(pc.role)}` : ''}${pc.flow ? `　<b>谁发起→谁看：</b>${esc(pc.flow)}` : ''}</span>` : '';
+        div.innerHTML = `<h3>${esc(sub)}<span class="sub">${esc(subMeta)}</span>${flow}</h3>
+          <table><colgroup><col class="c-lv"><col class="c-layer"><col class="c-line"><col class="c-what"><col><col class="c-rev"></colgroup>
+          <thead><tr><th>等级</th><th>层</th><th>行</th><th>元素／对象</th><th>现象</th><th>审核结论</th></tr></thead><tbody></tbody></table>`;
+        const tb = div.querySelector('tbody');
+        const order = { sure: 0, likely: 1, review: 2 };
+        for (const r of items.sort((a, b) => order[a.level] - order[b.level] || (a.line || 0) - (b.line || 0))) {
+          shown++;
+          const v = store[r.key] || {};
+          const tr = document.createElement('tr');
+          tr.className = r.level + (v.status === '误报' ? ' fp' : '');
+          tr.innerHTML = `<td class="lv">${LEVEL[r.level]}</td><td>${r.layer}</td><td>${r.line || ''}</td>
+            <td class="what">${codeify(r.what)}</td>
+            <td>${codeify(r.detail)}${ctxHtml(r)}<div class="eli10 ${showEli ? '' : 'hidden'}">${esc(r.eli || eliFor(r))}</div></td>
+            <td class="rev">
+              <select>${STATUSES.map((s) => `<option value="${s}" ${v.status === s ? 'selected' : ''}>${s || '— 未定 —'}</option>`).join('')}</select>
+              <textarea placeholder="为什么这么定？例如：DO-NOT-BUILD 3 / 阻于 G68 / 改成了动态列表">${esc(v.reason || '')}</textarea>
+              <div class="who"><input placeholder="审核人" value="${esc(v.author || '')}"><span class="pre">${esc(v.updated_at || '')}</span></div>
+            </td>`;
+          const [sel, ta, who] = [tr.querySelector('select'), tr.querySelector('textarea'), tr.querySelector('.who input')];
+          const commit = () => {
+            const rec = { status: sel.value, reason: ta.value.trim(), author: who.value.trim(), updated_at: new Date().toISOString().slice(0, 10) };
+            if (!rec.status && !rec.reason && !rec.author) delete store[r.key]; else store[r.key] = rec;
+            save();
+            tr.classList.toggle('fp', rec.status === '误报');
+            tr.querySelector('.pre').textContent = store[r.key] ? rec.updated_at : '';
+          };
+          sel.onchange = commit; ta.onblur = commit; who.onblur = commit;
+          tb.appendChild(tr);
+        }
+        body.appendChild(div);
+      }
+      root.appendChild(sec);
+    }
+    document.getElementById('shown').textContent = `显示 ${shown} / ${rows.length} 条`;
+  }
+  document.querySelectorAll('.toolbar input, .toolbar select, #eliToggle').forEach((el) => el.addEventListener('input', render));
+  render();
+
+  /* ── 导入／导出 ─────────────────────────────────────────────────── */
+  const download = (name, text, type) => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([text], { type }));
+    a.download = name; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  };
+  const decided = () => rows.filter((r) => store[r.key] && store[r.key].status).map((r) => ({ key: r.key, ...store[r.key] }));
+
+  document.getElementById('btnExportJson').onclick = () => {
+    const rules = decided();
+    if (!rules.length) { alert('还没有任何结论。先在右边的下拉框选一个。'); return; }
+    download('wiring.allowlist.json', JSON.stringify({ rules }, null, 2) + '\n', 'application/json');
+  };
+  document.getElementById('btnExportMd').onclick = () => {
+    const out = [`# 接线扫描审核 ${date}`, '', `契约：\`${DATA.contract}\``, '', `| 计数项 | 值 |`, `| --- | --- |`, `| 确定 | ${S.sure} |`, `| 高疑 | ${S.likely} |`, `| 待审 | ${S.review} |`, `| 已定结论 | ${decided().length} / ${rows.length} |`, ''];
+    for (const g of GROUPS) {
+      const list = rows.filter((r) => r.group === g);
+      if (!list.length) continue;
+      out.push(`## ${list[0].groupTitle}`, '', '| 等级 | 层 | 位置 | 元素／对象 | 现象 | 结论 | 理由 | 审核人 |', '| --- | --- | --- | --- | --- | --- | --- | --- |');
+      for (const r of list) { const v = store[r.key] || {}; out.push(`| ${LEVEL[r.level]} | ${r.layer} | ${r.sub}${r.line ? `:${r.line}` : ''} | ${r.what} | ${r.detail} | ${v.status || ''} | ${v.reason || ''} | ${v.author || ''} |`.replace(/\|(?=[^|]*\|)/g, (m) => m)); }
+      out.push('');
+    }
+    download(`wiring-review-${date}.md`, out.join('\n').replace(/\n\| ([^\n]*)/g, (m) => m), 'text/markdown');
+  };
+  document.getElementById('btnExportCsv').onclick = () => {
+    const cell = (s) => `"${String(s ?? '').replace(/"/g, '""')}"`;
+    const out = [['key', 'level', 'layer', 'where', 'line', 'what', 'detail', 'status', 'reason', 'author', 'updated_at'].join(',')];
+    for (const r of rows) { const v = store[r.key] || {}; out.push([r.key, LEVEL[r.level], r.layer, r.sub, r.line || '', r.what, r.detail, v.status || '', v.reason || '', v.author || '', v.updated_at || ''].map(cell).join(',')); }
+    download(`wiring-review-${date}.csv`, '﻿' + out.join('\r\n'), 'text/csv');
+  };
+  document.getElementById('btnImport').onclick = () => document.getElementById('fileImport').click();
+  document.getElementById('fileImport').onchange = async (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    try {
+      const j = JSON.parse(await f.text());
+      let n = 0;
+      for (const r of j.rules || []) { if (r.key) { store[r.key] = { status: r.status || '', reason: r.reason || '', author: r.author || '', updated_at: r.updated_at || '' }; n++; } }
+      save(); render();
+      alert(`导入 ${n} 条结论。`);
+    } catch (err) { alert(`读不了这个文件：${err.message}`); }
+    e.target.value = '';
+  };
+})();
+</script>
+</body>
+</html>

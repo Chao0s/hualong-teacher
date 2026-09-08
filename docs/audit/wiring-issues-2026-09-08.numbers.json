@@ -1,0 +1,32 @@
+{
+  "map": 1,
+  "tickets": {
+    "L1-media": 2,
+    "L1-download": 3,
+    "L1-writes": 4,
+    "L1-message": 5,
+    "L1-pagetap": 6,
+    "L2-more": 7,
+    "L2-heuristics": 8,
+    "L2-dataui": 9,
+    "L3-lib": 10,
+    "L3-schema": 11,
+    "L3-verbs": 12,
+    "L4-myuploads": 13,
+    "L4-withdraw": 14,
+    "L4-profile": 15,
+    "L4-gb-status": 16,
+    "L4-lock": 17,
+    "L4-tasks": 18,
+    "L4-assess": 19,
+    "L4-scales": 20,
+    "L5-filters": 21,
+    "L5-nav": 22,
+    "L5-wording": 23,
+    "L6-tsv": 24,
+    "L6-mytraining": 25,
+    "L6-assess-pages": 26,
+    "L6-gb-pages": 27,
+    "L6-topic": 28
+  }
+}

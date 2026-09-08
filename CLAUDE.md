@@ -256,6 +256,7 @@ node server/server.mjs          # → http://localhost:3860/api/v1
 | 结构 | `npm test` | 四件套缺文件、类名落空、`wx:for`+`wx:else` 同节点 |
 | 孤儿样式 | `node tools/scan-orphans.mjs` | 本次改动新造成的孤儿（见 §7） |
 | 接口 | `node tools/probe-*.mjs` | 路径、字段、枚举、状态机、范围 |
+| 接线 | `npm run scan:wiring` | 元素→事件→handler→service→契约哪一环断了；契约有而客户端没调的操作。写到 `docs/audit/wiring-<日期>.md/.json/.html`；审核结论落在 `docs/audit/wiring.allowlist.json`，重扫会带上 |
 | 权限 | `cd /d/hualong-backend/db/testdata && node authz-tests/run.mjs --base http://localhost:3860/api/v1` | 七组越权探针 |
 | **渲染** | **开发者工具里真点** | **上面全部查不出来** |
 

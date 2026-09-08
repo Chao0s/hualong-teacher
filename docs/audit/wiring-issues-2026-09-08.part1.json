@@ -1,0 +1,59 @@
+[
+  {
+    "id": "L1-media", "layer": "L1", "type": "task",
+    "title": "L1｜媒体上传族接入：封面图、Word 附件、活动照片、证书文件",
+    "body": "## Question\n\n四处「选文件然后上传」的 handler 现在只弹提示或只改本地 data，没有真正上传。把它们接到契约的媒体族：`POST /media/upload-credentials`（签发 COS 表单上传凭证）→ `wx.uploadFile` 直传 → `POST /media/files`（登记 `db_file` 一行）。\n\n| 页面 | 元素 | handler |\n|---|---|---|\n| `upload-resource`（上传资料，首页 → 上传资源） | 封面图框 ×2（第 69、131 行） | `onPickCover` |\n| `upload-resource` | 「上传」Word 附件 ×2（第 115 行资源表单、第 205 行案例表单，同一 handler，`wx:if` 二选一） | `onPickWord` |\n| `home-school-moment-publish`（发布活动） | 「+」加照片 | `onAddPhoto` |\n| `teacher-profile`（个人档案） | 「＋ 新增证书」 | 待接 |\n\n注意 `docs/API-CONTRACT.md` 第 576 行：`wx.uploadFile` 发的是 multipart POST，凭证必须是 **PostObject**，只放行 PutObject 在真机会失败。本地契约服务端不接对象存储，回的是 `example-cos.invalid` 假域名 —— 页面要按 `placeholder` 标志说一句中文，不能报成失败。\n\n完成判据：四处都能在 Network 面板看到 `/media/upload-credentials` 与 `/media/files` 两次请求；`probe-library-write` 加断言。审核意见：接（c1）。"
+  },
+  {
+    "id": "L1-download", "layer": "L1", "type": "grilling",
+    "title": "L1｜取档下载端点缺口：党建／研修／协调／证书／任务附件五族只有占位 handler",
+    "body": "## Question\n\n契约里**只有资源与案例**有 `POST …/download-link`（签 30 分钟 bearer 短链）。下面五族的「预览／下载」按钮都只能弹「尚未开放」：\n\n| 页面 | 元素 | 附件所属表 |\n|---|---|---|\n| `party-study-detail`（文件预览）、`party-activity-detail`（活动介绍） | 「在线预览」「下载文件」`onAction`；`onDownload` | `db_file_ref` owner=党建内容 |\n| `training-detail`（研修详情） | 「下载」`onFileTap` | `db_file_ref` owner=`db_training`；spec 要求成功供给写 `c7/e4 downloaded` 事件 |\n| `coordination-file-list`（文件列表） | 「下载」`onDownload` ×3 | `db_coord_document` 附件 |\n| `teacher-profile`（个人档案） | 「预览」「下载」`onToast` | `db_teacher_credential` |\n| `teacher-task-detail`（任务详情，首页那条线） | 「预览」`onToast` | `db_file_ref` owner=`db_task_assign` |\n\n要决定的：(1) 是每族各开一条 `…/{id}/download-link`，还是开一条通用的 `POST /media/files/{file_id}/download-link` 由服务端按 owner 判权限；(2) 预览与下载是否同一条短链（资源／案例现在是）；(3) 哪几族要写 `db_content_access_event`。定了之后先改 `openapi.yaml` 与 `action-registry.tsv`，再开执行票。审核意见：接（c1，5 处）。"
+  },
+  {
+    "id": "L1-writes", "layer": "L1", "type": "task",
+    "title": "L1｜写入类按钮接契约：保存学期评价、提交材料、筛选片误报处理",
+    "body": "## Question\n\n三个 handler 的处置：\n\n1. `teacher-term-form`（填写学期评价，家园社共育 → 成长档案 → 教师评价 → 教师学期评价 → 点幼儿）「保存学期评价」`onSave` 只弹提示 → 接 `PUT /children/{child_id}/term-evaluation`（NONE→c1，一次写成已完成，没有服务端草稿；`eval_text` trim 后 1–500 字，`file_id[]` 只能引用该幼儿相册）。新建 `services/assessment.js` 承接评估族。\n2. `teacher-task-detail`（任务详情）「提交材料」`onToast` → 阻于「待办任务 G62」决策票，本票只登记不做。\n3. `assessment-tool`（质量评估）筛选片 `onFilterTap` 被报「带开发中字样」是**误报**（纯本地切换，字样来自同页别的方法）→ allowlist 记「误报」。\n\n完成判据：第 1 项在 Network 面板看到 PUT 并回 201，`db_term_eval` 多一行；探针钉到库里那一行的 `eval_text`。审核意见：接（c1）。"
+  },
+  {
+    "id": "L1-message", "layer": "L1", "type": "grilling",
+    "title": "L1｜教师寄语「提交寄语」没有教师端契约端点",
+    "body": "## Question\n\n`teacher-message`（教师寄语，教师评价 → 寄语）「提交寄语」`onSubmit` 只弹提示。契约里与寄语有关的只有管理端 `POST /admin/growth-book/term-message`（园所本学期寄语，写 `db_school_term.growth_book_message`）。教师给**每名幼儿**写的寄语（`db_teacher_message`）在教师端**没有任何端点**。\n\n要决定的：(1) 教师寄语是不是成长册的固定前置页 `message`（F19 §五说 term／comp／message 固定启用）——如果是，它的数据源是 `db_teacher_message` 还是 `db_school_term.growth_book_message`；(2) 需要哪几条端点（列表、读一条、写一条、能不能改）；(3) 寄语要不要走内容审核。定了之后先改契约，再开执行票。审核意见：接（c1），但没有契约就接不了。"
+  },
+  {
+    "id": "L1-pagetap", "layer": "L1", "type": "task",
+    "title": "L1｜成长册三页的 onPageTap（翻页）定义了但 WXML 没绑",
+    "body": "## Question\n\n`growth-book-edit`（编册）、`growth-book-sample`（成长册样本）、`growth-book-view`（成长册预览）三页的 JS 里都有 `onPageTap()`，WXML 没有任何元素绑到它。审核人确认：这是**翻页**，要的。\n\n做法：找回原型 `screens/growth-book-*.html` 里翻页的触发方式（点左右半屏／点页码），在 WXML 上把 `bindtap=\"onPageTap\"` 绑回去，`data-dir` 带方向。三页共用 `utils/book-viewer.js`，改一处即可。\n\n完成判据：三页都能翻页；`npm run scan:wiring` 不再报这三条。审核意见：接（c1＋c2）。"
+  },
+
+  {
+    "id": "L2-more", "layer": "L2", "type": "task",
+    "title": "L2｜「+N」照片角标没有点击事件：全部活动、社区共育",
+    "body": "## Question\n\n`home-school-moment-feed`（全部活动，第 28 行）与 `community-coeducation`（社区共育，第 47 行）的 `<view class=\"feed-more\">+{{moreCount}}</view>` 只显示「还有 N 张」，点不开。\n\n做法：绑 `bindtap`，用 `wx.previewImage({ urls, current })` 打开该条的全部照片。照片 URL 已在 `m.photos[].url`（`GET /media/files/{file_id}/url` 取回）。\n\n完成判据：点角标弹出全部照片。审核意见：接（c1）。"
+  },
+  {
+    "id": "L2-heuristics", "layer": "L2", "type": "grilling",
+    "title": "L2｜校准「像按钮」的判定词表，减少误报漏报",
+    "body": "## Question\n\n`tools/scan-wiring.mjs` 的 L2 靠两张词表判定「看起来能点」：`BUTTONISH_TEXT`（提交／发布／下载…）与类名词表（btn／action／more…）。本轮已经删掉了「开始／继续／完成」等误报，但词表是我拍的，不是团队定的。\n\n要决定的：(1) 团队的按钮文案与类名约定是什么（写进 `styles/` 或 CLAUDE.md）；(2) 哪些容器类（`entry-grid`、`submit-note`）永远不算；(3) 要不要给「决定不做」的按钮一个统一类名（如 `.not-built`），扫描器见到就跳过、页面上显示统一提示。\n\n产出：改词表 + 在 `--selftest` 加断言。"
+  },
+  {
+    "id": "L2-dataui", "layer": "L2", "type": "task",
+    "title": "L2｜写入控件补 data-ui 标注，让后端 check-ui-binding --with-frontend 变绿",
+    "body": "## Question\n\n后端 `db/tools/check-all.mjs --with-frontend` 目前有一项红：`check-ui-binding` 要求每个写入控件（input／textarea／picker／checkbox-group／radio-group）带 `data-ui=\"<spec 里的 ui 路径>\"`，小程序 55 页一个都没带（CLAUDE.md §7.3）。\n\n做法：以 `hualong-backend/db/spec/ui-binding.tsv`（833 行，从 spec 的 `ui=` 标注抽出来的）为权威，逐页给写入控件补 `data-ui`；真没有列的控件标 `data-ui=\"context.local\"`。派生列（`class_id`、`teacher_id`）绝不能出现在输入控件上。\n\n完成判据：`node db/tools/check-all.mjs --with-frontend` 8 项全过。先做已接 API 的 26 页。"
+  },
+
+  {
+    "id": "L3-lib", "layer": "L3", "type": "task",
+    "title": "L3｜library.js 变量前缀路径拆明确函数；resource-detail 也接 downloadLink",
+    "body": "## Question\n\n`services/library.js` 的 `submitForReview(target, id)` 与 `downloadLink(target, id)` 用 `target === 'case' ? CASE_PATH : RESOURCE_PATH` 拼路径，静态扫描只能按后缀匹配到 2 条契约操作。审核意见：接。\n\n做法：(1) 拆成 `submitResource／submitCase／resourceDownloadLink／caseDownloadLink` 四个明确函数，或保留但在 `--selftest` 加一条「{?} 前缀匹配」断言；(2) `resource-detail`（资源详情）目前**没有**调 `downloadLink`，只有 `case-detail` 调了 —— 补上；(3) `probe-library-write` 钉两条 submission 的 `submitted_at` 到库。\n\n完成判据：L3 段 0 条待审；两个详情页都能拿到短链。"
+  },
+  {
+    "id": "L3-schema", "layer": "L3", "type": "research",
+    "title": "L3｜对账：学期评价与综合评估的 DB 列 vs 契约 schema",
+    "body": "## Question\n\n审核人在四条端点上都问：「DB 跟 API 本来写的 schema 是不是对应？」逐列对账：\n\n| 契约 schema | DDL 表 |\n|---|---|\n| `GET /term-evaluations`、`GET/PUT /children/{child_id}/term-evaluation` 的响应与请求体 | `db_term_eval`（`db/01_schema.sql` 第 1426 行起） |\n| `GET /child-assessments`、`/class-report`、`GET /children/{child_id}/child-assessment`、`PUT …/items/{item_id}`、`/report` | `db_child_assessment`（1343 行）、`db_child_assessment_item`（1380 行）、`db_scale_item`（1254 行） |\n\n产出一张表：契约字段 ↔ DDL 列 ↔ 类型 ↔ NOT NULL ↔ 差异（契约多的、DDL 多的、类型不同的、派生不落列的）。差异登记到 `db/GAPS.md`。研究结果放 `research/l3-schema-audit` 分支的 `docs/audit/schema-audit-assessment.md`。"
+  },
+  {
+    "id": "L3-verbs", "layer": "L3", "type": "grilling",
+    "title": "L3｜「为什么有时 POST 有时 PUT」—— 把动词规则写成契约条文",
+    "body": "## Question\n\n审核人问：`PUT /children/{child_id}/term-evaluation` 与 `PUT …/child-assessment/items/{item_id}` 用 PUT，`POST /trainings/{id}/registration`、`POST …/publication` 用 POST，逻辑是什么？\n\n现行规则（散在 `utils/request.js` 注释与契约各处，没有一条总纲）：\n- **PUT** = 按自然键幂等落一行：客户端知道键（幼儿＋学期、幼儿＋题号），重复发同一份结果相同。\n- **POST** = 状态迁移动作或创建：服务端分配 id、或把一行从一个状态推到另一个（报名、发布、提交审核）。重复要靠 `Idempotency-Key`。\n- **PATCH** = 改草稿，字段缺席＝不改、显式 null＝清空（§1.1）。\n\n要决定的：这条规则是否成立、有没有例外（`PUT /home-school/month-evals` 无 id 却是 PUT）、写进 `docs/API-CONTRACT.md` 哪一节。产出：契约新增一节 + 修订记录。"
+  }
+]

@@ -1,0 +1,84 @@
+[
+  {
+    "id": "L4-myuploads", "layer": "L4", "type": "grilling",
+    "title": "L4｜改草稿（PATCH 资源／案例）需要一个「我的上传」入口",
+    "body": "## Question\n\n审核意见：`PATCH /library/resources/{resource_id}` 与 `PATCH /library/cases/{case_id}`（改草稿，仅 s1）都要接。但 `upload-resource`（上传资料）现在只能新建；教师端**没有任何页面列出自己上传过的资源／案例**，草稿存了就找不回来。\n\n要决定的：(1) 「我的上传」放哪 —— 上传页顶部一个「我的草稿」区块、还是 `resource-center` 新增一格；(2) 列表用 `GET /library/resources?author=me` 之类的筛选（契约现在有没有这个参数要查）；(3) 待审（s2）与已通过（s3）的条目在列表里显示什么、能不能点进改。定了之后开执行票。"
+  },
+  {
+    "id": "L4-withdraw", "layer": "L4", "type": "grilling",
+    "title": "L4｜「撤回」还是「删除」？作者撤回端点（F6）教师端不做按钮，契约去留待定",
+    "body": "## Question\n\n审核人的判断：资源／案例提交后进 PC 端审核，两道关（微信内容安全 API 自动退回；有疑虑转人工，校长可退回或撤回）。**退回不是教师决定的**，教师端不应有撤回按钮。原型也确认没有撤回按钮。\n\n但契约有 `POST /library/{resources|cases}/{id}/withdrawal`（后端决议 F6：作者把 s2 待审／s3 已通过／s4 被驳回的内容撤回成 s1 草稿，回到自己手里再改）。它与两个近义词要分清：\n\n| 词 | 谁做 | 结果 |\n|---|---|---|\n| 撤回 withdraw（F6） | 作者教师 | 回草稿 s1，能再改再提 |\n| 下架 take down（`s5=已下架`） | 管理端 `POST /admin/review/actions` d3 | 终局退出流通 |\n| 删除 delete | 在园时光 `DELETE /moments/{id}` 是作者物理删 | 没了 |\n\n审核人怀疑「撤回」与「删除」只是字不同、其实一回事。要决定的：(1) 被驳回（s4）的资源，教师要不要能改了再提？如果要，走 F6 撤回还是新增一条「重新提交」；(2) 撤回端点删掉还是留给未来；(3) c1 记「不建」、c2 记「阻于」，统一成哪个。定了要同步 `DECISIONS.md` F6、`openapi.yaml`、`action-registry.tsv`。"
+  },
+  {
+    "id": "L4-profile", "layer": "L4", "type": "task",
+    "title": "L4｜教师档案三条端点接线：读档案、读申请、提交修改申请",
+    "body": "## Question\n\n`teacher-profile`（个人档案，教研培训 → 我的档案）整页仍是字面量。接三条：\n\n| 端点 | 用在 |\n|---|---|\n| `GET /teacher-profile` | 进页读本人专业档案（姓名与班级不在这里，来自会话） |\n| `GET /teacher-profile/changes` | 「修改申请」区块：上次申请到哪一步（s2 待审／s3 通过／s4 驳回） |\n| `POST /teacher-profile/changes` | 「提交审核」：只送要改的键（`change_payload`），NONE→s2，进管理端 t3 队列 |\n\n前置（`action-registry.tsv`）：`no_open_s2`（有一条待审就不能再提）、`full_preview_confirmed`、`credential_file_owned`。新建 `services/profile.js`；证书上传与下载分别阻于「媒体上传族」与「取档下载端点」两票。\n\n完成判据：进页有真数据；提交后 `db_teacher_profile_change` 多一行 s2；探针钉 `submitted_at`。审核意见：接（c1）。"
+  },
+  {
+    "id": "L4-gb-status", "layer": "L4", "type": "research",
+    "title": "L4｜成长册 15 条教师端端点：服务端实作状态与 G68 的边界",
+    "body": "## Question\n\n审核意见对成长册 15 条端点（compilation ×3、sections ×9、books ×2、precheck）全部记「接」。但交接文档说成长册 9 页阻于 G68（在园时光与社区投稿的**入册通道**有表有数据、零 API 面）。要先查清：\n\n1. 这 15 条在 `hualong-backend/db/testdata/server/routes/` 里哪几条已实作、哪几条回 501（`api/action-coverage.tsv` 的 `not_implemented` 计数现在是 1，对不对）；\n2. G68 阻的到底是哪几条／哪几页 —— 入册通道（`db_growth_material`、`teacher_book_included`）与栏目／编册端点是两回事还是一回事；\n3. `GET /growth-book/books/{id}/manifest` 与 `/pages/{ordinal}` 的 `x-hualong-blocked-on`（0/12 版式包，ADR-0015）现在什么状态。\n\n产出：一张 15 行的表（端点 ／ 已实作？／ 阻于 ／ 依赖的页面），放 `research/l4-growth-book-status` 分支 `docs/audit/growth-book-endpoints.md`。"
+  },
+  {
+    "id": "L4-lock", "layer": "L4", "type": "grilling",
+    "title": "L4｜编册锁定（compilation lock）该由教师还是校长做？",
+    "body": "## Question\n\n审核人：「锁定应该只有校长这个 role 才有权限，老师不该能锁 compilation。」\n\n现有决议 F19 §五（`DECISIONS.md` 第 2023 行）：`db_growth_book_compilation` 是**班级的学期编册**，唯一键 `(class_id, term_id)`，教师完成三个管理面（在园时光归主题、亲子任务勾选、自订栏目）后**明确锁定** e1→e2，服务端同事务重验；只有 e2 才允许逐幼儿定稿 b1→b2。校长／管理员锁的是**园所设置** `db_school.book_setting_status` d1→d2（F20），是另一张表，且教师端要读到 d2 才能进班级编册。\n\n要决定的：(1) 审核人说的「锁定成长手册」指的是园所设置那一层，还是班级编册这一层；(2) 若坚持班级编册也由校长锁，教师端这一页只剩「提交给校长锁定」，需要改 F19、契约 `x-hualong-roles`、`action-registry.tsv`，并新增一条管理端端点；(3) 「预设必须存在的章节」（term／comp／message 固定启用）不进开关，这一点与锁定权限无关，要不要在页面上说清。审核意见：阻于（c1），先不定。"
+  },
+  {
+    "id": "L4-tasks", "layer": "L4", "type": "grilling",
+    "title": "L4｜待办任务三条端点与 G62：接受／完成的状态机不是 0/1",
+    "body": "## Question\n\n审核意见：`GET /tasks/{task_id}`、`POST …/acceptance`、`POST …/completion` 都接；并问「completion 预设是 0、完成是 1？」\n\n先纠正：不是布尔。`db_task_assign.assign_status` 三态 `a1 待接收 → a2 进行中 → a3 已完成`；「接受」是 a1→a2，「完成」是 a2→a3，a1 直接完成回 409。`db_task.task_status` 另有四态 t1–t4，由管理端维护。\n\n阻着这条线的是 **G62**（`db_task` 问的是「它是不是一台状态机」：`task_status` 是独立列还是从全部 assign 行投影出来的，`GAPS.md` 第 671 行）。要决定的：(1) G62 取哪个解；(2) 「提交材料」按钮与「完成」的分工、任务附件（`db_file_ref owner_object='db_task_assign'`）的上传端点（G40 notes 里没定）；(3) 首页「近期任务」卡片读哪条端点（现在契约只有详情，没有列表）。定了之后开 `teacher-tasks`／`teacher-task-detail` 两页的执行票。"
+  },
+  {
+    "id": "L4-assess", "layer": "L4", "type": "task",
+    "title": "L4｜评估族 13 条端点接线：学期评价、综合评估、成长档案、质量评估",
+    "body": "## Question\n\n审核意见全部记「接」。新建 `services/assessment.js`，分四组：\n\n| 组 | 端点 | 页面 |\n|---|---|---|\n| 学期评价 | `GET /term-evaluations`、`GET/PUT /children/{child_id}/term-evaluation` | `teacher-term-evaluation`、`teacher-term-form` |\n| 综合评估 | `GET /child-assessments`、`/class-report`、`GET /children/{child_id}/child-assessment`、`PUT …/items/{item_id}`、`…/report` | `growth-comprehensive-assessment`、`comprehensive-assessment-form`、`-report`、`-class-report` |\n| 成长档案 | `GET /growth-records`、`GET /children/{child_id}/growth-record` | `growth-record` |\n| 质量评估 | `GET /assessments`、`GET /assessments/{id}`、`PUT …/items/{tool_item_code}` | `assessment-tool`（现在作答存本机 `assessment-store`，要改成上传） |\n\n阻于「schema 对账」研究票；`GET /scales/{code}/{version}` 单独一票。规则：未评＝无行不是 0 分；报告均分是题项级均值不是下级均值的均值；草稿不计入班级报告。探针 `probe-assessment.mjs` 钉 `completed_count` 到库。"
+  },
+  {
+    "id": "L4-scales", "layer": "L4", "type": "grilling",
+    "title": "L4｜量表要不要「版本」？GET /scales/{code}/{version} 去留与题库三份怎么收",
+    "body": "## Question\n\n审核意见：「应该是没有版本，所以可能这个不用接，甚至可以删除？」\n\n现状：DDL `db_scale_item` 有 `scale_version VARCHAR(32) NOT NULL`，唯一键 `(scale_code, scale_version, item_id)`，表注释写明 E2 决议「改版＝新增一个 scale_version，旧评估仍指向旧版，历史分数可解释」；`db_child_assessment` 也存 `scale_version`。客户端现在**不从接口取题**，用内嵌的 `questions.js`（与 `data/guide-scale.json`、后端 `guide-scale-v1.json` 三份逐字相同，`npm test` 第 7 段有漂移闸门）。\n\n要决定的：(1) 版本维度删不删 —— 删了以后量表改一个字，旧评估的分数怎么解释；(2) 题库改从接口取还是留内嵌（CLAUDE.md §9 说这是要先问的决策，牵 G5 五维分数无处存、G15 量表无模板表、G27 身高体重题无评分规则，以及领域代码 `H/L/S/K/A` 与 `f1..f5` 哪套是权威）；(3) 不接的话 allowlist 记「不建」还是「阻于」。"
+  },
+
+  {
+    "id": "L5-filters", "layer": "L5", "type": "task",
+    "title": "L5｜案例库补回原型的 13 个筛选片：年级、领域、区域",
+    "body": "## Question\n\n原型 `screens/case-library.html` 有 13 个筛选按钮，小程序 `case-library`（案例库）只剩 6 个。审核人确认「是 filter，要」。缺的：小班／中班／大班、区域、主题探究、家园社共育、数字化。\n\n做法：先核契约 `GET /library/cases` 的查询参数与枚举 —— `case_grade`（年级）、`case_field`（领域）、`case_area`（区域）在 `db/spec/enums.tsv` 里的值域是否覆盖这 13 个词；不覆盖的要先改契约与 DDL 注释。然后在 `services/library.js` 的枚举表补齐（枚举只写一份，写在 service），页面按组渲染筛选片。\n\n完成判据：13 个筛选片都能筛出结果；`probe-library` 对每个枚举值钉一次计数到库。审核意见：接（c1，7 条）。"
+  },
+  {
+    "id": "L5-nav", "layer": "L5", "type": "task",
+    "title": "L5｜跳转补齐：寄语详情→寄语、综合评估↔两份报告，及两页从底部导航走不到",
+    "body": "## Question\n\n原型有、小程序没有的跳转（审核意见全部「接」）：\n\n| 从 | 到 |\n|---|---|\n| `teacher-message-detail`（寄语详情） | `teacher-message`（教师寄语） |\n| `growth-comprehensive-assessment`（综合评估） | `comprehensive-assessment-report`（综合评估结果） |\n| `comprehensive-assessment-report`、`comprehensive-assessment-class-report` | 返回 `growth-comprehensive-assessment` |\n\n另外扫描器的 BFS 发现两页**从五个底部导航都走不到**：`comprehensive-assessment-report` 与 `growth-book-view`（成长册预览）。要给它们挂入口（前者从综合评估进度点幼儿、后者从编册页「预览整册」）。\n\n完成判据：`npm run scan:wiring` 的 L5 跳转项为 0，且报告 JSON 里没有页面的 `context.path` 含「走不到」。"
+  },
+  {
+    "id": "L5-wording", "layer": "L5", "type": "task",
+    "title": "L5｜按钮文案与原型对齐：「保存评价」「发布给家长」",
+    "body": "## Question\n\n| 页面 | 原型按钮 | 小程序现在 |\n|---|---|---|\n| `teacher-monthly-form`（填写月度评价） | 「保存评价」 | 「保存草稿」＋「发布」两个（状态机 e1／e2→e3 要两个动作） |\n| `parent-evaluation-publish`（发布家长测评） | 「发布给家长」 | 「发布」 |\n\n审核意见「接」。要做的：第一处确认两个按钮是否要改成原型的一个词（不行，e2 保存与 e3 发布是两条不同的动作键 `month_eval.save_draft`／`month_eval.publish`）——建议把「发布」改成「发布给家长」保持语义一致，「保存草稿」保留；第二处直接改文案。改完 allowlist 这两条记「接」或「误报」。"
+  },
+
+  {
+    "id": "L6-tsv", "layer": "L6", "type": "grilling",
+    "title": "L6｜screens.tsv 是页面登记表，不是数据库 schema —— 对齐部署与数据模型的认知",
+    "body": "## Question\n\n审核人在 9 条 L6 项目上写了同一段话：「TSV 之后会按这个 structure 变成 DB 的 schema 跟 table，primary key 是老师 ID、学生 ID……COS 存图片、VM 跑 PostgreSQL。」并在 `growth-book-edit` 上写「你具体说的是什么我不清楚」。\n\n需要当面对齐三件事：\n\n1. **`hualong-backend/db/spec/screens.tsv` 是什么**：每个屏幕一行的登记表（原型文件、小程序文件、模块、主要表、`writes=yes/no`）。它**不会**变成 DB schema。DB 的唯一字段级权威是 `db/01_schema.sql`（每列带中文 COMMENT），主键、外键都已在那里。\n2. **L6 这一层报的是什么**：登记表说这一页「会写数据」，但页面里没有任何 POST／PUT／PATCH／DELETE 可达 —— 即写的那一半还没做。不是说登记表要改。\n3. **部署认知**：COS 存文件（`db_file` 只存元数据与对象键）、PostgreSQL 在云主机上 —— 这一点是对的，与 `docs/API-CONTRACT.md` 的媒体章节一致。\n\n产出：一段写进 CLAUDE.md §8 的「这几份文件各是什么」对照表，以后不再混。"
+  },
+  {
+    "id": "L6-mytraining", "layer": "L6", "type": "task",
+    "title": "L6｜my-training 登记为 writes=yes，但它是只读页 —— 改登记或加动作",
+    "body": "## Question\n\n`my-training`（我的研修）在 `screens.tsv` 登记 `writes=yes`，页面只列本人的参与记录（`GET /training-participations`），报名与取消都在 `training-detail`。审核意见「接」。\n\n两条路选一：(a) 登记改 `no`（改 `hualong-backend/db/spec/screens.tsv` 一格，跑 `node db/tools/check-all.mjs`）；(b) 原型 `screens/my-training.html` 里如果有「取消报名」之类的动作，就在卡片上加它。先看原型。\n\n完成判据：`npm run scan:wiring` 不再报这条。"
+  },
+  {
+    "id": "L6-assess-pages", "layer": "L6", "type": "task",
+    "title": "L6｜评估族 6 页接写入：学期评价、综合评估、质量评估、寄语",
+    "body": "## Question\n\n登记 `writes=yes` 但整页字面量的评估族页面：`teacher-term-evaluation`、`teacher-term-form`、`growth-comprehensive-assessment`、`comprehensive-assessment-form`、`assessment-tool`、`teacher-message`。\n\n阻于：「评估族 13 条端点接线」（提供 `services/assessment.js`）、「教师寄语端点」（`teacher-message` 没有契约）。本票做页面层：把六页的 `data` 字面量换成 service 返回值，写入按钮接对应函数，保留原型的三态显示（已完成／草稿／未开始）。\n\n完成判据：六页在 Network 面板都有 `/api/v1` 请求；`screens.tsv` 的 `writes=yes` 与页面实际写入一致。"
+  },
+  {
+    "id": "L6-gb-pages", "layer": "L6", "type": "task",
+    "title": "L6｜成长册 8 页接写入：编册、栏目版面、素材、在园／亲子管理、预览",
+    "body": "## Question\n\n登记 `writes=yes` 的成长册页面：`growth-book`、`growth-book-edit`、`growth-book-time-manage`、`growth-book-task-manage`、`growth-book-section-edit`、`growth-book-section-materials`、`growth-book-view`（c2 也记了它）、`growth-book-sample`。\n\n阻于：「成长册 15 条端点实作状态」研究票、「编册锁定权限」决策票、「在园时光何时归主题」决策票。本票做页面层：新建 `services/growth-book.js`，按研究票的结论切成能接的先接。`growth-book-edit` 审核人注「这里应该要有数据才对」—— 指的是编册页现在是字面量，要读 `POST /teacher/growth-book/compilation`（幂等取回或建立）与 `GET …/sections`。\n\n完成判据：每页 Network 面板有请求；探针按 §7.5 回库核对 e1→e2、d1→d2 的状态。"
+  },
+  {
+    "id": "L6-topic", "layer": "L6", "type": "grilling",
+    "title": "L6｜在园时光的「主题」在发布时就选，还是编册时再归？",
+    "body": "## Question\n\n审核人在 `growth-book-time-manage`（在园时光管理）上写：「主题应该本来就有了，教师在发布的时候就会给每个在园时光提供主题了。」\n\n现有决议 F19 §四（`DECISIONS.md` 第 2021 行）：主题是成长册的 TOC 一级（`db_growth_book_time_topic`），每项在园活动在**锁定前**必须且只能属于一个主题，归属关系挂在本学期 compilation 下的 `db_growth_material`；`db_moment`（在园时光本身）**没有**主题列，`MomentWrite` 也不收。也就是说现在的设计是「发布时不选，编册时再归」。\n\n要决定的：(1) 改成发布时就选主题 —— 要给 `db_moment` 加列或加关系、`MomentWrite` 加字段、发布页加一个选择器，且主题是学期级的（跨学期怎么办）；(2) 还是保留 F19，编册页做一个快速归类界面；(3) 已发布的 100 多条在园时光怎么补主题。牵 G68。"
+  }
+]

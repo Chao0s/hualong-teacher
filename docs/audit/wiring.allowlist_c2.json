@@ -1,0 +1,109 @@
+{
+  "rules": [
+    {
+      "key": "service:/miniprogram/services/library.js:submitForReview() 第 359 行 POST `${path}/${contentId}/submission`",
+      "status": "接",
+      "reason": "",
+      "author": "",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "service:/miniprogram/services/library.js:downloadLink() 第 376 行 POST `${path}/${contentId}/download-link`",
+      "status": "接",
+      "reason": "",
+      "author": "",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "contract:PATCH /library/resources/{resource_id}",
+      "status": "接",
+      "reason": "",
+      "author": "",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "contract:POST /library/resources/{resource_id}/withdrawal",
+      "status": "阻于",
+      "reason": "",
+      "author": "",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "comprehensive-assessment-class-report:L5:原型跳转 → growth-comprehensive-assessment.html",
+      "status": "接",
+      "reason": "",
+      "author": "",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "growth-book:L6:screens.tsv writes=yes",
+      "status": "接",
+      "reason": "",
+      "author": "",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "growth-book-time-manage:L6:screens.tsv writes=yes",
+      "status": "接",
+      "reason": "主题应该本来就有了，教师在发布的时候就会给每个在园时光提供主题了。",
+      "author": "",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "growth-book-task-manage:L6:screens.tsv writes=yes",
+      "status": "接",
+      "reason": "",
+      "author": "",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "growth-book-section-materials:L6:screens.tsv writes=yes",
+      "status": "接",
+      "reason": "",
+      "author": "",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "growth-book-edit:L6:screens.tsv writes=yes",
+      "status": "接",
+      "reason": "这里应该要有数据才对，但你具体说的是什么我不清楚",
+      "author": "",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "growth-book-edit:L1:方法 onPageTap()",
+      "status": "接",
+      "reason": "",
+      "author": "",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "growth-book-sample:L1:方法 onPageTap()",
+      "status": "接",
+      "reason": "你说的是不是翻页这个功能，是的话就是要翻页",
+      "author": "",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "growth-book-view:L6:screens.tsv writes=yes",
+      "status": "接",
+      "reason": "",
+      "author": "",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "growth-book-view:L1:方法 onPageTap()",
+      "status": "接",
+      "reason": "",
+      "author": "",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "growth-book-section-edit:L6:screens.tsv writes=yes",
+      "status": "接",
+      "reason": "",
+      "author": "",
+      "updated_at": "2026-09-08"
+    }
+  ]
+}

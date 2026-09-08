@@ -1,0 +1,599 @@
+{
+  "rules": [
+    {
+      "key": "assessment-tool:L1:<view class=\"chip {{mode === item.key ? 'chip--on' : ''}}\"> bindtap=\"onFilterTap\"",
+      "status": "误报",
+      "reason": "纯本地筛选切换；「开发中」字样来自同页别的方法；→ #4",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "assessment-tool:L6:screens.tsv writes=yes",
+      "status": "接",
+      "reason": "审核人对 screens.tsv 的理解见 #24；→ #26",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "case-library:L5:原型按钮「大班」",
+      "status": "接",
+      "reason": "是的，是filter；→ #21",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "case-library:L5:原型按钮「家园社共育」",
+      "status": "接",
+      "reason": "是的，是filter；→ #21",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "case-library:L5:原型按钮「区域」",
+      "status": "接",
+      "reason": "是的，是filter；→ #21",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "case-library:L5:原型按钮「数字化」",
+      "status": "接",
+      "reason": "是的，是filter；→ #21",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "case-library:L5:原型按钮「小班」",
+      "status": "接",
+      "reason": "是的，是filter；→ #21",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "case-library:L5:原型按钮「中班」",
+      "status": "接",
+      "reason": "是的，是filter；→ #21",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "case-library:L5:原型按钮「主题探究」",
+      "status": "接",
+      "reason": "是的，是filter；→ #21",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "community-coeducation:L2:<view class=\"feed-more\">「+」",
+      "status": "接",
+      "reason": "→ #7",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "comprehensive-assessment-class-report:L5:原型跳转 → growth-comprehensive-assessment.html",
+      "status": "接",
+      "reason": "→ #22",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "comprehensive-assessment-form:L6:screens.tsv writes=yes",
+      "status": "接",
+      "reason": "→ #26",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "comprehensive-assessment-report:L5:原型跳转 → growth-comprehensive-assessment.html",
+      "status": "接",
+      "reason": "→ #22",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "contract:DELETE /teacher/growth-book/sections/{section_id}",
+      "status": "接",
+      "reason": "→ #16",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "contract:DELETE /teacher/growth-book/sections/{section_id}/collection",
+      "status": "接",
+      "reason": "→ #16",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "contract:GET /assessments",
+      "status": "接",
+      "reason": "→ #19",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "contract:GET /assessments/{assessment_id}",
+      "status": "接",
+      "reason": "→ #19",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "contract:GET /child-assessments",
+      "status": "接",
+      "reason": "但我想要知道 schema 有沒有對，所以可能要請你確認一下 DB 跟 API 本來寫的 schema 是不是對應。；→ #19",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "contract:GET /child-assessments/class-report",
+      "status": "接",
+      "reason": "但我想要知道 schema 有沒有對，所以可能要請你確認一下 DB 跟 API 本來寫的 schema 是不是對應。；→ #19",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "contract:GET /children/{child_id}/child-assessment",
+      "status": "接",
+      "reason": "但我想要知道 schema 有沒有對，所以可能要請你確認一下 DB 跟 API 本來寫的 schema 是不是對應。；→ #19",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "contract:GET /children/{child_id}/child-assessment/report",
+      "status": "接",
+      "reason": "→ #19",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "contract:GET /children/{child_id}/growth-record",
+      "status": "接",
+      "reason": "→ #19",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "contract:GET /children/{child_id}/term-evaluation",
+      "status": "接",
+      "reason": "但我想要知道 schema 有沒有對，所以可能要請你確認一下 DB 跟 API 本來寫的 schema 是不是對應。；→ #19",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "contract:GET /growth-records",
+      "status": "接",
+      "reason": "→ #19",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "contract:GET /scales/{scale_code}/{scale_version}",
+      "status": "不建",
+      "reason": "應該是沒有版本，所以可能這個不用接，甚至可以刪除？；→ #20",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "contract:GET /tasks/{task_id}",
+      "status": "接",
+      "reason": "→ #18",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "contract:GET /teacher-profile",
+      "status": "接",
+      "reason": "→ #15",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "contract:GET /teacher-profile/changes",
+      "status": "接",
+      "reason": "→ #15",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "contract:GET /teacher/growth-book/precheck",
+      "status": "接",
+      "reason": "→ #16",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "contract:GET /teacher/growth-book/sections",
+      "status": "接",
+      "reason": "要的，因為有些是固定的欄目，有些是老師可以自定義的。；→ #16",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "contract:GET /term-evaluations",
+      "status": "接",
+      "reason": "但我想要知道 schema 有沒有對，所以可能要請你確認一下 DB 跟 API 本來寫的 schema 是不是對應。；→ #19",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "contract:PATCH /library/cases/{case_id}",
+      "status": "接",
+      "reason": "這個是編輯案例，所以應該是要有的。；→ #13",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "contract:PATCH /library/resources/{resource_id}",
+      "status": "接",
+      "reason": "→ #13",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "contract:PATCH /teacher/growth-book/compilation/{compilation_id}",
+      "status": "接",
+      "reason": "→ #16",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "contract:PATCH /teacher/growth-book/sections/{section_id}",
+      "status": "接",
+      "reason": "→ #16",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "contract:POST /library/cases/{case_id}/withdrawal",
+      "status": "不建",
+      "reason": "F27 已定：教师端无作者撤回；端点删除 → #32",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "contract:POST /library/resources/{resource_id}/withdrawal",
+      "status": "不建",
+      "reason": "F27 已定：教师端无作者撤回；端点删除 → #32",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "contract:POST /tasks/{task_id}/acceptance",
+      "status": "接",
+      "reason": "→ #18",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "contract:POST /tasks/{task_id}/completion",
+      "status": "接",
+      "reason": "預設應該是 completion 是 0 吧，然後完成任務的話，completion 是 1？；→ #18",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "contract:POST /teacher-profile/changes",
+      "status": "接",
+      "reason": "→ #15",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "contract:POST /teacher/growth-book/books",
+      "status": "接",
+      "reason": "→ #16",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "contract:POST /teacher/growth-book/books/{growth_book_id}/publication",
+      "status": "接",
+      "reason": "→ #16",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "contract:POST /teacher/growth-book/compilation",
+      "status": "接",
+      "reason": "→ #16",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "contract:POST /teacher/growth-book/compilation/{compilation_id}/lock",
+      "status": "阻于",
+      "reason": "锁定权限（教师 vs 校长）在 #17 讨论；→ #17",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "contract:POST /teacher/growth-book/sections",
+      "status": "接",
+      "reason": "要的，因為有些是固定的欄目，有些是老師可以自定義的。；→ #16",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "contract:POST /teacher/growth-book/sections/{section_id}/collection",
+      "status": "接",
+      "reason": "→ #16",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "contract:POST /teacher/growth-book/sections/{section_id}/publication",
+      "status": "接",
+      "reason": "→ #16",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "contract:POST /teacher/growth-book/sections/{section_id}/reminders",
+      "status": "接",
+      "reason": "→ #16",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "contract:PUT /assessments/{assessment_id}/items/{tool_item_code}",
+      "status": "接",
+      "reason": "→ #19",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "contract:PUT /children/{child_id}/child-assessment/items/{item_id}",
+      "status": "接",
+      "reason": "為什麼有時候提交你會用 POST，有時候你會用 PUT？這到底是什麼邏輯？；→ #19",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "contract:PUT /children/{child_id}/term-evaluation",
+      "status": "接",
+      "reason": "為什麼有時候提交你會用 POST，有時候你會用 PUT？這到底是什麼邏輯？；→ #19",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "contract:PUT /teacher/growth-book/sections/{section_id}/widgets",
+      "status": "接",
+      "reason": "→ #16",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "growth-book-edit:L1:方法 onPageTap()",
+      "status": "接",
+      "reason": "→ #6",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "growth-book-edit:L6:screens.tsv writes=yes",
+      "status": "接",
+      "reason": "这里应该要有数据才对，但你具体说的是什么我不清楚；→ #27",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "growth-book-sample:L1:方法 onPageTap()",
+      "status": "接",
+      "reason": "你说的是不是翻页这个功能，是的话就是要翻页；→ #6",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "growth-book-section-edit:L6:screens.tsv writes=yes",
+      "status": "接",
+      "reason": "→ #27",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "growth-book-section-materials:L6:screens.tsv writes=yes",
+      "status": "接",
+      "reason": "审核人对 screens.tsv 的理解见 #24；→ #27",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "growth-book-task-manage:L6:screens.tsv writes=yes",
+      "status": "接",
+      "reason": "审核人对 screens.tsv 的理解见 #24；→ #27",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "growth-book-time-manage:L6:screens.tsv writes=yes",
+      "status": "接",
+      "reason": "主题应该本来就有了，教师在发布的时候就会给每个在园时光提供主题了。；→ #27",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "growth-book-view:L1:方法 onPageTap()",
+      "status": "接",
+      "reason": "→ #6",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "growth-book-view:L6:screens.tsv writes=yes",
+      "status": "接",
+      "reason": "→ #27",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "growth-book:L6:screens.tsv writes=yes",
+      "status": "接",
+      "reason": "审核人对 screens.tsv 的理解见 #24；→ #27",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "growth-comprehensive-assessment:L5:原型跳转 → comprehensive-assessment-report.html",
+      "status": "接",
+      "reason": "→ #22",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "growth-comprehensive-assessment:L6:screens.tsv writes=yes",
+      "status": "接",
+      "reason": "→ #26",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "home-school-moment-feed:L2:<view class=\"feed-more\">「+」",
+      "status": "接",
+      "reason": "→ #7",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "home-school-moment-publish:L1:<view class=\"photo add-photo\"> bindtap=\"onAddPhoto\"",
+      "status": "接",
+      "reason": "→ #2",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "my-training:L6:screens.tsv writes=yes",
+      "status": "接",
+      "reason": "→ #25",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "parent-evaluation-publish:L5:原型按钮「发布给家长」",
+      "status": "接",
+      "reason": "→ #23",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "service:/miniprogram/services/library.js:downloadLink() 第 376 行 POST `${path}/${contentId}/download-link`",
+      "status": "接",
+      "reason": "→ #10",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "service:/miniprogram/services/library.js:submitForReview() 第 359 行 POST `${path}/${contentId}/submission`",
+      "status": "接",
+      "reason": "→ #10",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "teacher-message-detail:L5:原型跳转 → teacher-message.html",
+      "status": "接",
+      "reason": "→ #22",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "teacher-message:L1:<view class=\"btn btn--primary sticky-action\"> bindtap=\"onSubmit\"「提交寄语」",
+      "status": "接",
+      "reason": "→ #5",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "teacher-message:L6:screens.tsv writes=yes",
+      "status": "接",
+      "reason": "审核人对 screens.tsv 的理解见 #24；→ #26",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "teacher-monthly-form:L5:原型按钮「保存评价」",
+      "status": "接",
+      "reason": "→ #23",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "teacher-profile:L1:<text class=\"file-op\"> bindtap=\"onToast\"「预览」",
+      "status": "接",
+      "reason": "→ #15",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "teacher-profile:L6:screens.tsv writes=yes",
+      "status": "接",
+      "reason": "审核人对 screens.tsv 的理解见 #24；→ #24",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "teacher-task-detail:L1:<text class=\"file-op\"> bindtap=\"onToast\"「预览」",
+      "status": "接",
+      "reason": "→ #3",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "teacher-task-detail:L1:<view class=\"primary\"> bindtap=\"onToast\"「提交材料」",
+      "status": "接",
+      "reason": "→ #18",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "teacher-task-detail:L6:screens.tsv writes=yes",
+      "status": "接",
+      "reason": "审核人对 screens.tsv 的理解见 #24；→ #24",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "teacher-term-evaluation:L6:screens.tsv writes=yes",
+      "status": "接",
+      "reason": "审核人对 screens.tsv 的理解见 #24；→ #19",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "teacher-term-form:L1:<view class=\"btn btn--primary full full--gap\"> bindtap=\"onSave\"「保存学期评价」",
+      "status": "接",
+      "reason": "→ #4",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "teacher-term-form:L6:screens.tsv writes=yes",
+      "status": "接",
+      "reason": "审核人对 screens.tsv 的理解见 #24；→ #26",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "training-detail:L1:<text class=\"action\"> bindtap=\"onFileTap\"「下载」",
+      "status": "接",
+      "reason": "→ #3",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "upload-resource:L1:<text class=\"mini-btn\"> bindtap=\"onPickWord\"「上传」",
+      "status": "阻于",
+      "reason": "第 115／205 行同一 handler（资源／案例表单块）；→ #2",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "upload-resource:L1:<view class=\"image-box\"> bindtap=\"onPickCover\"",
+      "status": "接",
+      "reason": "→ #2",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    }
+  ]
+}
