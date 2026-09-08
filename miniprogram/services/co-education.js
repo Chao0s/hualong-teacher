@@ -173,6 +173,25 @@ async function photoUrl(fileId) {
 }
 
 /**
+ * 一条动态的全部照片地址，按 `file_id` 的原顺序。
+ *
+ * 卡片上只铺前三张，角标写「还有 N 张」。点角标要看全部，就得把剩下那些的地址
+ * 也取回来 —— 卡上留的是 `fileIds`（全部），`photos[]`（只有三张）不够用。
+ *
+ * `known` 是卡片上已经填好的那几张，传进来就不重复取一次。
+ *
+ * 取不到地址的那张**直接跳过**，不放空串：`wx.previewImage` 收到空串会停在黑屏，
+ * 少一张总好过卡住整个浮层。所以回来的长度可能小于 `fileIds.length`。
+ */
+async function photoUrls(fileIds, known) {
+  const cached = known instanceof Map ? known : new Map();
+  const urls = await Promise.all(
+    (fileIds || []).map((fileId) => cached.get(fileId) || photoUrl(fileId)),
+  );
+  return urls.filter(Boolean);
+}
+
+/**
  * 本班每名在园幼儿在某一周被几条 s3 覆盖。
  *
  * **这是只读派生，不落库**（契约：`writes=no`，不进 action-registry）。
@@ -1234,6 +1253,7 @@ module.exports = {
   listMoments,
   getMoment,
   photoUrl,
+  photoUrls,
   weeklyCoverage,
   classRoster,
   publish,

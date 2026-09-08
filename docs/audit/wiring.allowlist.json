@@ -64,13 +64,6 @@
       "updated_at": "2026-09-08"
     },
     {
-      "key": "community-coeducation:L2:<view class=\"feed-more\">「+」",
-      "status": "接",
-      "reason": "→ #7",
-      "author": "Lin",
-      "updated_at": "2026-09-08"
-    },
-    {
       "key": "comprehensive-assessment-class-report:L5:原型跳转 → growth-comprehensive-assessment.html",
       "status": "接",
       "reason": "→ #22",
@@ -424,13 +417,6 @@
       "key": "growth-comprehensive-assessment:L6:screens.tsv writes=yes",
       "status": "接",
       "reason": "→ #26",
-      "author": "Lin",
-      "updated_at": "2026-09-08"
-    },
-    {
-      "key": "home-school-moment-feed:L2:<view class=\"feed-more\">「+」",
-      "status": "接",
-      "reason": "→ #7",
       "author": "Lin",
       "updated_at": "2026-09-08"
     },

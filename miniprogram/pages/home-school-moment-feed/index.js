@@ -165,6 +165,31 @@ Page({
     });
   },
 
+  /**
+   * 点「+N」角标，看这条动态的全部照片。
+   *
+   * 卡片上只铺 `PREVIEW_PHOTOS` 张，角标只是交代还有几张，点不开等于没交代。
+   * 全套 `file_id` 就在卡上，所以不再拉一次详情；前三张的地址也已经换过，
+   * 当 `known` 传下去，只补剩下那些。
+   *
+   * 地址是短链（§8.4，约 5 分钟），所以每次点都重新取，不缓存进列表数据。
+   */
+  async onPreviewPhotos(e) {
+    const id = Number(e.currentTarget.dataset.id);
+    const card = this.data.moments.find((m) => m.id === id);
+    if (!card || !card.fileIds.length) return;
+
+    const known = new Map(card.photos.map((p) => [p.fileId, p.url]).filter(([, url]) => url));
+    const urls = await co.photoUrls(card.fileIds, known);
+    if (!urls.length) {
+      wx.showToast({ title: '照片暂时打不开，请稍后重试', icon: 'none' });
+      return;
+    }
+    // 从角标那一张往后看：它交代的就是「预览之外还有这些」。
+    // 有的地址可能没取回来，所以按长度收一下，不硬用 PREVIEW_PHOTOS。
+    wx.previewImage({ urls, current: urls[Math.min(PREVIEW_PHOTOS, urls.length - 1)] });
+  },
+
   /** 每条动态显示当前收录了几张（读本机暂存）。 */
   syncCards() {
     const material = readBook().material || [];

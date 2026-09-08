@@ -44,7 +44,7 @@
           <view class="feed-photo" wx:for="{{post.photos}}" wx:key="fileId" wx:for-item="p">
             <image class="feed-photo__img" wx:if="{{p.url}}" src="{{p.url}}" mode="aspectFill" lazy-load />
           </view>
-          <view class="feed-more" wx:if="{{post.moreCount}}">+{{post.moreCount}}</view>
+          <view class="feed-more" wx:if="{{post.moreCount}}" data-id="{{post.id}}" bindtap="onPreviewPhotos">+{{post.moreCount}}</view>
         </view>
 
         <view class="moment-foot">
