@@ -50,6 +50,24 @@ const require_ = createRequire(import.meta.url);
 const read = (p) => readFileSync(p, 'utf8').replace(/\r\n/g, '\n');
 const lineOf = (text, idx) => text.slice(0, idx).split('\n').length;
 
+/**
+ * 一页的 WXML 全文 —— 自己的 index.wxml，加上 <import src> 进来的模板。
+ *
+ * 只读 index.wxml 会把模板里的绑定读成「没有绑定」。成长册三页就是这样：
+ * bindtap="onPageTap" 写在 templates/growth-book-page.wxml 里，三页各自 <import> 它，
+ * 于是扫描器报三条「handler 定义了没绑」，而翻页本来就是好的。
+ * verify-miniprogram.js 的第 4 段早就这样解析，这里用同一套规则。
+ */
+const readWxml = (dir) => {
+  const own = read(join(dir, 'index.wxml'));
+  let text = own;
+  for (const m of own.matchAll(/<import\s+src=["']([^"']+)["']/g)) {
+    const target = m[1].startsWith('/') ? join(MP, m[1].slice(1)) : join(dir, m[1]);
+    if (existsSync(target)) text += '\n' + read(target);
+  }
+  return text;
+};
+
 /* ── 页面清单 ─────────────────────────────────────────────────────────────── */
 
 const app = SELFTEST ? { pages: [] } : JSON.parse(read(join(MP, 'app.json')));
@@ -440,6 +458,14 @@ if (SELFTEST) {
   const keys = literalKeys('feedback_text: text, file_id: fileIds || [], ...rest');
   check('literalKeys 只取键', keys.join(',') === 'feedback_text,file_id', keys.join(','));
 
+  // 5. <import> 进来的模板算这一页的 WXML —— 绑定写在模板里时，不得报成「没绑」
+  const idir = mkdtempSync(join(tmpdir(), 'wiring-import-'));
+  writeFileSync(join(idir, 'tpl.wxml'), '<template name="t">\n  <view bindtap="onPageTap">页</view>\n</template>\n');
+  writeFileSync(join(idir, 'index.wxml'), '<import src="tpl.wxml" />\n<template is="t" />\n');
+  const merged = readWxml(idir);
+  rmSync(idir, { recursive: true, force: true });
+  check('<import> 的模板并进本页 WXML', /bindtap="onPageTap"/.test(merged), merged.replace(/\n/g, '⏎'));
+
   console.log(`\n${pass} 项通过，${fail} 项失败。`);
   process.exit(fail ? 1 : 0);
 }
@@ -454,7 +480,7 @@ const navPath = (() => {
   const TABBAR = [['home', '底部导航「首页」'], ['school-affairs', '底部导航「党建管理」'], ['comprehensive-coordination', '底部导航「综合协调」'], ['training-center', '底部导航「教研培训」'], ['home-school', '底部导航「家园社共育」']];
   const edges = new Map();
   for (const p of pages) {
-    const src = read(join(p.dir, 'index.js')) + read(join(p.dir, 'index.wxml'));
+    const src = read(join(p.dir, 'index.js')) + readWxml(p.dir);
     edges.set(p.name, [...new Set([...src.matchAll(/\/pages\/([a-z0-9-]+)\/index/g)].map((m) => m[1]).filter((t) => t !== p.name))]);
   }
   const path = new Map(TABBAR);
@@ -504,13 +530,13 @@ const isFalsePositive = (v) => v && /^(误报|誤報|FALSE_POSITIVE)$/i.test(v.s
 
 const services = readdirSync(join(MP, 'services')).filter((f) => f.endsWith('.js'))
   .map((f) => scanService(join(MP, 'services', f)));
-const allWxml = pages.map((p) => read(join(p.dir, 'index.wxml'))).join('\n');
+const allWxml = pages.map((p) => readWxml(p.dir)).join('\n');
 
 const report = { generatedAt: new Date().toISOString(), contract: specPath(), pages: [], services: [], contractUnused: [], summary: {} };
 const LEVEL = { sure: '确定', likely: '高疑', review: '待审' };
 
 for (const p of pages) {
-  const wxmlText = read(join(p.dir, 'index.wxml'));
+  const wxmlText = readWxml(p.dir);
   const nodes = parseWxml(wxmlText);
   const page = loadPage(p.dir);
   const wired = page.serviceAliases.length > 0;
