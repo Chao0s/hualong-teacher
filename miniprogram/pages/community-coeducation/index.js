@@ -130,6 +130,30 @@ Page({
   },
 
   /**
+   * 点「+N」角标，看这条投稿的全部照片。
+   *
+   * 卡片上只铺 `PREVIEW_PHOTOS` 张，角标只是交代还有几张，点不开等于没交代。
+   * 全套 `file_id` 就在卡上（`fileIds`），前三张的地址 `fillPhotos` 已经换过，
+   * 当 `known` 传下去，只补剩下那些。
+   *
+   * 地址是短链（§8.4，约 5 分钟），所以每次点都重新取，不缓存进列表数据。
+   */
+  async onPreviewPhotos(e) {
+    // 按 id 找回，不用下标：换筛选时 `visible` 会整个换掉。`fillPhotos` 同理。
+    const id = Number(e.currentTarget.dataset.id);
+    const post = this.data.visible.find((x) => x.id === id);
+    if (!post || !post.fileIds.length) return;
+
+    const known = new Map(post.photos.map((p) => [p.fileId, p.url]).filter(([, url]) => url));
+    const urls = await co.photoUrls(post.fileIds, known);
+    if (!urls.length) {
+      wx.showToast({ title: '照片暂时打不开，请稍后重试', icon: 'none' });
+      return;
+    }
+    wx.previewImage({ urls, current: urls[Math.min(PREVIEW_PHOTOS, urls.length - 1)] });
+  },
+
+  /**
    * 收进成长册，或整条移出。
    *
    * 收进去时把**该条全部照片**交上去（不只是卡片上铺出来那三张），照抄原型。

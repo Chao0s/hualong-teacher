@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-08T17:14:05.372Z",
+  "generatedAt": "2026-09-08T17:20:11.154Z",
   "contract": "G:\\My Drive\\Workplace\\China KG Platform\\hualong-backend\\api\\openapi.yaml",
   "pages": [
     {
@@ -1245,40 +1245,13 @@
         "role": "本班全部已发布的在园时光，可删自己发的、可勾入成长册",
         "flow": "教师发布 → 家长看；教师可删除自己那条；「加入成长册」把照片送进成长册素材（阻于 G68）"
       },
-      "events": 8,
+      "events": 9,
       "prototype": {
         "buttons": 2,
         "listeners": 6,
         "links": 0
       },
-      "findings": [
-        {
-          "key": "home-school-moment-feed:L2:<view class=\"feed-more\">「+」",
-          "level": "review",
-          "layer": "L2",
-          "line": 28,
-          "what": "<view class=\"feed-more\">「+」",
-          "detail": "类名像按钮，没有点击事件（可能只是样式）",
-          "verdict": {
-            "key": "home-school-moment-feed:L2:<view class=\"feed-more\">「+」",
-            "status": "接",
-            "reason": "→ #7",
-            "author": "Lin",
-            "updated_at": "2026-09-08"
-          },
-          "falsePositive": false,
-          "context": {
-            "page": "home-school-moment-feed",
-            "title": "全部活动",
-            "path": "在园时光 → 全部活动",
-            "module": "在园时光",
-            "role": "本班全部已发布的在园时光，可删自己发的、可勾入成长册",
-            "flow": "教师发布 → 家长看；教师可删除自己那条；「加入成长册」把照片送进成长册素材（阻于 G68）",
-            "button": "+",
-            "note": ""
-          }
-        }
-      ]
+      "findings": []
     },
     {
       "name": "home-school-moment-publish",
@@ -1813,40 +1786,13 @@
         "role": "社区共育 feed：家长交上来的亲子任务作品",
         "flow": "家长提交（db_parent_task_submission）→ 教师浏览，可勾选「加入成长册」"
       },
-      "events": 3,
+      "events": 4,
       "prototype": {
         "buttons": 0,
         "listeners": 3,
         "links": 0
       },
-      "findings": [
-        {
-          "key": "community-coeducation:L2:<view class=\"feed-more\">「+」",
-          "level": "review",
-          "layer": "L2",
-          "line": 47,
-          "what": "<view class=\"feed-more\">「+」",
-          "detail": "类名像按钮，没有点击事件（可能只是样式）",
-          "verdict": {
-            "key": "community-coeducation:L2:<view class=\"feed-more\">「+」",
-            "status": "接",
-            "reason": "→ #7",
-            "author": "Lin",
-            "updated_at": "2026-09-08"
-          },
-          "falsePositive": false,
-          "context": {
-            "page": "community-coeducation",
-            "title": "社区共育",
-            "path": "家园社共育 → 社区共育",
-            "module": "社区教育",
-            "role": "社区共育 feed：家长交上来的亲子任务作品",
-            "flow": "家长提交（db_parent_task_submission）→ 教师浏览，可勾选「加入成长册」",
-            "button": "+",
-            "note": ""
-          }
-        }
-      ]
+      "findings": []
     },
     {
       "name": "growth-comprehensive-assessment",
@@ -3743,9 +3689,9 @@
     "wired": 26,
     "sure": 0,
     "likely": 35,
-    "review": 17,
+    "review": 15,
     "falsePositives": 1,
-    "decided": 84,
+    "decided": 82,
     "contractTeacherOps": 92,
     "contractUnused": 43
   }
