@@ -365,23 +365,9 @@
       "updated_at": "2026-09-08"
     },
     {
-      "key": "growth-book-edit:L1:方法 onPageTap()",
-      "status": "接",
-      "reason": "→ #6",
-      "author": "Lin",
-      "updated_at": "2026-09-08"
-    },
-    {
       "key": "growth-book-edit:L6:screens.tsv writes=yes",
       "status": "接",
       "reason": "这里应该要有数据才对，但你具体说的是什么我不清楚；→ #27",
-      "author": "Lin",
-      "updated_at": "2026-09-08"
-    },
-    {
-      "key": "growth-book-sample:L1:方法 onPageTap()",
-      "status": "接",
-      "reason": "你说的是不是翻页这个功能，是的话就是要翻页；→ #6",
       "author": "Lin",
       "updated_at": "2026-09-08"
     },
@@ -410,13 +396,6 @@
       "key": "growth-book-time-manage:L6:screens.tsv writes=yes",
       "status": "接",
       "reason": "主题应该本来就有了，教师在发布的时候就会给每个在园时光提供主题了。；→ #27",
-      "author": "Lin",
-      "updated_at": "2026-09-08"
-    },
-    {
-      "key": "growth-book-view:L1:方法 onPageTap()",
-      "status": "接",
-      "reason": "→ #6",
       "author": "Lin",
       "updated_at": "2026-09-08"
     },

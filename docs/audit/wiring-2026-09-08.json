@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-08T15:12:47.771Z",
-  "contract": "D:\\hualong-backend\\api\\openapi.yaml",
+  "generatedAt": "2026-09-08T17:14:05.372Z",
+  "contract": "G:\\My Drive\\Workplace\\China KG Platform\\hualong-backend\\api\\openapi.yaml",
   "pages": [
     {
       "name": "home",
@@ -2262,7 +2262,7 @@
         "role": "本学期编册：勾选栏目、进四个管理页",
         "flow": "教师操作（compilation e1 可改 → e2 锁定）"
       },
-      "events": 6,
+      "events": 7,
       "prototype": {
         "buttons": 1,
         "listeners": 2,
@@ -2294,32 +2294,6 @@
             "button": "",
             "note": ""
           }
-        },
-        {
-          "key": "growth-book-edit:L1:方法 onPageTap()",
-          "level": "review",
-          "layer": "L1",
-          "line": 0,
-          "what": "方法 onPageTap()",
-          "detail": "Page 里定义了 on* 方法，WXML 没有任何元素绑到它（可能是删元素时留下的）",
-          "verdict": {
-            "key": "growth-book-edit:L1:方法 onPageTap()",
-            "status": "接",
-            "reason": "→ #6",
-            "author": "Lin",
-            "updated_at": "2026-09-08"
-          },
-          "falsePositive": false,
-          "context": {
-            "page": "growth-book-edit",
-            "title": "2026 春季学期编册",
-            "path": "底部导航「家园社共育」 → 儿童成长档案 → 成长册 → 2026 春季学期编册",
-            "module": "成长册",
-            "role": "本学期编册：勾选栏目、进四个管理页",
-            "flow": "教师操作（compilation e1 可改 → e2 锁定）",
-            "button": "",
-            "note": ""
-          }
         }
       ]
     },
@@ -2335,40 +2309,13 @@
         "role": "成长册样本册",
         "flow": "只读示例"
       },
-      "events": 4,
+      "events": 5,
       "prototype": {
         "buttons": 1,
         "listeners": 1,
         "links": 1
       },
-      "findings": [
-        {
-          "key": "growth-book-sample:L1:方法 onPageTap()",
-          "level": "review",
-          "layer": "L1",
-          "line": 0,
-          "what": "方法 onPageTap()",
-          "detail": "Page 里定义了 on* 方法，WXML 没有任何元素绑到它（可能是删元素时留下的）",
-          "verdict": {
-            "key": "growth-book-sample:L1:方法 onPageTap()",
-            "status": "接",
-            "reason": "你说的是不是翻页这个功能，是的话就是要翻页；→ #6",
-            "author": "Lin",
-            "updated_at": "2026-09-08"
-          },
-          "falsePositive": false,
-          "context": {
-            "page": "growth-book-sample",
-            "title": "成长册样本",
-            "path": "底部导航「家园社共育」 → 儿童成长档案 → 成长册 → 成长册样本",
-            "module": "成长册",
-            "role": "成长册样本册",
-            "flow": "只读示例",
-            "button": "",
-            "note": ""
-          }
-        }
-      ]
+      "findings": []
     },
     {
       "name": "growth-book-view",
@@ -2382,7 +2329,7 @@
         "role": "整册预览（与家长看到的同一 composer）",
         "flow": "教师预览；定稿后家长看同一份"
       },
-      "events": 2,
+      "events": 3,
       "prototype": {
         "buttons": 0,
         "listeners": 0,
@@ -2400,32 +2347,6 @@
             "key": "growth-book-view:L6:screens.tsv writes=yes",
             "status": "接",
             "reason": "→ #27",
-            "author": "Lin",
-            "updated_at": "2026-09-08"
-          },
-          "falsePositive": false,
-          "context": {
-            "page": "growth-book-view",
-            "title": "成长册预览",
-            "path": "（从五个底部导航都走不到——只能由别处深链进来，或尚未挂入口）",
-            "module": "成长册",
-            "role": "整册预览（与家长看到的同一 composer）",
-            "flow": "教师预览；定稿后家长看同一份",
-            "button": "",
-            "note": ""
-          }
-        },
-        {
-          "key": "growth-book-view:L1:方法 onPageTap()",
-          "level": "review",
-          "layer": "L1",
-          "line": 0,
-          "what": "方法 onPageTap()",
-          "detail": "Page 里定义了 on* 方法，WXML 没有任何元素绑到它（可能是删元素时留下的）",
-          "verdict": {
-            "key": "growth-book-view:L1:方法 onPageTap()",
-            "status": "接",
-            "reason": "→ #6",
             "author": "Lin",
             "updated_at": "2026-09-08"
           },
@@ -2621,7 +2542,7 @@
       "verdict": {
         "key": "contract:POST /library/resources/{resource_id}/withdrawal",
         "status": "不建",
-        "reason": "教师端无撤回按钮（审核两道关在 PC 端）；契约去留与「撤回 vs 删除」词义在 #14 讨论；→ #14",
+        "reason": "F27 已定：教师端无作者撤回；端点删除 → #32",
         "author": "Lin",
         "updated_at": "2026-09-08"
       },
@@ -2685,7 +2606,7 @@
       "verdict": {
         "key": "contract:POST /library/cases/{case_id}/withdrawal",
         "status": "不建",
-        "reason": "教师端无撤回按钮（审核两道关在 PC 端）；契约去留与「撤回 vs 删除」词义在 #14 讨论；→ #14",
+        "reason": "F27 已定：教师端无作者撤回；端点删除 → #32",
         "author": "Lin",
         "updated_at": "2026-09-08"
       },
@@ -3822,9 +3743,9 @@
     "wired": 26,
     "sure": 0,
     "likely": 35,
-    "review": 20,
+    "review": 17,
     "falsePositives": 1,
-    "decided": 87,
+    "decided": 84,
     "contractTeacherOps": 92,
     "contractUnused": 43
   }
