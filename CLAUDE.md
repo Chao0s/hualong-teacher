@@ -136,20 +136,25 @@ node db/tools/check-all.mjs
 
 ## 3. 现状
 
-`miniprogram/` 共 **55 页**，**26 页已接 API**，**29 页仍是写死的字面量**。
+`miniprogram/` 共 **55 页**，**30 页已接 API**，**25 页仍是写死的字面量**。
+
+这三个数**每次接一页就变**，权威是 `npm run scan:wiring` 第一行的「页面 55（已接 30）」，
+不是本节（2026-09-09 实测）。
 
 判断某一页属于哪一类：看 `index.js` 里有没有 `require('../../services/`。
 在开发者工具里看 Network 面板有没有 `/api/v1/...` 请求，是同一件事的另一种查法。
 
 | 已接 | 页 |
 |---|---|
+| 首页 | `home` |
+| 待办任务 | `teacher-tasks`、`teacher-task-detail` |
 | 资源与案例库 | `resource-library`、`resource-detail`、`case-library`、`case-detail`、`upload-resource` |
 | 党建 | `school-affairs`、`party-study-list/detail`、`party-activity-list/detail`、`party-brand-list/detail` |
 | 在园时光 | `home-school-moments`、`home-school-moment-feed`、`home-school-moment-publish` |
 | 亲子任务 | `parent-tasks`、`parent-task-detail`、`parent-task-publish` |
 | 社区与评价 | `community-coeducation`、`parent-evaluation-detail`、`teacher-monthly-evaluation`、`teacher-monthly-form` |
 | 家长评价开窗 | `parent-evaluation-publish` |
-| 教研培训 | `training-list`、`training-detail`、`my-training` |
+| 教研培训 | `training-list`、`training-detail`、`my-training`、`teacher-profile` |
 
 ### 提到页面就写它在屏幕上叫什么、怎么走到
 
@@ -166,11 +171,15 @@ node db/tools/check-all.mjs
 中文标题的权威是各页 `index.json` 的 `navigationBarTitleText`，**不要自己译目录名**。
 
 底部导航五项（`components/hl-tabbar`）：**首页 / 党建管理 / 综合协调 / 教研培训 / 家园社共育**。
-所有路径都从这五个之一起步。已接 API 那 22 页的走法：
+所有路径都从这五个之一起步。**已接 API 的 30 页**，加上路径上必经、
+**本身还没接 API 的 4 个中转页**（`home-school`、`growth-record`、`teacher-evaluation`、
+`training-center`，逐个在表里标了），走法如下：
 
 | 目录名 | 屏幕上叫 | 怎么走到 |
 |---|---|---|
 | `home` | 首页 | 底部导航「首页」 |
+| `teacher-tasks` | 待办任务 | 首页 → 待办任务 |
+| `teacher-task-detail` | 任务详情 | 待办任务 → 点某条任务 |
 | `school-affairs` | 党建管理部 | 底部导航「党建管理」 |
 | `party-study-list` / `-detail` | 党建学习 / 文件预览 | 党建管理 → 党建学习 → 点条目 |
 | `party-activity-list` / `-detail` | 党建活动 / 活动介绍 | 党建管理 → 党建活动 → 点条目 |
@@ -178,7 +187,7 @@ node db/tools/check-all.mjs
 | `resource-library` / `resource-detail` | 资源库 / 资源详情 | 教研培训 → 课程资源 → 资源库 |
 | `case-library` / `case-detail` | 案例库 / 案例详情 | 教研培训 → 课程资源 → 案例库 |
 | `upload-resource` | 上传资料 | 首页 → 上传资源 |
-| `home-school` | 家园社共育 | 底部导航「家园社共育」 |
+| `home-school` | 家园社共育 | 底部导航「家园社共育」（**这一页本身还没接 API**，只是路径上的一站） |
 | `home-school-moments` | 在园时光 | 家园社共育 → 在园时光 |
 | `home-school-moment-feed` | 全部活动 | 在园时光 → 全部活动 |
 | `home-school-moment-publish` | 发布活动 | 在园时光 → 发布活动 |
@@ -186,9 +195,9 @@ node db/tools/check-all.mjs
 | `parent-task-detail` | 任务详情 | 亲子任务 → 点某条已发布的任务 |
 | `parent-task-publish` | 发布新任务 | 亲子任务 → 发布新任务（点草稿进来是改草稿） |
 | `community-coeducation` | 社区共育 | 家园社共育 → 社区共育 |
-| `growth-record` | 儿童成长档案 | 家园社共育 → 成长档案 |
+| `growth-record` | 儿童成长档案 | 家园社共育 → 成长档案（**这一页本身还没接 API**，只是路径上的一站） |
 | `parent-evaluation-detail` | 测评进度 | 发布家长测评 → 点某一期 |
-| `teacher-evaluation` | 教师评价 | 成长档案 → 教师评价 |
+| `teacher-evaluation` | 教师评价 | 成长档案 → 教师评价（**这一页本身还没接 API**，只是路径上的一站） |
 | `teacher-monthly-evaluation` | 教师月度评价 | 教师评价 → 月度评价 |
 | `teacher-monthly-form` | 填写月度评价 | 教师月度评价 → 点任一圆点；也可从首页「本月评价」直达 |
 | `parent-evaluation-publish` | 发布家长测评 | 成长档案 → 发布家长评价 |
@@ -196,6 +205,7 @@ node db/tools/check-all.mjs
 | `training-list` | 教研培训 | 教研培训部 → 教研培训 |
 | `training-detail` | 研修详情 | 教研培训 → 点某一场研修 |
 | `my-training` | 我的研修 | 教研培训 → 我的研修（「我的档案」那一格） |
+| `teacher-profile` | 个人档案 | 教研培训 → 个人档案（「我的档案」那一格） |
 
 **两个「任务详情」重名**：`parent-task-detail`（亲子任务的，家园社共育那条线）与
 `teacher-task-detail`（待办任务的，首页那条线）标题逐字相同。提到时必须写目录名。
@@ -306,7 +316,7 @@ node server/server.mjs          # → http://localhost:3860/api/v1
 受影响的只有在这台机器上跑的命令。
 
 判断读到的是哪一份：`node tools/spec-inventory.mjs` 第一行会打印契约文件的绝对路径，
-计数应为 **128 paths / 153 operations / 139 schemas**（2026-09-09 实测）。对不上
+计数应为 **131 paths / 156 operations / 140 schemas**（2026-09-09 实测，本轮补 `GET /tasks` 之后）。对不上
 就是读错了文件。**这三个数每次契约一动就变，写下来的当天就开始过期** —— 它只用来
 认「读到的是哪一份」，不要拿它当契约的规模指标。
 

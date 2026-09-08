@@ -1,33 +1,31 @@
 <!-- 待办任务 —— 对照原型 screens/teacher-tasks.html。
-     「当前任务」和「历史任务」两段结构相同，合成一份数据循环。 -->
+     原型的分组（当前／历史）、卡片摘要与脚上三枚标签都删掉了，
+     理由逐条写在 index.js 的头注里。徽章取自己那一行的 assign_status（F28）。 -->
 <view class="page">
 
-  <block wx:for="{{groups}}" wx:key="title" wx:for-item="group">
-    <view class="sec">
-      <text class="sec__title">{{group.title}}</text>
-      <text class="sec__hint">{{group.tasks.length}}项</text>
-    </view>
-    <view class="task-list">
-      <view
-        class="task-card"
-        hover-class="task-card--hover"
-        hover-stay-time="80"
-        wx:for="{{group.tasks}}"
-        wx:key="id"
-        data-id="{{item.id}}"
-        bindtap="onTaskTap"
-      >
-        <view class="top">
-          <text class="title">{{item.title}}</text>
-          <text class="status status--{{item.state}}">{{item.stateText}}</text>
-        </view>
-        <text class="meta">{{item.meta}}</text>
-        <text class="summary">{{item.summary}}</text>
-        <view class="foot">
-          <text class="pill" wx:for="{{item.pills}}" wx:key="*this" wx:for-item="pill">{{pill}}</text>
-        </view>
+  <view class="sec">待办任务</view>
+
+  <view class="hint" wx:if="{{loading}}">正在加载…</view>
+  <view class="hint" wx:elif="{{error}}" bindtap="onRetry">{{error}}　点此重试</view>
+
+  <block wx:elif="{{tasks.length}}">
+    <view
+      class="card"
+      hover-class="card--hover"
+      hover-stay-time="80"
+      wx:for="{{tasks}}"
+      wx:key="id"
+      data-id="{{item.id}}"
+      bindtap="onCardTap"
+    >
+      <view class="top">
+        <text class="title">{{item.title}}</text>
+        <text class="badge badge--{{item.tone}}">{{item.statusLabel}}</text>
       </view>
+      <text class="meta">截止 {{item.dueLabel}}</text>
     </view>
   </block>
+
+  <view class="hint" wx:else>你名下没有待办任务。</view>
 
 </view>

@@ -5,36 +5,20 @@
 }
 
 .sec {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin: 36rpx 0 20rpx;
-}
-
-.sec__title {
+  margin: 24rpx 0 20rpx;
   font-size: 32rpx;
-  font-weight: 700;
+  font-weight: 800;
 }
 
-.sec__hint {
-  font-size: 24rpx;
-  font-weight: 600;
-  color: var(--muted);
-}
-
-.task-list {
-  display: grid;
-  gap: 20rpx;
-}
-
-.task-card {
+.card {
   padding: 28rpx;
+  margin-bottom: 20rpx;
   border: 1rpx solid var(--border);
   border-radius: 32rpx;
   background: var(--surface);
 }
 
-.task-card--hover {
+.card--hover {
   background: #f8fbfb;
 }
 
@@ -47,11 +31,11 @@
 
 .title {
   font-size: 30rpx;
-  font-weight: 700;
+  font-weight: 800;
   line-height: 1.35;
 }
 
-.status {
+.badge {
   flex: 0 0 auto;
   padding: 8rpx 16rpx;
   border-radius: 999rpx;
@@ -60,36 +44,22 @@
   white-space: nowrap;
 }
 
-.status--wait { color: #a15d00; background: var(--amber-light); }
-.status--doing { color: #226ac7; background: var(--blue-light); }
-.status--done { color: var(--green); background: var(--green-light); }
+.badge--wait { background: var(--amber-light); color: #9d6500; }
+.badge--doing { background: var(--blue-light); color: var(--blue); }
+.badge--done { background: var(--green-light); color: var(--green); }
 
 .meta {
   display: block;
-  margin-top: 14rpx;
+  margin-top: 12rpx;
   font-size: 24rpx;
   line-height: 1.5;
   color: var(--muted);
 }
 
-.summary {
-  display: block;
-  margin-top: 16rpx;
-  font-size: 24rpx;
-  line-height: 1.55;
-}
-
-.foot {
-  display: flex;
-  gap: 12rpx;
-  flex-wrap: wrap;
-  margin-top: 20rpx;
-}
-
-.pill {
-  padding: 8rpx 14rpx;
-  border: 1rpx solid var(--border);
-  border-radius: 999rpx;
-  font-size: 20rpx;
+/* 加载中、取数失败、一条都没有，三种情况共用 */
+.hint {
+  padding: 32rpx;
   color: var(--muted);
+  text-align: center;
+  font-size: 26rpx;
 }

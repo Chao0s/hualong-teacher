@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-09-08T21:50:28.715Z",
+  "generatedAt": "2026-09-08T23:30:33.480Z",
   "contract": "G:\\My Drive\\Workplace\\China KG Platform\\hualong-backend\\api\\openapi.yaml",
   "pages": [
     {
       "name": "home",
       "title": "首页",
-      "wired": false,
+      "wired": true,
       "writes": "no",
       "context": {
         "title": "首页",
@@ -45,16 +45,16 @@
     {
       "name": "teacher-tasks",
       "title": "待办任务",
-      "wired": false,
+      "wired": true,
       "writes": "no",
       "context": {
         "title": "待办任务",
-        "path": "底部导航「首页」 → 待办任务",
+        "path": "首页 → 待办任务",
         "module": "共建任务",
         "role": "派给本人的待办任务列表：当前与历史",
         "flow": "管理端建任务并分派（db_task_assign）→ 教师接受、完成 → 管理端看执行状态。整条线阻于 G62（db_task 状态机与投影不一致）"
       },
-      "events": 1,
+      "events": 2,
       "prototype": {
         "buttons": 0,
         "listeners": 0,
@@ -65,121 +65,22 @@
     {
       "name": "teacher-task-detail",
       "title": "任务详情",
-      "wired": false,
+      "wired": true,
       "writes": "yes",
       "context": {
         "title": "任务详情",
-        "path": "底部导航「首页」 → 待办任务 → 任务详情",
+        "path": "待办任务 → 点某条任务",
         "module": "共建任务",
         "role": "一条待办任务的详情：接受、完成、提交材料、附件",
         "flow": "管理端派 → 教师接受（a1→a2）、完成（a2→a3）→ 管理端看结果。「提交材料」的分工与附件上传端点权威里未定（G40）"
       },
-      "events": 4,
+      "events": 5,
       "prototype": {
         "buttons": 5,
         "listeners": 2,
         "links": 0
       },
-      "findings": [
-        {
-          "key": "teacher-task-detail:L1:<text class=\"file-op\"> bindtap=\"onToast\"「预览」",
-          "level": "likely",
-          "layer": "L1",
-          "line": 53,
-          "what": "<text class=\"file-op\"> bindtap=\"onToast\"「预览」",
-          "detail": "handler 无 setData、无导航、无 service 调用，只弹提示或为空",
-          "verdict": {
-            "key": "teacher-task-detail:L1:<text class=\"file-op\"> bindtap=\"onToast\"「预览」",
-            "status": "接",
-            "reason": "→ #3",
-            "author": "Lin",
-            "updated_at": "2026-09-08"
-          },
-          "falsePositive": false,
-          "context": {
-            "page": "teacher-task-detail",
-            "title": "任务详情",
-            "path": "底部导航「首页」 → 待办任务 → 任务详情",
-            "module": "共建任务",
-            "role": "一条待办任务的详情：接受、完成、提交材料、附件",
-            "flow": "管理端派 → 教师接受（a1→a2）、完成（a2→a3）→ 管理端看结果。「提交材料」的分工与附件上传端点权威里未定（G40）",
-            "button": "预览",
-            "note": "「预览」「下载」是任务附件；「提交材料」与「完成」的分工、附件上传端点在权威里都没定（G40 notes）。整页阻于 G62。"
-          }
-        },
-        {
-          "key": "teacher-task-detail:L1:<text class=\"file-op\"> bindtap=\"onToast\"「下载」",
-          "level": "likely",
-          "layer": "L1",
-          "line": 54,
-          "what": "<text class=\"file-op\"> bindtap=\"onToast\"「下载」",
-          "detail": "handler 无 setData、无导航、无 service 调用，只弹提示或为空",
-          "verdict": null,
-          "falsePositive": null,
-          "context": {
-            "page": "teacher-task-detail",
-            "title": "任务详情",
-            "path": "底部导航「首页」 → 待办任务 → 任务详情",
-            "module": "共建任务",
-            "role": "一条待办任务的详情：接受、完成、提交材料、附件",
-            "flow": "管理端派 → 教师接受（a1→a2）、完成（a2→a3）→ 管理端看结果。「提交材料」的分工与附件上传端点权威里未定（G40）",
-            "button": "下载",
-            "note": "「预览」「下载」是任务附件；「提交材料」与「完成」的分工、附件上传端点在权威里都没定（G40 notes）。整页阻于 G62。"
-          }
-        },
-        {
-          "key": "teacher-task-detail:L1:<view class=\"primary\"> bindtap=\"onToast\"「提交材料」",
-          "level": "likely",
-          "layer": "L1",
-          "line": 81,
-          "what": "<view class=\"primary\"> bindtap=\"onToast\"「提交材料」",
-          "detail": "handler 无 setData、无导航、无 service 调用，只弹提示或为空",
-          "verdict": {
-            "key": "teacher-task-detail:L1:<view class=\"primary\"> bindtap=\"onToast\"「提交材料」",
-            "status": "接",
-            "reason": "→ #18",
-            "author": "Lin",
-            "updated_at": "2026-09-08"
-          },
-          "falsePositive": false,
-          "context": {
-            "page": "teacher-task-detail",
-            "title": "任务详情",
-            "path": "底部导航「首页」 → 待办任务 → 任务详情",
-            "module": "共建任务",
-            "role": "一条待办任务的详情：接受、完成、提交材料、附件",
-            "flow": "管理端派 → 教师接受（a1→a2）、完成（a2→a3）→ 管理端看结果。「提交材料」的分工与附件上传端点权威里未定（G40）",
-            "button": "提交材料",
-            "note": "「预览」「下载」是任务附件；「提交材料」与「完成」的分工、附件上传端点在权威里都没定（G40 notes）。整页阻于 G62。"
-          }
-        },
-        {
-          "key": "teacher-task-detail:L6:screens.tsv writes=yes",
-          "level": "likely",
-          "layer": "L6",
-          "line": 0,
-          "what": "screens.tsv writes=yes",
-          "detail": "登记为有写入的页面，却没有 require 任何 service（整页仍是字面量）",
-          "verdict": {
-            "key": "teacher-task-detail:L6:screens.tsv writes=yes",
-            "status": "接",
-            "reason": "审核人对 screens.tsv 的理解见 #24；→ #24",
-            "author": "Lin",
-            "updated_at": "2026-09-08"
-          },
-          "falsePositive": false,
-          "context": {
-            "page": "teacher-task-detail",
-            "title": "任务详情",
-            "path": "底部导航「首页」 → 待办任务 → 任务详情",
-            "module": "共建任务",
-            "role": "一条待办任务的详情：接受、完成、提交材料、附件",
-            "flow": "管理端派 → 教师接受（a1→a2）、完成（a2→a3）→ 管理端看结果。「提交材料」的分工与附件上传端点权威里未定（G40）",
-            "button": "",
-            "note": ""
-          }
-        }
-      ]
+      "findings": []
     },
     {
       "name": "assessment-tool",
@@ -630,7 +531,7 @@
       "writes": "yes",
       "context": {
         "title": "个人档案",
-        "path": "底部导航「首页」 → 教研培训 → 个人档案",
+        "path": "教研培训 → 个人档案（「我的档案」那一格）",
         "module": "用户管理",
         "role": "本人专业档案与证书",
         "flow": "教师看自己的；修改走申请（POST /teacher-profile/changes，NONE→s2）→ 管理端 t3 队列审批（s3 通过／s4 驳回）→ 才落正本"
@@ -654,7 +555,7 @@
           "context": {
             "page": "teacher-profile",
             "title": "个人档案",
-            "path": "底部导航「首页」 → 教研培训 → 个人档案",
+            "path": "教研培训 → 个人档案（「我的档案」那一格）",
             "module": "用户管理",
             "role": "本人专业档案与证书",
             "flow": "教师看自己的；修改走申请（POST /teacher-profile/changes，NONE→s2）→ 管理端 t3 队列审批（s3 通过／s4 驳回）→ 才落正本",
@@ -954,7 +855,7 @@
       "writes": "no",
       "context": {
         "title": "家园社共育",
-        "path": "底部导航「家园社共育」",
+        "path": "底部导航「家园社共育」（这一页本身还没接 API，只是路径上的一站）",
         "module": "家园社共育",
         "role": "家园社共育入口",
         "flow": "聚合入口，无写入"
@@ -1094,7 +995,7 @@
       "writes": "no",
       "context": {
         "title": "儿童成长档案",
-        "path": "家园社共育 → 成长档案",
+        "path": "家园社共育 → 成长档案（这一页本身还没接 API，只是路径上的一站）",
         "module": "成长档案",
         "role": "全班成长档案齐备度总览",
         "flow": "只读派生：月评、学期评、综合评估齐不齐"
@@ -1114,7 +1015,7 @@
       "writes": "no",
       "context": {
         "title": "教师评价",
-        "path": "成长档案 → 教师评价",
+        "path": "成长档案 → 教师评价（这一页本身还没接 API，只是路径上的一站）",
         "module": "教师评价",
         "role": "教师评价入口：月度、学期、综合、寄语",
         "flow": "聚合入口"
@@ -2105,6 +2006,15 @@
       "unusedExports": [
         "listChanges"
       ]
+    },
+    {
+      "file": "/miniprogram/services/task.js",
+      "calls": 5,
+      "findings": [],
+      "unusedExports": [
+        "allowedActions",
+        "closedReason"
+      ]
     }
   ],
   "contractUnused": [
@@ -2791,96 +2701,6 @@
       }
     },
     {
-      "key": "contract:GET /tasks/{task_id}",
-      "method": "GET",
-      "path": "/tasks/{task_id}",
-      "tags": "task",
-      "action": "",
-      "blockedOn": "",
-      "summary": "任务详情（含本人的 assign 行）",
-      "verdict": {
-        "key": "contract:GET /tasks/{task_id}",
-        "status": "接",
-        "reason": "→ #18",
-        "author": "Lin",
-        "updated_at": "2026-09-08"
-      },
-      "falsePositive": false,
-      "context": {
-        "description": "`assign` 是**调用者本人**那一行 —— `teacher_id` derived，不回同事的执行状态。 `db_task_assign` 上 `UNIQUE(task_id, teacher_id)`，所以本人那一行唯一。",
-        "registry": null,
-        "page": "teacher-task-detail",
-        "pageTitle": "任务详情",
-        "path": "底部导航「首页」 → 待办任务 → 任务详情",
-        "button": "进页即读",
-        "who": "教师读一条任务与自己那行执行状态。阻于 G62"
-      }
-    },
-    {
-      "key": "contract:POST /tasks/{task_id}/acceptance",
-      "method": "POST",
-      "path": "/tasks/{task_id}/acceptance",
-      "tags": "task",
-      "action": "task_assign.accept",
-      "blockedOn": "",
-      "summary": "接受任务（db_task_assign a1 → a2），写 accepted_at",
-      "verdict": {
-        "key": "contract:POST /tasks/{task_id}/acceptance",
-        "status": "接",
-        "reason": "→ #18",
-        "author": "Lin",
-        "updated_at": "2026-09-08"
-      },
-      "falsePositive": false,
-      "context": {
-        "description": "`GAPS.md` G40 举证的三个按钮之一（`teacher-task-detail.html` 的「接受」）。 目标是**本人的 assign 行**，不是 `db_task`：`WHERE task_id=$1 AND teacher_id=$ctx_teacher AND assign_status='a1' RETURNING`（§7.3 内联，零行即 404／409）。 `accepted_at` 是服务器设值，客户端提交被忽略（§1.2／§7.3）—— 本端点无请求体。",
-        "registry": {
-          "table": "db_task_assign",
-          "from": "a1",
-          "to": "a2",
-          "precondition": "self_assignment;task_status_in_t1_t2",
-          "authority": "G40;01-home-spec"
-        },
-        "page": "teacher-task-detail",
-        "pageTitle": "任务详情",
-        "path": "底部导航「首页」 → 待办任务 → 任务详情",
-        "button": "接受",
-        "who": "教师接受任务（a1→a2）→ 管理端看到进行中。阻于 G62"
-      }
-    },
-    {
-      "key": "contract:POST /tasks/{task_id}/completion",
-      "method": "POST",
-      "path": "/tasks/{task_id}/completion",
-      "tags": "task",
-      "action": "task_assign.complete",
-      "blockedOn": "",
-      "summary": "完成任务（db_task_assign a2 → a3），写 completed_at 与可选 feedback",
-      "verdict": {
-        "key": "contract:POST /tasks/{task_id}/completion",
-        "status": "接",
-        "reason": "預設應該是 completion 是 0 吧，然後完成任務的話，completion 是 1？；→ #18",
-        "author": "Lin",
-        "updated_at": "2026-09-08"
-      },
-      "falsePositive": false,
-      "context": {
-        "description": "G40 举证的第二个按钮（「完成」）。`a1` 未接受直接完成回 `409 state_precondition_failed`（转移图上没有 a1 → a3 这条边）。 ⚠ **`feedback` 放在这里是本轮的判断，不是既有决策**：原型另有一个「提交材料」按钮 （G40 引的 `data-action=\"已进入材料提交\"`），它与「完成」的分工、以及任务附件 （`db_file_ref owner_object='db_task_assign'`）的上传端点在任何一份权威里都没有定。 见 notes.md 阻断 2。",
-        "registry": {
-          "table": "db_task_assign",
-          "from": "a2",
-          "to": "a3",
-          "precondition": "self_assignment",
-          "authority": "G40;01-home-spec"
-        },
-        "page": "teacher-task-detail",
-        "pageTitle": "任务详情",
-        "path": "底部导航「首页」 → 待办任务 → 任务详情",
-        "button": "完成",
-        "who": "教师完成任务（a2→a3），可附一段反馈 → 管理端看到已完成。「提交材料」与它的分工未定（G40）。阻于 G62"
-      }
-    },
-    {
       "key": "contract:GET /term-evaluations",
       "method": "GET",
       "path": "/term-evaluations",
@@ -3147,7 +2967,7 @@
         "registry": null,
         "page": "growth-record",
         "pageTitle": "儿童成长档案",
-        "path": "家园社共育 → 成长档案",
+        "path": "家园社共育 → 成长档案（这一页本身还没接 API，只是路径上的一站）",
         "button": "进页即读",
         "who": "教师看全班成长档案齐备度。四个状态列都是派生的，没有客户端动作"
       }
@@ -3173,7 +2993,7 @@
         "registry": null,
         "page": "growth-record",
         "pageTitle": "儿童成长档案",
-        "path": "家园社共育 → 成长档案",
+        "path": "家园社共育 → 成长档案（这一页本身还没接 API，只是路径上的一站）",
         "button": "点某名幼儿",
         "who": "单名幼儿的齐备度明细"
       }
@@ -3265,13 +3085,13 @@
   ],
   "summary": {
     "pages": 55,
-    "wired": 27,
+    "wired": 30,
     "sure": 0,
-    "likely": 22,
+    "likely": 18,
     "review": 5,
     "falsePositives": 10,
-    "decided": 68,
-    "contractTeacherOps": 92,
-    "contractUnused": 40
+    "decided": 62,
+    "contractTeacherOps": 93,
+    "contractUnused": 37
   }
 }
