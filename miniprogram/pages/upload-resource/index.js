@@ -285,7 +285,9 @@ Page({
         });
 
       const id = target === 'resource' ? created.resource_id : created.case_id;
-      if (alsoSubmitForReview) await library.submitForReview(target, id);
+      if (alsoSubmitForReview) {
+        await (target === 'resource' ? library.submitResource(id) : library.submitCase(id));
+      }
 
       wx.hideLoading();
       this.setData({ submitting: false });
