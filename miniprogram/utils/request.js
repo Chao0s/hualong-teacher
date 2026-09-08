@@ -26,16 +26,28 @@ const session = require('./session');
 // §1.1: JSON in, JSON out. There is no second content type on the API instance.
 const CONTENT_TYPE = 'application/json; charset=utf-8';
 
-// Actions that must carry Idempotency-Key. api/action-registry.tsv's
-// `idempotency` column is the authority; this is the subset §4.1 names outright.
-// Keyed by the action_key from the registry so the two can be diffed by eye.
+// 必带 Idempotency-Key 的动作。
+//
+// **权威只有一处：`api/action-registry.tsv` 的 `idempotency` 列**（契约 §1.5.5 已
+// 裁定；§4.1 的散文清单降为「一份快照，不是清单」，两者相反两处，见后端 G87）。
+// 这里的键必须逐字等于登记表的 `action_key`，两份才对得上。
+//
+// 2026-09-09 修：原先这六个键在登记表里**一个都不存在**
+// （school_book.setting.publish_first、book.teacher_message.submit_class、
+// book.finalize、book_section.remind_parents、org.child.transfer_class、
+// content_check.submit_all）—— 那是一套早于登记表的旧命名。也就是说这套自动补
+// 幂等键的机制**一次也没触发过**，而它报绿：`opts.action` 查不到就静默不补。
+// 这与 §7.6 那条教训同型 —— 查表查不到不等于「不需要」。
+//
+// 下面四条是登记表里角色为 teacher 且 `idempotency=required` 的全部动作
+// （实测 `awk -F'\t' 'NR>1 && $15=="required" && $2=="teacher"' api/action-registry.tsv`）。
+// 三条在成长册那条线上、一条在教师档案，本仓库目前都还没接，所以这张表现在仍然
+// 一次也不会命中 —— 区别在于：接上那几页的时候它是对的。
 const IDEMPOTENT_ACTIONS = new Set([
-  'school_book.setting.publish_first',      // d1 -> d2, rule 78
-  'book.teacher_message.submit_class',      // rule 82
-  'book.finalize',                          // b1 -> b2 with n5, rule 89
-  'book_section.remind_parents',            // creates n4, rule 99
-  'org.child.transfer_class',               // n5 fan-out, rule 58
-  'content_check.submit_all',               // rule 33 (parent surface)
+  'teacher_profile_change.submit',  // POST /teacher-profile/changes
+  'compilation.lock',               // POST /teacher/growth-book/compilation/{id}/lock，单向
+  'section.remind',                 // POST /teacher/growth-book/sections/{id}/reminders，建 n4 通知
+  'book.publish',                   // POST /teacher/growth-book/books/{id}/publication
 ]);
 
 let requestSeq = 0;
