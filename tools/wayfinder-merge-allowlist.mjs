@@ -21,6 +21,8 @@ const N = (id) => `#${nums[id]}`;
 
 /** key 的片段 → 票 id。第一个命中的算。 */
 const ROUTE = [
+  // submitForReview／downloadLink 已随 #10 拆成四个明确函数，这两个名字不再出现在
+  // 扫描结果里。正则留着只为了复现 c1／c2 那两份原始答复的路由，命中不了任何新 key。
   [/submitForReview|downloadLink/, 'L3-lib'],
   // withdrawal 不进路由：F27 已经把它定完了，OVERRIDE 里的结论自带 #32，再追一次 → #14 就是往回指。
   [/PATCH \/library/, 'L4-myuploads'],

@@ -41,6 +41,20 @@
       </view>
       <text class="link-card__arrow">→</text>
     </view>
+
+    <!-- Word 详案。数据源是 db_resource.word_file_id，没有那一列就整块不渲染。
+         原型这一页没有这个按钮，但契约有 POST …/download-link，那一列也有值 ——
+         权威顺序里原型排最后（CLAUDE.md §8）。前置是 s3：自己的 s1／s2／s4 点下去
+         会拿到 404，那是范围判定，不是坏了。 -->
+    <view class="detail-actions" wx:if="{{hasPlan}}">
+      <view class="btn-dl" hover-class="btn-dl--hover" hover-stay-time="80" bindtap="onDownloadPlan">
+        <view class="btn-dl__body">
+          <text class="btn-dl__title">下载Word详案</text>
+          <text class="btn-dl__note">查看完整资源解读、获取方式与转化建议</text>
+        </view>
+        <text class="btn-dl__arrow">↓</text>
+      </view>
+    </view>
   </view>
 
 </view>

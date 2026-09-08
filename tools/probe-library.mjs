@@ -93,24 +93,62 @@ async function main() {
     [...fields].every((f) => ['健康', '语言', '社会', '科学', '艺术'].includes(f)),
     `实际：${[...fields].join(',')}`);
 
-  const k3 = await library.listCases({ grade: '大班', limit: 100 });
-  check('按年级「大班」服务端筛选生效',
-    k3.items.every((c) => c.grade === '大班'),
-    `实际：${k3.items.map((c) => c.grade).join(',')}`);
+  // 13 个筛选片逐个钉到库里的行，**计数与 id 集合两头都钉**（CLAUDE.md §7.4／§7.6）。
+  // 只钉「筛出来的每条都是大班」不够 —— 服务端完全忽略这个参数时，回的是全部 9 条，
+  // 而「每条都是大班」在那 9 条里也可能碰巧成立。G84 就是这么漏过去的：原先三条
+  // 活动类型断言写的是「多选合并 == 两次单选的并集」，服务端忽略 case_area 时
+  // a1=9、a2=9、并集=9、合并=9，恒真。
+  //
+  // 权威值（教师 1 的可见范围，9 行）：
+  //   psql -d hualong_test -c "WITH v AS (SELECT * FROM db_case
+  //     WHERE school_id=1 AND (case_status<>'s1' OR created_by=1))
+  //     SELECT 'grade',case_grade,count(*) FROM v GROUP BY 2
+  //     UNION ALL SELECT 'field',case_field,count(*) FROM v GROUP BY 2
+  //     UNION ALL SELECT 'area',a,count(*) FROM v, unnest(case_area) a GROUP BY 2"
+  const CHIPS = [
+    ['grade', '小班', 3, [5, 9, 10]],
+    ['grade', '中班', 2, [2, 7]],
+    ['grade', '大班', 4, [1, 3, 4, 8]],
+    ['field', '健康', 1, [1]],
+    ['field', '语言', 2, [2, 8]],
+    ['field', '社会', 2, [4, 10]],
+    ['field', '科学', 2, [3, 7]],
+    ['field', '艺术', 2, [5, 9]],
+    ['area', '集体教学', 5, [1, 2, 3, 4, 9]],
+    ['area', '区域', 4, [1, 5, 7, 9]],
+    ['area', '主题探究', 3, [2, 5, 8]],
+    ['area', '家园社共育', 3, [3, 7, 10]],
+    ['area', '数字化', 3, [4, 8, 10]],
+  ];
+  for (const [kind, label, n, ids] of CHIPS) {
+    const arg = kind === 'grade' ? { grade: label } : kind === 'field' ? { field: label } : { areas: [label] };
+    const page = await library.listCases({ ...arg, limit: 100 });
+    const got = page.items.map((c) => c.id).sort((a, b) => a - b);
+    const want = [...ids].sort((a, b) => a - b);
+    check(`筛选片「${label}」筛出 ${n} 条，且就是库里那几条`,
+      got.length === n && got.join(',') === want.join(','),
+      `期望 ${want.join(',')}，实际 ${got.join(',')}`);
+  }
 
   // 多选活动类型 -> 并发多发再合并（契约的 case_area 是单值参数）
   const a1 = await library.listCases({ areas: ['集体教学'], limit: 100 });
   const a2 = await library.listCases({ areas: ['区域'], limit: 100 });
   const both = await library.listCases({ areas: ['集体教学', '区域'], limit: 100 });
   const union = new Set([...a1.items, ...a2.items].map((c) => c.id));
-  check('多选合并等于两次单选的并集',
-    both.items.length === union.size,
+  check('多选合并等于两次单选的并集', both.items.length === union.size,
     `合并 ${both.items.length} 条，并集 ${union.size} 条`);
+  // 并集必须严格大于任一单选 —— 否则「合并 == 并集」在服务端忽略参数时是恒真的
+  check('两个活动类型的并集严格大于任一单选（钉住恒真陷阱）',
+    union.size > a1.items.length && union.size > a2.items.length,
+    `a1=${a1.items.length}，a2=${a2.items.length}，并集=${union.size}`);
   check('多选合并结果无重复',
     new Set(both.items.map((c) => c.id)).size === both.items.length,
     '出现了重复的 case_id');
   check('多选合并后不谎报游标', both.nextCursor === null,
     `nextCursor=${both.nextCursor}`);
+  // `case_status` 这一格不在这里测：契约声明了它，服务端也已随 G84 一并实作，但
+  // 教师端案例库没有状态筛选片，`listCases` 因此不收这个参数（§4.3 不加没人要的选项）。
+  // 它的回归测试在服务端那侧，见 db/GAPS.md G84 记的 curl 口径。
 
   const caseDetail = await library.getCase(casePage.items[0].id);
   has(caseDetail, ['id', 'title', 'grade', 'field', 'areas', 'intro', 'trans'], '案例详情');

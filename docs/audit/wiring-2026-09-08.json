@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-08T20:20:51.274Z",
+  "generatedAt": "2026-09-08T20:35:54.657Z",
   "contract": "G:\\My Drive\\Workplace\\China KG Platform\\hualong-backend\\api\\openapi.yaml",
   "pages": [
     {
@@ -392,7 +392,34 @@
         "listeners": 0,
         "links": 0
       },
-      "findings": []
+      "findings": [
+        {
+          "key": "party-brand-detail:L2:<text class=\"chip\">",
+          "level": "likely",
+          "layer": "L2",
+          "line": 27,
+          "what": "<text class=\"chip\">",
+          "detail": "类名像按钮，没有点击事件",
+          "verdict": {
+            "key": "party-brand-detail:L2:<text class=\"chip\">",
+            "status": "误报",
+            "reason": "品牌详情第 27 行的 .chips 里是只读标签；同页第 15 行的 .chip 带 bindtap=\"onRetry\" 是真按钮。同一个类名两用，词表分不开 —— 全仓 15 处 class=\"chip\" 里 9 处是筛选器或重试，删掉这个词那 9 处就没有任何分支兜得住",
+            "author": "Lin",
+            "updated_at": "2026-09-09"
+          },
+          "falsePositive": true,
+          "context": {
+            "page": "party-brand-detail",
+            "title": "图文介绍",
+            "path": "党建管理 → 品牌建设 → 点条目",
+            "module": "党建管理",
+            "role": "一篇品牌建设图文",
+            "flow": "管理端发布 → 教师只读",
+            "button": "",
+            "note": ""
+          }
+        }
+      ]
     },
     {
       "name": "comprehensive-coordination",
@@ -741,7 +768,7 @@
         "role": "一份资源的详情与 Word 详案下载",
         "flow": "作者教师上传、管理端审核通过 → 全园教师阅读、下载（签 30 分钟短链）"
       },
-      "events": 2,
+      "events": 3,
       "prototype": {
         "buttons": 0,
         "listeners": 0,
@@ -777,12 +804,12 @@
           "detail": "screens/case-library.html 有这个按钮，index.wxml 里找不到这段文案",
           "verdict": {
             "key": "case-library:L5:原型按钮「小班」",
-            "status": "接",
-            "reason": "是的，是filter；→ #21",
+            "status": "误报",
+            "reason": "13 个筛选片小程序里全都在，由 wx:for 从 services/library 的枚举表渲染（index.wxml:6-37），文案不在 wxml 字面量里 —— L5 只查文本包含。真缺陷在服务端忽略 case_field 与 case_area（13 片里 10 片点了不筛），已由后端 G84 修毕；→ #21",
             "author": "Lin",
-            "updated_at": "2026-09-08"
+            "updated_at": "2026-09-09"
           },
-          "falsePositive": false,
+          "falsePositive": true,
           "context": {
             "page": "case-library",
             "title": "案例库",
@@ -803,12 +830,12 @@
           "detail": "screens/case-library.html 有这个按钮，index.wxml 里找不到这段文案",
           "verdict": {
             "key": "case-library:L5:原型按钮「中班」",
-            "status": "接",
-            "reason": "是的，是filter；→ #21",
+            "status": "误报",
+            "reason": "13 个筛选片小程序里全都在，由 wx:for 从 services/library 的枚举表渲染（index.wxml:6-37），文案不在 wxml 字面量里 —— L5 只查文本包含。真缺陷在服务端忽略 case_field 与 case_area（13 片里 10 片点了不筛），已由后端 G84 修毕；→ #21",
             "author": "Lin",
-            "updated_at": "2026-09-08"
+            "updated_at": "2026-09-09"
           },
-          "falsePositive": false,
+          "falsePositive": true,
           "context": {
             "page": "case-library",
             "title": "案例库",
@@ -829,12 +856,12 @@
           "detail": "screens/case-library.html 有这个按钮，index.wxml 里找不到这段文案",
           "verdict": {
             "key": "case-library:L5:原型按钮「大班」",
-            "status": "接",
-            "reason": "是的，是filter；→ #21",
+            "status": "误报",
+            "reason": "13 个筛选片小程序里全都在，由 wx:for 从 services/library 的枚举表渲染（index.wxml:6-37），文案不在 wxml 字面量里 —— L5 只查文本包含。真缺陷在服务端忽略 case_field 与 case_area（13 片里 10 片点了不筛），已由后端 G84 修毕；→ #21",
             "author": "Lin",
-            "updated_at": "2026-09-08"
+            "updated_at": "2026-09-09"
           },
-          "falsePositive": false,
+          "falsePositive": true,
           "context": {
             "page": "case-library",
             "title": "案例库",
@@ -855,12 +882,12 @@
           "detail": "screens/case-library.html 有这个按钮，index.wxml 里找不到这段文案",
           "verdict": {
             "key": "case-library:L5:原型按钮「区域」",
-            "status": "接",
-            "reason": "是的，是filter；→ #21",
+            "status": "误报",
+            "reason": "13 个筛选片小程序里全都在，由 wx:for 从 services/library 的枚举表渲染（index.wxml:6-37），文案不在 wxml 字面量里 —— L5 只查文本包含。真缺陷在服务端忽略 case_field 与 case_area（13 片里 10 片点了不筛），已由后端 G84 修毕；→ #21",
             "author": "Lin",
-            "updated_at": "2026-09-08"
+            "updated_at": "2026-09-09"
           },
-          "falsePositive": false,
+          "falsePositive": true,
           "context": {
             "page": "case-library",
             "title": "案例库",
@@ -881,12 +908,12 @@
           "detail": "screens/case-library.html 有这个按钮，index.wxml 里找不到这段文案",
           "verdict": {
             "key": "case-library:L5:原型按钮「主题探究」",
-            "status": "接",
-            "reason": "是的，是filter；→ #21",
+            "status": "误报",
+            "reason": "13 个筛选片小程序里全都在，由 wx:for 从 services/library 的枚举表渲染（index.wxml:6-37），文案不在 wxml 字面量里 —— L5 只查文本包含。真缺陷在服务端忽略 case_field 与 case_area（13 片里 10 片点了不筛），已由后端 G84 修毕；→ #21",
             "author": "Lin",
-            "updated_at": "2026-09-08"
+            "updated_at": "2026-09-09"
           },
-          "falsePositive": false,
+          "falsePositive": true,
           "context": {
             "page": "case-library",
             "title": "案例库",
@@ -907,12 +934,12 @@
           "detail": "screens/case-library.html 有这个按钮，index.wxml 里找不到这段文案",
           "verdict": {
             "key": "case-library:L5:原型按钮「家园社共育」",
-            "status": "接",
-            "reason": "是的，是filter；→ #21",
+            "status": "误报",
+            "reason": "13 个筛选片小程序里全都在，由 wx:for 从 services/library 的枚举表渲染（index.wxml:6-37），文案不在 wxml 字面量里 —— L5 只查文本包含。真缺陷在服务端忽略 case_field 与 case_area（13 片里 10 片点了不筛），已由后端 G84 修毕；→ #21",
             "author": "Lin",
-            "updated_at": "2026-09-08"
+            "updated_at": "2026-09-09"
           },
-          "falsePositive": false,
+          "falsePositive": true,
           "context": {
             "page": "case-library",
             "title": "案例库",
@@ -933,12 +960,12 @@
           "detail": "screens/case-library.html 有这个按钮，index.wxml 里找不到这段文案",
           "verdict": {
             "key": "case-library:L5:原型按钮「数字化」",
-            "status": "接",
-            "reason": "是的，是filter；→ #21",
+            "status": "误报",
+            "reason": "13 个筛选片小程序里全都在，由 wx:for 从 services/library 的枚举表渲染（index.wxml:6-37），文案不在 wxml 字面量里 —— L5 只查文本包含。真缺陷在服务端忽略 case_field 与 case_area（13 片里 10 片点了不筛），已由后端 G84 修毕；→ #21",
             "author": "Lin",
-            "updated_at": "2026-09-08"
+            "updated_at": "2026-09-09"
           },
-          "falsePositive": false,
+          "falsePositive": true,
           "context": {
             "page": "case-library",
             "title": "案例库",
@@ -2097,61 +2124,8 @@
     },
     {
       "file": "/miniprogram/services/library.js",
-      "calls": 10,
-      "findings": [
-        {
-          "level": "review",
-          "line": 377,
-          "what": "submitForReview() 第 377 行 POST `${path}/${contentId}/submission`",
-          "detail": "路径前缀由变量决定，按后缀匹配到 2 条契约操作：/library/resources/{resource_id}/submission、/library/cases/{case_id}/submission",
-          "key": "service:/miniprogram/services/library.js:submitForReview() 第 377 行 POST `${path}/${contentId}/submission`",
-          "layer": "L3",
-          "verdict": {
-            "key": "service:/miniprogram/services/library.js:submitForReview() 第 377 行 POST `${path}/${contentId}/submission`",
-            "status": "接",
-            "reason": "→ #10",
-            "author": "Lin",
-            "updated_at": "2026-09-08"
-          },
-          "falsePositive": false,
-          "context": {
-            "fn": "submitForReview",
-            "doc": "草稿 s1 -> 待审核 s2。",
-            "callers": [
-              "upload-resource（上传资料） 的 submit()"
-            ],
-            "what": "把一份资源或案例从草稿（s1）提交审核（s2）",
-            "where": "upload-resource（上传资料）勾「同时提交审核」时，紧接 createResource／createCase 调用",
-            "who": "教师作者发起 → 管理端审核队列（通过 s3 全园可见／驳回 s4 作者可撤回成草稿再改）"
-          }
-        },
-        {
-          "level": "review",
-          "line": 394,
-          "what": "downloadLink() 第 394 行 POST `${path}/${contentId}/download-link`",
-          "detail": "路径前缀由变量决定，按后缀匹配到 2 条契约操作：/library/resources/{resource_id}/download-link、/library/cases/{case_id}/download-link",
-          "key": "service:/miniprogram/services/library.js:downloadLink() 第 394 行 POST `${path}/${contentId}/download-link`",
-          "layer": "L3",
-          "verdict": {
-            "key": "service:/miniprogram/services/library.js:downloadLink() 第 394 行 POST `${path}/${contentId}/download-link`",
-            "status": "接",
-            "reason": "→ #10",
-            "author": "Lin",
-            "updated_at": "2026-09-08"
-          },
-          "falsePositive": false,
-          "context": {
-            "fn": "downloadLink",
-            "doc": "取一次性的取档短链（Word 详案）。",
-            "callers": [
-              "case-detail（案例详情） 的 onDownloadPlan()"
-            ],
-            "what": "签发一次性的 Word 详案下载短链（30 分钟）",
-            "where": "case-detail（案例详情）「下载」；resource-detail 应同样调它",
-            "who": "任何 active 教师对已通过（s3）的内容发起 → 服务端授权后回短链；本地服务端回的是假域名，页面据此提示「预览环境不接对象存储」"
-          }
-        }
-      ],
+      "calls": 12,
+      "findings": [],
       "unusedExports": []
     },
     {
@@ -3422,9 +3396,9 @@
     "wired": 26,
     "sure": 0,
     "likely": 25,
-    "review": 13,
-    "falsePositives": 2,
-    "decided": 74,
+    "review": 4,
+    "falsePositives": 10,
+    "decided": 73,
     "contractTeacherOps": 92,
     "contractUnused": 43
   }

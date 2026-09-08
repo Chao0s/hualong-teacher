@@ -26,6 +26,7 @@ Page({
     tags: [],
     sections: [],
     links: [],
+    hasPlan: false,
     loading: true,
     error: '',
   },
@@ -51,6 +52,7 @@ Page({
         tags: detail.tags,
         sections: detail.sections,
         links: detail.links,
+        hasPlan: detail.canDownload,
         loading: false,
       });
     } catch (err) {
@@ -70,5 +72,37 @@ Page({
 
   onLinkTap(e) {
     wx.navigateTo({ url: `/pages/case-detail/index?id=${e.currentTarget.dataset.id}` });
+  },
+
+  /**
+   * 取 Word 详案的一次性短链。与 case-detail 同形。
+   *
+   * `placeholder` 为真时**授权是真的过了**，只是这个环境不接对象存储。说清楚是哪一件事：
+   * 报成失败会把「权限不足」与「预览环境没有 COS」混为一谈，而这两件事的处理方式相反。
+   */
+  async onDownloadPlan() {
+    wx.showLoading({ title: '正在取档', mask: true });
+    try {
+      const link = await library.resourceDownloadLink(this.data.id);
+      wx.hideLoading();
+      if (link.placeholder) {
+        wx.showModal({
+          title: '取档授权已通过',
+          content: '预览环境不接对象存储，因此没有真实文件可下。接上正式环境后，这里会直接下载 Word 详案。',
+          showCancel: false,
+          confirmText: '知道了',
+        });
+        return;
+      }
+      wx.downloadFile({
+        url: link.url,
+        success: (res) => wx.openDocument({ filePath: res.tempFilePath, fileType: 'docx' }),
+        fail: () => wx.showToast({ title: '文件下载失败，请稍后重试', icon: 'none' }),
+      });
+    } catch (err) {
+      wx.hideLoading();
+      if (guard.endSessionOnAuthFailure(err)) return;
+      wx.showToast({ title: err.userMessage || '取档失败，请稍后重试', icon: 'none' });
+    }
   },
 });

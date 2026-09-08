@@ -175,6 +175,10 @@ async function getResource(resourceId) {
     ],
     // Word 详案。没有附件的资源照常显示，只是少一个下载入口。
     wordFileId: row.word_file_id || null,
+    // 取档的前置是 s3（服务端对教师那一支的可见性判定写死 = 's3'）。自己刚交上去的
+    // s2 点下去会拿到 404 —— 那是范围判定，不是坏了，但教师读不出这个区别。
+    // 所以不到 s3 就不给按钮，两页共用这一个判断。
+    canDownload: Boolean(row.word_file_id) && row.resource_status === 's3',
     // 见文件头注第 3 条：本服务端没有反向索引，这一节无数据源，恒空。
     links: [],
   };
@@ -281,6 +285,8 @@ async function getCase(caseId) {
       { title: '活动转化', text: row.case_trans || '' },
     ],
     wordFileId: row.word_file_id || null,
+    // 同 getResource：取档前置是 s3，不到就不给按钮。
+    canDownload: Boolean(row.word_file_id) && row.case_status === 's3',
     relatedResources: await expandResources(row.resource_ids),
   };
 }
@@ -310,8 +316,10 @@ async function expandResources(ids) {
 const ACTIONS = {
   resourceCreate: 'resource.create',
   resourceSubmit: 'resource.submit',
+  resourceDownloadLink: 'resource.download_link',
   caseCreate: 'case.create',
   caseSubmit: 'case.submit',
+  caseDownloadLink: 'case.download_link',
 };
 
 /**
@@ -370,11 +378,30 @@ function createCase({ name, grade, field, areas, intro, trans, resourceIds, cove
   return api.post(CASE_PATH, { action: ACTIONS.caseCreate, body });
 }
 
-/** 草稿 s1 -> 待审核 s2。 */
-function submitForReview(target, contentId) {
-  const path = target === 'case' ? CASE_PATH : RESOURCE_PATH;
-  const action = target === 'case' ? ACTIONS.caseSubmit : ACTIONS.resourceSubmit;
-  return api.post(`${path}/${contentId}/submission`, { action });
+/*
+ * 资源与案例是**两条契约操作**，不是一条带参数的操作。
+ *
+ * 这四个函数以前是两个，路径前缀由 `target === 'case' ? CASE_PATH : RESOURCE_PATH`
+ * 拼出来。运行时没问题，静态查不了：`npm run scan:wiring` 的 L3 拿到的是
+ * `${path}/${contentId}/submission`，`path` 是个未知变量，只能按后缀去猜，
+ * 一条调用同时匹配到两条契约操作，报「待审」。
+ *
+ * 「静态查不了」不是可有可无的洁癖。契约的路径改名、动作键改名、角色收紧，
+ * 都是靠这一层比对发现的。一条查不了的调用就是一个盲点，而盲点不会报警。
+ *
+ * `action` 必须写成 `action: ACTIONS.xxx` 的显式形式，不能用 `{ action }` 简写 ——
+ * 扫描器抓的是冒号形式（`scan-wiring.mjs` 的 `/\baction\s*:\s*…/`）。写简写等于
+ * 没带 action，L3 会报「契约有 x-hualong-action，调用没带」。
+ */
+
+/** 资源草稿 s1 -> 待审核 s2。s4 被驳回的也走这条（F27）。 */
+function submitResource(resourceId) {
+  return api.post(`${RESOURCE_PATH}/${resourceId}/submission`, { action: ACTIONS.resourceSubmit });
+}
+
+/** 案例草稿 s1 -> 待审核 s2。同资源。 */
+function submitCase(caseId) {
+  return api.post(`${CASE_PATH}/${caseId}/submission`, { action: ACTIONS.caseSubmit });
 }
 
 // 本地契约服务端明确标注为假的取档域名。它自己的 README §二.2 写着：会**真的做完
@@ -389,15 +416,27 @@ const PLACEHOLDER_HOST = 'example-cos.invalid';
  * 报成失败：报成失败会把「权限不足」和「预览环境不接 COS」混为一谈，而这两件事
  * 的处理方式完全相反。
  */
-async function downloadLink(target, contentId) {
-  const path = target === 'case' ? CASE_PATH : RESOURCE_PATH;
-  const res = await api.post(`${path}/${contentId}/download-link`, {});
+function shapeLink(res) {
   const url = (res && res.url) || '';
   return {
     url,
     placeholder: url.includes(PLACEHOLDER_HOST),
     expiresAt: (res && res.expires_at) || null,
   };
+}
+
+/** 资源的 Word 详案短链。前置是 `s3` —— 自己的 s1／s2／s4 点下载会拿到 404。 */
+async function resourceDownloadLink(resourceId) {
+  return shapeLink(await api.post(`${RESOURCE_PATH}/${resourceId}/download-link`, {
+    action: ACTIONS.resourceDownloadLink,
+  }));
+}
+
+/** 案例的 Word 详案短链。同资源。 */
+async function caseDownloadLink(caseId) {
+  return shapeLink(await api.post(`${CASE_PATH}/${caseId}/download-link`, {
+    action: ACTIONS.caseDownloadLink,
+  }));
 }
 
 module.exports = {
@@ -417,6 +456,8 @@ module.exports = {
   getCase,
   createResource,
   createCase,
-  submitForReview,
-  downloadLink,
+  submitResource,
+  submitCase,
+  resourceDownloadLink,
+  caseDownloadLink,
 };
