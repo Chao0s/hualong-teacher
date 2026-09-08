@@ -85,8 +85,10 @@
 
         <view class="ghost" wx:if="{{feedbackCursor}}" hover-class="ghost--hover" bindtap="onMoreFeedback">加载更多反馈</view>
 
+        <!-- 上限 1000 字，所以是 textarea 不是单行 input —— 原型那个聊天框式的
+             单行输入放不下一段研修反馈，写到一半就看不见前面写了什么。 -->
         <view class="input">
-          <input
+          <textarea
             class="input__field"
             placeholder="写下你的研修反馈（最多 1000 字）..."
             placeholder-class="input__ph"

@@ -44,7 +44,7 @@ const has = sb.has.bind(sb);
 const db = new Client(DB_URL);
 
 /** 逐表基线（STATS.md）。 */
-const BASE = { training: 9, participation: 41, feedback: 20 };
+const BASE = { training: 9, participation: 41, feedback: 20, accessEvent: 142 };
 /** 数据集的「今天」，由服务端的 --today 决定。 */
 const TODAY = '2026-04-25';
 /** 那一场还没开始的研修（生成器里刻意加的，教师 1 没有报名行）。 */
@@ -52,8 +52,13 @@ const FUTURE_ID = 9;
 
 /** 本轮建的报名行，跑完删掉。 */
 let madeParticipation = false;
-/** 本轮写的 viewed 事件，跑完删掉进场之后新增的那些。 */
-let baseEvents = 0;
+/**
+ * 本轮写的 viewed 事件，跑完删回**数据集基线**。
+ *
+ * **不能按「进场时的最大 id」删** —— 上一次跑若半途出错没收拾干净，这一次的基线
+ * 就变成了含残留的那个数，残留会一轮轮累积下去（真发生过：142 涨到 151）。
+ * 按 STATS.md 的行数删才收敛。
+ */
 let maxEventId = 0;
 
 async function scalar(sql, params = []) {
@@ -72,7 +77,9 @@ async function main() {
   check(`基线与 STATS.md 一致（training=${BASE.training} participation=${BASE.participation} feedback=${BASE.feedback}）`,
     c0.t === BASE.training && c0.p === BASE.participation && c0.f === BASE.feedback,
     JSON.stringify(c0));
-  baseEvents = await scalar('SELECT count(*)::int FROM db_content_access_event');
+  const events0 = await scalar('SELECT count(*)::int FROM db_content_access_event');
+  check(`db_content_access_event 基线与 STATS.md 一致（${BASE.accessEvent}）`,
+    events0 === BASE.accessEvent, `实际 ${events0}`);
   maxEventId = await scalar('SELECT COALESCE(max(content_access_event_id), 0) FROM db_content_access_event');
 
   const ctx = await guard.requireSession();
@@ -505,10 +512,15 @@ async function cleanup() {
     );
     await db.query("SELECT setval('db_training_participation_training_participation_id_seq', (SELECT max(training_participation_id) FROM db_training_participation))");
   }
-  // 详情那一段会写 viewed 事件，一并收走：删掉进场之后新增的那些。
-  if (maxEventId) {
-    await db.query('DELETE FROM db_content_access_event WHERE content_access_event_id > $1', [maxEventId]);
-  }
+  // 详情那一段会写 viewed 事件，一并收走。**删到基线行数为止**，不是删到进场值 ——
+  // 后者会让上一次的残留变成这一次的基线，一轮轮累积。
+  await db.query(
+    `DELETE FROM db_content_access_event WHERE content_access_event_id IN (
+       SELECT content_access_event_id FROM db_content_access_event
+        ORDER BY content_access_event_id DESC
+        LIMIT GREATEST((SELECT count(*)::int FROM db_content_access_event) - $1, 0))`,
+    [BASE.accessEvent],
+  );
   await db.query("SELECT setval('db_content_access_event_content_access_event_id_seq', (SELECT max(content_access_event_id) FROM db_content_access_event))");
 
   const after = await db.query(`SELECT
@@ -519,7 +531,8 @@ async function cleanup() {
   console.log(`清理后：training=${c.t} participation=${c.p} content_access_event=${c.e}`);
   check(`逐表行数回到基线（training=${BASE.training} participation=${BASE.participation}）`,
     c.t === BASE.training && c.p === BASE.participation, JSON.stringify(c));
-  check(`db_content_access_event 回到进场时的 ${baseEvents}`, c.e === baseEvents, `实际 ${c.e}`);
+  check(`db_content_access_event 回到 STATS.md 的基线（${BASE.accessEvent}）`,
+    c.e === BASE.accessEvent, `实际 ${c.e}`);
 }
 
 // 带超时：死锁要红，不要挂住。
