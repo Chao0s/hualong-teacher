@@ -275,10 +275,10 @@
     },
     {
       "key": "contract:POST /teacher/growth-book/compilation/{compilation_id}/lock",
-      "status": "阻于",
-      "reason": "锁定权限（教师 vs 校长）在 #17 讨论；→ #17",
+      "status": "接",
+      "reason": "F19 §五维持：班级编册 e1→e2 归教师。园所设置 d1→d2（F20 §一）本来就只有管理端能动，两层锁不是同一件事；系统里也没有「校长」这个角色。→ #27",
       "author": "Lin",
-      "updated_at": "2026-09-08"
+      "updated_at": "2026-09-09"
     },
     {
       "key": "contract:POST /teacher/growth-book/sections",
