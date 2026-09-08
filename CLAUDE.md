@@ -104,7 +104,7 @@ README、目录树、文件头注、代码注释里的路径说明，一律只�
 然后跑后端仓库的 harness：
 
 ```bash
-cd /d/hualong-backend
+cd ../hualong-backend
 node db/tools/check-all.mjs
 ```
 
@@ -114,7 +114,7 @@ node db/tools/check-all.mjs
 
 | 哪一份 | 读谁 | 什么时候更新 |
 |---|---|---|
-| `npm run swagger`（本机看） | 每次请求现读 `D:\hualong-backend\api\openapi.yaml` | 改完契约存盘即生效，刷新页面就有 |
+| `npm run swagger`（本机看） | 每次请求现读 `../hualong-backend/api/openapi.yaml` | 改完契约存盘即生效，刷新页面就有 |
 | `npm run docs:api`（生成静态站） | 同上，写到 `dist/`（已 gitignore，**产物从不提交**） | 手动跑才生成 |
 | GitHub Pages 上那份 | CI 从 **GitHub 上的 `hualong-backend`** 现 checkout | 推前端 master，或后端触发 `contract-changed` |
 
@@ -236,7 +236,7 @@ services/*.js          一个契约模块一个文件
 ```bash
 # 1. PostgreSQL（本地 5432）要在跑
 # 2. 薄契约服务端
-cd /d/hualong-backend/db/testdata
+cd ../hualong-backend/db/testdata
 node server/server.mjs          # → http://localhost:3860/api/v1
 ```
 
@@ -257,7 +257,7 @@ node server/server.mjs          # → http://localhost:3860/api/v1
 | 孤儿样式 | `node tools/scan-orphans.mjs` | 本次改动新造成的孤儿（见 §7） |
 | 接口 | `node tools/probe-*.mjs` | 路径、字段、枚举、状态机、范围 |
 | 接线 | `npm run scan:wiring` | 元素→事件→handler→service→契约哪一环断了；契约有而客户端没调的操作。写到 `docs/audit/wiring-<日期>.md/.json/.html`；审核结论落在 `docs/audit/wiring.allowlist.json`，重扫会带上 |
-| 权限 | `cd /d/hualong-backend/db/testdata && node authz-tests/run.mjs --base http://localhost:3860/api/v1` | 七组越权探针 |
+| 权限 | `cd ../hualong-backend/db/testdata && node authz-tests/run.mjs --base http://localhost:3860/api/v1` | 七组越权探针 |
 | **渲染** | **开发者工具里真点** | **上面全部查不出来** |
 
 探针在 `tools/`：`probe-session`、`probe-library`、`probe-library-write`、`probe-party`、
@@ -293,7 +293,7 @@ node server/server.mjs          # → http://localhost:3860/api/v1
 
 ### 7.3 契约只能有一份，不要留第二份当备份
 
-后端在 `D:\hualong-backend`，与本仓库是兄弟目录。`tools/openapi-source.mjs` 与
+后端是本仓库的**兄弟目录** `../hualong-backend`。`tools/openapi-source.mjs` 与
 `tools/lib/testdata-path.mjs` 都按 `../hualong-backend` 找它，**不复制一份**。
 
 2026-09-01 撞过一次：当时有**两份**后端克隆，D 盘一份、Google Drive 一份，
@@ -306,7 +306,9 @@ node server/server.mjs          # → http://localhost:3860/api/v1
 受影响的只有在这台机器上跑的命令。
 
 判断读到的是哪一份：`node tools/spec-inventory.mjs` 第一行会打印契约文件的绝对路径，
-计数应为 **125 paths / 150 operations / 135 schemas**。对不上就是读错了文件。
+计数应为 **128 paths / 153 operations / 139 schemas**（2026-09-09 实测）。对不上
+就是读错了文件。**这三个数每次契约一动就变，写下来的当天就开始过期** —— 它只用来
+认「读到的是哪一份」，不要拿它当契约的规模指标。
 
 `node db/tools/check-all.mjs` 现在会重新生成 `db/spec/ui-binding.tsv` 且**行数正确**
 （833 行，前后端在同一个盘上、生成器找得到前端了）。但它会刷新 70 行标签文案，
@@ -316,6 +318,12 @@ node server/server.mjs          # → http://localhost:3860/api/v1
 前端所有 `.html` 与 `.wxml`，问每个文件有没有 `screens.tsv` 的登记行，而登记表只认原型
 文件名（`screens/home.html`），不认识 `miniprogram/pages/home/index.wxml`。
 2026-09-01 已修：`screens.tsv` 加了 `mp_file` 列，一个屏幕一行、两个定位符。
+
+同一步在 2026-09-08 又红过一次，原因同类：接线扫描器写出的报告
+`docs/audit/wiring-<日期>.html` 与它的外壳模板 `tools/lib/wiring-viewer.html` 都是
+`.html`，于是被当成「没登记的屏幕」。2026-09-09 已修：`check-consistency.mjs` 的
+`NOT_A_PAGE` 加上 `audit` 与 `tools` 两个目录名。**排除的数目照旧打印出来**
+（现为 4 个），静默跳过与静默截短是同一种毛病。
 
 **本仓库的目录名因此进了后端的检查逻辑**，改动这三处要留意：
 
@@ -373,6 +381,34 @@ id 不在里面」，只写「N 条」的话范围判定改坏了也可能照样
 
 原型排最后。原型里看着像内容的东西，很多没有数据源——照片占位块、
 「18 位家长已查看」、写死的文件名。**没有数据源就不要渲染它**，更不要编一个出来。
+
+### 8.1 这几份文件各是什么，不要混
+
+名字都长得像「一张表」，管的却是四件不同的事。混过一次：有人把 `screens.tsv`
+读成了「数据库将来的 schema」，于是以为改登记表就能改主键。
+
+| 文件 | 它是什么 | 谁维护 | 它**不是**什么 |
+|---|---|---|---|
+| `hualong-backend/db/spec/screens.tsv` | **屏幕登记表**。一个屏幕一行，84 行。列有：原型文件、小程序文件、模块、主要表、`writes`、`ugc`、`moderation_required` | 手写 | 不是 schema。里面没有列名、没有类型、没有主键、没有外键，将来也不会变成 |
+| `hualong-backend/db/01_schema.sql` | **唯一的字段级权威**。62 张表 / 719 列，每列带中文 COMMENT，主键与外键都在这里 | 手写 | 不是登记表。它不知道哪一页长什么样 |
+| `hualong-backend/db/spec/columns.tsv` 等六份 | **生成物**，由 `schema-to-tsv.mjs` 从 `01_schema.sql` 抽出来 | 机器生成 | 不要手工编辑。改了下次重跑就没了 |
+| `hualong-backend/api/openapi.yaml` | **契约**。端点、请求体、响应体、状态码、角色 | 手写 | 不是 schema。字段名与库列名不保证同名 |
+
+主键在 `01_schema.sql` 里。教师是 `db_teacher.teacher_id`，幼儿是 `db_child.child_id`，
+两者都已经存在，不需要谁把它们「变出来」。
+
+**L6 那一层报的到底是什么。** `npm run scan:wiring` 的第六层拿 `screens.tsv` 的
+`writes` 列跟页面代码对照，报的是这一句：
+
+> 登记表说这一页会写数据，但页面里找不到任何 POST／PUT／PATCH／DELETE。
+
+也就是**写的那一半还没做**。它**不是**在说登记表填错了。真的填错时（`my-training`
+就是一例：登记 `writes=yes`，页面与原型都没有任何写入控件），改的是登记表那一格，
+但那是另一回事，要单独判断。
+
+**部署长什么样。** 文件放腾讯云 COS，`db_file` 只存元数据与对象键（`API-CONTRACT.md`
+§8）；PostgreSQL 跑在云主机上（`hualong-backend/CONTEXT.md`）。库里从来不存图片本身，
+也不存可直接访问的明文直链（`db/GAPS.md` G16）。
 
 ---
 
