@@ -129,7 +129,11 @@ async function main() {
     JSON.stringify(page.items.map((m) => [m.id, m.fileIds.length, expect.get(m.id) ?? 0])));
 
   const someFile = withPhotos[0].fileIds[0];
-  const url = await co.photoUrl(someFile);
+  // owner 那一对是必填的授权参数（契约 GET /media/files/{file_id}/url）。
+  // 少带它服务端回 400，而 photoUrl 吞掉异常回空串 ——
+  // 那时下面每一条断言都会红，但红的原因不是取图坏了。
+  // 宿主由 service 给（decorate() 的 photoOwner），探针不自己拼表名。
+  const url = await co.photoUrl(someFile, withPhotos[0].photoOwner);
   check('取图地址拿得到', Boolean(url), '回的是空串');
   check('取图地址不含任何直连对象存储的痕迹（G16／F21）',
     !/example-cos\.invalid/.test(url), `实际 ${url}`);
@@ -147,7 +151,7 @@ async function main() {
     got ? got.buf.slice(0, 8).toString('hex') : '(无)');
 
   if (withPhotos[0].fileIds[1]) {
-    const second = await co.photoUrl(withPhotos[0].fileIds[1]);
+    const second = await co.photoUrl(withPhotos[0].fileIds[1], withPhotos[0].photoOwner);
     check('不同 file_id 给出不同地址', second !== url, `两张都是 ${url}`);
   }
 

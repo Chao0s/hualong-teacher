@@ -31,6 +31,7 @@
  */
 
 const training = require('../../services/training');
+const media = require('../../services/media');
 const guard = require('../../utils/guard');
 
 const FEEDBACK_LIMIT = 20;
@@ -207,11 +208,39 @@ Page({
     }
   },
 
-  /** 材料预览与下载：`POST /media/files` 那一族在本环境未实作，照实说明。 */
-  onFileTap(e) {
-    wx.showToast({
-      title: `${e.currentTarget.dataset.name}（本环境不接对象存储）`,
-      icon: 'none',
-    });
+  /**
+   * 打开一份研修材料。
+   *
+   * 取档走 `GET /media/files/{file_id}/url`（`ContentFileRef` 逐字写着「一律走」
+   * 这一条），**不是** `POST /media/files` —— 那一条是上传，与这里无关。
+   *
+   * 小程序上「预览」就是「下到 tempFilePath 再 `wx.openDocument`」，所以这一个
+   * 按钮既是预览也是下载，没有第二条路径可走。
+   *
+   * 成功取档时服务端在同一事务里记一笔 `downloaded`（k7，§4 规则 19／20／21），
+   * **重复点重复计数**。
+   */
+  async onFileTap(e) {
+    const fileId = Number(e.currentTarget.dataset.fileid);
+    wx.showLoading({ title: '正在取档', mask: true });
+    try {
+      const r = await media.openFile(fileId, this.data.detail.fileOwner);
+      wx.hideLoading();
+      if (r.placeholder) {
+        // 授权过了，但这个环境没有对象存储。说清楚是哪一件事，别让人以为没权限。
+        wx.showModal({
+          title: '取档授权已通过',
+          content: r.reason,
+          showCancel: false,
+          confirmText: '知道了',
+        });
+        return;
+      }
+      if (!r.opened) wx.showToast({ title: r.reason, icon: 'none' });
+    } catch (err) {
+      wx.hideLoading();
+      if (guard.endSessionOnAuthFailure(err)) return;
+      wx.showToast({ title: err.userMessage || '取档失败，请稍后重试', icon: 'none' });
+    }
   },
 });

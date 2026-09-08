@@ -46,6 +46,7 @@
 const api = require('../utils/request');
 const time = require('../utils/time');
 const session = require('../utils/session');
+const media = require('./media');
 
 const MOMENT_PATH = '/moments';
 
@@ -95,6 +96,9 @@ function decorate(row) {
     // 契约的 `Moment` 含 `file_id`，列表与详情都回。**只有 id，没有地址** ——
     // 地址要逐张走 photoUrl()，每次重验（G16／F21）。
     fileIds: row.file_id || [],
+    // 取地址时要一起交上去的宿主那一对（授权参数，不是统计参数）。
+    // 页面原样往下传，**不在页面里写表名**。
+    photoOwner: { object: media.OWNER.MOMENT, id: row.moment_id },
     date: row.moment_date || '',
     // moment_date 是裸日期（LocalDate），不是时间戳，所以不走 formatDay。
     dateLabel: monthDayOf(row.moment_date),
@@ -160,13 +164,20 @@ async function getMoment(momentId) {
  * 可直接访问的地址（G16／F21），所以不能把 URL 缓存进列表数据里当作长期可用。
  * 短链有效期约 5 分钟。
  *
+ * `owner` 是**必填的授权参数**（`{object, id}`）：同一个 file_id 允许被多条记录
+ * 引用，只给 file_id 反推不出宿主，服务端就没法按宿主的规则重验调用者。少带这一对
+ * 服务端回 `400 malformed_request`。每一行数据自己带着 `photoOwner`，调用方原样
+ * 传下去即可。
+ *
+ * 请求本身走 `services/media.js` 那一条 —— 取档只有一条端点，客户端也只写一份。
+ *
  * 取不到就回空串，让调用方渲染占位而不是让整页炸掉 —— 一张图打不开不该拖垮
  * 一屏动态。
  */
-async function photoUrl(fileId) {
+async function photoUrl(fileId, owner) {
   try {
-    const res = await api.get(`/media/files/${fileId}/url`);
-    return (res && res.url) || '';
+    const link = await media.fileUrl(fileId, owner);
+    return link.url;
   } catch (err) {
     return '';
   }
@@ -178,15 +189,18 @@ async function photoUrl(fileId) {
  * 卡片上只铺前三张，角标写「还有 N 张」。点角标要看全部，就得把剩下那些的地址
  * 也取回来 —— 卡上留的是 `fileIds`（全部），`photos[]`（只有三张）不够用。
  *
+ * `owner` 是这一条记录的 `photoOwner`：**一条记录的照片同属一个宿主**，所以整批
+ * 共用一对，不必逐张传。
+ *
  * `known` 是卡片上已经填好的那几张，传进来就不重复取一次。
  *
  * 取不到地址的那张**直接跳过**，不放空串：`wx.previewImage` 收到空串会停在黑屏，
  * 少一张总好过卡住整个浮层。所以回来的长度可能小于 `fileIds.length`。
  */
-async function photoUrls(fileIds, known) {
+async function photoUrls(fileIds, owner, known) {
   const cached = known instanceof Map ? known : new Map();
   const urls = await Promise.all(
-    (fileIds || []).map((fileId) => cached.get(fileId) || photoUrl(fileId)),
+    (fileIds || []).map((fileId) => cached.get(fileId) || photoUrl(fileId, owner)),
   );
   return urls.filter(Boolean);
 }
@@ -755,6 +769,11 @@ function decorateFeedRow(row) {
     text: underCheck ? '' : (row.submission_text || ''),
     // 只有 id，没有地址。地址逐张走 photoUrl()，每次重验、5 分钟签名（§8.4）。
     fileIds: underCheck ? [] : (row.file_id || []),
+    // 家长投稿的附件挂在这一笔提交上，取地址时要交上去（授权参数）。
+    photoOwner: {
+      object: media.OWNER.PARENT_TASK_SUBMISSION,
+      id: row.parent_task_submission_id,
+    },
 
     submittedAt: row.submitted_at || '',
     submittedLabel: row.submitted_at ? time.formatStamp(row.submitted_at) : '',
@@ -1211,6 +1230,16 @@ async function monthEvalRow({ childId, month }) {
     month: row.eval_month || '',
     text: row.eval_text || '',
     fileIds: row.file_id || [],
+    /**
+     * 月度评价的照片是**从在园时光挑进来的**，但它自己那份引用落在
+     * `db_file_ref(owner_object='db_month_eval')`（E7，服务端
+     * `routes/teacher.mjs:960` 就是这么写的），所以宿主是这一列评价，不是那条动态。
+     *
+     * 服务端按这一对宿主重验范围，规则与 `GET /home-school/month-evals` 同一条
+     * （`routes/shared.mjs` 的 `fileReachable` 教师分支：`class_id` 与 `teacher_id`
+     * 两个都钉）。取不到地址时这里渲染占位，不炸整屏。
+     */
+    photoOwner: { object: media.OWNER.MONTH_EVAL, id: row.month_eval_id },
     status: row.month_eval_status,
     statusLabel: MONTH_EVAL_STATUS[row.month_eval_status] || '未知状态',
     // 对外二元：只有 e3 算已发布。e1／e2 都是没发出去的（F25）。

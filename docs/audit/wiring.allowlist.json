@@ -533,13 +533,6 @@
       "updated_at": "2026-09-08"
     },
     {
-      "key": "training-detail:L1:<text class=\"action\"> bindtap=\"onFileTap\"「下载」",
-      "status": "接",
-      "reason": "→ #3",
-      "author": "Lin",
-      "updated_at": "2026-09-08"
-    },
-    {
       "key": "upload-resource:L1:<text class=\"mini-btn\"> bindtap=\"onPickWord\"「上传」",
       "status": "阻于",
       "reason": "第 115／205 行同一 handler（资源／案例表单块）；→ #2",

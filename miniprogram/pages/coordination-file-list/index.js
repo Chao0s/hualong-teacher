@@ -4,6 +4,17 @@
  * 七类文件共用这一页，靠 `?type=` 选。原型把七类的目录写死在脚本里，这里照搬。
  * 分页口径照抄：每页 3 条，点「加载更多」再放 3 条，放满就隐藏按钮。
  * 附件在原型里是 data: URI 的示例文本，小程序下不了，改成弹提示。
+ *
+ * ── 下载接不上，因为整页还是字面量。**这一条没有票据** ──────────────────────
+ *
+ * 取档端点是有的：`GET /media/files/{file_id}/url`，客户端那一半已经写好，在
+ * `services/media.js`。接不上的原因只有一个 —— 上面那张 `CATALOG` 是写死的目录，
+ * 每一条都没有真的 `file_id` 可以交给它。
+ *
+ * 所以顺序是：先把这一页改成读 `GET /coordination/documents`（协调文档，k6），
+ * 拿到 `file_refs` 之后，`onDownload` 照 `party-activity-detail` 那一支抄一遍即可。
+ * 同一批里 `teacher-profile` 归票据 #15、`teacher-task-detail` 归票据 #18，
+ * **这一页没有票据**，写在这里免得它被漏掉。
  */
 
 const PAGE_SIZE = 3;

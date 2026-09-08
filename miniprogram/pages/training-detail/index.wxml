@@ -37,7 +37,8 @@
       <view class="chunk">
         <view class="file" wx:for="{{detail.files}}" wx:key="fileId" wx:for-item="f">
           <text class="file-name">{{f.name}}</text>
-          <text class="action" data-name="{{f.name}}" bindtap="onFileTap">下载</text>
+          <!-- 预览与下载在小程序上是同一件事，所以只有这一个按钮，走同一条链接 -->
+          <text class="action" data-fileid="{{f.fileId}}" bindtap="onFileTap">下载</text>
         </view>
       </view>
     </block>

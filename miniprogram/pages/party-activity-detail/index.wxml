@@ -1,8 +1,8 @@
 <!-- 党建活动 · 活动介绍 —— 对照原型 screens/party-activity-detail.html。
 
      原型的图文区是四个写着「活动现场图」「分组研讨」「成果展示」的占位色块。
-     它们看起来像内容，实际没有任何数据源：契约的 PartyActivity.file_refs 只回
-     {file_id, usage_key}，数据集里三场已发布活动的 file_refs 又都是空数组。
+     它们看起来像内容，实际没有任何数据源：数据集里三场已发布活动的 file_refs
+     都是空数组，而占位块上那三行字库里一个字也没有。
      所以改成跟着 file_refs 走 —— 有附件才渲染，没有就不画。理由与附件下载那一块
      相同，见 index.js 头注。 -->
 <view class="page">
@@ -55,7 +55,7 @@
           hover-stay-time="80"
           wx:for="{{files}}"
           wx:key="fileId"
-          data-name="{{item.name}}"
+          data-fileid="{{item.fileId}}"
           bindtap="onDownload"
         >
           <text class="download__name">{{item.name}}</text>

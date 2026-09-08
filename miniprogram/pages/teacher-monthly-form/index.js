@@ -43,6 +43,14 @@ Page({
     content: '',
     // 已选照片：{ fileId, label, url }。契约只给 file_id，标签按序号，不编文件名。
     imported: [],
+    /**
+     * `imported` 那几张取地址时要交上去的宿主那一对（授权参数）。
+     *
+     * 回填的那几张挂在**这一列月度评价**上（`db_file_ref(owner_object=
+     * 'db_month_eval')`，E7），不是挂在它们来源的那条在园时光上。相册里那些才挂
+     * 在动态上，所以两处的宿主不同，各带各的。service 给的，页面不拼。
+     */
+    evalPhotoOwner: null,
 
     evalId: 0,
     status: '',
@@ -119,7 +127,7 @@ Page({
         // 这一格还没有记录：清空表单，等着新建。
         this.setData({
           evalId: 0, status: '', statusLabel: '', published: false, readonly: false,
-          content: '', imported: [],
+          content: '', imported: [], evalPhotoOwner: null,
         });
         return;
       }
@@ -132,6 +140,7 @@ Page({
         readonly: one.published || this.entry.view,
         content: one.text,
         imported: one.fileIds.map((fid, i) => ({ fileId: fid, label: `照片 ${i + 1}`, url: '' })),
+        evalPhotoOwner: one.photoOwner,
       });
       this.fillPhotoUrls();
     } catch (err) {
@@ -141,7 +150,7 @@ Page({
 
   fillPhotoUrls() {
     this.data.imported.forEach(async (p, i) => {
-      const url = await co.photoUrl(p.fileId);
+      const url = await co.photoUrl(p.fileId, this.data.evalPhotoOwner);
       if (!url) return;
       this.setData({ [`imported[${i}].url`]: url });
     });
@@ -193,6 +202,8 @@ Page({
             fileId: fid,
             label: `${m.dateLabel} ${i + 1}`,
             url: '',
+            // 相册里这一张挂在**它来源的那条在园时光**上，与回填那几张不同宿主。
+            owner: m.photoOwner,
             // 已经选进来的那些要显示成选中。sel 是这一行自己的状态，模板直接读。
             sel: already.indexOf(fid) > -1,
           });
@@ -206,7 +217,7 @@ Page({
 
       groups.forEach((g, gi) => {
         g.photos.forEach(async (p, pi) => {
-          const url = await co.photoUrl(p.fileId);
+          const url = await co.photoUrl(p.fileId, p.owner);
           if (!url || !this.data.albumOpen) return;
           this.setData({ [`visibleGroups[${gi}].photos[${pi}].url`]: url });
         });

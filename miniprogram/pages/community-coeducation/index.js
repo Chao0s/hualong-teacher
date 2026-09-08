@@ -107,6 +107,8 @@ Page({
         moreCount: Math.max(0, row.fileIds.length - PREVIEW_PHOTOS),
         photoCount: row.fileIds.length,
         fileIds: row.fileIds,
+        // 取照片地址要交上去的宿主那一对（授权参数）。service 给的，页面不拼。
+        photoOwner: row.photoOwner,
         included: row.included,
       }));
       this.setData({ visible, loading: false });
@@ -120,7 +122,7 @@ Page({
   fillPhotos(items) {
     items.forEach((post) => {
       post.photos.forEach(async (photo, i) => {
-        const url = await co.photoUrl(photo.fileId);
+        const url = await co.photoUrl(photo.fileId, post.photoOwner);
         if (!url) return;
         const at = this.data.visible.findIndex((x) => x.id === post.id);
         if (at < 0) return;
@@ -145,7 +147,7 @@ Page({
     if (!post || !post.fileIds.length) return;
 
     const known = new Map(post.photos.map((p) => [p.fileId, p.url]).filter(([, url]) => url));
-    const urls = await co.photoUrls(post.fileIds, known);
+    const urls = await co.photoUrls(post.fileIds, post.photoOwner, known);
     if (!urls.length) {
       wx.showToast({ title: '照片暂时打不开，请稍后重试', icon: 'none' });
       return;

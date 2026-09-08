@@ -1,6 +1,6 @@
 <!-- 党建学习 · 文件预览 —— 对照原型 screens/party-study-detail.html。
-     原型模板里那句写死的「PDF · 2.4MB」已删：契约的 file_refs 只回
-     {file_id, usage_key}，取不到大小与类型。理由见 index.js 头注第 2 条。 -->
+     原型模板里那句写死的「PDF · 2.4MB」已删：那是一个对每份文件都不对的常数。
+     理由见 index.js 头注第 2 条。 -->
 <view class="page">
 
   <view class="doc" wx:if="{{loading}}">
@@ -48,9 +48,11 @@
       </view>
     </view>
 
-    <view class="actions">
-      <view class="btn btn--primary" hover-class="btn--hover" data-action="预览" bindtap="onAction">在线预览</view>
-      <view class="btn btn--secondary" hover-class="btn--hover" data-action="下载" bindtap="onAction">下载文件</view>
+    <!-- 两个按钮走同一条链接、同一个函数：小程序上「预览」就是「下到临时文件再
+         wx.openDocument」，平台没有第二种打开方式。没有附件时整块不渲染。 -->
+    <view class="actions" wx:if="{{file}}">
+      <view class="btn btn--primary" hover-class="btn--hover" data-action="预览" bindtap="onOpenFile">在线预览</view>
+      <view class="btn btn--secondary" hover-class="btn--hover" data-action="下载" bindtap="onOpenFile">下载文件</view>
     </view>
   </view>
 

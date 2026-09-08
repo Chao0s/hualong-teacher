@@ -51,6 +51,7 @@
 
 const api = require('../utils/request');
 const time = require('../utils/time');
+const media = require('./media');
 
 const TRAINING_PATH = '/trainings';
 const PARTICIPATION_PATH = '/training-participations';
@@ -157,6 +158,10 @@ async function getTraining(trainingId) {
     name: f.file_name || `材料 ${f.file_id}`,
     usage: f.usage_key || '',
   }));
+  // 取档要交上去的宿主那一对（授权参数，不是统计参数）。页面原样传给
+  // services/media.js，**不在页面里写表名**。研修落 k7，服务端每次成功供档记一笔
+  // `downloaded`，重复成功重复计数（§4 规则 19／20／21）。
+  out.fileOwner = { object: media.OWNER.TRAINING, id: row.training_id };
   return out;
 }
 
