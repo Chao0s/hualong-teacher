@@ -1,9 +1,13 @@
 /**
  * 一次性：把两位审核人的 wiring.allowlist_c1.json / _c2.json 合成 docs/audit/wiring.allowlist.json，
  * 并把每条结论指向对应的 GitHub issue。三处分歧按 2026-09-08 的答复定：
- *   撤回端点 → 不建（教师端无按钮）；契约去留在 #14 讨论
+ *   撤回端点 → 不建（F27 已定：教师端无作者撤回；端点删除在 #32）
  *   编册锁定 → 阻于 #17
  *   onPickWord 两处 → 接，合一张 #2
+ *
+ * **它整份重写 wiring.allowlist.json，不是增量合并。** 已经手工改过或删掉的结论会被
+ * 它按 c1／c2 那两份原始答复写回来。所以重跑之前先 `git diff` 看一眼：多出来的行
+ * 不是新结论，是被复活的旧结论。这份脚本留着只为了复现 c1／c2 到 allowlist 的合并。
  *
  *   node tools/wayfinder-merge-allowlist.mjs
  */
@@ -18,7 +22,7 @@ const N = (id) => `#${nums[id]}`;
 /** key 的片段 → 票 id。第一个命中的算。 */
 const ROUTE = [
   [/submitForReview|downloadLink/, 'L3-lib'],
-  [/withdrawal/, 'L4-withdraw'],
+  // withdrawal 不进路由：F27 已经把它定完了，OVERRIDE 里的结论自带 #32，再追一次 → #14 就是往回指。
   [/PATCH \/library/, 'L4-myuploads'],
   [/teacher-profile\b.*L1|contract:.*teacher-profile/, 'L4-profile'],
   [/compilation\/\{compilation_id\}\/lock/, 'L4-lock'],
@@ -51,7 +55,7 @@ for (const r of [...c2, ...c1]) { // c1 后写，c1 优先
 }
 
 const OVERRIDE = {
-  withdrawal: { status: '不建', reason: '教师端无撤回按钮（审核两道关在 PC 端）；契约去留与「撤回 vs 删除」词义在 #14 讨论' },
+  withdrawal: { status: '不建', reason: 'F27 已定：教师端无作者撤回；端点删除 → #32' },
   lock: { status: '阻于', reason: '锁定权限（教师 vs 校长）在 #17 讨论' },
 };
 const out = [];
