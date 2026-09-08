@@ -56,7 +56,7 @@ Page({
         sections: detail.sections,
         relatedResources: detail.relatedResources,
         // 没有附件的案例照常显示，只是不出现下载入口。
-        hasPlan: Boolean(detail.wordFileId),
+        hasPlan: detail.canDownload,
         loading: false,
       });
     } catch (err) {
@@ -79,7 +79,7 @@ Page({
   async onDownloadPlan() {
     wx.showLoading({ title: '正在取档', mask: true });
     try {
-      const link = await library.downloadLink('case', this.data.id);
+      const link = await library.caseDownloadLink(this.data.id);
       wx.hideLoading();
       if (link.placeholder) {
         // 授权过了，但这个环境没有对象存储。说清楚是哪一件事，别让人以为没权限。

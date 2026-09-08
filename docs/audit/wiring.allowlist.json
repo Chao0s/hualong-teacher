@@ -435,20 +435,6 @@
       "updated_at": "2026-09-09"
     },
     {
-      "key": "service:/miniprogram/services/library.js:downloadLink() 第 376 行 POST `${path}/${contentId}/download-link`",
-      "status": "接",
-      "reason": "→ #10",
-      "author": "Lin",
-      "updated_at": "2026-09-08"
-    },
-    {
-      "key": "service:/miniprogram/services/library.js:submitForReview() 第 359 行 POST `${path}/${contentId}/submission`",
-      "status": "接",
-      "reason": "→ #10",
-      "author": "Lin",
-      "updated_at": "2026-09-08"
-    },
-    {
       "key": "teacher-message-detail:L5:原型跳转 → teacher-message.html",
       "status": "接",
       "reason": "→ #22",
