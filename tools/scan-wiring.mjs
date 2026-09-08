@@ -15,7 +15,9 @@
  *   L1  WXML 的 bind* 与 catch* 指向的 handler 在 Page 里存不存在；存在的话它是
  *       占位（只弹 toast）、只导航、只改本地 data，还是真的碰到了 service。
  *   L2  长得像能点的元素（button／picker／input／hover-class／类名或文案像按钮）
- *       却没有任何事件，自己没有、祖先也没有。
+ *       却没有任何事件，自己没有、祖先也没有。判定在 buttonish()，词表按实测校准
+ *       （2026-09-09，#8）：244 个带 tap 的节点里认得出 202 个。**剩下 42 个用的是
+ *       页面本地一次性类名，全局词表覆盖不到 —— 所以 L2 报 0 条不等于没有漏接的按钮。**
  *   L3  service 里每一次 api.* 调用的路径、动词、action 键、请求体键，逐一对契约。
  *   L4  反向：契约里 x-hualong-roles 含 teacher 的操作，没有任何 service 调过的。
  *   L5  原型 screens/<页>.html 里的按钮文案、事件绑定与跳转，小程序页面里找不到的。
@@ -121,8 +123,31 @@ function parseWxml(text) {
 const EVENT_ATTR = /^(bind|catch|mut-bind|capture-bind|capture-catch):?([a-z]+)$/;
 const TAP_EVENTS = new Set(['tap', 'longpress', 'longtap']);
 const NATIVE_INTERACTIVE = new Set(['button', 'picker', 'input', 'textarea', 'switch', 'checkbox-group', 'radio-group', 'slider', 'form', 'editor', 'picker-view']);
-const BUTTONISH_CLASS = /(^|[\s_-])(btn|button|action|primary|ghost|link|entry|more|add|submit|send|del|delete|remove|upload|tab|chip|option|toggle|switch|cta|arrow|card|item|row|thumb|photo|avatar|dot|cell)([\s_-]|$)/;
-const BUTTONISH_TEXT = /^(提交|发布|保存|删除|下载|预览|查看|查看全部|更多|编辑|上传|报名|加入|取消|确认|确定|复制|重试|发送|新增|添加|移除|撤回|关闭|筛选|搜索|导出|分享|打印|立即\S*|去\S{1,4}|\S{0,6}›|\S{0,6}>)$/;
+/* ── L2 的三张词表（2026-09-09 按实测校准，#8）─────────────────────────────
+ *
+ * 口径：全仓库 247 个带 tap 的节点、103 处 hover-class、btn 家族 37 个类名令牌。
+ * 把这 247 个节点的事件当成不存在，逐个跑 buttonish()：现在抓到 202、抓不到 45。
+ * 校准前是 156／91。
+ *
+ * 抓不到的 45 个用的是页面本地一次性类名（image-box、evi-add、rub-toggle、
+ * target、option、panel、sheet-mask、add-file、file-pick、input__send、
+ * empty__retry、preview__close…）。**那不是词表没调好，是命名本身没有共性**，
+ * 全局词表覆盖不到。要闭合只有立「可点元素必须带 hover-class」的约定那一条路。
+ *
+ * hover-class 是本仓库最干净的信号：103 处，100% 落在已带 tap 的节点上。
+ * 所以它当前一条都不报 —— 那是团队真的没漏，不是规则失效。
+ */
+/** 按钮类名。BEM 子元素靠 ancestorHasTap 兜住，不必进表。 */
+const BUTTON_CLASS = /(^|\s)(btn|[a-z0-9-]+-btn|btn-[a-z0-9-]+|[a-z0-9-]+__btn|text-button|lock-button|sbtn|close|remove|trash|download|more|[a-z0-9-]+-more|[a-z0-9-]+__more|file-op|entry-card|link-card|dot-link|sticky-action|add-material|select-all|chip)(--[\w-]+)?(\s|$)/;
+/** 容器类名：壳里装着已接线的按钮，壳自己永不算按钮。必须先判它 —— `btn-row` 会命中 BUTTON_CLASS。 */
+const CONTAINER_CLASS = /(^|\s)(btn-row|btn-group|btns|action-row|state-actions|sheet-actions|entry-grid|eval-entry-grid|card-list|album-grid|controls|submit-note|upload-note)(--[\w-]+)?(\s|$)/;
+/** 无论类名叫什么都是按钮的文案。`.hint`／`.summary__desc` 上有 8 处真的「点此重试」。 */
+const ALWAYS_BUTTON_TEXT = /^(点此重试|重试|全选|全部)$/;
+/** 按钮文案。团队写的是「动词+宾语」（提交审核、保存草稿、下载Word详案），所以按动词前缀匹配，不是全串精确匹配。 */
+const BUTTONISH_TEXT = /^(?:提交|发布|保存|存为|下载|上传|删除|删页|预览|查看|编辑|导出|复制|发送|发给|新增|添加|移除|撤回|撤销|关闭|筛选|搜索|分享|打印|报名|加入|选择|全选|重试|点此|重命名|定稿|提醒|归入|新建|继续|返回|回到|改回|立即|去|取消|确认|确定)[^\s]{0,6}$|^.{0,8}[›»→]$/;
+/** 标签类名否决表：同一段文案在 `.btn` 上是按钮、在 `.kicker` 上是标题。只给文案分支用。 */
+const NON_BUTTON_WORDS = new Set(['sec', 'title', 'subtitle', 'kicker', 'hint', 'limit', 'label', 'desc', 'note', 'empty', 'body', 'value', 'meta', 'tip', 'caption', 'head', 'legend', 'name', 'count', 'num', 'date', 'time', 'tag', 'badge', 'mark', 'state', 'status', 'summary', 'placeholder', 'banner', 'field', 'chunk', 'form-label', 'sec-head', 'empty-hint', 'sheet-head']);
+const looksLikeLabel = (cls) => cls.split(/\s+/).filter(Boolean).some((tok) => tok.split(/__|--/).some((seg) => NON_BUTTON_WORDS.has(seg)));
 
 function eventsOf(attrs) {
   const out = [];
@@ -149,6 +174,34 @@ function hasUpdateChannel(node) {
   if (Object.keys(node.attrs).some((k) => k.startsWith('model:'))) return true;
   if (node.attrs.name !== undefined && insideForm(node)) return true;
   return false;
+}
+/**
+ * 这个节点自身长不长得像能点。**只看节点自身的性质**，不走父链 ——
+ * 「祖先带 tap」「navigator 有 url」这两条前置跳过留在调用点。
+ * 回 null 表示不像；回 { level, detail } 表示像，level 是发现的等级。
+ *
+ * 顺序不能换：容器要在按钮类名之前判，否则 `btn-row` 会被 `btn-[a-z0-9-]+` 认成按钮。
+ */
+function buttonish(node) {
+  const cls = node.attrs.class || '';
+  if (NATIVE_INTERACTIVE.has(node.tag)) {
+    if (node.tag === 'input' && node.attrs.disabled !== undefined) return null;
+    // PRD 决策 4：<form bindsubmit> 里带 name 的 input、用 model:value 双向绑定的，都是合法写法
+    if (hasUpdateChannel(node)) return null;
+    return { level: 'likely', detail: `原生交互控件 <${node.tag}> 没有绑定任何事件` };
+  }
+  if (node.attrs['hover-class'] !== undefined && node.attrs['hover-class'] !== 'none') {
+    return { level: 'likely', detail: '有 hover-class（按下会变色）却没有点击事件' };
+  }
+  if (CONTAINER_CLASS.test(cls)) return null;
+  // 类名分支不要求有直接文案：`<view class="tool-btn"><image/></view>` 是图标按钮，没有文字
+  if (BUTTON_CLASS.test(cls)) return { level: 'likely', detail: '类名像按钮，没有点击事件' };
+  if (!/^(view|text|button)$/.test(node.tag)) return null;
+  if (ALWAYS_BUTTON_TEXT.test(node.text)) return { level: 'review', detail: '文案像按钮，自己与祖先都没有点击事件' };
+  if (BUTTONISH_TEXT.test(node.text) && !looksLikeLabel(cls)) {
+    return { level: 'review', detail: '文案像按钮，自己与祖先都没有点击事件' };
+  }
+  return null;
 }
 
 /* ── L1：Page 方法 ────────────────────────────────────────────────────────── */
@@ -466,6 +519,34 @@ if (SELFTEST) {
   rmSync(idir, { recursive: true, force: true });
   check('<import> 的模板并进本页 WXML', /bindtap="onPageTap"/.test(merged), merged.replace(/\n/g, '⏎'));
 
+  // 6. L2 的「像按钮」判定（#8）。片段都从仓库抄来，注释写出处。
+  //    断言连 level 一起钉 —— 只断言「非 null」的话，等级译反了照样过（CLAUDE.md §7.6）。
+  const one = (wxml) => { const ns = parseWxml(wxml); return buttonish(ns[0]); };
+  const b1 = one('<view class="btn btn--primary" hover-class="btn--hover">保存草稿</view>'); // parent-task-publish/index.wxml:80
+  check('L2-1 hover-class 判高疑', b1 && b1.level === 'likely' && /hover-class/.test(b1.detail), JSON.stringify(b1));
+  const b2 = one('<view class="btn btn--primary" hover-class="none">保存草稿</view>');
+  check('L2-2 hover-class="none" 落到类名分支', b2 && b2.level === 'likely' && /类名/.test(b2.detail), JSON.stringify(b2));
+  const b3 = one('<view class="tool-btn"><image src="x" /></view>');
+  check('L2-3 无文案的图标按钮也报（钉住旧词表的漏报）', b3 && b3.level === 'likely', JSON.stringify(b3));
+  check('L2-4 btn-row 是容器，不报', one('<view class="btn-row"></view>') === null); // comprehensive-assessment-report/index.wxml:50
+  check('L2-5 state-actions／entry-grid／action-row 都是容器',
+    one('<view class="state-actions"></view>') === null && one('<view class="entry-grid"></view>') === null && one('<view class="action-row"></view>') === null);
+  check('L2-6 submit-note 是说明文字，不报', one('<view class="submit-note">草稿只有你看得到，家长看不到。</view>') === null); // parent-task-publish/index.wxml:86
+  check('L2-7 sec__title 上的「报名入口」是标题，不报', one('<text class="sec__title">报名入口</text>') === null); // training-detail/index.wxml:60
+  // 两头都钉：类名否决表挡住 .empty 上的空态文案，动词表本身也不收「加载」（§7.4 的两头钉）
+  check('L2-8a .empty 上的「加载中…」不报（类名否决）', one('<view class="empty">加载中…</view>') === null);
+  check('L2-8b 「加载中…」本身不是按钮文案（动词表不收「加载」）', BUTTONISH_TEXT.test('加载中…') === false);
+  const b9a = one('<view class="btn">提交审核</view>'), b9b = one('<text class="kicker">提交审核</text>');
+  check('L2-9 同一段文案：.btn 上报、.kicker 上不报', b9a !== null && b9b === null, `${JSON.stringify(b9a)} / ${JSON.stringify(b9b)}`); // upload-resource/index.wxml:8
+  check('L2-10 「点此重试」越过标签否决表', one('<view class="hint">点此重试</view>') !== null); // training-list/index.wxml:23
+  const inp = parseWxml('<input value="{{q}}" />')[0], inp2 = parseWxml('<input value="{{q}}" bindinput="onInput" />')[0];
+  check('L2-11 裸 input 报、有 bindinput 的不报', buttonish(inp) !== null && hasUpdateChannel(inp2), `${JSON.stringify(buttonish(inp))} / ${hasUpdateChannel(inp2)}`);
+  const dl = parseWxml('<view class="btn-dl" bindtap="onDownloadPlan">\n  <text class="btn-dl__title">下载Word详案</text>\n</view>'); // case-detail/index.wxml:47
+  check('L2-12 BEM 子元素靠祖先带 tap 兜住，不重复报', ancestorHasTap(dl.find((n) => n.attrs.class === 'btn-dl__title')));
+  const containers = ['btn-row', 'btn-group', 'btns', 'action-row', 'state-actions', 'sheet-actions', 'entry-grid', 'eval-entry-grid', 'card-list', 'album-grid', 'controls', 'submit-note', 'upload-note'];
+  const leaked = containers.filter((w) => one(`<view class="${w}"></view>`) !== null);
+  check('L2-13 两张类名表互斥：13 个容器词一个都不判成按钮', leaked.length === 0, `漏的：${leaked.join(',')}`);
+
   console.log(`\n${pass} 项通过，${fail} 项失败。`);
   process.exit(fail ? 1 : 0);
 }
@@ -590,18 +671,8 @@ for (const p of pages) {
     if (n.tag === 'navigator' && n.attrs.url) continue;
     const cls = n.attrs.class || '';
     const label = `<${n.tag}${cls ? ` class="${cls}"` : ''}>${n.text ? `「${n.text}」` : ''}`;
-    if (NATIVE_INTERACTIVE.has(n.tag)) {
-      if (n.tag === 'input' && n.attrs.disabled !== undefined) continue;
-      // PRD 决策 4：<form bindsubmit> 里带 name 的 input、用 model:value 双向绑定的，都是合法写法
-      if (hasUpdateChannel(n)) continue;
-      add('likely', 'L2', n.line, label, `原生交互控件 <${n.tag}> 没有绑定任何事件`);
-    } else if (n.attrs['hover-class'] !== undefined && n.attrs['hover-class'] !== 'none') {
-      add('likely', 'L2', n.line, label, '有 hover-class（按下会变色）却没有点击事件');
-    } else if (BUTTONISH_TEXT.test(n.text) && /^(view|text|button)$/.test(n.tag)) {
-      add('likely', 'L2', n.line, label, '文案像按钮，自己与祖先都没有点击事件');
-    } else if (n.text && /(^|[\s_-])(btn|button|action|link|more|submit|send|cta)(--[\w-]+)?(\s|$)/.test(cls) && /^(view|text)$/.test(n.tag)) {
-      add('review', 'L2', n.line, label, '类名像按钮，没有点击事件（可能只是样式）');
-    }
+    const b = buttonish(n);
+    if (b) add(b.level, 'L2', n.line, label, b.detail);
   }
 
   // L5

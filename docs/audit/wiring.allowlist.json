@@ -428,6 +428,13 @@
       "updated_at": "2026-09-08"
     },
     {
+      "key": "party-brand-detail:L2:<text class=\"chip\">",
+      "status": "误报",
+      "reason": "品牌详情第 27 行的 .chips 里是只读标签；同页第 15 行的 .chip 带 bindtap=\"onRetry\" 是真按钮。同一个类名两用，词表分不开 —— 全仓 15 处 class=\"chip\" 里 9 处是筛选器或重试，删掉这个词那 9 处就没有任何分支兜得住",
+      "author": "Lin",
+      "updated_at": "2026-09-09"
+    },
+    {
       "key": "service:/miniprogram/services/library.js:downloadLink() 第 376 行 POST `${path}/${contentId}/download-link`",
       "status": "接",
       "reason": "→ #10",
