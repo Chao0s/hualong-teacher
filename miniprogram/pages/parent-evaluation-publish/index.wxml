@@ -37,7 +37,7 @@
     <textarea class="textarea" maxlength="1000" value="{{prompt}}" bindinput="onPromptInput" />
 
     <view class="btn btn--primary full full--gap" hover-class="btn--hover" bindtap="onPublish">
-      {{publishing ? '正在发起…' : '发起给全班家长'}}
+      {{publishing ? '正在发布…' : '发布给家长'}}
     </view>
     <text class="hint hint--gap">一次给本班每名在园幼儿各开一份。已经开过的那些不会被覆盖。</text>
   </view>
@@ -67,6 +67,6 @@
     </view>
   </block>
 
-  <view class="empty" wx:else>本班还没有发起过家长评价</view>
+  <view class="empty" wx:else>本班还没有发布过家长评价</view>
 
 </view>

@@ -428,13 +428,6 @@
       "updated_at": "2026-09-08"
     },
     {
-      "key": "parent-evaluation-publish:L5:原型按钮「发布给家长」",
-      "status": "接",
-      "reason": "→ #23",
-      "author": "Lin",
-      "updated_at": "2026-09-08"
-    },
-    {
       "key": "service:/miniprogram/services/library.js:downloadLink() 第 376 行 POST `${path}/${contentId}/download-link`",
       "status": "接",
       "reason": "→ #10",
@@ -471,10 +464,10 @@
     },
     {
       "key": "teacher-monthly-form:L5:原型按钮「保存评价」",
-      "status": "接",
-      "reason": "→ #23",
+      "status": "误报",
+      "reason": "原型只有一个按钮，状态机要两个：month_eval.save_draft（PUT /home-school/month-evals，NONE|e1→e1）与 month_eval.publish（POST …/publication，e1|e2→e3）。保留「保存草稿」「发布给家长」两个按钮，「草稿」取自 DDL 的 e1=draft草稿（F25）",
       "author": "Lin",
-      "updated_at": "2026-09-08"
+      "updated_at": "2026-09-09"
     },
     {
       "key": "teacher-profile:L1:<text class=\"file-op\"> bindtap=\"onToast\"「预览」",

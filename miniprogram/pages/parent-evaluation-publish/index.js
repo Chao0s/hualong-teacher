@@ -163,10 +163,10 @@ Page({
 
     const ok = await new Promise((resolve) => {
       wx.showModal({
-        title: '发起家长评价',
+        title: '发布家长评价',
         content: `将给本班每名在园幼儿各开一份「${form.title}」，家长立刻能看到。`
           + '已经开过的不会被覆盖。',
-        confirmText: '发起',
+        confirmText: '发布',
         success: (r) => resolve(r.confirm),
         fail: () => resolve(false),
       });
@@ -177,12 +177,12 @@ Page({
     try {
       const n = await co.openParentEvaluationWindow(form);
       this.setData({ publishing: false });
-      wx.showToast({ title: `已发起，共 ${n} 名幼儿`, icon: 'none' });
+      wx.showToast({ title: `已发布，共 ${n} 名幼儿`, icon: 'none' });
       this.refresh();
     } catch (err) {
       this.setData({ publishing: false });
       wx.showModal({
-        title: '发起失败',
+        title: '发布失败',
         content: err.userMessage || '请稍后重试',
         showCancel: false,
       });
