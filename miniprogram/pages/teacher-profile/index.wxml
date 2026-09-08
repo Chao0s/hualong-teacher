@@ -1,49 +1,80 @@
 <!-- 个人档案 —— 对照原型 screens/teacher-profile.html。
      原型的「编辑」按钮在自绘标题栏右上角；微信原生标题栏放不了自定义按钮，
-     这里把它放到「基本履历」那行的右侧。 -->
+     这里把它放到「基本履历」那行的右侧。
+
+     姓名之外的身份字段（任教班级、教龄、在园年数）一行都不画：会话里没有班级名，
+     `first_taught_at`／`joined_school_at` 契约恒为 null。理由在 index.js 的头注。 -->
 <view class="page">
 
-  <view class="chunk">
-    <view class="sec-row">
-      <text class="sec">基本履历</text>
-      <text class="edit-btn" bindtap="onOpenSheet">编辑</text>
-    </view>
-    <view class="hard-layout">
-      <view class="photo">教师{{'\n'}}照片</view>
+  <view class="hint" wx:if="{{loading}}">正在加载…</view>
+  <view class="hint" wx:elif="{{error}}" bindtap="onRetry">{{error}}　点此重试</view>
+
+  <block wx:else>
+
+    <view class="chunk">
+      <view class="sec-row">
+        <text class="sec">基本履历</text>
+        <text class="edit-btn {{blockReason ? 'edit-btn--off' : ''}}" bindtap="onOpenSheet">编辑</text>
+      </view>
+      <!-- 原型左侧那块「教师照片」占位框不画：db_teacher、db_teacher_profile
+           与契约里都没有任何一列存教师照片，也没有一条端点回它。
+           CLAUDE.md §8：没有数据源就不要渲染它，更不要编一个出来。 -->
       <view class="field-list">
-        <view class="field" wx:for="{{profile}}" wx:key="label">
+        <view class="field" wx:for="{{fields}}" wx:key="label">
           <text class="label">{{item.label}}</text>
           <text class="value">{{item.value}}</text>
         </view>
       </view>
+      <!-- `no_open_s2`：已有一条 s2 在审时说明原因，不等按下去才失败。
+           服务端仍会独立回 state_precondition_failed —— 这里是礼貌，不是关卡。 -->
+      <text class="block-note" wx:if="{{blockReason}}">{{blockReason}}</text>
     </view>
-  </view>
 
-  <view class="chunk">
-    <text class="sec">资质与荣誉</text>
-    <view class="soft-block" wx:for="{{credentialGroups}}" wx:key="subhead" wx:for-item="group">
-      <text class="subhead">{{group.subhead}}</text>
-      <view class="item-list">
-        <view class="item" wx:for="{{group.items}}" wx:key="name">
-          <view class="item__main">
-            <text class="item-title">{{item.name}}</text>
-            <view class="badge-row">
-              <text class="badge {{item.award ? 'badge--award' : ''}}">{{item.badge}}</text>
+    <view class="chunk" wx:if="{{change}}">
+      <text class="sec">修改申请</text>
+      <view class="change-row">
+        <!-- 只写时间，不缀「提交」二字：徽章已经说了这是哪一步，而接线扫描器的
+             L2 词表把任何带「提交」的文案都当成可点元素报一次。 -->
+        <text class="change-when">{{change.submittedLabel}}</text>
+        <text class="status status--{{change.tone}}">{{change.statusLabel}}</text>
+      </view>
+      <text class="change-note" wx:if="{{change.status === 's3'}}">{{change.appliedLabel}} 已写入档案。</text>
+      <text class="change-note" wx:elif="{{change.status === 's2'}}">管理端审核通过后自动更新档案。</text>
+      <text class="change-note" wx:elif="{{change.status === 's4'}}">这一份没有通过，可以改好后重新提交。</text>
+    </view>
+
+    <view class="chunk">
+      <text class="sec">资质与荣誉</text>
+      <view class="soft-block" wx:for="{{groups}}" wx:key="subhead" wx:for-item="group">
+        <text class="subhead">{{group.subhead}}</text>
+        <view class="item-list">
+          <view class="item" wx:for="{{group.items}}" wx:key="credentialId">
+            <view class="item__main">
+              <text class="item-title">{{item.name}}</text>
+              <view class="badge-row">
+                <text class="badge {{item.award ? 'badge--award' : ''}}">{{item.badge}}</text>
+              </view>
             </view>
-          </view>
-          <view class="file-actions">
-            <text class="file-op" data-action="预览：{{item.name}}" bindtap="onToast">预览</text>
-            <text class="file-op" data-action="下载：{{item.name}}" bindtap="onToast">下载</text>
+            <!-- 两个字走同一个 handler、同一条短链。**证书原件全是图片**
+                 （db_file.file_type=f1），所以两个字实际都走 wx.previewImage：开一层预览，
+                 **不往手机里存文件**，要存得在预览里自己长按保存。文档类（f2／f3／f4）
+                 才走下临时文件再打开那一支（services/media.js 的 openFile）。 -->
+            <view class="file-actions">
+              <text class="file-op" data-file-id="{{item.fileId}}" data-credential-id="{{item.credentialId}}" bindtap="onOpenFile">预览</text>
+              <text class="file-op" data-file-id="{{item.fileId}}" data-credential-id="{{item.credentialId}}" bindtap="onOpenFile">下载</text>
+            </view>
           </view>
         </view>
       </view>
+      <text class="hint" wx:if="{{!groups.length}}">还没有上传证书或奖项。</text>
     </view>
-  </view>
+
+  </block>
 
 </view>
 
-<!-- 提交个人档案修改。姓名和任教班级只读回显：两者由园方名冊维护，
-     教师自助改档案只能改专业档案与证书，改这两项等于给自己改授权边界。 -->
+<!-- 提交个人档案修改。姓名与任教班级不在这张表单上：两者由园方名冊维护，教师
+     自助改档案只能改专业档案与证书，改这两项等于给自己改授权边界。 -->
 <view class="sheet-mask" wx:if="{{sheetOpen}}" bindtap="onCloseSheet">
   <view class="sheet" catchtap="noop">
     <view class="sheet-head">
@@ -53,17 +84,20 @@
 
     <view class="form-grid">
       <view class="form-row">
-        <text class="form-row__label">姓名</text>
-        <view class="readback">{{teacher.name}}</view>
+        <text class="form-row__label">岗位</text>
+        <picker mode="selector" range="{{jobRoleOptions}}" range-key="label" value="{{jobRoleIndex}}" bindchange="onJobRoleChange">
+          <view class="select">{{jobRoleOptions[jobRoleIndex].label}}</view>
+        </picker>
+      </view>
+      <!-- 职称是 VARCHAR(50) 自由文本，没有枚举，所以是输入框不是下拉。 -->
+      <view class="form-row">
+        <text class="form-row__label">职称</text>
+        <input class="input" maxlength="{{titleMax}}" placeholder="如：一级教师" value="{{title}}" bindinput="onTitleInput" />
       </view>
       <view class="form-row">
-        <text class="form-row__label">任教班级</text>
-        <view class="readback">{{teacher.className}}</view>
-      </view>
-      <view class="form-row" wx:for="{{selects}}" wx:key="key">
-        <text class="form-row__label">{{item.label}}</text>
-        <picker mode="selector" range="{{item.options}}" value="{{item.index}}" data-key="{{item.key}}" bindchange="onSelectChange">
-          <view class="select">{{item.options[item.index]}}</view>
+        <text class="form-row__label">最高学历</text>
+        <picker mode="selector" range="{{educationOptions}}" range-key="label" value="{{educationIndex}}" bindchange="onEducationChange">
+          <view class="select">{{educationOptions[educationIndex].label}}</view>
         </picker>
       </view>
     </view>
@@ -76,47 +110,49 @@
       </view>
 
       <view class="material-list">
-        <view class="material-row" wx:for="{{materials}}" wx:key="id" wx:for-item="row" wx:for-index="rowIndex">
+        <view class="material-row" wx:for="{{materials}}" wx:key="key" wx:for-item="row" wx:for-index="rowIndex">
           <view class="material-row-head">
-            <text class="remove-file {{materials.length > 1 ? '' : 'remove-file--hidden'}}" data-index="{{rowIndex}}" bindtap="onRemoveMaterial">删除</text>
+            <text class="remove-file" data-index="{{rowIndex}}" bindtap="onRemoveMaterial">删除</text>
           </view>
 
           <view class="form-row">
             <text class="form-row__label">文件类型</text>
-            <picker mode="selector" range="{{materialTypes}}" value="{{row.typeIndex}}" data-index="{{rowIndex}}" bindchange="onMaterialTypeChange">
-              <view class="select">{{materialTypes[row.typeIndex]}}</view>
+            <picker mode="selector" range="{{credentialTypeOptions}}" range-key="label" value="{{row.typeIndex}}" data-index="{{rowIndex}}" bindchange="onMaterialTypeChange">
+              <view class="select">{{credentialTypeOptions[row.typeIndex].label}}</view>
             </picker>
           </view>
 
-          <!-- 「类别」下拉是双用的：选「学历证书」时列 本科/硕士/博士，其余时列 校级…国家级。 -->
+          <!-- 三种文件类型共用同一个等级下拉：原型「学历证书」那一支列的
+               本科／硕士／博士不在 credential_level 里，学历的唯一落点是上面那个
+               「最高学历」（G37）。 -->
           <view class="form-row">
-            <text class="form-row__label">{{row.typeIndex === 0 ? '学历类别' : '等级类别'}}</text>
-            <picker mode="selector" range="{{row.categories}}" value="{{row.categoryIndex}}" data-index="{{rowIndex}}" bindchange="onMaterialCategoryChange">
-              <view class="select">{{row.categories[row.categoryIndex]}}</view>
+            <text class="form-row__label">等级</text>
+            <picker mode="selector" range="{{credentialLevelOptions}}" range-key="label" value="{{row.levelIndex}}" data-index="{{rowIndex}}" bindchange="onMaterialLevelChange">
+              <view class="select">{{credentialLevelOptions[row.levelIndex].label}}</view>
             </picker>
           </view>
 
           <view class="form-row">
             <text class="form-row__label">文件名称</text>
-            <input class="input" maxlength="150" placeholder="如：学士学位证" value="{{row.name}}" data-index="{{rowIndex}}" bindinput="onMaterialNameInput" />
+            <input class="input" maxlength="{{credentialNameMax}}" placeholder="如：学士学位证" value="{{row.name}}" data-index="{{rowIndex}}" bindinput="onMaterialNameInput" />
           </view>
 
           <view class="form-row">
             <text class="form-row__label">上传原文件</text>
             <view class="file-pick" data-index="{{rowIndex}}" bindtap="onPickFile">
-              <text class="file-pick__note">{{row.file || '未选择文件'}}</text>
+              <text class="file-pick__note">{{row.uploading ? '正在上传…' : (row.fileName || '未选择文件')}}</text>
               <text class="file-pick__btn">选择</text>
             </view>
           </view>
         </view>
       </view>
 
-      <text class="upload-note">每份文件都需要填写文件类型、文件名称，并上传对应原文件。文件标签用于后续档案分析，原文件用于审核留存。</text>
+      <text class="upload-note">这份清单就是提交后的完整清单：删掉一行等于申请删掉那一张证书。每份文件都要填名称并上传原文件。</text>
     </view>
 
     <view class="sheet-actions">
       <view class="btn btn--ghost" hover-class="btn--hover" bindtap="onCloseSheet">取消</view>
-      <view class="btn btn--primary" hover-class="btn--hover" bindtap="onSubmitEdit">提交审核</view>
+      <view class="btn btn--primary" hover-class="btn--hover" bindtap="onSubmitEdit">{{submitting ? '提交中…' : '提交审核'}}</view>
     </view>
   </view>
 </view>

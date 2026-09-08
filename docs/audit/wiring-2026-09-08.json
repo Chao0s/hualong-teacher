@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-08T20:35:54.657Z",
+  "generatedAt": "2026-09-08T21:46:13.008Z",
   "contract": "G:\\My Drive\\Workplace\\China KG Platform\\hualong-backend\\api\\openapi.yaml",
   "pages": [
     {
@@ -626,7 +626,7 @@
     {
       "name": "teacher-profile",
       "title": "个人档案",
-      "wired": false,
+      "wired": true,
       "writes": "yes",
       "context": {
         "title": "个人档案",
@@ -635,7 +635,7 @@
         "role": "本人专业档案与证书",
         "flow": "教师看自己的；修改走申请（POST /teacher-profile/changes，NONE→s2）→ 管理端 t3 队列审批（s3 通过／s4 驳回）→ 才落正本"
       },
-      "events": 15,
+      "events": 18,
       "prototype": {
         "buttons": 12,
         "listeners": 8,
@@ -643,38 +643,12 @@
       },
       "findings": [
         {
-          "key": "teacher-profile:L1:<text class=\"file-op\"> bindtap=\"onToast\"「预览」",
-          "level": "likely",
+          "key": "teacher-profile:L1:<text class=\"remove-file\"> bindtap=\"onRemoveMaterial\"「删除」",
+          "level": "review",
           "layer": "L1",
-          "line": 35,
-          "what": "<text class=\"file-op\"> bindtap=\"onToast\"「预览」",
-          "detail": "handler 无 setData、无导航、无 service 调用，只弹提示或为空",
-          "verdict": {
-            "key": "teacher-profile:L1:<text class=\"file-op\"> bindtap=\"onToast\"「预览」",
-            "status": "接",
-            "reason": "→ #15",
-            "author": "Lin",
-            "updated_at": "2026-09-08"
-          },
-          "falsePositive": false,
-          "context": {
-            "page": "teacher-profile",
-            "title": "个人档案",
-            "path": "底部导航「首页」 → 教研培训 → 个人档案",
-            "module": "用户管理",
-            "role": "本人专业档案与证书",
-            "flow": "教师看自己的；修改走申请（POST /teacher-profile/changes，NONE→s2）→ 管理端 t3 队列审批（s3 通过／s4 驳回）→ 才落正本",
-            "button": "预览",
-            "note": "证书文件预览／下载。证书的 file_id 是 db_teacher_credential 的直连列，取档同样走 GET /media/files/{file_id}/url（owner_object=db_teacher_credential，只回本人的）。整页仍是字面量，接线归票据 #15。"
-          }
-        },
-        {
-          "key": "teacher-profile:L1:<text class=\"file-op\"> bindtap=\"onToast\"「下载」",
-          "level": "likely",
-          "layer": "L1",
-          "line": 36,
-          "what": "<text class=\"file-op\"> bindtap=\"onToast\"「下载」",
-          "detail": "handler 无 setData、无导航、无 service 调用，只弹提示或为空",
+          "line": 115,
+          "what": "<text class=\"remove-file\"> bindtap=\"onRemoveMaterial\"「删除」",
+          "detail": "写入类文案，handler 却只改本地 data，没到 service",
           "verdict": null,
           "falsePositive": null,
           "context": {
@@ -684,33 +658,7 @@
             "module": "用户管理",
             "role": "本人专业档案与证书",
             "flow": "教师看自己的；修改走申请（POST /teacher-profile/changes，NONE→s2）→ 管理端 t3 队列审批（s3 通过／s4 驳回）→ 才落正本",
-            "button": "下载",
-            "note": "证书文件预览／下载。证书的 file_id 是 db_teacher_credential 的直连列，取档同样走 GET /media/files/{file_id}/url（owner_object=db_teacher_credential，只回本人的）。整页仍是字面量，接线归票据 #15。"
-          }
-        },
-        {
-          "key": "teacher-profile:L6:screens.tsv writes=yes",
-          "level": "likely",
-          "layer": "L6",
-          "line": 0,
-          "what": "screens.tsv writes=yes",
-          "detail": "登记为有写入的页面，却没有 require 任何 service（整页仍是字面量）",
-          "verdict": {
-            "key": "teacher-profile:L6:screens.tsv writes=yes",
-            "status": "接",
-            "reason": "审核人对 screens.tsv 的理解见 #24；→ #24",
-            "author": "Lin",
-            "updated_at": "2026-09-08"
-          },
-          "falsePositive": false,
-          "context": {
-            "page": "teacher-profile",
-            "title": "个人档案",
-            "path": "底部导航「首页」 → 教研培训 → 个人档案",
-            "module": "用户管理",
-            "role": "本人专业档案与证书",
-            "flow": "教师看自己的；修改走申请（POST /teacher-profile/changes，NONE→s2）→ 管理端 t3 队列审批（s3 通过／s4 驳回）→ 才落正本",
-            "button": "",
+            "button": "删除",
             "note": ""
           }
         }
@@ -2149,6 +2097,14 @@
       "unusedExports": [
         "fileUrl"
       ]
+    },
+    {
+      "file": "/miniprogram/services/profile.js",
+      "calls": 3,
+      "findings": [],
+      "unusedExports": [
+        "listChanges"
+      ]
     }
   ],
   "contractUnused": [
@@ -2278,90 +2234,6 @@
         "path": "底部导航「首页」 → 案例详情",
         "button": "撤回",
         "who": "同资源：F27 已推翻，教师端不做撤回按钮。这条端点待删，见 G74 与 #32"
-      }
-    },
-    {
-      "key": "contract:GET /teacher-profile",
-      "method": "GET",
-      "path": "/teacher-profile",
-      "tags": "org",
-      "action": "",
-      "blockedOn": "",
-      "summary": "本人专业档案",
-      "verdict": {
-        "key": "contract:GET /teacher-profile",
-        "status": "接",
-        "reason": "→ #15",
-        "author": "Lin",
-        "updated_at": "2026-09-08"
-      },
-      "falsePositive": false,
-      "context": {
-        "description": "教师读得到自己的档案，**改不了它** —— 修改一律经 `POST /teacher-profile/changes` 提交申请，管理端 t3 队列批准后才落 canonical（G45 于 2026-08-27 由园方拍板走申请制； 资产已经站在这里：`db_teacher_profile_change` 表、t3 队列、 `db_review_action.teacher_profile_change_id` 外键都已建好）。 **姓名与任教班级不在这里。** 那是名册权威持有的身份字段，随会话 `scope` 下发 （§6.4：`scope` 只作显示用）。放进本端点等于让教师给自己改授权边界。",
-        "registry": null,
-        "page": "teacher-profile",
-        "pageTitle": "个人档案",
-        "path": "底部导航「首页」 → 教研培训 → 个人档案",
-        "button": "进页即读",
-        "who": "教师读自己的专业档案（姓名与班级不在这里，那是名册字段）"
-      }
-    },
-    {
-      "key": "contract:GET /teacher-profile/changes",
-      "method": "GET",
-      "path": "/teacher-profile/changes",
-      "tags": "org",
-      "action": "",
-      "blockedOn": "",
-      "summary": "本人的档案修改申请",
-      "verdict": {
-        "key": "contract:GET /teacher-profile/changes",
-        "status": "接",
-        "reason": "→ #15",
-        "author": "Lin",
-        "updated_at": "2026-09-08"
-      },
-      "falsePositive": false,
-      "context": {
-        "description": "只回本人的。教师读这一份是为了知道上一次改到哪一步了 —— 没有它，提交完就没有 任何回执，教师会以为没提交上去。",
-        "registry": null,
-        "page": "teacher-profile",
-        "pageTitle": "个人档案",
-        "path": "底部导航「首页」 → 教研培训 → 个人档案",
-        "button": "「修改申请」区块",
-        "who": "教师看自己提交过的修改申请到了哪一步（待审／通过／驳回）。没有它，提交完就没有回执"
-      }
-    },
-    {
-      "key": "contract:POST /teacher-profile/changes",
-      "method": "POST",
-      "path": "/teacher-profile/changes",
-      "tags": "org",
-      "action": "teacher_profile_change.submit",
-      "blockedOn": "",
-      "summary": "提交档案修改申请（NONE→s2）",
-      "verdict": {
-        "key": "contract:POST /teacher-profile/changes",
-        "status": "接",
-        "reason": "→ #15",
-        "author": "Lin",
-        "updated_at": "2026-09-08"
-      },
-      "falsePositive": false,
-      "context": {
-        "description": "一次提交产生一条 `s2=待审核` 的申请，进管理端 t3 队列。**教师端不写 `s1` 草稿** —— 草稿留在客户端，服务端只见提交后的那一份（`db_teacher_profile_change` 的 `s1` 与 `s5` 至今没有教师端端点，见 `api/action-coverage.tsv`）。 `change_payload` 是变更字段和值，不是整份档案：只送要改的键。派生字段 （`school_id`／`teacher_id`／`teacher_profile_id`／`submitted_at`）即使提交也被忽略（§7.3）。 文本走 ADR-0016 第 2 行的把关：**完整预览 ＋ 明确确认**后才发。证书原件是图片时 另走图片那一条。",
-        "registry": {
-          "table": "db_teacher_profile_change",
-          "from": "NONE",
-          "to": "s2",
-          "precondition": "self_scope_inline;no_open_s2;full_preview_confirmed;credential_file_owned",
-          "authority": "G45;ADR-0016"
-        },
-        "page": "teacher-profile",
-        "pageTitle": "个人档案",
-        "path": "底部导航「首页」 → 教研培训 → 个人档案",
-        "button": "提交审核",
-        "who": "教师提交档案修改申请（NONE→s2）→ 管理端 t3 队列批准后才改正本。只送要改的键，不送整份档案"
       }
     },
     {
@@ -3393,13 +3265,13 @@
   ],
   "summary": {
     "pages": 55,
-    "wired": 26,
+    "wired": 27,
     "sure": 0,
-    "likely": 25,
-    "review": 4,
+    "likely": 22,
+    "review": 5,
     "falsePositives": 10,
-    "decided": 73,
+    "decided": 68,
     "contractTeacherOps": 92,
-    "contractUnused": 43
+    "contractUnused": 40
   }
 }

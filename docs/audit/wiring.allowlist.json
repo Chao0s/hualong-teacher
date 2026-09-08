@@ -176,20 +176,6 @@
       "updated_at": "2026-09-08"
     },
     {
-      "key": "contract:GET /teacher-profile",
-      "status": "接",
-      "reason": "→ #15",
-      "author": "Lin",
-      "updated_at": "2026-09-08"
-    },
-    {
-      "key": "contract:GET /teacher-profile/changes",
-      "status": "接",
-      "reason": "→ #15",
-      "author": "Lin",
-      "updated_at": "2026-09-08"
-    },
-    {
       "key": "contract:GET /teacher/growth-book/precheck",
       "status": "接",
       "reason": "→ #16",
@@ -263,13 +249,6 @@
       "key": "contract:POST /tasks/{task_id}/completion",
       "status": "接",
       "reason": "預設應該是 completion 是 0 吧，然後完成任務的話，completion 是 1？；→ #18",
-      "author": "Lin",
-      "updated_at": "2026-09-08"
-    },
-    {
-      "key": "contract:POST /teacher-profile/changes",
-      "status": "接",
-      "reason": "→ #15",
       "author": "Lin",
       "updated_at": "2026-09-08"
     },
@@ -454,20 +433,6 @@
       "reason": "原型只有一个按钮，状态机要两个：month_eval.save_draft（PUT /home-school/month-evals，NONE|e1→e1）与 month_eval.publish（POST …/publication，e1|e2→e3）。保留「保存草稿」「发布给家长」两个按钮，「草稿」取自 DDL 的 e1=draft草稿（F25）",
       "author": "Lin",
       "updated_at": "2026-09-09"
-    },
-    {
-      "key": "teacher-profile:L1:<text class=\"file-op\"> bindtap=\"onToast\"「预览」",
-      "status": "接",
-      "reason": "→ #15",
-      "author": "Lin",
-      "updated_at": "2026-09-08"
-    },
-    {
-      "key": "teacher-profile:L6:screens.tsv writes=yes",
-      "status": "接",
-      "reason": "审核人对 screens.tsv 的理解见 #24；→ #24",
-      "author": "Lin",
-      "updated_at": "2026-09-08"
     },
     {
       "key": "teacher-task-detail:L1:<text class=\"file-op\"> bindtap=\"onToast\"「预览」",
