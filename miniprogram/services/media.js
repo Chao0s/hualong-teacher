@@ -1,14 +1,15 @@
 /**
- * 媒体 —— 契约的 media 模块。**本轮只有取档这一半。**
+ * 媒体 —— 契约的 media 模块，取档与上传两半都在这里。
  *
  * Boundary: 页面 require 本模块、把返回值直接用，**不在页面里拼 URL、不在页面里
  * 写宿主表名、不在页面里判文件类型**。
  *
+ *   `POST /media/upload-credentials`   签发 COS 表单上传凭证，**一次库都不写**
+ *   `POST /media/files`                把已上传的对象落成一行 db_file
  *   `GET /media/files/{file_id}/url`   逐张逐次签发短时读取 URL
  *
- * 上传那一半（`POST /media/upload-credentials`、`POST /media/files`）归票据 #2，
- * 本轮不做。它是**纯追加**：加两个写函数与一张上传用的枚举表，本文件已有的读函数
- * 一行都不用动。
+ * 上传是三步一趟，中间那一步不经过 `utils/request.js` —— 理由写在下面
+ * 「字节不走 API 实例」那一节，不是随手开的第二个出口。
  *
  * ── 五个家族本来就有取档端点，不需要各开一条 ─────────────────────────────────
  *
@@ -58,8 +59,10 @@
  */
 
 const api = require('../utils/request');
+const { ApiError } = require('../utils/errors');
 
 const FILE_PATH = '/media/files';
+const CREDENTIALS_PATH = '/media/upload-credentials';
 
 /**
  * 宿主表名。`owner_object` 收的就是这个字符串 ——
@@ -174,10 +177,201 @@ async function openFile(fileId, owner) {
   return downloadThenOpen(link.url, openAs);
 }
 
+/* ── 上传 ────────────────────────────────────────────────────────────────── */
+
+// api/action-registry.tsv 的 action_key。**签发凭证没有 action_key，那是对的** ——
+// 它一次库都不写，登记表里也就没有它的行，不要替它发明一行。
+const ACTIONS = { commit: 'media.file.commit' };
+
+/**
+ * `UploadCredentialsRequest.content_type` 的 6 值枚举，按扩展名查。
+ *
+ * 枚举里没有 xlsx，也没有影片：影片另有 DO-NOT-BUILD 12 挡着（`wx.uploadFile`
+ * 单次 10 MB 硬上限使手机视频根本发不出去）。查不到的扩展名**当场拒绝**，不猜一个
+ * `application/octet-stream` 发出去 —— 服务端的 enum 会回 422，而教师看到的会是
+ * 一句和文件格式无关的话。
+ */
+const CONTENT_TYPE = {
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  webp: 'image/webp',
+  heic: 'image/heic',
+  pdf: 'application/pdf',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+};
+
+/**
+ * `db_file_ref.usage_key` 的 12 值域（`01_schema.sql:528` 的列注释）里，本客户端
+ * 用到的两个。
+ *
+ * **这一格只说明用途，决定不了库里那一行。** 挂哪个 `usage_key` 是宿主写入端点
+ * 的事：`POST /moments` 写的是 `image`；资源与案例的封面与 Word 是
+ * `db_resource`／`db_case` 上的**直接外键列**，根本没有 `db_file_ref` 行。
+ */
+const USAGE = { IMAGE: 'image', MAIN_FILE: 'main_file' };
+
+/** 契约 `UploadCredentialsRequest.byte_size` 的上界，也是响应的 `max_bytes`。 */
+const MAX_BYTES = 10485760;
+
+/** 扩展名 -> content_type。取不到就是空串，调用方据此拒绝。 */
+function contentTypeOf(filePath) {
+  const dot = String(filePath || '').lastIndexOf('.');
+  const ext = dot > -1 ? String(filePath).slice(dot + 1).toLowerCase() : '';
+  return CONTENT_TYPE[ext] || '';
+}
+
+/**
+ * ── 字节不走 API 实例，所以上传是第二个 HTTP 出口 ───────────────────────────
+ *
+ * `utils/request.js` 是**通往 API 实例的**唯一出口：它管的是 §1–§5 那一套 ——
+ * Bearer 票、`X-Request-Id`、幂等键、§2.2 的错误信封、derived 剥离、429 退避。
+ * 这一发一样都用不上：字节直连对象存储（§8.1，生产上永远不经过 API 实例），
+ * 授权在 `form_fields` 的签名里而不在 Authorization 头里，回来的也不是契约的
+ * 错误信封。塞进 `utils/request.js` 会让那个模块的每一条承诺当场失真。
+ *
+ * 取档那一半早就是这样了：`downloadThenOpen` 的 `wx.downloadFile` 同样直连对象
+ * 存储、同样不带票。上传只是把同一条边界补齐，不是新开一条。
+ *
+ * **`field_order` 只能尽力**：`wx.uploadFile` 的 `formData` 是个对象，字段顺序由
+ * 平台序列化时决定。这里按 `field_order` 逐个塞进去（JS 的字符串键保持插入顺序），
+ * 文件字段交给 `name` 由平台放最后 —— 这是客户端能做到的全部，做不到的那部分
+ * 写在这里，不假装保证得了。
+ */
+function postObject(cred, filePath) {
+  return new Promise((resolve, reject) => {
+    const formData = {};
+    (cred.field_order || []).forEach((key) => {
+      const value = cred.form_fields ? cred.form_fields[key] : undefined;
+      if (value !== undefined) formData[key] = value;
+    });
+    wx.uploadFile({
+      // 地址由服务端给（`UploadCredentials.url`），客户端不拼、也不改 —— policy
+      // 把 key 绑死到单一 object_key，改一个字这一发就该失败。
+      url: cred.url,
+      filePath,
+      // COS 表单上传（PostObject）的文件字段就叫 `file`，且必须排在最后。
+      name: 'file',
+      formData,
+      success: (res) => {
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          resolve();
+          return;
+        }
+        reject(objectStoreError(res));
+      },
+      fail: (err) => reject(new ApiError({
+        statusCode: 0,
+        code: 'upstream_unavailable',
+        message: (err && err.errMsg) ? `文件上传失败：${err.errMsg}` : '文件上传失败，请稍后重试',
+      })),
+    });
+  });
+}
+
+/**
+ * 对象存储那一发失败时的错误。
+ *
+ * 本机的收件口回的是契约的错误信封（JSON），生产上的 COS 回的是 XML。解得开就用
+ * 它的 `code`／`message`，解不开就退回一句可以直接 toast 的中文 —— **不把 XML
+ * 原文丢给教师看**。
+ */
+function objectStoreError(res) {
+  let body = res.data;
+  if (typeof body === 'string') {
+    try { body = JSON.parse(body); } catch (e) { body = null; }
+  }
+  if (body && body.code) {
+    return new ApiError({
+      statusCode: res.statusCode,
+      code: body.code,
+      message: body.message,
+      requestId: body.request_id,
+      details: body.details,
+    });
+  }
+  return new ApiError({
+    statusCode: res.statusCode,
+    code: 'upstream_unavailable',
+    message: '文件上传失败，请稍后重试',
+  });
+}
+
+/**
+ * 传一个文件：签发凭证 → 传字节 → 落库。**页面只需要调这一个函数。**
+ *
+ * @param {string} filePath 本地临时路径（`wx.chooseMedia`／`wx.chooseMessageFile` 给的）
+ * @param {{usageKey: string, byteSize: number, fileName: string}} opts
+ *        `byteSize` 是选文件时平台报的字节数。**必须传**：凭证要在字节发出去之前
+ *        就把 `content-length-range` 绑进 policy，猜一个会让 policy 与实物对不上。
+ *        `fileName` 可不传。`wx.chooseMessageFile` 的临时路径不保证带扩展名，而
+ *        `content_type` 是按扩展名查的 —— 有原名就用原名认，认不出再退回路径。
+ * @returns {Promise<{fileId, name, type, typeLabel, size}>} 落库后的那一行 db_file
+ *
+ * 三步都可能抛 `ApiError`，原样往上抛：
+ *   `422 validation_failed`  格式不在 6 值枚举里、超过 10 MB、票据无效或未收到字节
+ *   `401`                    交给页面的 `guard` 处理
+ *
+ * **落库之前不存在 file_id。** 中途失败就什么都没有发生 —— 没有半条记录，也不占
+ * 任何业务对象的图片额度（契约 §8.3）。所以调用方只要 catch 住这一发即可，
+ * 不需要回滚什么。
+ *
+ * `file_name` 是**服务端派生的**，不是教师挑的那个名字：两个端点的请求体都放不下
+ * 原始文件名（后端 `db/GAPS.md` G77）。要在屏幕上显示教师挑的名字，就用本地那一个，
+ * 不要拿这里回的名字去冒充。
+ */
+async function uploadFile(filePath, { usageKey, byteSize, fileName } = {}) {
+  const contentType = contentTypeOf(fileName) || contentTypeOf(filePath);
+  if (!contentType) {
+    throw new ApiError({
+      statusCode: 422,
+      code: 'validation_failed',
+      message: '这种格式不能上传，请换成图片、PDF 或 Word 文档',
+    });
+  }
+  // 前端预检**不替代**服务端复验（契约 §8.2 原话）：服务端按实际字节再验一次。
+  // 这里挡下来只是为了省一趟往返，并且给一句说得清的中文。
+  if (!Number.isInteger(byteSize) || byteSize < 1) {
+    throw new ApiError({
+      statusCode: 422,
+      code: 'validation_failed',
+      message: '读不到文件大小，请重新选择',
+    });
+  }
+  if (byteSize > MAX_BYTES) {
+    throw new ApiError({
+      statusCode: 422,
+      code: 'validation_failed',
+      message: `单个文件不能超过 ${MAX_BYTES / 1024 / 1024} MB`,
+    });
+  }
+
+  const cred = await api.post(CREDENTIALS_PATH, {
+    body: { usage_key: usageKey, content_type: contentType, byte_size: byteSize },
+  });
+  await postObject(cred, filePath);
+  // `idempotency` 在登记表里是 `optional`，所以 utils/request.js 不为它生成键。
+  // 这一发真正的幂等键是 upload_ticket：同一张票据再提交一次回同一行，不新建。
+  const file = await api.post(FILE_PATH, {
+    action: ACTIONS.commit,
+    body: { upload_ticket: cred.upload_ticket },
+  });
+  return {
+    fileId: file.file_id,
+    name: file.file_name,
+    type: file.file_type,
+    typeLabel: FILE_TYPE[file.file_type] || '文件',
+    size: file.file_size,
+  };
+}
+
 module.exports = {
   OWNER,
   FILE_TYPE,
+  USAGE,
+  MAX_BYTES,
   PLACEHOLDER_TEXT,
   fileUrl,
   openFile,
+  uploadFile,
 };

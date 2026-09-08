@@ -670,3 +670,36 @@ growth-book-edit.html   · growth-book-sample.html · growth-book-view.html
 | 删除 delete | 在园时光 `DELETE /moments/{id}` 是作者物理删自己发的贴文（F10／Q59） | 不变，也不适用于资源与案例 —— 进过审核就有 `db_review_action` 指着它 |
 
 **代价**：已通过（`s3`）的内容作者想改，只能请管理者下架后重新上传一份，旧的那份与它的审核历史留在 `s5`。比 F6 多一次上传，少一条状态边。
+
+---
+
+## 2026-09-09：Word 附件只能从微信聊天记录里选，按钮照实写
+
+本节记 `upload-resource`（上传资料，首页 → 上传资源）那两个「Word附件」控件到底能做什么。
+资源表单与案例表单各一个，同一个 handler。
+
+**结论：控件保留，改用 `wx.chooseMessageFile`，按钮文字从「上传」改成「从聊天选」。**
+
+**为什么不能是「上传」。** 小程序没有手机文件系统选择器。`wx.chooseMessageFile` 只读得到
+用户在微信聊天里收发过的文件 —— 这是平台的边界，不是实作没做完。写「上传」会让教师去相册
+和文件管理器里找一个不存在的入口，找不到就以为功能坏了。教师的走法是：先把 .docx 发给
+「文件传输助手」，再回小程序点「从聊天选」。点了没选到东西时，页面把这句话说出来。
+
+**扩展名锁死 `docx`。** 契约 `UploadCredentialsRequest.content_type` 的 6 值枚举里，Word
+只有 .docx 这一种；.doc 传上去在签发凭证那一步就是 422。
+
+**为什么不删掉这个控件。** CLAUDE.md §8 那条「没有数据源就不要渲染它」针对的是编出来的
+内容。这里两侧都有真的落点：契约的 `ResourceWrite.word_file_id`／`CaseWrite.word_file_id`，
+以及 `db_resource.word_file_id`／`db_case.word_file_id` 两条真外键。路径真的走得通，
+只是入口比原型画的窄。
+
+**代价三条，都要说给下一个人听：**
+
+| 代价 | 谁受影响 | 依据 |
+|---|---|---|
+| 文档必须先经过一次微信聊天，才选得到 | 教师 | `wx.chooseMessageFile` 的取值范围 |
+| 库里存的文件名不是教师挑的那个 | 以后读这份档案的人 | 后端 `db/GAPS.md` **G77**（两个媒体端点的请求体都放不下原始文件名，服务端从 object_key 派生一个）。屏幕上显示的是本地那一个，只为让教师认出自己选的是哪一份 |
+| 封面与 Word 传上去之后**取不回来** | 资源／案例详情页 | 后端 `db/GAPS.md` **G78**（两列是直接外键列，没有 `db_file_ref` 行，而 `GET /media/files/{file_id}/url` 的每一支都先要求有这样一行）。资源与案例的取档另走 `POST /library/{族}/{id}/download-link` 的 30 分钟短链，那一条要内容已经是 `s3` |
+
+**这一条不改契约。** `api/openapi.yaml` 的 media 一族与两个 `*Write` schema 早就完整，
+本轮一个字都没动。

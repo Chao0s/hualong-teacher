@@ -60,12 +60,12 @@
   },
 
   "handlers": {
-    "upload-resource.onPickWord": "选 Word 附件并上传。上传走 /media/upload-credentials + /media/files 那一族，本地契约服务端不接对象存储，所以现在只弹提示。",
-    "upload-resource.onPickCover": "选封面图并上传，同上，媒体族未接。",
+    "upload-resource.onPickWord": "选 Word 附件（wx.chooseMessageFile，只收 .docx）并上传，走 POST /media/upload-credentials → 传字节 → POST /media/files 三步，落回的 file_id 随资源／案例的 word_file_id 一起提交。选不到文件时提示教师先把文档发到微信聊天。",
+    "upload-resource.onPickCover": "选封面图并上传，同上三步，usage_key 是 image，落回的 file_id 随资源／案例的 cover_file_id 一起提交。",
     "party-study-detail.onOpenFile": "「在线预览」「下载文件」两个按钮同一个 handler、同一条链接：GET /media/files/{file_id}/url 取短时 URL，再下到临时文件 wx.openDocument —— 小程序上「预览」就是「下载」。",
     "party-activity-detail.onDownload": "党建活动附件下载，同上一条，走 GET /media/files/{file_id}/url。",
     "training-detail.onFileTap": "研修材料下载，走 GET /media/files/{file_id}/url。服务端同事务写一笔 db_content_access_event（content_type='k7'、event_type='downloaded'、actor_type='c1'），重复成功重复计数。",
-    "home-school-moment-publish.onAddPhoto": "选照片上传，媒体族未接。",
+    "home-school-moment-publish.onAddPhoto": "选照片并逐张上传，同一条三步，一则最多 9 张；传成的 file_id 随 POST /moments 的 file_id 数组落 db_file_ref(owner_object='db_moment')。",
     "teacher-task-detail.onToast": "「预览」「下载」是任务附件；「提交材料」与「完成」的分工、附件上传端点在权威里都没定（G40 notes）。整页阻于 G62。",
     "teacher-profile.onToast": "证书文件预览／下载。证书的 file_id 是 db_teacher_credential 的直连列，取档同样走 GET /media/files/{file_id}/url（owner_object=db_teacher_credential，只回本人的）。整页仍是字面量，接线归票据 #15。",
     "coordination-file-list.onDownload": "协调文件附件下载，走 GET /media/files/{file_id}/url。整页仍是字面量，CATALOG 写死，没有真的 file_id 可传；这一页没有票据。",

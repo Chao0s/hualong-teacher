@@ -13,16 +13,25 @@
  *    输入却不保存的控件比没有这个控件更糟。案例表单的「关联资源」保留，它对应
  *    `CaseWrite.resource_ids`，是真的存得下去的那一侧。
  *
- * 2. **封面与 Word 附件在本环境传不上去。** `POST /media/upload-credentials` 在
- *    契约服务端是 `not_implemented`（覆盖账本里登记着）。所以这两个入口点下去
- *    说明情况，不假装已上传 —— 原型的 `已选择Word附件` 토스트正是那种假装。
+ * 2. **Word 附件只能从微信聊天记录里选。** 小程序没有手机文件系统选择器：
+ *    `wx.chooseMessageFile` 只读得到用户在微信聊天里收发过的文件，这是平台的
+ *    边界，不是本页的偷懒。所以按钮写「从聊天选」而不是「上传」——「上传」会让
+ *    人去相册和文件管理器里找一个找不到的入口。教师的做法是先把 .docx 发给
+ *    「文件传输助手」，再回来选；点了没选到时，页面就把这句话说出来。
+ *    扩展名锁死 `docx`：契约的 6 值 `content_type` 枚举里 Word 只有 .docx 这一种。
  *
- * 3. **年级是多选。** `db_resource.grade` 是 `TEXT[]`，DDL 注释写着「适用年级
+ * 3. **屏幕上显示的是教师挑的那个文件名，落库的不是。** 两个媒体端点的请求体都
+ *    放不下原始文件名（后端 `db/GAPS.md` G77），服务端因此从 object_key 派生一个。
+ *    这里显示本地那个名字是为了让教师认出自己选的是哪一份，**不是**在说库里存的
+ *    就是这个名字。
+ *
+ * 4. **年级是多选。** `db_resource.grade` 是 `TEXT[]`，DDL 注释写着「适用年级
  *    (多选)」；而 `db_case.case_grade` 是单值。两张表在这一列上不同形，表单
  *    因此也不同形，不强行统一。
  */
 
 const library = require('../../services/library');
+const media = require('../../services/media');
 const guard = require('../../utils/guard');
 const session = require('../../utils/session');
 
@@ -41,7 +50,12 @@ Page({
 
     // 从会话读，不再写死「陈老师 / 大一班」
     teacher: { name: '', className: '' },
-    coverPicked: false,
+
+    // 封面与 Word 附件。id 是落库之后的 file_id，note 是屏幕上那一行字。
+    coverFileId: null,
+    coverNote: '未选择文件',
+    wordFileId: null,
+    wordNote: '',
 
     // 取值全部来自服务层的枚举表
     resourceTags: [],
@@ -129,21 +143,79 @@ Page({
     });
   },
 
+  /** 封面：选一张图片，传上去，留下 file_id。资源与案例两张表单共用这一个。 */
   onPickCover() {
     wx.chooseMedia({
       count: 1,
+      // 封面只要图片。DO-NOT-BUILD 12 那条针对的是在园时光与亲子任务，这里同样
+      // 没有影片的位置：`db_resource.cover_file_id` 存的是封面。
       mediaType: ['image'],
-      success: () => {
-        this.setData({ coverPicked: true });
-        // 选到了，但传不上去 —— 说清楚是哪一步没通，别让人以为已经存进去了。
-        wx.showToast({ title: '已选择，但本环境尚未开放上传', icon: 'none' });
+      success: (res) => {
+        const picked = (res.tempFiles || [])[0];
+        if (picked) this.uploadCover(picked);
       },
     });
   },
 
-  /** Word 附件：小程序选不了本地文档，且取证端点未实作。 */
+  /**
+   * Word 附件：从微信聊天记录里选一份 .docx。
+   *
+   * `fail` 里那句话是这一页最要紧的一句：点不出东西来的时候，教师需要知道
+   * 「文件要先发到聊天里」，而不是以为功能坏了。见头注第 2 条。
+   */
   onPickWord() {
-    wx.showToast({ title: '附件上传尚未开放', icon: 'none' });
+    wx.chooseMessageFile({
+      count: 1,
+      type: 'file',
+      extension: ['docx'],
+      success: (res) => {
+        const picked = (res.tempFiles || [])[0];
+        if (picked) this.uploadWord(picked);
+      },
+      fail: () => {
+        this.setData({ wordNote: '没有选到文件。请先把文档发到微信聊天（例如「文件传输助手」），再回来选。' });
+      },
+    });
+  },
+
+  /**
+   * 传封面。三步在 service 里（签发凭证 → 传字节 → 落库），这里只管屏幕上那一行字。
+   *
+   * 失败时把 `coverFileId` 清掉：留着上一次成功的 id，教师看到的是「上传失败」，
+   * 提交时却带着一张旧封面出去。
+   */
+  async uploadCover(picked) {
+    this.setData({ coverNote: '正在上传封面…' });
+    try {
+      await guard.requireSession();
+      const file = await media.uploadFile(picked.tempFilePath, {
+        usageKey: media.USAGE.IMAGE,
+        byteSize: picked.size,
+      });
+      this.setData({ coverFileId: file.fileId, coverNote: '已上传封面' });
+    } catch (err) {
+      this.setData({ coverFileId: null, coverNote: '封面上传失败，点此重试' });
+      if (guard.endSessionOnAuthFailure(err)) return;
+      wx.showToast({ title: err.userMessage || '封面上传失败，请稍后重试', icon: 'none' });
+    }
+  },
+
+  /** 传 Word 附件。显示的是教师挑的那个文件名，理由见头注第 3 条。 */
+  async uploadWord(picked) {
+    this.setData({ wordNote: '正在上传附件…' });
+    try {
+      await guard.requireSession();
+      const file = await media.uploadFile(picked.path, {
+        usageKey: media.USAGE.MAIN_FILE,
+        byteSize: picked.size,
+        fileName: picked.name,
+      });
+      this.setData({ wordFileId: file.fileId, wordNote: `已上传：${picked.name}` });
+    } catch (err) {
+      this.setData({ wordFileId: null, wordNote: '附件上传失败，点此重试' });
+      if (guard.endSessionOnAuthFailure(err)) return;
+      wx.showToast({ title: err.userMessage || '附件上传失败，请稍后重试', icon: 'none' });
+    }
   },
 
   /* ── 选择器浮层：只剩案例表单的「关联资源」 ────────────────────────────── */
@@ -273,6 +345,8 @@ Page({
           explain: this.data.resource.explain,
           access: this.data.resource.access,
           trans: this.data.resource.trans,
+          coverFileId: this.data.coverFileId,
+          wordFileId: this.data.wordFileId,
         })
         : await library.createCase({
           name: this.data.caseForm.name,
@@ -282,6 +356,8 @@ Page({
           intro: this.data.caseForm.intro,
           trans: this.data.caseForm.trans,
           resourceIds: this.data.selectedResourceId ? [this.data.selectedResourceId] : [],
+          coverFileId: this.data.coverFileId,
+          wordFileId: this.data.wordFileId,
         });
 
       const id = target === 'resource' ? created.resource_id : created.case_id;
@@ -304,7 +380,12 @@ Page({
       resource: { ...EMPTY_RESOURCE },
       caseForm: { ...EMPTY_CASE },
       caseAreas: [],
-      coverPicked: false,
+      // 建完一条就清掉两个 file_id：**不重用**。下一条内容再传一次，一张封面对
+      // 一条内容 —— 留着上一条的 id，教师看到的是一张空表单，发出去的却带着旧封面。
+      coverFileId: null,
+      coverNote: '未选择文件',
+      wordFileId: null,
+      wordNote: '',
       selectedResource: '暂无',
       selectedResourceMeta: '不关联现有资源',
       selectedResourceId: null,

@@ -1,6 +1,14 @@
 /**
- * The single HTTP entry point. Every network call in this client goes through
- * here — API-CONTRACT.md §1 to §5 are implemented once, in this file.
+ * The single HTTP entry point to the API instance. Every call to the contract's
+ * endpoints goes through here — API-CONTRACT.md §1 to §5 are implemented once,
+ * in this file.
+ *
+ * Object-store bytes are the one thing that does not, and cannot: they go
+ * straight to COS and never reach the API instance (§8.1), they carry no Bearer
+ * token (the authorisation is the signature inside the form fields), and their
+ * failures are not the contract's §2.2 error envelope. Both directions live in
+ * `services/media.js` — `wx.downloadFile` in `downloadThenOpen`, `wx.uploadFile`
+ * in `postObject`, each with the reason written next to it.
  *
  * What this layer guarantees to its callers:
  *   - §1.4  Authorization / Idempotency-Key / X-Request-Id headers

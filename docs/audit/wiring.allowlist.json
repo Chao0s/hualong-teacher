@@ -15,6 +15,27 @@
       "updated_at": "2026-09-08"
     },
     {
+      "key": "case-library:L5:原型按钮「中班」",
+      "status": "接",
+      "reason": "是的，是filter；→ #21",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "case-library:L5:原型按钮「主题探究」",
+      "status": "接",
+      "reason": "是的，是filter；→ #21",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
+      "key": "case-library:L5:原型按钮「区域」",
+      "status": "接",
+      "reason": "是的，是filter；→ #21",
+      "author": "Lin",
+      "updated_at": "2026-09-08"
+    },
+    {
       "key": "case-library:L5:原型按钮「大班」",
       "status": "接",
       "reason": "是的，是filter；→ #21",
@@ -29,20 +50,6 @@
       "updated_at": "2026-09-08"
     },
     {
-      "key": "case-library:L5:原型按钮「区域」",
-      "status": "接",
-      "reason": "是的，是filter；→ #21",
-      "author": "Lin",
-      "updated_at": "2026-09-08"
-    },
-    {
-      "key": "case-library:L5:原型按钮「数字化」",
-      "status": "接",
-      "reason": "是的，是filter；→ #21",
-      "author": "Lin",
-      "updated_at": "2026-09-08"
-    },
-    {
       "key": "case-library:L5:原型按钮「小班」",
       "status": "接",
       "reason": "是的，是filter；→ #21",
@@ -50,14 +57,7 @@
       "updated_at": "2026-09-08"
     },
     {
-      "key": "case-library:L5:原型按钮「中班」",
-      "status": "接",
-      "reason": "是的，是filter；→ #21",
-      "author": "Lin",
-      "updated_at": "2026-09-08"
-    },
-    {
-      "key": "case-library:L5:原型按钮「主题探究」",
+      "key": "case-library:L5:原型按钮「数字化」",
       "status": "接",
       "reason": "是的，是filter；→ #21",
       "author": "Lin",
@@ -421,21 +421,14 @@
       "updated_at": "2026-09-08"
     },
     {
-      "key": "home-school-moment-publish:L1:<view class=\"photo add-photo\"> bindtap=\"onAddPhoto\"",
-      "status": "接",
-      "reason": "→ #2",
-      "author": "Lin",
-      "updated_at": "2026-09-08"
-    },
-    {
-      "key": "service:/miniprogram/services/library.js:downloadLink() 第 376 行 POST `${path}/${contentId}/download-link`",
+      "key": "service:/miniprogram/services/library.js:downloadLink() 第 394 行 POST `${path}/${contentId}/download-link`",
       "status": "接",
       "reason": "→ #10",
       "author": "Lin",
       "updated_at": "2026-09-08"
     },
     {
-      "key": "service:/miniprogram/services/library.js:submitForReview() 第 359 行 POST `${path}/${contentId}/submission`",
+      "key": "service:/miniprogram/services/library.js:submitForReview() 第 377 行 POST `${path}/${contentId}/submission`",
       "status": "接",
       "reason": "→ #10",
       "author": "Lin",
@@ -522,20 +515,6 @@
       "key": "teacher-term-form:L6:screens.tsv writes=yes",
       "status": "接",
       "reason": "审核人对 screens.tsv 的理解见 #24；→ #26",
-      "author": "Lin",
-      "updated_at": "2026-09-08"
-    },
-    {
-      "key": "upload-resource:L1:<text class=\"mini-btn\"> bindtap=\"onPickWord\"「上传」",
-      "status": "阻于",
-      "reason": "第 115／205 行同一 handler（资源／案例表单块）；→ #2",
-      "author": "Lin",
-      "updated_at": "2026-09-08"
-    },
-    {
-      "key": "upload-resource:L1:<view class=\"image-box\"> bindtap=\"onPickCover\"",
-      "status": "接",
-      "reason": "→ #2",
       "author": "Lin",
       "updated_at": "2026-09-08"
     }

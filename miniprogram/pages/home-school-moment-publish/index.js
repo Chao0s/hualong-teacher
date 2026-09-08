@@ -22,10 +22,9 @@
  * 2. **`moment_date` 必须落在当前学期且不晚于园所今天**。默认值由
  *    `services/co-education.defaultMomentDate()` 夹进学期，理由见那里。
  *
- * 3. **照片传不上去**。`file_id` 收的是已经落库的 id，而 `POST /media/files` 与
- *    `POST /media/upload-credentials` 在契约服务端都是 `not_implemented`。所以
- *    选了照片也存不进去 —— 这里如实说明，**不往列表里塞占位条目**：一个看着像
- *    已上传、实际什么都没发生的条目，比一句说明糟得多。
+ * 3. **照片选完当场就传**。`file_id` 收的是**已经落库的** id，所以列表里只放
+ *    传成功的那几张：一个看着像已上传、实际什么都没发生的条目，比少一张糟得多。
+ *    传失败的不进列表，页面说明失败了几张。
  *
  * DO-NOT-BUILD 12：**不出现视频入口**。`chooseMedia` 因此锁死 `mediaType: ['image']`，
  * 不要加 `'video'`。理由是 `wx.uploadFile` 单次 10 MB 硬上限使手机视频根本发不出去，
@@ -33,6 +32,7 @@
  */
 
 const co = require('../../services/co-education');
+const media = require('../../services/media');
 const guard = require('../../utils/guard');
 
 Page({
@@ -115,17 +115,63 @@ Page({
   },
 
   /**
-   * 选照片。选得到，但这个环境传不上去 —— 说清楚是哪一步没通，不塞假条目。
+   * 选照片。`count` 只给**还能放下的张数**，超过 9 张服务端回 422
+   * `moment_image_limit`，在选择器上先挡住比事后报错好。
    */
   onAddPhoto() {
+    const remain = co.MAX_PHOTOS - this.data.photos.length;
+    if (remain <= 0) {
+      wx.showToast({ title: `照片最多 ${co.MAX_PHOTOS} 张`, icon: 'none' });
+      return;
+    }
     wx.chooseMedia({
-      count: co.MAX_PHOTOS,
+      count: remain,
       // DO-NOT-BUILD 12：只收图片，不要加 'video'。
       mediaType: ['image'],
-      success: () => {
-        wx.showToast({ title: '已选择，但本环境尚未开放照片上传', icon: 'none' });
-      },
+      success: (res) => this.uploadPhotos(res.tempFiles || []),
     });
+  },
+
+  /**
+   * 逐张传，传成一张进一张。
+   *
+   * **一张一张地传，不并发**：单张上限 10 MB，手机上同时发九发只会更慢，而且
+   * 一发失败就分不清是哪一张。这一层慢一点换来的是「传成的进列表、传砸的不进」
+   * 这个能说清楚的结果。
+   *
+   * 失败不中断其余的：九张里有一张超限，另外八张照样该进列表。最后报一句
+   * 「N 张没能上传」，理由取最后那一次的服务端文案。
+   */
+  async uploadPhotos(picked) {
+    wx.showLoading({ title: '正在上传照片', mask: true });
+    const added = [];
+    let failed = 0;
+    let reason = '';
+    for (let i = 0; i < picked.length; i += 1) {
+      try {
+        await guard.requireSession();
+        const file = await media.uploadFile(picked[i].tempFilePath, {
+          usageKey: media.USAGE.IMAGE,
+          byteSize: picked[i].size,
+        });
+        added.push({
+          fileId: file.fileId,
+          label: `照片 ${this.data.photos.length + added.length + 1}`,
+        });
+      } catch (err) {
+        if (guard.endSessionOnAuthFailure(err)) {
+          wx.hideLoading();
+          return;
+        }
+        failed += 1;
+        reason = err.userMessage || '';
+      }
+    }
+    wx.hideLoading();
+    this.setData({ photos: this.data.photos.concat(added) });
+    if (failed) {
+      wx.showToast({ title: `${failed} 张没能上传${reason ? `：${reason}` : ''}`, icon: 'none' });
+    }
   },
 
   async onPublish() {
