@@ -703,3 +703,18 @@ growth-book-edit.html   · growth-book-sample.html · growth-book-view.html
 
 **这一条不改契约。** `api/openapi.yaml` 的 media 一族与两个 `*Write` schema 早就完整，
 本轮一个字都没动。
+
+## 2026-09-09：编册锁定归教师，两层锁不要混
+
+本节记 `hualong-teacher#17` 的覆核结论，权威是后端 `DECISIONS.md` F19 第十三点。
+
+审核人提出「锁定应该只有校长这个 role 才有权限，老师不该能锁 compilation」。查下来两件事：
+
+- **系统里没有「校长」这个角色。** 角色只有 Admin／Teacher／Parent 三个，`admin-pc` 的定义是「不是小程序」。
+- **锁有两层，问的那一层本来就只有管理端能动。** 园所成长册设置 `db_school.book_setting_status` 的 `d1→d2` 是管理员动作（F20 第一节），教师端读到 `d2` 才进得了班级编册。班级学期编册 `db_growth_book_compilation` 的 `e1→e2` 才是教师做的那一个。
+
+结论：F19 第五节不改，`growth-book-edit`（学期编册）保留锁定按钮，接 `POST /teacher/growth-book/compilation/{compilation_id}/lock`。
+
+移给管理端的代价：契约改 1 条、新增 2 条管理端操作、登记表 2 处、DDL 加一个 `e3`、`DECISIONS.md` 另写一节覆写 F19 第五节，约 24 个文件 450–600 行；并且会悄悄改坏 F20 的撤回前置 `no_e2_compilation_this_term`（`e2` 若从「已锁定」变成「已提交待锁」，那道闸门不报错就失效）。
+
+「预设必须存在的章节」（学期评价、综合评估、学期寄语固定启用、不进开关）与锁定权限无关，编册页上写明即可。
