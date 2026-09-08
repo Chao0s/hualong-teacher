@@ -428,13 +428,6 @@
       "updated_at": "2026-09-08"
     },
     {
-      "key": "my-training:L6:screens.tsv writes=yes",
-      "status": "接",
-      "reason": "→ #25",
-      "author": "Lin",
-      "updated_at": "2026-09-08"
-    },
-    {
       "key": "parent-evaluation-publish:L5:原型按钮「发布给家长」",
       "status": "接",
       "reason": "→ #23",

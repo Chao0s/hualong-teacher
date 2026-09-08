@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-08T17:20:11.154Z",
+  "generatedAt": "2026-09-08T17:30:05.778Z",
   "contract": "G:\\My Drive\\Workplace\\China KG Platform\\hualong-backend\\api\\openapi.yaml",
   "pages": [
     {
@@ -887,7 +887,7 @@
       "name": "my-training",
       "title": "我的研修",
       "wired": true,
-      "writes": "yes",
+      "writes": "no",
       "context": {
         "title": "我的研修",
         "path": "教研培训 → 我的研修（「我的档案」那一格）",
@@ -901,34 +901,7 @@
         "listeners": 0,
         "links": 1
       },
-      "findings": [
-        {
-          "key": "my-training:L6:screens.tsv writes=yes",
-          "level": "likely",
-          "layer": "L6",
-          "line": 0,
-          "what": "screens.tsv writes=yes",
-          "detail": "接了 service，但本页没有调到任何 POST／PUT／PATCH／DELETE",
-          "verdict": {
-            "key": "my-training:L6:screens.tsv writes=yes",
-            "status": "接",
-            "reason": "→ #25",
-            "author": "Lin",
-            "updated_at": "2026-09-08"
-          },
-          "falsePositive": false,
-          "context": {
-            "page": "my-training",
-            "title": "我的研修",
-            "path": "教研培训 → 我的研修（「我的档案」那一格）",
-            "module": "教研培训",
-            "role": "本人的报名记录（已报名／已取消／已完成）",
-            "flow": "教师自己的参与记录，只读；写入动作（报名／取消）在研修详情页",
-            "button": "",
-            "note": ""
-          }
-        }
-      ]
+      "findings": []
     },
     {
       "name": "resource-library",
@@ -3688,10 +3661,10 @@
     "pages": 55,
     "wired": 26,
     "sure": 0,
-    "likely": 35,
+    "likely": 34,
     "review": 15,
     "falsePositives": 1,
-    "decided": 82,
+    "decided": 81,
     "contractTeacherOps": 92,
     "contractUnused": 43
   }
