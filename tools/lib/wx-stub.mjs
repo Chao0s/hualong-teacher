@@ -15,6 +15,15 @@
 
 const storage = new Map();
 
+/**
+ * 取档那一条路上用到的三个平台 API 各被调用了几次、带了什么参数。
+ *
+ * 桩掉它们**不下载任何字节**：这里能验的只有「客户端选了哪条路、带了什么
+ * fileType」，那一条是由库里 `db_file.file_type` 决定的，所以断言仍然钉在库里
+ * 那一行上。**真的能不能打开，只有开发者工具里真点才知道。**
+ */
+export const wxCalls = { downloadFile: [], openDocument: [], previewImage: [] };
+
 export function installWxStub() {
   globalThis.wx = {
     getStorageSync: (k) => (storage.has(k) ? storage.get(k) : ''),
@@ -28,6 +37,19 @@ export function installWxStub() {
     reLaunch: () => {},
     setNavigationBarTitle: () => {},
     setClipboardData: () => {},
+    // 下面三个只记录，不动字节。桩成「总是成功」会让探针的绿灯变成「下载成功了」
+    // 的假象，所以它们回的是一个显然假的临时路径，探针只断言调用了哪一个。
+    downloadFile({ url, success }) {
+      wxCalls.downloadFile.push({ url });
+      success({ statusCode: 200, tempFilePath: 'STUB://no-bytes-were-downloaded' });
+    },
+    openDocument({ filePath, fileType, success }) {
+      wxCalls.openDocument.push({ filePath, fileType });
+      if (success) success({});
+    },
+    previewImage({ urls }) {
+      wxCalls.previewImage.push({ urls });
+    },
     request({ url, method, header, data, success, fail }) {
       fetch(url, {
         method,

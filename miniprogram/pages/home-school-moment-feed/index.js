@@ -156,7 +156,7 @@ Page({
   fillPhotos(items) {
     items.forEach((m) => {
       m.fileIds.slice(0, PREVIEW_PHOTOS).forEach(async (fileId, i) => {
-        const url = await co.photoUrl(fileId);
+        const url = await co.photoUrl(fileId, m.photoOwner);
         if (!url) return;
         const at = this.data.moments.findIndex((x) => x.id === m.id);
         if (at < 0) return;
@@ -180,7 +180,7 @@ Page({
     if (!card || !card.fileIds.length) return;
 
     const known = new Map(card.photos.map((p) => [p.fileId, p.url]).filter(([, url]) => url));
-    const urls = await co.photoUrls(card.fileIds, known);
+    const urls = await co.photoUrls(card.fileIds, card.photoOwner, known);
     if (!urls.length) {
       wx.showToast({ title: '照片暂时打不开，请稍后重试', icon: 'none' });
       return;
@@ -243,7 +243,7 @@ Page({
     // 又打开了另一条，那时这些回包不该往新浮层里填。
     card.fileIds.forEach(async (fid, i) => {
       if (known.get(fid)) return;
-      const url = await co.photoUrl(fid);
+      const url = await co.photoUrl(fid, card.photoOwner);
       if (!url || this.data.pickId !== id) return;
       this.setData({ [`pickPhotos[${i}].url`]: url });
     });
@@ -361,6 +361,8 @@ function toCard(m, index) {
     photos: m.fileIds.slice(0, PREVIEW_PHOTOS).map((fileId) => ({ fileId, url: '' })),
     // 全部 file_id 留在卡上：选照片浮层直接用，不必再拉一次详情。
     fileIds: m.fileIds,
+    // 取地址要交上去的宿主那一对（授权参数）。service 给的，页面不拼。
+    photoOwner: m.photoOwner,
     photoCount: m.fileIds.length,
     // 超出预览的那些只在选照片浮层里出现，卡片上用一个角标交代还有几张。
     moreCount: Math.max(0, m.fileIds.length - PREVIEW_PHOTOS),

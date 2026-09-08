@@ -39,6 +39,7 @@
 
 const api = require('../utils/request');
 const time = require('../utils/time');
+const media = require('./media');
 
 const STUDY_PATH = '/party/studies';
 const ACTIVITY_PATH = '/party/activities';
@@ -55,9 +56,9 @@ const CONTENT_STATUS = { s1: '草稿', s2: '待审核', s3: '已发布', s4: '�
 // 党建管理部首屏每块取几条。原型三块各显示 3 条，轮播 3 条。
 const HOME_LIMIT = 3;
 
-/** 契约叫 file_refs，本地服务端叫 files。两个都收，契约的优先。 */
+/** 附件数组统一叫 `file_refs`（契约与服务端同名）。没有附件时是空数组，不是 null。 */
 function fileRefs(row) {
-  return (row && (row.file_refs || row.files)) || [];
+  return (row && row.file_refs) || [];
 }
 
 /* ── 党建学习 ────────────────────────────────────────────────────────────── */
@@ -112,6 +113,9 @@ async function getStudy(studyId) {
     videos: (row.video_links || []).map((v) => ({ url: v.url, name: v.title || v.url })),
     // 主文件。usage_key='main_file' 是这一族唯一用到的取值。
     files: fileRefs(row).map((f) => ({ fileId: f.file_id, usageKey: f.usage_key })),
+    // 取档要交上去的宿主那一对（授权参数，不是统计参数）。页面原样传给
+    // services/media.js，**不在页面里写表名**。
+    fileOwner: { object: media.OWNER.PARTY_STUDY, id: row.study_id },
   };
 }
 
@@ -150,9 +154,13 @@ async function getActivity(activityId) {
     time: time.formatShort(row.activity_at),
     statusLabel: CONTENT_STATUS[row.activity_status] || '未知状态',
     body: row.activity_content || '',
-    // 契约只回 {file_id, usage_key}，**没有文件名**。所以附件用途当名字显示，
-    // 不编一个「xxx方案.docx」出来 —— 编出来的文件名点下去下不到那个文件。
-    files: fileRefs(row).map((f) => ({ fileId: f.file_id, name: f.usage_key })),
+    // `ContentFileRef` 必填 `file_name`，所以附件按真名显示；服务端一度只回
+    // `{file_id, usage_key}`，那条 drift 已修（`routes/teacher-content.mjs` 的
+    // `publishedItem`）。回不来时退回 usage_key，**不编一个「xxx方案.docx」出来**
+    // —— 编出来的文件名点下去下不到那个文件。
+    files: fileRefs(row).map((f) => ({ fileId: f.file_id, name: f.file_name || f.usage_key })),
+    // 取档要交上去的宿主那一对，理由同党建学习。
+    fileOwner: { object: media.OWNER.PARTY_ACTIVITY, id: row.activity_id },
   };
 }
 

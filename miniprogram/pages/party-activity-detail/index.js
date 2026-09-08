@@ -5,18 +5,23 @@
  *
  * ── 附件那一块为什么现在多半是空的 ─────────────────────────────────────────
  *
- * 原型的附件是「红色故事进课堂主题党日活动方案.docx」这样的**文件名**。契约的
- * `PartyActivity.file_refs` 只回 `{file_id, usage_key}`，**没有文件名这一列**；
- * 而且数据集里三场已发布活动的 `file_refs` 全是空数组。
+ * 原型的附件是「红色故事进课堂主题党日活动方案.docx」这样的**文件名**，写死在
+ * 页面里。数据集里三场已发布活动的 `file_refs` 都是空数组，所以这一块多半不渲染。
  *
- * 所以这一块：有附件就按用途（usage_key）列出来，没有就整块不渲染。**不编文件名**
- * —— 编出来的名字点下去下不到那个文件，比不显示更糟。
+ * 有附件时按 `ContentFileRef.file_name` 的真名列出来，没有就整块不渲染。
+ * **不编文件名** —— 编出来的名字点下去下不到那个文件，比不显示更糟。
  *
- * 另外党建这一族在契约里**没有取档端点**（资源与案例有 `/download-link`，
- * 这一族没有），所以即便将来有了 file_refs，点下载也还需要契约先补一条。
+ * ── 附件怎么取 ─────────────────────────────────────────────────────────────
+ *
+ * 附件走 `GET /media/files/{file_id}/url`，宿主是 `db_party_activity`。这是媒体流的
+ * 唯一路径：按家族各开一条取档端点在 2026-08-20 拒过（`docs/API-CONTRACT.md:641`）。
+ *
+ * 成功取档时服务端在同一事务里记一笔 `downloaded`（k4，§4 规则 19／20／21），
+ * **重复点重复计数**。
  */
 
 const party = require('../../services/party');
+const media = require('../../services/media');
 const guard = require('../../utils/guard');
 
 Page({
@@ -24,6 +29,7 @@ Page({
     id: null,
     activity: null,
     files: [],
+    fileOwner: null,
     loading: true,
     error: '',
   },
@@ -51,6 +57,7 @@ Page({
           body: activity.body,
         },
         files: activity.files,
+        fileOwner: activity.fileOwner,
         loading: false,
       });
     } catch (err) {
@@ -66,10 +73,31 @@ Page({
     this.load();
   },
 
-  onDownload(e) {
-    wx.showToast({
-      title: `${e.currentTarget.dataset.name}：党建附件的取档接口尚未开放`,
-      icon: 'none',
-    });
+  /**
+   * 下载一个附件。**「下载」与「预览」在小程序上是同一件事**（下到临时文件再
+   * `wx.openDocument`），这一页只有一个按钮，走的就是那条路。
+   */
+  async onDownload(e) {
+    const fileId = Number(e.currentTarget.dataset.fileid);
+    wx.showLoading({ title: '正在取档', mask: true });
+    try {
+      const r = await media.openFile(fileId, this.data.fileOwner);
+      wx.hideLoading();
+      if (r.placeholder) {
+        // 授权过了，但这个环境没有对象存储。说清楚是哪一件事，别让人以为没权限。
+        wx.showModal({
+          title: '取档授权已通过',
+          content: r.reason,
+          showCancel: false,
+          confirmText: '知道了',
+        });
+        return;
+      }
+      if (!r.opened) wx.showToast({ title: r.reason, icon: 'none' });
+    } catch (err) {
+      wx.hideLoading();
+      if (guard.endSessionOnAuthFailure(err)) return;
+      wx.showToast({ title: err.userMessage || '取档失败，请稍后重试', icon: 'none' });
+    }
   },
 });

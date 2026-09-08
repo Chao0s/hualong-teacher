@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-08T17:30:05.778Z",
+  "generatedAt": "2026-09-08T18:55:29.201Z",
   "contract": "G:\\My Drive\\Workplace\\China KG Platform\\hualong-backend\\api\\openapi.yaml",
   "pages": [
     {
@@ -409,7 +409,7 @@
         "path": "党建管理 → 党建学习 → 点条目",
         "module": "党建管理",
         "role": "一份党建学习文件的正文与附件",
-        "flow": "管理端发布 → 教师阅读；打开记一笔 viewed；附件取档要走短链端点（契约里党建这一族还没有）"
+        "flow": "管理端发布 → 教师阅读；打开记一笔 viewed；附件走 GET /media/files/{file_id}/url 取档，成功再记一笔 downloaded（k3）"
       },
       "events": 4,
       "prototype": {
@@ -417,48 +417,7 @@
         "listeners": 2,
         "links": 0
       },
-      "findings": [
-        {
-          "key": "party-study-detail:L1:<view class=\"btn btn--primary\"> bindtap=\"onAction\"「在线预览」",
-          "level": "likely",
-          "layer": "L1",
-          "line": 52,
-          "what": "<view class=\"btn btn--primary\"> bindtap=\"onAction\"「在线预览」",
-          "detail": "占位 handler（提示「尚未开放／开发中」一类）",
-          "verdict": null,
-          "falsePositive": null,
-          "context": {
-            "page": "party-study-detail",
-            "title": "文件预览",
-            "path": "党建管理 → 党建学习 → 点条目",
-            "module": "党建管理",
-            "role": "一份党建学习文件的正文与附件",
-            "flow": "管理端发布 → 教师阅读；打开记一笔 viewed；附件取档要走短链端点（契约里党建这一族还没有）",
-            "button": "在线预览",
-            "note": "「在线预览」「下载文件」：党建文件附件取档。契约里只有资源／案例有 download-link 端点，党建这一族没有，要先加契约。"
-          }
-        },
-        {
-          "key": "party-study-detail:L1:<view class=\"btn btn--secondary\"> bindtap=\"onAction\"「下载文件」",
-          "level": "likely",
-          "layer": "L1",
-          "line": 53,
-          "what": "<view class=\"btn btn--secondary\"> bindtap=\"onAction\"「下载文件」",
-          "detail": "占位 handler（提示「尚未开放／开发中」一类）",
-          "verdict": null,
-          "falsePositive": null,
-          "context": {
-            "page": "party-study-detail",
-            "title": "文件预览",
-            "path": "党建管理 → 党建学习 → 点条目",
-            "module": "党建管理",
-            "role": "一份党建学习文件的正文与附件",
-            "flow": "管理端发布 → 教师阅读；打开记一笔 viewed；附件取档要走短链端点（契约里党建这一族还没有）",
-            "button": "下载文件",
-            "note": "「在线预览」「下载文件」：党建文件附件取档。契约里只有资源／案例有 download-link 端点，党建这一族没有，要先加契约。"
-          }
-        }
-      ]
+      "findings": []
     },
     {
       "name": "party-activity-list",
@@ -490,7 +449,7 @@
         "path": "党建管理 → 党建活动 → 点条目",
         "module": "党建管理",
         "role": "一场党建活动的介绍与附件",
-        "flow": "管理端发布 → 教师阅读；附件取档端点契约未定"
+        "flow": "管理端发布 → 教师阅读；附件走 GET /media/files/{file_id}/url 取档，成功记一笔 downloaded（k4）"
       },
       "events": 2,
       "prototype": {
@@ -498,28 +457,7 @@
         "listeners": 0,
         "links": 0
       },
-      "findings": [
-        {
-          "key": "party-activity-detail:L1:<view class=\"download\"> bindtap=\"onDownload\"",
-          "level": "likely",
-          "layer": "L1",
-          "line": 52,
-          "what": "<view class=\"download\"> bindtap=\"onDownload\"",
-          "detail": "占位 handler（提示「尚未开放／开发中」一类）",
-          "verdict": null,
-          "falsePositive": null,
-          "context": {
-            "page": "party-activity-detail",
-            "title": "活动介绍",
-            "path": "党建管理 → 党建活动 → 点条目",
-            "module": "党建管理",
-            "role": "一场党建活动的介绍与附件",
-            "flow": "管理端发布 → 教师阅读；附件取档端点契约未定",
-            "button": "",
-            "note": "党建活动附件下载，契约无端点，同上。"
-          }
-        }
-      ]
+      "findings": []
     },
     {
       "name": "party-brand-list",
@@ -617,7 +555,7 @@
             "role": "某一类协调文件的列表，点卡片同页展开正文",
             "flow": "管理端发布 → 教师阅读；打开记 viewed；不写已读回执",
             "button": "下载",
-            "note": "协调文件附件下载，契约无取档端点。"
+            "note": "协调文件附件下载，走 GET /media/files/{file_id}/url。整页仍是字面量，CATALOG 写死，没有真的 file_id 可传；这一页没有票据。"
           }
         },
         {
@@ -637,7 +575,7 @@
             "role": "某一类协调文件的列表，点卡片同页展开正文",
             "flow": "管理端发布 → 教师阅读；打开记 viewed；不写已读回执",
             "button": "下载",
-            "note": "协调文件附件下载，契约无取档端点。"
+            "note": "协调文件附件下载，走 GET /media/files/{file_id}/url。整页仍是字面量，CATALOG 写死，没有真的 file_id 可传；这一页没有票据。"
           }
         }
       ]
@@ -698,7 +636,7 @@
             "role": "课程建设编辑性介绍文案",
             "flow": "无数据源、无契约端点，决定不接",
             "button": "下载",
-            "note": "课程建设页的文件下载。整页是编辑性文案、无数据源、无契约端点，已决定不接（见 CLAUDE.md 与交接文档）。"
+            "note": "课程建设页的文件下载。三个文件名是编出来的、无数据源，已决定不接（见 CLAUDE.md §8 与交接文档）。"
           }
         }
       ]
@@ -761,34 +699,7 @@
         "listeners": 5,
         "links": 0
       },
-      "findings": [
-        {
-          "key": "training-detail:L1:<text class=\"action\"> bindtap=\"onFileTap\"「下载」",
-          "level": "likely",
-          "layer": "L1",
-          "line": 40,
-          "what": "<text class=\"action\"> bindtap=\"onFileTap\"「下载」",
-          "detail": "占位 handler（提示「尚未开放／开发中」一类）",
-          "verdict": {
-            "key": "training-detail:L1:<text class=\"action\"> bindtap=\"onFileTap\"「下载」",
-            "status": "接",
-            "reason": "→ #3",
-            "author": "Lin",
-            "updated_at": "2026-09-08"
-          },
-          "falsePositive": false,
-          "context": {
-            "page": "training-detail",
-            "title": "研修详情",
-            "path": "教研培训 → 点某一场研修",
-            "module": "教研培训",
-            "role": "一场研修：材料、会议入口、报名、反馈",
-            "flow": "管理端发布 → 教师开始前可报名／取消；结束后已完成者可提交一份反馈 → 管理端审核（s2 待审 → s3 公开）→ 全园教师真名可见",
-            "button": "下载",
-            "note": "研修材料下载。spec 说成功供给要写一笔 c7/e4 downloaded 事件，但契约里没有研修材料取档端点。"
-          }
-        }
-      ]
+      "findings": []
     },
     {
       "name": "teacher-profile",
@@ -832,7 +743,7 @@
             "role": "本人专业档案与证书",
             "flow": "教师看自己的；修改走申请（POST /teacher-profile/changes，NONE→s2）→ 管理端 t3 队列审批（s3 通过／s4 驳回）→ 才落正本",
             "button": "预览",
-            "note": "证书文件预览／下载。证书文件在 db_teacher_credential，取档端点契约未定。"
+            "note": "证书文件预览／下载。证书的 file_id 是 db_teacher_credential 的直连列，取档同样走 GET /media/files/{file_id}/url（owner_object=db_teacher_credential，只回本人的）。整页仍是字面量，接线归票据 #15。"
           }
         },
         {
@@ -852,7 +763,7 @@
             "role": "本人专业档案与证书",
             "flow": "教师看自己的；修改走申请（POST /teacher-profile/changes，NONE→s2）→ 管理端 t3 队列审批（s3 通过／s4 驳回）→ 才落正本",
             "button": "下载",
-            "note": "证书文件预览／下载。证书文件在 db_teacher_credential，取档端点契约未定。"
+            "note": "证书文件预览／下载。证书的 file_id 是 db_teacher_credential 的直连列，取档同样走 GET /media/files/{file_id}/url（owner_object=db_teacher_credential，只回本人的）。整页仍是字面量，接线归票据 #15。"
           }
         },
         {
@@ -2334,7 +2245,7 @@
   "services": [
     {
       "file": "/miniprogram/services/co-education.js",
-      "calls": 22,
+      "calls": 21,
       "findings": [],
       "unusedExports": [
         "allowedActions",
@@ -2414,6 +2325,14 @@
       "findings": [],
       "unusedExports": [
         "allowedActions"
+      ]
+    },
+    {
+      "file": "/miniprogram/services/media.js",
+      "calls": 1,
+      "findings": [],
+      "unusedExports": [
+        "fileUrl"
       ]
     }
   ],
@@ -3661,10 +3580,10 @@
     "pages": 55,
     "wired": 26,
     "sure": 0,
-    "likely": 34,
+    "likely": 30,
     "review": 15,
     "falsePositives": 1,
-    "decided": 81,
+    "decided": 80,
     "contractTeacherOps": 92,
     "contractUnused": 43
   }
