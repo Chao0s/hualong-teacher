@@ -16,52 +16,52 @@
     },
     {
       "key": "case-library:L5:原型按钮「大班」",
-      "status": "接",
-      "reason": "是的，是filter；→ #21",
+      "status": "误报",
+      "reason": "13 个筛选片小程序里全都在，由 wx:for 从 services/library 的枚举表渲染（index.wxml:6-37），文案不在 wxml 字面量里 —— L5 只查文本包含。真缺陷在服务端忽略 case_field 与 case_area（13 片里 10 片点了不筛），已由后端 G84 修毕；→ #21",
       "author": "Lin",
-      "updated_at": "2026-09-08"
+      "updated_at": "2026-09-09"
     },
     {
       "key": "case-library:L5:原型按钮「家园社共育」",
-      "status": "接",
-      "reason": "是的，是filter；→ #21",
+      "status": "误报",
+      "reason": "13 个筛选片小程序里全都在，由 wx:for 从 services/library 的枚举表渲染（index.wxml:6-37），文案不在 wxml 字面量里 —— L5 只查文本包含。真缺陷在服务端忽略 case_field 与 case_area（13 片里 10 片点了不筛），已由后端 G84 修毕；→ #21",
       "author": "Lin",
-      "updated_at": "2026-09-08"
+      "updated_at": "2026-09-09"
     },
     {
       "key": "case-library:L5:原型按钮「区域」",
-      "status": "接",
-      "reason": "是的，是filter；→ #21",
+      "status": "误报",
+      "reason": "13 个筛选片小程序里全都在，由 wx:for 从 services/library 的枚举表渲染（index.wxml:6-37），文案不在 wxml 字面量里 —— L5 只查文本包含。真缺陷在服务端忽略 case_field 与 case_area（13 片里 10 片点了不筛），已由后端 G84 修毕；→ #21",
       "author": "Lin",
-      "updated_at": "2026-09-08"
+      "updated_at": "2026-09-09"
     },
     {
       "key": "case-library:L5:原型按钮「数字化」",
-      "status": "接",
-      "reason": "是的，是filter；→ #21",
+      "status": "误报",
+      "reason": "13 个筛选片小程序里全都在，由 wx:for 从 services/library 的枚举表渲染（index.wxml:6-37），文案不在 wxml 字面量里 —— L5 只查文本包含。真缺陷在服务端忽略 case_field 与 case_area（13 片里 10 片点了不筛），已由后端 G84 修毕；→ #21",
       "author": "Lin",
-      "updated_at": "2026-09-08"
+      "updated_at": "2026-09-09"
     },
     {
       "key": "case-library:L5:原型按钮「小班」",
-      "status": "接",
-      "reason": "是的，是filter；→ #21",
+      "status": "误报",
+      "reason": "13 个筛选片小程序里全都在，由 wx:for 从 services/library 的枚举表渲染（index.wxml:6-37），文案不在 wxml 字面量里 —— L5 只查文本包含。真缺陷在服务端忽略 case_field 与 case_area（13 片里 10 片点了不筛），已由后端 G84 修毕；→ #21",
       "author": "Lin",
-      "updated_at": "2026-09-08"
+      "updated_at": "2026-09-09"
     },
     {
       "key": "case-library:L5:原型按钮「中班」",
-      "status": "接",
-      "reason": "是的，是filter；→ #21",
+      "status": "误报",
+      "reason": "13 个筛选片小程序里全都在，由 wx:for 从 services/library 的枚举表渲染（index.wxml:6-37），文案不在 wxml 字面量里 —— L5 只查文本包含。真缺陷在服务端忽略 case_field 与 case_area（13 片里 10 片点了不筛），已由后端 G84 修毕；→ #21",
       "author": "Lin",
-      "updated_at": "2026-09-08"
+      "updated_at": "2026-09-09"
     },
     {
       "key": "case-library:L5:原型按钮「主题探究」",
-      "status": "接",
-      "reason": "是的，是filter；→ #21",
+      "status": "误报",
+      "reason": "13 个筛选片小程序里全都在，由 wx:for 从 services/library 的枚举表渲染（index.wxml:6-37），文案不在 wxml 字面量里 —— L5 只查文本包含。真缺陷在服务端忽略 case_field 与 case_area（13 片里 10 片点了不筛），已由后端 G84 修毕；→ #21",
       "author": "Lin",
-      "updated_at": "2026-09-08"
+      "updated_at": "2026-09-09"
     },
     {
       "key": "comprehensive-assessment-class-report:L5:原型跳转 → growth-comprehensive-assessment.html",
