@@ -49,8 +49,8 @@ const CONTENT_TYPE = 'application/json; charset=utf-8';
 //
 // 下面四条是登记表里角色为 teacher 且 `idempotency=required` 的全部动作
 // （实测 `awk -F'\t' 'NR>1 && $15=="required" && $2=="teacher"' api/action-registry.tsv`）。
-// 三条在成长册那条线上、一条在教师档案，本仓库目前都还没接，所以这张表现在仍然
-// 一次也不会命中 —— 区别在于：接上那几页的时候它是对的。
+// 一条在教师档案（`services/profile.js` 的 `submitChange` 带着 `action` 调过来，
+// 命中这张表），三条在成长册那条线上、本仓库还没接。
 const IDEMPOTENT_ACTIONS = new Set([
   'teacher_profile_change.submit',  // POST /teacher-profile/changes
   'compilation.lock',               // POST /teacher/growth-book/compilation/{id}/lock，单向
