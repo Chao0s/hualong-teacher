@@ -1,7 +1,14 @@
-/* 任务详情 —— 逐条对照原型 screens/teacher-task-detail.html。1px 记 2rpx。 */
+/* 任务详情（待办任务）—— 逐条对照原型 screens/teacher-task-detail.html。1px 记 2rpx。 */
 
 .page {
   padding: 24rpx 32rpx 56rpx;
+}
+
+.hint {
+  padding: 32rpx;
+  color: var(--muted);
+  text-align: center;
+  font-size: 26rpx;
 }
 
 .chunk {
@@ -59,16 +66,21 @@
   font-weight: 700;
 }
 
-.status-pill {
+/* 徽章显示的是自己那一行的 assign_status（F28），三档与待办任务卡片同色。 */
+.status {
+  flex: 0 0 auto;
   padding: 10rpx 18rpx;
   border-radius: 999rpx;
-  background: var(--amber-light);
-  color: #a15d00;
   font-size: 22rpx;
   font-weight: 800;
+  white-space: nowrap;
 }
 
-/* ── 三段说明 ──────────────────────────────────────────────────────────── */
+.status--wait { color: #a15d00; background: var(--amber-light); }
+.status--doing { color: #226ac7; background: var(--blue-light); }
+.status--done { color: var(--green); background: var(--green-light); }
+
+/* ── 说明与分工 ────────────────────────────────────────────────────────── */
 
 .block {
   padding-top: 24rpx;
@@ -93,43 +105,6 @@
   display: block;
   font-size: 28rpx;
   line-height: 1.65;
-}
-
-.roles {
-  display: grid;
-  gap: 16rpx;
-}
-
-.role {
-  display: grid;
-  grid-template-columns: 144rpx 1fr;
-  gap: 16rpx;
-  font-size: 26rpx;
-  line-height: 1.45;
-}
-
-.role__name {
-  color: var(--muted);
-}
-
-.role__work {
-  font-weight: 600;
-}
-
-.timeline {
-  display: grid;
-  grid-template-columns: 144rpx 1fr;
-  gap: 16rpx 24rpx;
-  font-size: 26rpx;
-  line-height: 1.45;
-}
-
-.timeline__date {
-  color: var(--muted);
-}
-
-.timeline__event {
-  font-weight: 600;
 }
 
 /* ── 附件 ──────────────────────────────────────────────────────────────── */
@@ -159,18 +134,6 @@
   font-weight: 700;
 }
 
-.file-meta {
-  display: block;
-  margin-top: 6rpx;
-  font-size: 22rpx;
-  color: var(--muted);
-}
-
-.file-actions {
-  display: flex;
-  gap: 20rpx;
-}
-
 .file-op {
   color: var(--accent-dark);
   font-size: 24rpx;
@@ -179,53 +142,24 @@
 
 /* ── 任务操作 ──────────────────────────────────────────────────────────── */
 
-.status-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16rpx;
-}
-
-.state-btn {
-  padding: 22rpx 16rpx;
+.feedback {
+  width: 100%;
+  min-height: 160rpx;
+  padding: 20rpx;
+  box-sizing: border-box;
   border: 1rpx solid var(--border);
-  border-radius: 26rpx;
+  border-radius: 20rpx;
   background: #fff;
-  text-align: center;
   font-size: 26rpx;
-  font-weight: 800;
+  line-height: 1.6;
 }
 
-.state-btn--on {
-  border-color: var(--accent);
-  background: var(--accent-light);
-  color: var(--accent-dark);
-}
-
-/* ── 提交材料 ──────────────────────────────────────────────────────────── */
-
-.submit-card {
-  padding: 24rpx;
-  border: 1rpx dashed var(--accent);
-  border-radius: 28rpx;
-  background: var(--accent-light);
-}
-
-.submit-card__title {
-  display: block;
-  margin-bottom: 12rpx;
-  font-size: 28rpx;
-  font-weight: 700;
-}
-
-.submit-card__desc {
-  display: block;
-  font-size: 24rpx;
-  line-height: 1.45;
+.feedback__ph {
   color: var(--muted);
 }
 
 .primary {
-  margin-top: 20rpx;
+  margin-top: 24rpx;
   padding: 24rpx 28rpx;
   border-radius: 26rpx;
   background: var(--accent);
@@ -237,4 +171,12 @@
 
 .primary--hover {
   opacity: 0.85;
+}
+
+.note {
+  display: block;
+  margin-top: 24rpx;
+  font-size: 24rpx;
+  line-height: 1.55;
+  color: var(--muted);
 }

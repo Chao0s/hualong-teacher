@@ -1,86 +1,98 @@
-<!-- 任务详情 —— 对照原型 screens/teacher-task-detail.html。
-     原型按 ?id= 取任务；状态是「完成」时，任务操作和提交材料两块整块隐藏。 -->
+<!-- 任务详情（待办任务，首页那条线）—— 对照原型 screens/teacher-task-detail.html。
+     原型的三块删掉了，理由逐条写在 index.js 的头注里：分工要求的三行角色表、
+     时间节点的三条时间线、「提交材料」按钮，三者都没有数据源或落点。
+     徽章显示的是自己那一行的 assign_status，不是 task_status（F28）。 -->
 <view class="page">
 
-  <view class="chunk">
-    <view class="task-head">
-      <text class="kicker">{{task.source}}</text>
-      <text class="task-head__title">{{task.title}}</text>
-      <text class="task-head__sub">{{task.summary}}</text>
-    </view>
+  <view class="hint" wx:if="{{loading}}">正在加载任务…</view>
+  <view class="hint" wx:elif="{{error}}" bindtap="onRetry">{{error}}　点此重试</view>
 
-    <view class="chunk-title">
-      <text class="chunk-title__text">任务说明</text>
-    </view>
+  <block wx:elif="{{detail}}">
 
-    <view class="block block--first">
-      <text class="label">背景信息</text>
-      <text class="text">{{task.background}}</text>
-    </view>
+    <view class="chunk">
+      <view class="task-head">
+        <!-- creator_type 契约必填、服务端今天不回（G90）。取不到就不画这一枚角标。 -->
+        <text class="kicker" wx:if="{{detail.creatorLabel}}">{{detail.creatorLabel}}</text>
+        <text class="task-head__title">{{detail.title}}</text>
+        <text class="task-head__sub">截止 {{detail.dueLabel}}</text>
+      </view>
 
-    <view class="block">
-      <text class="label">分工要求</text>
-      <view class="roles">
-        <view class="role" wx:for="{{task.roles}}" wx:key="name">
-          <text class="role__name">{{item.name}}</text>
-          <text class="role__work">{{item.work}}</text>
-        </view>
+      <view class="block block--first">
+        <text class="label">任务说明</text>
+        <text class="text">{{detail.intro}}</text>
+      </view>
+
+      <view class="block">
+        <text class="label">任务分工</text>
+        <text class="text">{{detail.division}}</text>
       </view>
     </view>
 
-    <view class="block">
-      <text class="label">时间节点</text>
-      <view class="timeline">
-        <block wx:for="{{task.timeline}}" wx:key="date">
-          <text class="timeline__date">{{item.date}}</text>
-          <text class="timeline__event">{{item.event}}</text>
-        </block>
+    <!-- 附件区只在真的有附件时出现。空的区块读起来像加载失败。 -->
+    <view class="chunk" wx:if="{{detail.files.length}}">
+      <view class="chunk-title">
+        <text class="chunk-title__text">任务附件</text>
       </view>
-    </view>
-  </view>
-
-  <view class="chunk">
-    <view class="chunk-title">
-      <text class="chunk-title__text">任务附件</text>
-    </view>
-    <view class="attach">
-      <view class="attach-row" wx:for="{{task.files}}" wx:key="name">
-        <view>
+      <view class="attach">
+        <view class="attach-row" wx:for="{{detail.files}}" wx:key="fileId">
           <text class="file-name">{{item.name}}</text>
-          <text class="file-meta">{{item.size}}</text>
-        </view>
-        <view class="file-actions">
-          <text class="file-op" data-action="预览：{{item.name}}" bindtap="onToast">预览</text>
-          <text class="file-op" data-action="下载：{{item.name}}" bindtap="onToast">下载</text>
+          <!-- 预览与下载在小程序上是同一件事，所以只有这一个按钮，走同一条链接 -->
+          <text class="file-op" data-fileid="{{item.fileId}}" bindtap="onFileTap">下载</text>
         </view>
       </view>
     </view>
-  </view>
 
-  <block wx:if="{{task.status !== '完成'}}">
     <view class="chunk">
       <view class="chunk-title">
         <text class="chunk-title__text">任务操作</text>
-        <text class="status-pill">{{status}}</text>
+        <text class="status status--{{detail.assign.tone}}">{{detail.assign.statusLabel}}</text>
       </view>
-      <view class="status-grid">
-        <view
-          class="state-btn {{status === item ? 'state-btn--on' : ''}}"
-          wx:for="{{states}}"
-          wx:key="*this"
-          data-state="{{item}}"
-          bindtap="onStateTap"
-        >{{item === '已接受' ? '接受' : '完成'}}</view>
+
+      <view class="block" wx:if="{{detail.assign.acceptedLabel}}">
+        <text class="label">接收时间</text>
+        <text class="text">{{detail.assign.acceptedLabel}}</text>
       </view>
+
+      <view class="block" wx:if="{{detail.assign.completedLabel}}">
+        <text class="label">完成时间</text>
+        <text class="text">{{detail.assign.completedLabel}}</text>
+      </view>
+
+      <view class="block" wx:if="{{detail.assign.feedback}}">
+        <text class="label">任务反馈</text>
+        <text class="text">{{detail.assign.feedback}}</text>
+      </view>
+
+      <!-- 上限 500 字，所以是 textarea 不是单行 input。 -->
+      <view class="block" wx:if="{{detail.can.complete}}">
+        <text class="label">任务反馈（可不填，最多 {{feedbackMax}} 字）</text>
+        <textarea
+          class="feedback"
+          placeholder="写下完成情况或遇到的问题"
+          placeholder-class="feedback__ph"
+          maxlength="{{feedbackMax}}"
+          value="{{feedback}}"
+          bindinput="onFeedbackInput"
+        />
+      </view>
+
+      <view
+        class="primary"
+        wx:if="{{detail.can.accept}}"
+        hover-class="primary--hover"
+        bindtap="onAccept"
+      >接受任务</view>
+
+      <view
+        class="primary"
+        wx:if="{{detail.can.complete}}"
+        hover-class="primary--hover"
+        bindtap="onComplete"
+      >完成任务</view>
+
+      <text class="note" wx:if="{{detail.closedReason}}">{{detail.closedReason}}</text>
     </view>
 
-    <view class="chunk">
-      <view class="submit-card">
-        <text class="submit-card__title">提交材料 / 反馈</text>
-        <text class="submit-card__desc">教师只需按分工上传照片、记录、说明或反馈。提交后进入管理端审核与汇总。</text>
-        <view class="primary" hover-class="primary--hover" data-action="已进入材料提交" bindtap="onToast">提交材料</view>
-      </view>
-    </view>
   </block>
 
 </view>

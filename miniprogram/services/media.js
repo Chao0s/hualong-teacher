@@ -44,14 +44,13 @@
  * 取一次**，不把 url 存进列表数据里 —— 存进去的那一刻它就开始过期，而过期之后
  * 页面上看到的是一张打不开的图，不是一条错误。
  *
- * ── 还没接到本模块的三个下载入口，逐条记在这里 ───────────────────────────────
+ * ── 还没接到本模块的两个下载入口，逐条记在这里 ───────────────────────────────
  *
  * 它们都是**整页仍是字面量**的页面：页面本身还没有从契约取数，附件按钮也就没有
  * 真的 file_id 可以传。要先重写页面，才谈得上接这一条。
  *
  *   `coordination-file-list`（综合协调 → 文件列表）  **没有票据**。目录写死在
  *                                                    index.js 的 CATALOG 里
- *   `teacher-task-detail`（首页那条线的任务详情）    票据 #18
  *   `course-building`（课程建设）                    三个文件名是编出来的，没有
  *                                                    数据源；CLAUDE.md §8「没有
  *                                                    数据源就不要渲染它」，**不接**
@@ -67,7 +66,7 @@ const CREDENTIALS_PATH = '/media/upload-credentials';
  * 宿主表名。`owner_object` 收的就是这个字符串 ——
  * `db_file_ref.owner_object` 的列注释逐字：「所属表名, 如 db_moment」。
  *
- * 只列真的有调用点的七个。加一个新宿主时在这里加一行，页面照旧不写表名。
+ * 只列真的有调用点的八个。加一个新宿主时在这里加一行，页面照旧不写表名。
  *
  * `TEACHER_CREDENTIAL` 是**直连列宿主**：`db_teacher_credential.file_id` 是列，不是
  * `db_file_ref` 行（`01_schema.sql:938` NOT NULL，FK :943）。所以它的 `owner_id`
@@ -81,6 +80,7 @@ const OWNER = {
   PARTY_STUDY: 'db_party_study',
   PARTY_ACTIVITY: 'db_party_activity',
   TRAINING: 'db_training',
+  TASK: 'db_task',
   TEACHER_CREDENTIAL: 'db_teacher_credential',
 };
 
