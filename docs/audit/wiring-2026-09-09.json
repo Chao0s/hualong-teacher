@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-09T04:14:16.126Z",
+  "generatedAt": "2026-09-09T04:17:24.022Z",
   "contract": "G:\\My Drive\\Workplace\\China KG Platform\\hualong-backend\\api\\openapi.yaml",
   "pages": [
     {
@@ -111,9 +111,9 @@
           "verdict": {
             "key": "assessment-tool:L1:<view class=\"chip {{mode === item.key ? 'chip--on' : ''}}\"> bindtap=\"onFilterTap\"",
             "status": "误报",
-            "reason": "纯本地筛选切换；「开发中」字样来自同页别的方法；→ #4",
+            "reason": "误报的成因不是「开发中」字样 —— assessment-tool/index.js 全文没有这四个字。scan-wiring.mjs:269 的 PLACEHOLDER_RE 带 i 旗标，于是模式里的 TODO 命中了本页自己的筛选键 todo（index.js:55「未评」，:275、:294 各用一次）。onFilterTap（:174）是纯本地切换，不写库。判定仍是误报；正则的 i 旗标归 #8（它是那份词表的主人）",
             "author": "Lin",
-            "updated_at": "2026-09-08"
+            "updated_at": "2026-09-09"
           },
           "falsePositive": true,
           "context": {
@@ -1171,9 +1171,9 @@
           "verdict": {
             "key": "teacher-term-form:L1:<view class=\"btn btn--primary full full--gap\"> bindtap=\"onSave\"「保存学期评价」",
             "status": "接",
-            "reason": "→ #4",
+            "reason": "接：学期评价这一页归评估族那条线 —— 同一页的 L6 行与三条 term-evaluation 契约行早就指着 #19／#26，只有这一行指 #4，两条线会各建一份 services/assessment.js。→ #19／#26",
             "author": "Lin",
-            "updated_at": "2026-09-08"
+            "updated_at": "2026-09-09"
           },
           "falsePositive": false,
           "context": {
