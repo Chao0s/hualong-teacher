@@ -388,9 +388,9 @@
     {
       "key": "teacher-message:L1:<view class=\"btn btn--primary sticky-action\"> bindtap=\"onSubmit\"「提交寄语」",
       "status": "接",
-      "reason": "→ #5",
+      "reason": "契约已补齐（#5）：GET/POST /teacher-messages 与 GET/PUT /children/{child_id}/teacher-message，四个操作。onSubmit 按「添加到」选的是全体幼儿还是具体幼儿分走 POST 集合级或 PUT 单幼儿。服务端尚未实作，这四条现在回 501。页面接线 → #26",
       "author": "Lin",
-      "updated_at": "2026-09-08"
+      "updated_at": "2026-09-09"
     },
     {
       "key": "teacher-message:L6:screens.tsv writes=yes",
