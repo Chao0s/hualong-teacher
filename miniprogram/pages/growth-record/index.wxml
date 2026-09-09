@@ -1,6 +1,9 @@
-<!-- 儿童成长档案 —— 对照原型 screens/growth-record.html。
-     进度表的表头在原型里是两行 <th>，带 rowspan/colspan。
-     小程序没有表格标签，这里用网格的 grid-row / grid-column 跨格做出同样的形状。 -->
+<!-- 儿童成长档案 —— 进度表接 GET /growth-records。
+     表头在原型里是两行 <th>，带 rowspan/colspan。
+     小程序没有表格标签，这里用网格的 grid-row / grid-column 跨格做出同样的形状。
+
+     五列：家长月度 / 家长学期 / 教师月度 / 教师学期 / 综合。原型第六列「成长册」
+     去掉了 —— db_growth_record 与 GrowthRecord schema 都没有成长册状态列。 -->
 <view class="page">
 
   <view class="sec sec--first">儿童评价</view>
@@ -23,14 +26,13 @@
       <text class="rec-head__cell rec-head__cell--wide">家长</text>
       <text class="rec-head__cell rec-head__cell--wide">教师</text>
       <text class="rec-head__cell rec-head__cell--tall">综合</text>
-      <text class="rec-head__cell rec-head__cell--tall">成长册</text>
       <text class="rec-head__cell rec-head__cell--sub">月度</text>
       <text class="rec-head__cell rec-head__cell--sub">学期</text>
       <text class="rec-head__cell rec-head__cell--sub">月度</text>
       <text class="rec-head__cell rec-head__cell--sub">学期</text>
     </view>
 
-    <view class="rec-row" wx:for="{{rows}}" wx:key="name" wx:for-item="row">
+    <view class="rec-row" wx:for="{{rows}}" wx:key="childId" wx:for-item="row">
       <text class="rec-cell rec-cell--name">{{row.name}}</text>
       <view class="rec-cell" wx:for="{{row.states}}" wx:key="index" wx:for-item="state">
         <view class="dot-cell dot-cell--{{state}}"></view>

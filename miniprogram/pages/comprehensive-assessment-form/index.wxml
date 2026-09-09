@@ -1,6 +1,6 @@
-<!-- 开始综合评估 —— 对照原型 screens/comprehensive-assessment-form.html。
+<!-- 开始综合评估 —— 接 GET/PUT /children/{child_id}/child-assessment。
      124 题分五个领域，默认全部折叠；展开的领域才渲染题目，否则一屏几千个节点。
-     每改一个分就写一次草稿，退出页面不会丢。 -->
+     每点一个分立刻 PUT 一次（契约的增量保存），退出页面不会丢。 -->
 <view class="page">
 
   <view class="chunk">
@@ -35,7 +35,7 @@
       <view class="item" wx:for="{{domain.items}}" wx:key="id" wx:for-item="item" wx:for-index="ii">
         <view class="item-name">
           <text>{{item.name}}</text>
-          <text class="item-tag" wx:if="{{item.measured}}">实测换算</text>
+          <text class="item-tag" wx:if="{{item.measured}}">{{item.tag}}</text>
         </view>
         <text class="item-q">{{item.q}}</text>
 

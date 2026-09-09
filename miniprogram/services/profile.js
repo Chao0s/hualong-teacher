@@ -83,8 +83,8 @@
  * **它挡不住绕过界面直接 POST 的调用**，因为服务端没有可验的收据。这句话写在这里，
  * 不是写在别处：`docs/DO-NOT-BUILD.md` 第 13 条援引的 `utils/moderation.js`
  * （GATES／assertGate／requireHumanGate）**在本仓库不存在**，`miniprogram/utils/`
- * 下只有 assessment-store、auth、book-viewer、derived、errors、growth-book、guard、
- * radar、request、session、time 十一个文件。没有那个模块可以 require，所以把关路径
+ * 下只有 auth、book-viewer、derived、errors、growth-book、guard、radar、request、
+ * session、time 十个文件。没有那个模块可以 require，所以把关路径
  * 的声明就落在这一段头注与 `previewText()` 上。
  */
 

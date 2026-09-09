@@ -87,14 +87,15 @@
 
                 <view class="field-lbl">佐证图片</view>
                 <view class="evi-line">
-                  <view class="evi-add" data-si="{{si}}" data-bi="{{bi}}" data-ii="{{ii}}" bindtap="onAddEvidence">
+                  <view class="evi-add evi-add--off" bindtap="onAddEvidence">
                     <text class="evi-add__plus">＋</text>
                     <text>添加佐证</text>
                   </view>
-                  <text class="evi-count" wx:if="{{ind.eviCount}}">已选 {{ind.eviCount}} 张</text>
+                  <text class="evi-count">{{eviHint}}</text>
                 </view>
 
                 <view class="field-lbl">评价记录</view>
+                <text class="note-hint">{{noteHint}}</text>
                 <textarea
                   class="note"
                   maxlength="300"

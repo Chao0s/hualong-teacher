@@ -1,9 +1,10 @@
-<!-- 班级评估报告 —— 对照原型 screens/comprehensive-assessment-class-report.html。
-     只汇总「已完成」的评估，草稿不计入。雷达图同样用 canvas 画（utils/radar.js）。 -->
+<!-- 班级评估报告 —— 接 GET /child-assessments/class-report。
+     只汇总「已完成」（c1）的评估，草稿不计入 —— 那个过滤是服务端的事。
+     雷达图同样用 canvas 画（utils/radar.js）。 -->
 <view class="page">
 
   <view class="chunk hero">
-    <text class="hero__title">中二班综合评估</text>
+    <text class="hero__title">班级综合评估</text>
     <text class="hero__note">{{heroNote}}</text>
     <view class="summary-grid">
       <view class="stat">
@@ -15,7 +16,7 @@
         <text class="stat__l">班级均分</text>
       </view>
       <view class="stat">
-        <text class="stat__n">5</text>
+        <text class="stat__n">{{domainCount}}</text>
         <text class="stat__l">评估领域</text>
       </view>
     </view>

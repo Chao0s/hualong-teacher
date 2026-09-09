@@ -37,7 +37,7 @@
  * 表头两行，靠 grid-row / grid-column 跨格还原原型的 rowspan / colspan。 */
 .rec-head {
   display: grid;
-  grid-template-columns: 92rpx repeat(6, 1fr);
+  grid-template-columns: 92rpx repeat(5, 1fr);
   background: var(--accent-light);
 }
 
@@ -80,7 +80,7 @@
 
 .rec-row {
   display: grid;
-  grid-template-columns: 92rpx repeat(6, 1fr);
+  grid-template-columns: 92rpx repeat(5, 1fr);
   align-items: center;
   border-top: 1rpx solid var(--border);
 }

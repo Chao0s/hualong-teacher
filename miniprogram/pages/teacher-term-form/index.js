@@ -1,59 +1,95 @@
 /**
- * 填写学期评价 —— 原型 screens/teacher-term-form.html 的小程序版本。
+ * 填写学期评价 —— 接 `GET/PUT /children/{child_id}/term-evaluation`
+ * （services/assessment.js）。
  *
- * 和月度评价那页的相册几乎一样，两点不同（都照抄原型）：
- *   1. 相册按月分组全部显示，不按当前月份过滤。
- *   2. 每张照片的显示名和导入后的标签不同（显示「建构游戏」，标签是「3月建构」）。
+ * **一次写成 c1，没有草稿**：`db_term_eval` 的值域只有 c1 / c2，而全库没有任何决议
+ * 为它定义服务端草稿，所以「保存」就是提交。提交过的进只读态。
+ *
+ * **照片区本轮不接。** 契约的 `file_id[]` 要的是「该幼儿专属相册里的既有 file_id」，
+ * 而 `GET /children/{child_id}/term-evaluation` 现在不回 `file_id`（服务端漂移，
+ * 由 #30 修）—— 没有数据源就不要渲染它，更不要编一个出来。原型那份按月分组的
+ * 假相册因此删掉，入口留着并置灰，写明待接入。
  */
 
-const CHILDREN = [
-  { key: 'chen', name: '陈小明' },
-  { key: 'li', name: '李雨萱' },
-  { key: 'zhang', name: '张力轩' },
-];
-
-const ALBUM = [
-  { title: '3月', photos: [{ label: '3月建构', text: '建构游戏' }, { label: '3月值日', text: '值日生体验' }] },
-  { title: '4月', photos: [{ label: '4月阅读', text: '绘本阅读' }, { label: '4月春游', text: '春游远足' }] },
-  { title: '5月', photos: [{ label: '5月运动会', text: '趣味运动会' }, { label: '5月种植角', text: '种植角观察' }] },
-  { title: '6月', photos: [{ label: '6月手作', text: '端午手作' }, { label: '6月律动', text: '音乐律动' }] },
-  { title: '7月', photos: [{ label: '7月戏水', text: '戏水活动' }, { label: '7月毕业', text: '毕业排练' }] },
-];
+const assess = require('../../services/assessment.js');
 
 Page({
   data: {
-    children: CHILDREN.map((c) => c.name),
+    // 名册整份（真名册，不是写死的三个名字）。picker 的 range 是名字数组。
+    rows: [],
+    children: [],
     childIndex: 0,
-    content: '本学期能稳定参与班级活动，规则意识和表达意愿持续提升，建议继续鼓励其在家庭场景中承担小任务。',
+    childId: null,
+
+    content: '',
+    textMax: assess.TERM_EVAL_TEXT_MAX,
+    statusLabel: '',
+    submittedLabel: '—',
+    readonly: false,
+
+    // 照片区：一张都不渲染，见文件头注。
     imported: [],
+    photoHint: '照片导入待接入',
 
     albumOpen: false,
     albumTitle: '',
-    groups: ALBUM,
+    groups: [],
     picked: [],
     confirmText: '导入',
   },
 
-  onLoad(options) {
-    if (options.child) {
-      const i = CHILDREN.findIndex((c) => c.key === options.child);
-      if (i > -1) this.setData({ childIndex: i });
-    }
+  async onLoad(options) {
     if (options.view) wx.setNavigationBarTitle({ title: '学期评价详情' });
+    const wanted = Number(options.childId) || null;
+    try {
+      const board = await assess.termEvaluationBoard();
+      let index = board.rows.findIndex((row) => row.childId === wanted);
+      if (index < 0) index = 0;
+      this.setData({
+        rows: board.rows,
+        children: board.rows.map((row) => row.name),
+        childIndex: index,
+      });
+      await this.loadChild();
+    } catch (err) {
+      wx.showToast({ title: (err && err.userMessage) || '加载失败，请返回重试', icon: 'none' });
+    }
   },
 
-  onChildChange(e) {
+  /**
+   * 取这名幼儿本人写的那一列。**无行不是错误，是「还没写过」** ——
+   * service 回 null，这里进空白填写态。
+   */
+  async loadChild() {
+    const row = this.data.rows[this.data.childIndex];
+    if (!row) return;
+    const detail = await assess.getTermEvaluation(row.childId);
+    this.setData({
+      childId: row.childId,
+      content: detail ? detail.text : '',
+      statusLabel: detail ? detail.statusLabel : '未完成',
+      submittedLabel: detail ? detail.submittedLabel : '—',
+      // 提交过就不能再改（`term_eval.submit` 是 one-way，NONE→c1）。
+      readonly: Boolean(detail && detail.done),
+    });
+  },
+
+  async onChildChange(e) {
     this.setData({ childIndex: Number(e.detail.value) });
-    if (this.data.albumOpen) this.syncTitle();
+    try {
+      await this.loadChild();
+    } catch (err) {
+      wx.showToast({ title: (err && err.userMessage) || '加载失败，请稍后重试', icon: 'none' });
+    }
   },
 
   onContentInput(e) {
     this.setData({ content: e.detail.value });
   },
 
+  /** 照片导入没有数据源，入口留着但不打开浮层，点一下说明原因。 */
   onOpenAlbum() {
-    this.setData({ albumOpen: true, picked: [], confirmText: '导入' });
-    this.syncTitle();
+    wx.showToast({ title: this.data.photoHint, icon: 'none' });
   },
 
   syncTitle() {
@@ -86,7 +122,24 @@ Page({
     this.setData({ imported: this.data.imported.filter((x) => x !== label) });
   },
 
-  onSave() {
-    wx.showToast({ title: '已保存学期评价（预览工程不落库）', icon: 'none' });
+  async onSave() {
+    if (this.data.readonly) {
+      wx.showToast({ title: '这名幼儿的学期评价已提交，不能再改', icon: 'none' });
+      return;
+    }
+    const why = assess.whyCannotSubmitTermEvaluation({ text: this.data.content });
+    if (why) {
+      wx.showToast({ title: why, icon: 'none' });
+      return;
+    }
+    try {
+      // 请求体只有 eval_text —— term_id / teacher_id / 状态 / 时间全是服务端派生的，
+      // 而 TermEvaluationWrite 是 additionalProperties:false，多发一个键回 422。
+      await assess.submitTermEvaluation(this.data.childId, { text: this.data.content });
+      wx.showToast({ title: '学期评价已提交', icon: 'none' });
+      wx.navigateBack();
+    } catch (err) {
+      wx.showToast({ title: assess.termEvalFailureText(err), icon: 'none' });
+    }
   },
 });

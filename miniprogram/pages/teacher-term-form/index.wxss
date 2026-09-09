@@ -10,3 +10,8 @@
 .form-label--first {
   margin-top: 0;
 }
+
+/* 置灰：照片导入没有数据源，入口留着但不可用。提交过的学期评价同样置灰保存按钮。 */
+.btn--off {
+  opacity: .45;
+}
