@@ -11,30 +11,39 @@
  * 所以这一页取图分两段：列表回来先按 `file_id` 画出占位格子（数量是真的），
  * 再对**每张卡最多前 3 张**并发换地址填进去。不取满 9 张是因为卡片上本来只放
  * 得下 3 格 —— 一屏 20 条动态若每条换 9 个地址就是 180 次请求，而看得见的只有 60 张。
- * 余下的在选照片浮层里按需取。
+ * 余下的在点「+N」角标看大图时按需取。
  *
  * ── 卡片上不显示「涉及 N/M 人」与「N 位家长已查看」 ────────────────────────
  *
  * 前者要 `child_id`，列表端点不回这一列；后者在契约与 DDL 里都没有来源。
  * **两个都不要补出来**，卡片那一行只放有据可查的：状态 + 时间戳。
  *
- * ── 「加入成长册」只存在本机 ───────────────────────────────────────────────
+ * ── 「收进成长册」走契约，不走本机 ─────────────────────────────────────────
  *
- * 契约里**没有「把一条在园时光纳入编册」的端点**。`db_growth_material`
- * （`source_type='m1'` + `moment_id`）这张表是有的，138 行数据也在，但 28 条
- * growth-book 端点里管它的一条都没有。所以这个勾选**接不上**，写
- * `wx.setStorageSync`，缺口登记为 GAPS G68。
+ * `POST /teacher/growth-book/materials`（`services/growth-book.js` 的 `addMoment`）建一条
+ * `db_growth_material`（`source_type='m1'` + `moment_id`）。本页只送 `moment_id`：
+ * `compilation_id` 由本班本学期派生，标题、正文与日期是服务端从 `db_moment` 抄的副本
+ * （§7.3、DO-NOT-BUILD 8）。
  *
- * 补这套端点是后端仓库的工作，而且 `growth-book-time-manage` 那一页要的是同一套
- * （`GAPS.md` 已把它绑到 `db_growth_material.title`）—— 为这一个勾选
- * 先补一次、接成长册时再改一次，等于做两遍。所以留待接成长册那条线时一次设计。
+ * 哪些已经收进来了，进页时向 `GET /teacher/growth-book/materials` 要一份
+ * （`source_type=m1`），按 `momentId` 对上。**不读本机暂存** —— 换一台设备答案要一样。
+ *
+ * ── 选照片浮层已经删掉，因为教师选片没有落点 ───────────────────────────────
+ *
+ * 「这则活动的哪几张照片进册」要写 `db_file_ref(owner_object='db_growth_material')`，
+ * 契约里**没有任何一条端点写得了它**（`DELETE /materials/{id}` 倒是会连带清掉那一批
+ * 引用）。所以本页不再画那个浮层：画了就是假装存下去了。页顶那一句把这件事说出来。
+ *
+ * ── 「移出」不在这一页 ─────────────────────────────────────────────────────
+ *
+ * `DELETE /materials/{growth_material_id}` 要的是登记行的 id，且删除不可恢复、界面要两段
+ * 确认（decision.md 2026-08-13 第六轮）—— 那一整套在「在园时光管理」页上。这一页只加，
+ * 已经收进来的那些点了只说一句，不重复发。
  */
 
 const co = require('../../services/co-education');
+const bookApi = require('../../services/growth-book');
 const guard = require('../../utils/guard');
-
-// 成长册选择暂存键。接上端点后这里整块删掉，见头注。
-const BOOK_STORE_KEY = 'hualong.growth-book.v1';
 
 const PAGE_LIMIT = 20;
 // 每张卡片上预览几张。卡片只放得下 3 格，多取的地址看不见也会过期。
@@ -56,23 +65,6 @@ function publishedOnly(items) {
   return items.filter((m) => m.published);
 }
 
-function readBook() {
-  try {
-    const saved = wx.getStorageSync(BOOK_STORE_KEY);
-    return saved && typeof saved === 'object' ? saved : {};
-  } catch (e) {
-    return {};
-  }
-}
-
-function writeBook(config) {
-  try {
-    wx.setStorageSync(BOOK_STORE_KEY, config);
-  } catch (e) {
-    /* 存不进去就算了，和原型一样静默 */
-  }
-}
-
 Page({
   data: {
     moments: [],
@@ -80,22 +72,18 @@ Page({
     loading: true,
     loadingMore: false,
     error: '',
-
-    // 选照片浮层
-    picking: false,
-    pickId: null,
-    pickTitle: '加入成长资料',
-    pickPhotos: [],
-    selected: [],
-    confirmText: '加入',
   },
 
   onLoad() {
+    // 已经收进本学期编册的 moment_id。取不到就留空集：那时每张卡都显示「收进成长册」，
+    // 重复点会被服务端以 `source_already_in_compilation` 挡回来，不会多收一条。
+    this.inBook = new Set();
     this.load();
   },
 
   onShow() {
-    if (!this.data.loading) this.syncCards();
+    // 从在园时光管理页移出一条再回来，收录状态就变了，所以每次显示都重取一次。
+    if (!this.data.loading) this.loadBookState();
   },
 
   async load() {
@@ -108,7 +96,7 @@ Page({
         nextCursor: page.nextCursor,
         loading: false,
       });
-      this.syncCards();
+      this.loadBookState();
       this.fillPhotos(publishedOnly(page.items));
     } catch (err) {
       if (guard.endSessionOnAuthFailure(err)) return;
@@ -131,7 +119,7 @@ Page({
         nextCursor: page.nextCursor,
         loadingMore: false,
       });
-      this.syncCards();
+      this.markCards();
       this.fillPhotos(publishedOnly(page.items));
     } catch (err) {
       this.setData({ loadingMore: false });
@@ -190,109 +178,64 @@ Page({
     wx.previewImage({ urls, current: urls[Math.min(PREVIEW_PHOTOS, urls.length - 1)] });
   },
 
-  /** 每条动态显示当前收录了几张（读本机暂存）。 */
-  syncCards() {
-    const material = readBook().material || [];
+  /**
+   * 哪些已经收进本学期编册 —— 问服务端。
+   *
+   * `listMaterials('m1')` 是名册型整取、不分页（§3.5），所以这一份就是全部，
+   * 不必跟着 feed 的游标翻。取不到就留空集并说一句：把「读失败」显示成「都没收」
+   * 会让教师去重收一遍，而那一发会被服务端挡回来。
+   */
+  async loadBookState() {
+    try {
+      const items = await bookApi.listMaterials(bookApi.SOURCE_MOMENT);
+      this.inBook = new Set(items.map((row) => row.momentId).filter((id) => id !== null));
+      this.markCards();
+    } catch (err) {
+      if (guard.endSessionOnAuthFailure(err)) return;
+      this.inBook = new Set();
+      this.markCards();
+      wx.showToast({ title: '收录状态读不到，卡片上的标记可能不准', icon: 'none' });
+    }
+  },
+
+  /** 把收录状态画到卡片上。翻页新来的那几张也走这里。 */
+  markCards() {
     this.setData({
-      moments: this.data.moments.map((m) => {
-        const hit = material.find((row) => row.id === m.id);
-        return { ...m, pickedCount: hit ? hit.photos.length : 0 };
-      }),
+      moments: this.data.moments.map((m) => ({ ...m, inBook: this.inBook.has(m.id) })),
     });
   },
 
   /**
-   * 打开选照片浮层。
+   * 收进本学期编册。只送 `moment_id`，其余全是服务端派生或抄来的副本。
    *
-   * `file_id` 全套已经在卡片上（列表端点就回了），所以不再拉一次详情；
-   * 这里只补**预览之外那几张**的地址 —— 前 3 张 fillPhotos 已经换过了。
+   * 失败逐格译（`addMomentFailureText`）：编册已锁定、本班本学期还没有编册、
+   * 这则活动不是 `s3`、日期不在本学期、已经收过了。**一格都不吞进「操作失败」** ——
+   * 这五句每一句都指着教师做得到的下一步。
    */
-  async onOpenPick(e) {
+  async onAddToBook(e) {
     const id = Number(e.currentTarget.dataset.id);
-    const card = this.data.moments.find((m) => m.id === id);
-    if (!card) return;
-
-    if (!card.fileIds.length) {
-      wx.showToast({ title: '这条活动没有照片', icon: 'none' });
+    if (this.inBook.has(id)) {
+      wx.showToast({ title: '这则活动已经收进本学期成长册', icon: 'none' });
       return;
     }
-
-    const hit = (readBook().material || []).find((row) => row.id === id);
-    const selected = hit ? hit.photos.slice() : [];
-    const known = new Map(card.photos.map((p) => [p.fileId, p.url]));
-    this.setData({
-      picking: true,
-      pickId: id,
-      pickTitle: hit ? '调整收录照片' : '加入成长资料',
-      // 契约只给 file_id，没有文件名，所以标签按序号，不编文件名。
-      // `sel` 是每一行自己的选中态，模板直接读它。
-      // **不要在模板里写 `selected.indexOf(item.fileId) > -1`** —— 那个表达式在真机上
-      // 算不出来，选中了边框与勾选标记一起不显示，而底部的计数（读的是数组长度）
-      // 照常在变，于是看起来像样式问题，其实不是。填写月度评价那一页撞过同一个坑。
-      pickPhotos: card.fileIds.map((fid, i) => ({
-        fileId: fid,
-        label: `照片 ${i + 1}`,
-        url: known.get(fid) || '',
-        sel: selected.indexOf(fid) > -1,
-      })),
-      selected,
-      confirmText: this.confirmTextFor(selected.length, !!hit),
-    });
-
-    // 剩下那些的地址后补，回来一张填一张。用 pickId 守住：教师可能已经关掉浮层
-    // 又打开了另一条，那时这些回包不该往新浮层里填。
-    card.fileIds.forEach(async (fid, i) => {
-      if (known.get(fid)) return;
-      const url = await co.photoUrl(fid, card.photoOwner);
-      if (!url || this.data.pickId !== id) return;
-      this.setData({ [`pickPhotos[${i}].url`]: url });
-    });
-  },
-
-  confirmTextFor(count, existed) {
-    if (count) return `加入（${count}）`;
-    return existed ? '移出成长资料' : '加入';
-  },
-
-  /**
-   * 切换一张照片的选中。
-   *
-   * **用下标定位，不用 fileId**：`data-i` 是我自己发的整数，不经 dataset 的取值转换。
-   * 选中态写进那一行的 `sel`，`selected` 由它推出来，不再是另一份要同步的状态。
-   */
-  onTogglePhoto(e) {
-    const i = Number(e.currentTarget.dataset.i);
-    const row = this.data.pickPhotos[i];
-    if (!row) return;
-    this.setData({ [`pickPhotos[${i}].sel`]: !row.sel }, () => {
-      const selected = this.data.pickPhotos.filter((p) => p.sel).map((p) => p.fileId);
-      const existed = !!(readBook().material || []).find((r) => r.id === this.data.pickId);
-      this.setData({ selected, confirmText: this.confirmTextFor(selected.length, existed) });
-    });
-  },
-
-  onConfirmPick() {
-    const id = this.data.pickId;
-    const card = this.data.moments.find((m) => m.id === id);
-    const photos = this.data.selected;
-    const config = readBook();
-
-    config.material = (config.material || []).filter((row) => row.id !== id);
-    if (photos.length) {
-      config.material.push({ id, title: card.title, date: card.date, photos });
+    wx.showLoading({ title: '正在收进成长册', mask: true });
+    try {
+      await bookApi.addMoment(id);
+      wx.hideLoading();
+    } catch (err) {
+      wx.hideLoading();
+      if (guard.endSessionOnAuthFailure(err)) return;
+      // 「已经收过了」不是失败：把它标上，教师就不会再点第二次。
+      if (err.details && err.details.rule === 'source_already_in_compilation') {
+        this.inBook.add(id);
+        this.markCards();
+      }
+      wx.showToast({ title: bookApi.addMomentFailureText(err), icon: 'none' });
+      return;
     }
-    writeBook(config);
-
-    this.setData({ picking: false });
-    this.syncCards();
-    wx.showToast({
-      title: photos.length ? `已加入成长资料（${photos.length} 张照片）` : '已移出成长资料',
-      icon: 'none',
-    });
-  },
-
-  onClosePick() {
-    this.setData({ picking: false, pickId: null });
+    this.inBook.add(id);
+    this.markCards();
+    wx.showToast({ title: '已收进本学期成长册', icon: 'none' });
   },
 
   /**
@@ -326,10 +269,9 @@ Page({
     try {
       await co.remove(id);
       wx.hideLoading();
-      // 本机那份成长册选择也要跟着清，否则会留下一条指向已删内容的记录。
-      const config = readBook();
-      config.material = (config.material || []).filter((row) => row.id !== id);
-      writeBook(config);
+      // 服务端删源在园时光时连带解除入册关系（契约 v0.7），所以本页只把这一条从
+      // 收录名单里去掉，不再发一次移出。
+      this.inBook.delete(id);
 
       this.setData({ moments: this.data.moments.filter((m) => m.id !== id) });
       wx.showToast({ title: '已删除', icon: 'none' });
@@ -384,6 +326,7 @@ function toCard(m, index) {
     statusLabel: m.status === 's3' ? '' : m.statusLabel,
     // 管理员下架的那些不给删（Q59-m1a），按钮据此不渲染。
     canRemove: m.can.remove,
-    pickedCount: 0,
+    // 已经收进本学期编册。由 loadBookState 取回后 markCards 填上，先给 false 占位。
+    inBook: false,
   };
 }

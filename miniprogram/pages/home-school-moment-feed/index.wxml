@@ -1,11 +1,14 @@
 <!-- 全部活动 —— 对照原型 screens/home-school-moment-feed.html。
 
      原型每条动态贴 3-5 张写着「穿绳」「装袋」的占位图。契约的 Moment 只回
-     file_id 数组，没有文件名，本环境也不接对象存储，所以照片改成点开选择器时
-     按序号列出（见 index.js 头注）。缩略图那一格因此不再画。 -->
+     file_id 数组，地址要逐张换（见 index.js 头注），所以缩略图先画格子、
+     地址回来一张填一张；余下的点「+N」角标看大图。 -->
 <view class="page">
 
-  <view class="hint hint--top">点动态右下角的「+ 加入成长册」可将其加入成长资料；加入后会作为成长册「在园时光」栏目的内容（全班共用）。这一页只列已发布的动态。</view>
+  <!-- 收进去的是这则活动的标题、正文与日期三个副本（服务端从来源抄）。选哪几张照片
+       进册今天没有落点：契约里没有一条端点写得了 db_growth_material 的照片引用。
+       所以这里照实说，不画选照片浮层。见 index.js 头注。 -->
+  <view class="hint hint--top">点动态右下角的「收进成长册」，这则活动就进本学期成长册的「在园时光」栏目（全班共用），收的是活动标题、正文与日期。选哪几张照片进册今天还做不到。收进来之后到「在园时光管理」页归入主题，也在那一页移出。这一页只列已发布的动态。</view>
 
   <view class="moment-card" wx:for="{{moments}}" wx:key="id" wx:for-item="m">
     <view>
@@ -47,10 +50,10 @@
         <!-- 这一页只列已发布的动态（草稿与已撤回在 index.js 的 publishedOnly 里筛掉），
              所以这个按钮不必再判状态。 -->
         <view
-          class="add-material {{m.pickedCount ? 'add-material--on' : ''}}"
+          class="add-material {{m.inBook ? 'add-material--on' : ''}}"
           data-id="{{m.id}}"
-          bindtap="onOpenPick"
-        >{{m.pickedCount ? '✓ 已加入（' + m.pickedCount + ' 张）' : '+ 加入成长册'}}</view>
+          bindtap="onAddToBook"
+        >{{m.inBook ? '✓ 已收进成长册' : '+ 收进成长册'}}</view>
       </view>
     </view>
   </view>
@@ -59,37 +62,4 @@
   <view class="hint hint--top" wx:elif="{{error}}" bindtap="onRetry">{{error}}　点此重试</view>
   <view class="hint hint--top" wx:elif="{{!moments.length}}">本班本学期还没有在园时光记录。</view>
 
-</view>
-
-<!-- 选照片浮层 -->
-<view class="sheet-mask" wx:if="{{picking}}" bindtap="onClosePick"></view>
-<view class="sheet" wx:if="{{picking}}">
-  <view class="sheet-head">
-    <text class="sheet-head__title">{{pickTitle}}</text>
-    <view class="close" bindtap="onClosePick">×</view>
-  </view>
-  <text class="sheet-sub">活动文字将全部收录；请选择要收录的照片（可多选）。</text>
-
-  <scroll-view class="pick-grid" scroll-y>
-    <!-- 选中与否读的是每一行自己的 `sel`，**不在模板里算 indexOf** ——
-         那个表达式在真机上算不出来，边框与勾选标记会一起失效，
-         而底部的计数照常在变，看起来像样式问题其实不是。见 index.js 的 onTogglePhoto。 -->
-    <view
-      class="pick-photo {{item.sel ? 'pick-photo--sel' : ''}}"
-      wx:for="{{pickPhotos}}"
-      wx:key="fileId"
-      wx:for-index="i"
-      data-i="{{i}}"
-      bindtap="onTogglePhoto"
-    >
-      <image class="pick-photo__img" wx:if="{{item.url}}" src="{{item.url}}" mode="aspectFill" lazy-load />
-      <text wx:else>{{item.label}}</text>
-      <view class="pick-photo__tick {{item.sel ? '' : 'pick-photo__tick--off'}}">✓</view>
-    </view>
-  </scroll-view>
-
-  <view class="sheet-actions">
-    <view class="btn btn--ghost" hover-class="btn--hover" bindtap="onClosePick">取消</view>
-    <view class="btn btn--primary" hover-class="btn--hover" bindtap="onConfirmPick">{{confirmText}}</view>
-  </view>
 </view>

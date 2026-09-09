@@ -310,6 +310,8 @@ function classLevelReady(key, config) {
 }
 function childSectionReady(key, child, config) {
   if (key === 'time') {
+    /* config.material 今天没有写入者，所以新装的机器上这一支恒为「未就绪」。
+       理由与补法见 buildBookPlan 里 section.key === 'time' 那一段（issue #27）。 */
     const registered = new Set((config.material || []).map(item => item.momentId || item.id));
     const teacherReady = (config.material || []).some(item => (item.photos || []).length > 0);
     const parentReady = (config.momentMaterial || []).some(item =>
@@ -393,6 +395,24 @@ function buildBookPlan(name, config, child) {
       return;
     }
     if (section.key === 'time') {
+      /* ── config.material 与 config.timeTopics 今天没有写入者 ──────────────
+       *
+       * 在园时光那一支的数据源已经搬到契约上：`growth-book-time-manage`（在园时光管理）
+       * 读写 `GET/POST /teacher/growth-book/materials` 与 `/time-topics`
+       * （`services/growth-book.js`）。本机那两个键**从此只有读、没有写**，
+       * `home-school-moment-feed`（全部活动）的「收进成长册」也改发
+       * `POST /teacher/growth-book/materials` 了。
+       *
+       * 所以新装的机器上这一段恒为空：`growth-book`（成长册）、`growth-book-edit`
+       * （2026 春季学期编册）、`growth-book-view`（单册预览）与 `growth-book-sample`
+       * （成长册样本）的在园时光栏目会渲染成空。**这是对的**（CLAUDE.md §8：
+       * 没有数据源就不要渲染它），不要为了填满它造一批演示数据回来。
+       *
+       * 补法只有一条：这四页也改读 `services/growth-book.js`，连同编册、栏目与成册
+       * 那三族一起 —— **issue #27**。届时 `orderedTimeTopics` 的排序要与服务端那一份
+       * 对齐（主题顺序取最早 `source_date`；主题内也按 `source_date` 升序，
+       * `display_order` 只作同日平手打破）。
+       */
       const topics = orderedTimeTopics(config.timeTopics, config.material);
       const parentMoments = (config.momentMaterial || []).filter(item => !child || !item.childId || item.childId === child.id);
       const materials = (config.material || []).map(item => {

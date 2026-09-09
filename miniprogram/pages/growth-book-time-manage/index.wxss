@@ -6,6 +6,38 @@
   padding: 24rpx 32rpx 56rpx;
 }
 
+/* ── 三条整页提示：读取中、读取失败、编册已锁定 ─────────────────────────── */
+
+.notice {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 24rpx;
+  padding: 24rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 24rpx;
+  background: #fff;
+  color: var(--muted);
+  font-size: 24rpx;
+}
+
+.notice__text {
+  flex: 1;
+  min-width: 0;
+}
+
+.notice--error {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+/* 编册 e2 之后写入全部收起，这一条说明为什么按钮不见了 */
+.notice--locked {
+  border-color: var(--accent-dark);
+  background: var(--accent-light);
+  color: var(--accent-dark);
+}
+
 /* ── 三个计数 ──────────────────────────────────────────────────────────── */
 
 .count-line {

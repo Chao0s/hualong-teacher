@@ -5,9 +5,22 @@
  *   预设栏目改 config.selected，新增栏目改自己的 enabled；
  *   改完就地重排预览并停在原来那一页（原版 render(true)）。
  *
- * 两处网页写法换成小程序写法：
- *   1. window.confirm（锁定编册）换成 wx.showModal，所以锁定拆成两步；
- *   2. 从栏目管理页返回要重算，onShow 里重读。
+ * 从栏目管理页返回要重算，onShow 里重读。
+ *
+ * ── 「锁定编册」这一颗按钮今天做不到，所以它只报告 ─────────────────────────
+ *
+ * 真的锁定走 `POST /teacher/growth-book/compilation/{compilation_id}/lock`，
+ * 它要一个 `compilation_id`；`compilation_id` 又要先向
+ * `POST /teacher/growth-book/compilation`（幂等的取回或建立）要，而那一条属成长册
+ * 入口页那一步 —— **issue #27 接**。所以这一页锁不了。
+ *
+ * 锁不了就照实说，**不写 `compilationStatus`**（原来写一个本机 `e2` 并说「编册已锁定」）。
+ * 一颗报告了并没有发生的锁定的按钮，比一颗按不下去的按钮更坏：服务端那一份仍是 `e1`，
+ * 还可能挂着未分节的 `m1` 素材，于是这一页与在园时光管理页对同一个问题给出相反的答案。
+ *
+ * 未分节笔数也改问服务端（`loadLockGate`）。以前数的是 `config.material`，那个键在
+ * `growth-book-time-manage`（在园时光管理）改读契约之后就没有写入者了 —— 新装的机器
+ * 恒为空、数到 0 就放行，旧安装的机器留着 40 项没有 `topicId` 的旧数据、永远卡住。
  */
 
 const {
@@ -17,6 +30,7 @@ const {
   readBookConfig,
   writeBookConfig,
 } = require('../../utils/growth-book.js');
+const bookApi = require('../../services/growth-book.js');
 const viewer = require('../../utils/book-viewer.js');
 
 const PREVIEW_CHILD = BOOK_CHILDREN[0];
@@ -35,13 +49,18 @@ Page({
     indicator: '1 / 1',
     atFirst: true,
     atLast: true,
+    /* 锁定按钮下面那一行。照实说这一页能做到什么、还差什么 */
+    lockNote: '',
   },
 
   onShow() {
     const config = readBookConfig();
     config.compilationStatus = config.compilationStatus || 'e1';
     this.config = config;
+    this.ungroupedCount = null;
+    this.gateError = '';
     this.render(true);
+    this.loadLockGate();
   },
 
   locked() {
@@ -60,7 +79,39 @@ Page({
       })),
       locked: this.locked(),
     });
+    this.renderLockNote();
     viewer.load(this, PREVIEW_CHILD.name, this.config, keepPage, PREVIEW_CHILD);
+  },
+
+  /**
+   * 未分节的在园活动有几项 —— 问服务端，不数本机那份。
+   *
+   * `loadTimeManage()` 取的就是在园时光管理页那一份，两页因此永远给同一个数。
+   * 取不到就说取不到：把「读失败」显示成 0 会让这一页说「可以锁了」。
+   */
+  async loadLockGate() {
+    try {
+      const book = await bookApi.loadTimeManage();
+      this.ungroupedCount = book.ungroupedCount;
+      this.gateError = '';
+    } catch (err) {
+      this.ungroupedCount = null;
+      this.gateError = bookApi.actionFailureText(err);
+    }
+    this.renderLockNote();
+  },
+
+  /** 把锁定按钮下面那一行写出来。三段：做不到、还差什么、去哪儿改。 */
+  renderLockNote() {
+    const drafts = (this.config.custom || [])
+      .filter((item) => item.enabled !== false && item.sectionStatus !== 'd2').length;
+    const gate = this.gateError ? `未分节笔数读不到：${this.gateError}`
+      : this.ungroupedCount === null ? '正在读未分节的在园活动笔数。'
+        : `本学期还有 ${this.ungroupedCount} 项在园活动未分节。`;
+    const draftText = drafts ? `另有 ${drafts} 个已勾选栏目未发布。` : '';
+    this.setData({
+      lockNote: `锁定编册由服务端执行，这一页还接不上（issue #27 接通编册端点后才能锁）。${gate}${draftText}`,
+    });
   },
 
   /* ---------- 翻页 ---------- */
@@ -121,30 +172,11 @@ Page({
 
   /* ---------- 锁定编册 ---------- */
 
+  /**
+   * 这一颗按钮只报告，不锁。理由与去处写在文件头注：真的锁要 `compilation_id`，
+   * 那一条端点属 issue #27。**这里绝不写 `compilationStatus`。**
+   */
   onLock() {
-    if (this.locked()) return;
-    const config = this.config;
-    const timeEnabled = (config.selected || []).includes('time');
-    const ungrouped = timeEnabled ? (config.material || []).filter((item) => !item.topicId) : [];
-    const drafts = (config.custom || [])
-      .filter((item) => item.enabled !== false && item.sectionStatus !== 'd2');
-    if (ungrouped.length) {
-      wx.showToast({ title: `还有 ${ungrouped.length} 项在园活动未分节`, icon: 'none' });
-      return;
-    }
-    if (drafts.length) {
-      wx.showToast({ title: `还有 ${drafts.length} 个已勾选栏目未发布`, icon: 'none' });
-      return;
-    }
-    wx.showModal({
-      content: '锁定后本学期的栏目与入册内容不可再修改。确认锁定？',
-      success: (res) => {
-        if (!res.confirm) return;
-        config.compilationStatus = 'e2';
-        writeBookConfig(config);
-        this.render(true);
-        wx.showToast({ title: '编册已锁定', icon: 'none' });
-      },
-    });
+    wx.showToast({ title: '这一页还不能锁定编册', icon: 'none' });
   },
 });

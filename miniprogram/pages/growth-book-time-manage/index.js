@@ -1,55 +1,52 @@
 /**
- * 在园时光管理 —— 原型 screens/growth-book-time-manage.html 的小程序版本。
+ * 在园时光管理（家园社共育 → 成长档案 → 成长册 → 在园时光管理）。
  *
- * 主题排序、归类、改名与删除的口径全部走 utils/growth-book.js，一条都没在本页重写。
+ * **交互照 `decision.md` 2026-08-13 的六轮评审，一处没改；换掉的只是数据源。**
+ * 这一页以前读写 `wx.setStorageSync`，主题与活动都是本地造的假数据；现在读写
+ * `services/growth-book.js`，也就是 G68（在园时光与社区投稿的入册通道有表有数据、
+ * 零 API 面）这一轮补上的那 8 条端点。
  *
- * 三处网页写法换成小程序写法：
- *   1. 每次改动重画 innerHTML → data 里存一份算好的列表；
- *   2. <select> → <picker mode="selector">，选项换一批就回到「选择主题」，和原型重画后一样；
- *   3. 勾选框自己画 —— 原生 checkbox 的样式不好改。
+ * decision.md 定死、本页照做的六条：
+ *   主题顺序     按各主题内最早活动日期升序（第六轮）。**这个顺序服务端算好再回**，
+ *                本页拿到什么顺序就画什么顺序，不重排
+ *   删除两段确认 未归类素材的不可恢复删除是同一个按钮两段确认「删除 → 确认删除」，
+ *                不调宿主会拦截的原生弹窗（第六轮）
+ *   删主题直接做 删除主题等同集体撤销归类，素材全部回到未归类清单、不移出成长册，
+ *                所以**不做二次确认**（第五轮）
+ *   撤销 ≠ 删除  主题内素材只提供「撤销」，回到下方清单可重新归类；下方素材行只提供
+ *                「删除」，删掉即解除本学期入册关系且不提供撤销
+ *   没有行内下拉 不提供行内主题下拉，也不提供手动上移／下移
+ *   主题名用输入 新建与重命名都用页面内的文字栏，不依赖 `prompt`
  *
- * 勾选单条只刷新那一行的选中态，不整页重算，这样目标主题不会被顺手清掉；
- * 「全选结果」在原型里就是整页重算，照搬。
+ * 三处网页写法仍是小程序写法：改动后重画整段 data 而不是 innerHTML；`<select>` 换
+ * `<picker mode="selector">`，选项换一批就回到「选择主题」；勾选框自己画。
+ *
+ * ── 「搜索」在本地做，因为整份结果就在手上 ─────────────────────────────────
+ *
+ * `GET /teacher/growth-book/materials` 是名册型整取、不分页（§3.5），所以「搜索」与
+ * 「全选当前结果」都在这一份完整清单上做。**这正是那条端点不分页的理由**：翻到一半
+ * 的全选会静默漏掉没翻到的那几笔。搜索不发请求，契约也没有这个查询参数。
+ *
+ * ── 每次写入之后整页重取 ───────────────────────────────────────────────────
+ *
+ * 主题顺序是服务端从「该主题全部活动的最早来源日期」派生的，所以**归类一批素材会改
+ * 主题的顺序**。本地改一份副本再拼回去就会与服务端的顺序漂开，而管理页、正文与 TOC
+ * 必须共用同一个顺序。整页重取一次比自己算便宜，也不会算错。
+ *
+ * ── 进来时不知道编册锁没锁 ─────────────────────────────────────────────────
+ *
+ * 这一族没有一条端点读得到 `compilation_status`（`services/growth-book.js` 的头注写了
+ * 为什么不顺手调 `POST /teacher/growth-book/compilation`）。所以 `locked` 从 false 起，
+ * 第一次写入被服务端以 `compilation_locked` 拒掉时才翻成 true，然后收起全部写入控件。
+ * **界面从来不是边界**：服务端每一条 SQL 都内联了 `compilation_status='e1'`。
  */
 
-const {
-  materialDateValue,
-  orderedTimeTopics,
-  readBookConfig,
-  writeBookConfig,
-} = require('../../utils/growth-book.js');
-
-const ACTIVITY_NAMES = [
-  '认识我们的新教室', '晨间自主游戏', '第一次值日', '搭建我们的幼儿园', '彩色树叶拓印', '寻找春天的颜色', '种子的秘密', '给小苗浇水',
-  '春风里的纸飞机', '花园昆虫观察', '雨后的水洼', '小小天气播报员', '户外平衡挑战', '沙池里的城堡', '轮胎滚滚乐', '合作运球',
-  '绘本里的春天', '故事角色表演', '我会整理图书', '有趣的影子', '声音从哪里来', '磁铁好朋友', '沉与浮小实验', '泡泡变变变',
-  '蔬菜印章画', '黏土里的小动物', '音乐节奏游戏', '彩带舞起来', '春日野餐会', '安全过马路', '消防疏散练习', '保护牙齿',
-  '爱眼小课堂', '我会自己穿衣', '午餐小帮手', '安静午睡日', '认识端午节', '一起包粽子', '端午香包', '龙舟接力赛',
-  '夏天的味道', '寻找校园里的圆', '水枪运水赛', '毕业班来做客', '班级植物观察', '纸箱创意搭建', '小小分享会', '学期作品展',
-];
-
-function demoActivities() {
-  const start = new Date('2026-02-24T00:00:00');
-  return ACTIVITY_NAMES.map((title, index) => {
-    const date = new Date(start);
-    date.setDate(start.getDate() + index * 3);
-    return {
-      id: `demo-time-${String(index + 1).padStart(2, '0')}`,
-      title,
-      date: `${date.getMonth() + 1}月${date.getDate()}日`,
-      dateValue: date.toISOString().slice(0, 10),
-      photos: [`${title}照片1`, `${title}照片2`],
-      description: `孩子们在${title}中认真观察、主动表达，并记录了自己的发现。`,
-      topicId: index < 4 ? 'p1' : index < 8 ? 'p2' : null,
-    };
-  });
-}
-
-const byNewest = (a, b) => materialDateValue(b) - materialDateValue(a);
-const byOldest = (a, b) => materialDateValue(a) - materialDateValue(b);
+const bookApi = require('../../services/growth-book.js');
 
 Page({
   data: {
+    loading: true,
+    error: '',
     topicCount: 0,
     activityCount: 0,
     ungroupedCount: 0,
@@ -62,84 +59,102 @@ Page({
     targetIndex: 0,
     assignDisabled: true,
     locked: false,
+    lockedText: '',
   },
 
   onLoad() {
-    const config = readBookConfig();
-    config.timeTopics = config.timeTopics && config.timeTopics.length ? config.timeTopics : [
-      { id: 'p1', title: '春天来了', sort: 1 },
-      { id: 'p2', title: '一起划龙舟', sort: 2 },
-    ];
-    if ((config.timeMaterialDemoVersion || 0) < 2) {
-      const byId = new Map((config.material || []).map((item) => [item.id, item]));
-      demoActivities().forEach((item) => { if (!byId.has(item.id)) byId.set(item.id, item); });
-      config.material = Array.from(byId.values());
-      config.timeMaterialInitialized = true;
-      config.timeMaterialDemoVersion = 2;
-      writeBookConfig(config);
-    }
-    this.config = config;
     this.selected = new Set();
     this.editingTopicId = null;
     this.editTitle = '';
     this.pendingRemoveId = null;
     this.targetIds = [''];
-    this.render();
+    this.book = { topics: [], ungrouped: [], topicCount: 0, activityCount: 0, ungroupedCount: 0 };
+    this.reload();
   },
 
-  locked() {
-    return this.config.compilationStatus === 'e2';
+  /** 服务端那一份是唯一的真相。每次写入之后重取，不在本地拼一份。 */
+  async reload() {
+    this.setData({ loading: true, error: '' });
+    try {
+      this.book = await bookApi.loadTimeManage();
+      this.setData({ loading: false });
+      this.render();
+    } catch (err) {
+      // 本页没有开 `enablePullDownRefresh`，全仓库也没有一页开过，所以出路只有旁边
+      // 那颗「重试」。文案不写「下拉」——写了就是叫教师做一个做不到的动作。
+      this.setData({ loading: false, error: err.userMessage || '加载失败，请点「重试」' });
+    }
   },
 
+  /** 取数失败之后唯一的出路。没有它，一次网络抖动就把整页钉死在错误文案上。 */
+  onRetry() {
+    this.reload();
+  },
+
+  /**
+   * 把手上那一份画出来。
+   *
+   * 勾选状态与两段确认是本页的临时状态，重取之后按 id 对一遍：清单里已经没有的 id
+   * 一律丢掉，否则一个刚被删掉的 id 会一直算在「已选 N 项」里。
+   */
   render() {
-    const config = this.config;
-    const topics = orderedTimeTopics(config.timeTopics, config.material);
-
-    const looseIds = new Set(config.material.filter((item) => !item.topicId).map((item) => item.id));
+    const book = this.book;
+    const looseIds = new Set(book.ungrouped.map((item) => item.id));
     [...this.selected].forEach((id) => { if (!looseIds.has(id)) this.selected.delete(id); });
+    if (this.pendingRemoveId !== null && !looseIds.has(this.pendingRemoveId)) this.pendingRemoveId = null;
 
     const query = this.data.query.trim().toLowerCase();
-    const visible = config.material
-      .filter((item) => !item.topicId && (!query || item.title.toLowerCase().includes(query)))
-      .sort(byNewest);
+    const visible = book.ungrouped.filter((item) => !query || item.title.toLowerCase().includes(query));
 
-    this.targetIds = ['', ...topics.map((topic) => topic.id)];
+    this.targetIds = ['', ...book.topics.map((topic) => topic.id)];
 
     this.setData({
-      topics: topics.map((topic) => {
-        const items = config.material.filter((item) => item.topicId === topic.id).sort(byOldest);
-        return {
-          id: topic.id,
-          title: topic.title,
-          count: items.length,
-          editing: this.editingTopicId === topic.id,
-          editTitle: this.editingTopicId === topic.id ? this.editTitle : '',
-          items: items.map((item) => ({ id: item.id, title: item.title, date: item.date })),
-        };
-      }),
+      topics: book.topics.map((topic) => ({
+        id: topic.id,
+        title: topic.title,
+        count: topic.count,
+        editing: this.editingTopicId === topic.id,
+        editTitle: this.editingTopicId === topic.id ? this.editTitle : '',
+        items: topic.items.map((item) => ({ id: item.id, title: item.title, date: item.dateLabel })),
+      })),
       ungrouped: visible.map((item) => ({
         id: item.id,
         title: item.title,
-        date: item.date,
+        date: item.dateLabel,
         checked: this.selected.has(item.id),
         pending: this.pendingRemoveId === item.id,
       })),
-      topicCount: topics.length,
-      activityCount: config.material.length,
-      ungroupedCount: looseIds.size,
+      topicCount: book.topicCount,
+      activityCount: book.activityCount,
+      ungroupedCount: book.ungroupedCount,
       selectedCount: this.selected.size,
       /* 原型重画 <select> 后选中项回到第一个，照搬 */
-      targetOptions: ['选择主题', ...topics.map((topic) => topic.title)],
+      targetOptions: ['选择主题', ...book.topics.map((topic) => topic.title)],
       targetIndex: 0,
-      assignDisabled: this.locked() || !this.selected.size,
-      locked: this.locked(),
+      assignDisabled: this.data.locked || !this.selected.size,
     });
   },
 
-  save(message) {
-    writeBookConfig(this.config);
-    this.render();
+  /**
+   * 一次写入失败之后要说的话与要做的事。
+   *
+   * `compilation_locked` 是一次性的坏消息：编册 `e2` 之后单向永久唯读，所以收起全部
+   * 写入控件，不让教师再点一次去撞同一堵墙。其余的拒绝都只提示一句、重取一次 ——
+   * 「有素材刚被别处改动」这一类，刷新之后就对了。
+   */
+  refuse(err) {
+    const text = bookApi.actionFailureText(err);
+    if (bookApi.isCompilationLocked(err)) {
+      this.setData({ locked: true, lockedText: text, assignDisabled: true });
+    }
+    wx.showToast({ title: text, icon: 'none' });
+    return this.reload();
+  },
+
+  /** 写入成功之后：报一句、重取一次。 */
+  done(message) {
     wx.showToast({ title: message, icon: 'none' });
+    return this.reload();
   },
 
   /* ---------- 未归类素材 ---------- */
@@ -150,7 +165,7 @@ Page({
   },
 
   onSelectAll() {
-    if (this.locked()) return;
+    if (this.data.locked) return;
     const visible = this.data.ungrouped;
     const allSelected = visible.length && visible.every((row) => this.selected.has(row.id));
     visible.forEach((row) => {
@@ -160,8 +175,9 @@ Page({
     this.render();
   },
 
+  /* 勾选单条只刷新那一行，不整页重算，这样目标主题不会被顺手清掉。 */
   onPick(e) {
-    if (this.locked()) return;
+    if (this.data.locked) return;
     const i = Number(e.currentTarget.dataset.index);
     const { id } = this.data.ungrouped[i];
     if (this.selected.has(id)) this.selected.delete(id);
@@ -177,33 +193,47 @@ Page({
     this.setData({ targetIndex: Number(e.detail.value) });
   },
 
-  onAssign() {
+  async onAssign() {
     if (this.data.assignDisabled) return;
     const topicId = this.targetIds[this.data.targetIndex];
     if (!topicId) {
       wx.showToast({ title: '请先选择主题', icon: 'none' });
       return;
     }
-    this.config.material.forEach((item) => { if (this.selected.has(item.id)) item.topicId = topicId; });
-    const count = this.selected.size;
+    const ids = [...this.selected];
+    try {
+      await bookApi.assignTopic(ids, topicId);
+    } catch (err) {
+      await this.refuse(err);
+      return;
+    }
     this.selected.clear();
-    this.save(`已归入 ${count} 项活动`);
+    await this.done(`已归入 ${ids.length} 项活动`);
   },
 
-  /* 删除要点两下：第一下把按钮换成「确认删除」，第二下才真删。原型不弹提示。 */
-  onRemove(e) {
-    if (this.locked()) return;
-    const { id } = e.currentTarget.dataset;
+  /**
+   * 删除要点两下：第一下把按钮换成「确认删除」，第二下才真删。
+   *
+   * 这一下解除本学期入册关系、不可恢复，但**不动来源在园时光**（F19 §七）。
+   * 两段确认是本页的事，服务端不认第二次点击。
+   */
+  async onRemove(e) {
+    if (this.data.locked) return;
+    const id = Number(e.currentTarget.dataset.id);
     if (this.pendingRemoveId !== id) {
       this.pendingRemoveId = id;
       this.render();
       return;
     }
-    this.config.material = this.config.material.filter((item) => item.id !== id);
-    this.selected.delete(id);
     this.pendingRemoveId = null;
-    writeBookConfig(this.config);
-    this.render();
+    try {
+      await bookApi.removeMaterial(id);
+    } catch (err) {
+      await this.refuse(err);
+      return;
+    }
+    this.selected.delete(id);
+    await this.done('已移出本学期成长册');
   },
 
   /* ---------- 主题 ---------- */
@@ -212,28 +242,26 @@ Page({
     this.setData({ newTopicName: e.detail.value });
   },
 
-  onCreateTopic() {
-    if (this.locked()) return;
+  async onCreateTopic() {
+    if (this.data.locked) return;
     const title = this.data.newTopicName.trim();
-    if (!title) {
-      wx.showToast({ title: '请输入主题名称', icon: 'none' });
+    const why = bookApi.whyCannotNameTopic(title, this.book.topics, null);
+    if (why) {
+      wx.showToast({ title: why, icon: 'none' });
       return;
     }
-    if (this.config.timeTopics.some((item) => item.title === title)) {
-      wx.showToast({ title: '已经有同名主题', icon: 'none' });
+    try {
+      await bookApi.createTopic(title);
+    } catch (err) {
+      await this.refuse(err);
       return;
     }
-    this.config.timeTopics.push({
-      id: `p${Date.now()}`,
-      title,
-      sort: this.config.timeTopics.length + 1,
-    });
     this.setData({ newTopicName: '' });
-    this.save('主题已新建');
+    await this.done('主题已新建');
   },
 
   onRename(e) {
-    if (this.locked()) return;
+    if (this.data.locked) return;
     const topic = this.data.topics[Number(e.currentTarget.dataset.index)];
     this.editingTopicId = topic.id;
     this.editTitle = topic.title;
@@ -249,41 +277,49 @@ Page({
     this.render();
   },
 
-  onSaveRename(e) {
-    if (this.locked()) return;
+  async onSaveRename(e) {
+    if (this.data.locked) return;
     const topicId = this.data.topics[Number(e.currentTarget.dataset.index)].id;
-    const topic = this.config.timeTopics.find((item) => item.id === topicId);
     const title = this.editTitle.trim();
-    if (!topic) return;
-    if (!title) {
-      wx.showToast({ title: '请输入主题名称', icon: 'none' });
+    const why = bookApi.whyCannotNameTopic(title, this.book.topics, topicId);
+    if (why) {
+      wx.showToast({ title: why, icon: 'none' });
       return;
     }
-    if (this.config.timeTopics.some((item) => item.id !== topicId && item.title === title)) {
-      wx.showToast({ title: '已经有同名主题', icon: 'none' });
+    try {
+      await bookApi.renameTopic(topicId, title);
+    } catch (err) {
+      await this.refuse(err);
       return;
     }
-    topic.title = title;
     this.editingTopicId = null;
-    this.save('主题已更新');
+    await this.done('主题已更新');
   },
 
-  onDeleteTopic(e) {
-    if (this.locked()) return;
-    const { id } = e.currentTarget.dataset;
-    const topic = this.config.timeTopics.find((item) => item.id === id);
-    if (!topic) return;
-    this.config.material.forEach((item) => { if (item.topicId === topic.id) item.topicId = null; });
-    this.config.timeTopics = this.config.timeTopics.filter((item) => item.id !== topic.id);
+  /* 删除主题等同集体撤销归类，素材全部回到下方清单，所以不做二次确认。 */
+  async onDeleteTopic(e) {
+    if (this.data.locked) return;
+    const id = Number(e.currentTarget.dataset.id);
+    try {
+      await bookApi.deleteTopic(id);
+    } catch (err) {
+      await this.refuse(err);
+      return;
+    }
     this.editingTopicId = null;
-    this.save('主题已删除');
+    await this.done('主题已删除');
   },
 
-  onUndo(e) {
-    if (this.locked()) return;
-    const material = this.config.material.find((item) => item.id === e.currentTarget.dataset.id);
-    if (!material) return;
-    material.topicId = null;
-    this.save('已撤销归类');
+  /* 撤销归类走的是归类那一条 PATCH，`time_topic_id` 传 null，名单只放这一条。 */
+  async onUndo(e) {
+    if (this.data.locked) return;
+    const id = Number(e.currentTarget.dataset.id);
+    try {
+      await bookApi.assignTopic([id], null);
+    } catch (err) {
+      await this.refuse(err);
+      return;
+    }
+    await this.done('已撤销归类');
   },
 });

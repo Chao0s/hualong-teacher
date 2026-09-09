@@ -35,11 +35,14 @@
     </view>
   </view>
 
+  <!-- 真的锁定要 compilation_id，那一条端点属 issue #27。在它接上之前这颗按钮只报告、
+       不写任何状态，所以一直是灰的；下面那一行把原因与还差什么照实说出来。 -->
   <view
     class="btn btn--primary lock-button"
-    style="{{locked ? 'opacity:.45' : ''}}"
+    style="opacity:.45"
     hover-class="btn--hover"
     bindtap="onLock"
   >{{locked ? '已锁定' : '锁定编册'}}</view>
+  <text class="hint lock-note">{{lockNote}}</text>
 
 </view>
