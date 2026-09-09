@@ -315,9 +315,11 @@ async function expandResources(ids) {
 // api/action-registry.tsv 的 action_key。
 const ACTIONS = {
   resourceCreate: 'resource.create',
+  resourceUpdateDraft: 'resource.update_draft',
   resourceSubmit: 'resource.submit',
   resourceDownloadLink: 'resource.download_link',
   caseCreate: 'case.create',
+  caseUpdateDraft: 'case.update_draft',
   caseSubmit: 'case.submit',
   caseDownloadLink: 'case.download_link',
 };
@@ -394,6 +396,106 @@ function createCase({ name, grade, field, areas, intro, trans, resourceIds, cove
  * 没带 action，L3 会报「契约有 x-hualong-action，调用没带」。
  */
 
+/* ── 「我的上传」──────────────────────────────────────────────────────────
+ *
+ * 契约的 `mine=true` 只列调用者本人创建的内容，**不分状态**。为什么要这个参数、
+ * 为什么靠状态推断做不到，写在契约 §15 v0.23 与 `components.parameters.MineOnly`
+ * 的 description 里，一句话是：`s3` 那一档推不出来 —— 我发布成功的那些与全园的
+ * `s3` 混在一起。
+ *
+ * 五档全部列出来，因为「我交的东西到哪一步了」正是这个入口存在的理由。只列可改的
+ * 两档，教师就看不到自己交上去的东西怎么了。五档都有数据源（`resource_status` 是
+ * `NOT NULL` 的真列），不违反「没有数据源就不要渲染」。
+ */
+
+// 每一档要在屏幕上说的那句话。**F27 的代价要说出来** —— 不说，教师会以为
+// 「为什么我改不了」是个 bug，然后来问。
+const STATUS_NOTE = {
+  s1: '草稿，可继续编辑或提交审核',
+  s2: '审核中，内容已冻结',
+  s3: '已发布，需请管理者下架后重新上传',
+  s4: '已驳回，可直接修改后重新提交',
+  s5: '已由管理者下架',
+};
+
+// 只有这两档能点进去改（F27：s1→s1 与 s4→s4，s4 直接重交不经 s1）。
+const EDITABLE = { s1: true, s4: true };
+
+/** 「我的上传」的一行。比列表卡多两样：那句话，与能不能点进改。 */
+function myUploadRow(row, kind) {
+  const status = kind === 'case' ? row.case_status : row.resource_status;
+  return {
+    kind,
+    id: kind === 'case' ? row.case_id : row.resource_id,
+    name: kind === 'case' ? row.case_name : row.resource_name,
+    status,
+    statusLabel: CONTENT_STATUS[status] || '未知状态',
+    note: STATUS_NOTE[status] || '',
+    editable: Boolean(EDITABLE[status]),
+    updatedAt: time.formatDay(row.updated_at),
+  };
+}
+
+/**
+ * 我上传过的资源与案例，合成一份，新的在前。
+ *
+ * 两条列表端点各发一次（它们是两族内容，不是一族带类型参数），再按 `updated_at`
+ * 重排。**`nextCursor` 明说 null** —— 合并了两条独立的游标流，它们的游标彼此
+ * 不通用，谎报一个会在翻第二页时静默漏行。数据集是 12 + 10 条，一页取尽。
+ */
+async function listMyUploads({ limit = 100 } = {}) {
+  const [res, cases] = await Promise.all([
+    api.getPage(RESOURCE_PATH, { limit, mine: true }),
+    api.getPage(CASE_PATH, { limit, mine: true }),
+  ]);
+  const items = res.items.map((r) => myUploadRow(r, 'resource'))
+    .concat(cases.items.map((r) => myUploadRow(r, 'case')));
+  items.sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
+  return { items, nextCursor: null };
+}
+
+/**
+ * 改一条资源（`s1` 草稿或 `s4` 被驳回）。
+ *
+ * PATCH 语义：**字段缺席 = 不改，显式 `null` = 清空**（契约 §1.1）。所以这里
+ * 只把调用者真的给了的键放进 body —— `undefined` 的键一个都不发，否则「没传」
+ * 会被当成「清空」。
+ *
+ * `s2`／`s3`／`s5` 会回 409。`s3` 要改，由管理者先下架再重新上传一份（F27）。
+ */
+function updateResource(resourceId, patch) {
+  return api.patch(`${RESOURCE_PATH}/${resourceId}`, {
+    action: ACTIONS.resourceUpdateDraft,
+    body: pick(patch, {
+      name: 'resource_name',
+      explain: 'resource_explain',
+      access: 'resource_access',
+      trans: 'resource_trans',
+    }),
+  });
+}
+
+/** 改一条案例。同资源。 */
+function updateCase(caseId, patch) {
+  return api.patch(`${CASE_PATH}/${caseId}`, {
+    action: ACTIONS.caseUpdateDraft,
+    body: pick(patch, {
+      name: 'case_name',
+      intro: 'case_intro',
+      trans: 'case_trans',
+    }),
+  });
+}
+
+/** 只取调用者真的给了的键。undefined 不发 —— 发了会被读成「清空」。 */
+function pick(patch, map) {
+  const body = {};
+  Object.keys(map).forEach((k) => {
+    if (patch && patch[k] !== undefined) body[map[k]] = patch[k];
+  });
+  return body;
+}
+
 /** 资源草稿 s1 -> 待审核 s2。s4 被驳回的也走这条（F27）。 */
 function submitResource(resourceId) {
   return api.post(`${RESOURCE_PATH}/${resourceId}/submission`, { action: ACTIONS.resourceSubmit });
@@ -456,6 +558,9 @@ module.exports = {
   getCase,
   createResource,
   createCase,
+  listMyUploads,
+  updateResource,
+  updateCase,
   submitResource,
   submitCase,
   resourceDownloadLink,

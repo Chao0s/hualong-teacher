@@ -385,6 +385,64 @@ async function main() {
   check('两次取档各写了一笔 link_issued 事件（登记表第 9、15 行的副作用）',
     eventRows.rows.length === 2, `实际新增 ${eventRows.rows.length} 笔`);
 
+  // ---- 「我的上传」：mine=true 与 PATCH 的 s1|s4（#13） --------------------
+  //
+  // mine 的断言**两头都钉**：既钉「回来的每一条都是我的」，也钉「条数严格小于
+  // 不带 mine 时的条数」。只钉前者不够 —— 服务端忽略 mine 时回的是全部行，而
+  // 「每条都是我的」在那批行里也可能碰巧成立（G84 就是这么漏过去的）。
+  const myUp = await library.listMyUploads({ limit: 100 });
+  const allRes = await library.listResources({ limit: 100 });
+  const allCase = await library.listCases({ limit: 100 });
+  check('我的上传里每一条都能查到，且带那句话与能不能改',
+    myUp.items.length > 0 && myUp.items.every((r) => r.name && r.statusLabel && r.note
+      && typeof r.editable === 'boolean' && (r.kind === 'resource' || r.kind === 'case')),
+    `实际 ${JSON.stringify(myUp.items.slice(0, 2))}`);
+  check('我的上传严格少于全部（钉住「忽略 mine」这个恒真陷阱）',
+    myUp.items.length < allRes.items.length + allCase.items.length,
+    `我的 ${myUp.items.length} 条，全部 ${allRes.items.length + allCase.items.length} 条`);
+  check('合并了两条独立游标流，所以不谎报游标', myUp.nextCursor === null,
+    `nextCursor=${myUp.nextCursor}`);
+  check('只有 s1 与 s4 能点进改（F27）',
+    myUp.items.every((r) => r.editable === (r.status === 's1' || r.status === 's4')),
+    `实际 ${myUp.items.map((r) => r.status + ':' + r.editable).join(' ')}`);
+
+  // 探针刚建的那条资源现在是 s2（上面提交过），所以它**不该**能改。
+  // 这一条钉的是 F27 那句「s2 审核期间内容冻结」—— 状态码对不算过，还要核库里没变
+  // （§7.5：不可逆动作只测状态码等于没测）。
+  const beforePatch = await db.query(
+    'SELECT resource_name FROM db_resource WHERE resource_id=$1', [res.resource_id]);
+  let s2Rejected = false;
+  let s2Code = '';
+  try {
+    await library.updateResource(res.resource_id, { name: '探针改名（不该成功）' });
+  } catch (err) {
+    s2Rejected = true;
+    s2Code = err.code || '';
+  }
+  const afterPatch = await db.query(
+    'SELECT resource_name FROM db_resource WHERE resource_id=$1', [res.resource_id]);
+  check('s2 待审的资源改不动（F27：审核期间内容冻结）', s2Rejected, `没报错，code=${s2Code}`);
+  check('而且库里那一行真的没变（不只看状态码）',
+    afterPatch.rows[0].resource_name === beforePatch.rows[0].resource_name,
+    `改前「${beforePatch.rows[0].resource_name}」改后「${afterPatch.rows[0].resource_name}」`);
+
+  // 再建一条留在 s1，验 PATCH 真的改得动，且 undefined 的键一个都不发。
+  const draft = await library.createResource({
+    name: '探针草稿（可删）', tag: '艺', grade: ['小班'], type: '文档',
+    explain: '改之前的解读。', access: '改之前的获取。', trans: '改之前的转化。',
+  });
+  made.resources.push(draft.resource_id);
+  await library.updateResource(draft.resource_id, { name: '探针草稿（已改名）' });
+  const patched = await db.query(
+    'SELECT resource_name, resource_explain, resource_status FROM db_resource WHERE resource_id=$1',
+    [draft.resource_id]);
+  check('s1 草稿改得动，名字落库', patched.rows[0].resource_name === '探针草稿（已改名）',
+    `实际「${patched.rows[0].resource_name}」`);
+  check('没传的键一个都没被清空（PATCH 缺席=不改，§1.1）',
+    patched.rows[0].resource_explain === '改之前的解读。',
+    `实际「${patched.rows[0].resource_explain}」`);
+  check('改草稿不动状态（s1→s1）', patched.rows[0].resource_status === 's1',
+    `实际 ${patched.rows[0].resource_status}`);
   // ---- derived 注入（DO-NOT-BUILD 8 / 契约 §7.3，越权测试的 F 组） ----------
   //
   // 走 api.post 而不是 library.createResource：service 只把认识的字段拼进 body，
