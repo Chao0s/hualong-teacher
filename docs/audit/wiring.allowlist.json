@@ -164,9 +164,9 @@
     {
       "key": "contract:GET /scales/{scale_code}/{scale_version}",
       "status": "不建",
-      "reason": "應該是沒有版本，所以可能這個不用接，甚至可以刪除？；→ #20",
+      "reason": "客户端不需要这个端点。版本对客户端是只读展示物 —— ChildAssessmentItemWrite 只有 score 一个字段，scale_code／scale_version 由服务端在首次评分时写入，客户端从不发送；而端点唯一的实质载荷（124 题的题干与锚点）已经在包内 miniprogram/data/guide-scale.js，那是本仓库唯一的一份（#20）。版本维度保留（E2：历史评估必须绑定填写时所用的版本），端点也不删 —— PC 端与将来改版都可能用它。改从接口取要先解决两条后端缺口：ScaleItem 缺 measurement_note 与 reference_table（G27 要求必须显示给教师），以及现役 (scale_code, scale_version) 无权威落点",
       "author": "Lin",
-      "updated_at": "2026-09-08"
+      "updated_at": "2026-09-09"
     },
     {
       "key": "contract:GET /teacher/growth-book/precheck",

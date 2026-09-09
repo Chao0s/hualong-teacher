@@ -1,4 +1,38 @@
-{
+/**
+ * 《3-6岁儿童学习与发展指南》教师评定量表 —— **本仓库唯一的一份**。
+ *
+ * 权威。评的是幼儿，124 题（健康 36 / 语言 24 / 社会 30 / 科学 23 / 艺术 11），
+ * 提取自教育部 2012 年 9 月的《指南》。四层结构：
+ *
+ *   domains → aspects → goals → items
+ *
+ * 题项字段：item_id（如 `H1-2-3`，逐级截断即得上级 id）、item_name、item_type
+ * （likert | measurement）、question、anchors{1,3,5}、anchored_levels、
+ * inferred_levels、measurement_note、reference_table。
+ * `version` 与 `scoring_rules` 在 `instrument` 下，**不在顶层**（decision.md §12）。
+ *
+ * ── 为什么是 .js 而不是 .json ──────────────────────────────────────────────
+ *
+ * 这份文件在 2026-09-09 之前是 `data/guide-scale.json`，在 `miniprogram/` **之外** ——
+ * 小程序只打包 `miniprogram/`，所以页面 `require` 不到它，于是页面旁边放了一份抄本
+ * （`comprehensive-assessment-form/questions.js`），`assessment-store.js` 里还有第三份
+ * （124 个题号与名称）。三份靠 `npm test` 的一道闸门维持，而那道闸门只比「提问」与
+ * 「三档锚点」两样，另外七个字段可以静默漂开 —— 包括 H1-1-1 参考表那六行数字，
+ * 而那是这一题唯一的计分依据。
+ *
+ * 现在整份搬进包内，两份抄本删掉。扩展名用 `.js` 而不是 `.json`：小程序的模块系统
+ * 只解析 `.js`（官方文档 framework/app-service/module 只写 `require` 加载 `.js`；
+ * `.json` 虽在上传白名单里，但那是给图片配置那类文件用的，`require` 不到）。
+ *
+ * **改题库就改这里，改完 `npm test` 第 7 段会核对计数。** 别再抄第二份 ——
+ * 一份复制品不是冗余，是一次静默过期（CLAUDE.md §7.3）。
+ *
+ * 跨仓库还有一份：后端 `db/rubric/guide-scale-v1.json`，灌数据集用，内容逐字相同
+ * （md5 6e79d390…）。两个仓库之间没有自动比对 —— 那要先解决「两个仓库各在什么版本」，
+ * 暂未做。
+ */
+
+const SCALE = {
   "instrument": {
     "name": "3-6岁儿童学习与发展水平教师评定量表",
     "version": "1.0",
@@ -2654,4 +2688,44 @@
       "item_count": 11
     }
   ]
+};
+
+/**
+ * 摊平成页面要的形状：一个领域一行，题项平铺（aspects 与 goals 两层折掉）。
+ *
+ * 两个调用者：`comprehensive-assessment-form`（要全部字段）与
+ * `utils/assessment-store`（只要题号与名称）。短键名沿用原来抄本的那一套，
+ * 这样页面与 store 一行都不用改。
+ *
+ * `reference_table` 在权威里是按年龄段分组的对象，页面要的是数组，所以在这里转。
+ */
+function flatDomains() {
+  return SCALE.domains.map((domain) => ({
+    id: domain.domain_id,
+    name: domain.domain_name,
+    items: domain.aspects
+      .flatMap((aspect) => aspect.goals)
+      .flatMap((goal) => goal.items)
+      .map((item) => ({
+        id: item.item_id,
+        name: item.item_name,
+        q: item.question,
+        a: item.anchors,
+        // 页面用 `!!item.m` 判「实测换算」，只有 H1-1-1 一题是 measurement。
+        m: item.item_type === 'measurement' ? 1 : 0,
+        note: item.measurement_note || '',
+        ref: item.reference_table ? refRows(item.reference_table) : null,
+      })),
+  }));
 }
+
+/** `{ '3~4岁': { 男孩: { 身高_cm: [..], 体重_kg: [..] }, 女孩: {…} }, … }` → 页面的行数组。 */
+function refRows(table) {
+  return Object.keys(table).map((age) => ({
+    age,
+    b: [table[age]['男孩']['身高_cm'], table[age]['男孩']['体重_kg']],
+    g: [table[age]['女孩']['身高_cm'], table[age]['女孩']['体重_kg']],
+  }));
+}
+
+module.exports = { SCALE, flatDomains };

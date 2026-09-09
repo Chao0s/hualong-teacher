@@ -718,3 +718,51 @@ growth-book-edit.html   · growth-book-sample.html · growth-book-view.html
 移给管理端的代价：契约改 1 条、新增 2 条管理端操作、登记表 2 处、DDL 加一个 `e3`、`DECISIONS.md` 另写一节覆写 F19 第五节，约 24 个文件 450–600 行；并且会悄悄改坏 F20 的撤回前置 `no_e2_compilation_this_term`（`e2` 若从「已锁定」变成「已提交待锁」，那道闸门不报错就失效）。
 
 「预设必须存在的章节」（学期评价、综合评估、学期寄语固定启用、不进开关）与锁定权限无关，编册页上写明即可。
+## 2026-09-09：《指南》124 题量表收成一份，搬进包内
+
+本节更正本文第 5 条与 §12 里的路径。**权威现在是 `miniprogram/data/guide-scale.js`。**
+
+此前是三份，都在本仓库里：
+
+| 位置 | 内容 | 有没有闸门盖到 |
+|---|---|---|
+| `data/guide-scale.json` | 权威，在 `miniprogram/` 之外 | —— |
+| `comprehensive-assessment-form/questions.js` | 全字段抄本 | 有，但只比提问与三档锚点 |
+| `utils/assessment-store.js` 的 `ASSESS_SCALE` | 124 个题号与名称 | **完全没有** |
+
+那道闸门只盖到前两份、只比 9 个字段里的 2 个。剩下七个可以静默漂开 —— 包括 `H1-1-1`
+的 `reference_table` 那六行数字，而那是这一题唯一的计分依据（`item_type=measurement`，
+不由教师主观评定）。
+
+**现在权威整份搬进包内，两份抄本删掉。** 页面与 store 都从
+`require('../../data/guide-scale').flatDomains()` 拿题，一行业务代码都没改 ——
+`flatDomains()` 把四层（`domains → aspects → goals → items`）摊成原来抄本的形状，
+并把 `reference_table` 由按年龄段分组的对象转成数组。页面拿到的形状逐字相同（已验）。
+
+**扩展名是 `.js` 不是 `.json`。** 小程序的模块系统只解析 `.js`；`.json` 虽在上传白名单里，
+那是给图片、配置那类文件用的，`require` 不到。文件内容就是那份 JSON，外面套一个
+`module.exports =`。
+
+**读 `version` 与 `scoring_rules` 的路径不变**，仍在 `instrument` 下（§12 那条更正依然
+成立），只是前缀由 `guide-scale.json` 换成 `require('.../guide-scale').SCALE`。
+
+**`npm test` 第 7 段改了性质**：从「比两份一致」变成「钉住只有一份」。三条 —— A 计数与
+实际树相符、B 摊平后的形状对、**C 第二份不许再出现**（`questions.js` 不存在、
+`assessment-store.js` 不内嵌 `ASSESS_SCALE = [`）。C 是要害：A 与 B 只证明这一份是好的，
+C 才证明它是唯一的一份。三条都反向验过。
+
+**版本维度保留，不删。** 审核意见问「应该是没有版本，所以那个端点可能不用接，甚至可以
+删除」——**端点可以不接，版本不能删**。E2 原文「歷史評估必須綁定填寫時所用的量表版本」，
+DDL 表注释也写「改版=新增一个 scale_version, 旧评估仍指向旧版」。删了它，量表改一个字
+那天，历史上万条逐题分是按旧问句还是新问句打的就无处可查、也补不回来。数据集里只有
+一版，那不是「没有版本」，是还没有第二版。
+
+**没有改成从接口取。** 数据集 `db_scale_item` 正好 124 行、契约也有
+`GET /scales/{scale_code}/{scale_version}`，方向是 E2 的原话「题库入库而非前端内嵌」。
+但两条后端缺口挡着：契约的 `ScaleItem` 没有 `measurement_note` 与 `reference_table`
+（G27 与 DDL 列注释都写「仍须显示给教师」），且现役 `(scale_code, scale_version)`
+没有权威落点。两条都排在 #30／#31 之后。**在那之前，包内这一份就是权威。**
+
+**跨仓库仍有第二份**：后端 `db/rubric/guide-scale-v1.json`，灌数据集用，与包内那份
+逐字相同（md5 `6e79d390…`）。它不在这道闸门里 —— 跨仓库比对要先解决「两个仓库各在
+什么版本」，暂未做。
