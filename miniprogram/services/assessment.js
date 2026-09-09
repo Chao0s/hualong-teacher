@@ -1,5 +1,6 @@
 /**
- * 评估族 —— 契约的学期评价、综合评估、成长档案、办园质量评估（13 条端点 + 题库 1 条）。
+ * 评估族 —— 契约的学期评价、教师寄语、综合评估、成长档案、办园质量评估
+ * （17 条端点 + 题库 1 条）。
  *
  * Boundary: 页面 `require` 本模块、把返回值直接 `setData`，
  * **不在页面里拼 URL、不在页面里译枚举、不在页面里判状态机**。
@@ -7,6 +8,10 @@
  *   `GET  /term-evaluations`                                  本班学期评价进度
  *   `GET  /children/{child_id}/term-evaluation`               本人写的那一列（无行回 404）
  *   `PUT  /children/{child_id}/term-evaluation`               提交，NONE→c1，一次写成
+ *   `GET  /teacher-messages`                                  本班寄语进度＋名册指纹
+ *   `POST /teacher-messages`                                  全班扇出（缺行插、已有跳）
+ *   `GET  /children/{child_id}/teacher-message`               单条寄语（无行回 404）
+ *   `PUT  /children/{child_id}/teacher-message`               单幼儿提交，此后永久只读
  *   `GET  /child-assessments`                                 本班综合评估进度
  *   `GET  /child-assessments/class-report`                    班级综合评估报告
  *   `GET  /children/{child_id}/child-assessment`              某幼儿的主记录 + 已评题
@@ -18,8 +23,18 @@
  *   `PUT  /assessments/{id}/items/{tool_item_code}`           质量评估逐题作答
  *   `GET  /scales/{scale_code}/{scale_version}`               量表题库（reference data）
  *
- * 第 14 条 `GET /children/{child_id}/growth-record`（单条成长档案）**本模块不接** ——
+ * 第 18 条 `GET /children/{child_id}/growth-record`（单条成长档案）**本模块不接** ——
  * `growth-record` 页只要班级整表，没有页面用单条。接了它是「加一个没人调的函数」。
+ *
+ * ── 教师寄语为什么并进本文件，不新建 services/teacher-message.js ────────────
+ *
+ * CLAUDE.md §4 的界是「一个契约模块一个文件」，而**契约模块的名字就是 tag**。
+ * 教师寄语那四条的 tag 是 `assessment`，与本文件已有的 14 条逐条相同；`assessment`
+ * 这个 tag 在契约里一共 18 条操作，正好是上面这张表。所以并进来之后本文件
+ * **等于一个 tag**，拆出去则会造出本仓库第一个「不对应任何 tag」的 service 文件，
+ * 而下一个人要判断某条端点该找哪个文件时就没有依据了。
+ *
+ * 行数不是界：`services/co-education.js` 与 `services/growth-book.js` 都比本文件长。
  *
  * ── 未评 = 无行，不是 0 分 ─────────────────────────────────────────────────
  *
@@ -103,18 +118,24 @@ const DOMAIN_NAME = { H: '健康', L: '语言', S: '社会', K: '科学', A: '�
  */
 const DOMAIN_ORDER = ['H', 'L', 'S', 'K', 'A'];
 
-// api/action-registry.tsv 的 action_key。四条都是 idempotency=optional，
-// 所以 request.js 那张 IDEMPOTENT_ACTIONS 表不用动。
+// api/action-registry.tsv 的 action_key。
+//
+// 前三条是 `idempotency=optional`。**后两条是 `required`**（登记表第 137、138 行），
+// 所以它们必须进 `request.js` 的 `IDEMPOTENT_ACTIONS` 表，那两个键已经加进去了。
 const ACTIONS = {
   submitTermEval: 'term_eval.submit',
   scoreChildItem: 'child_assessment.score_item',
   scoreAssessmentItem: 'assessment.score_item',
+  submitMessage: 'teacher_message.submit',
+  submitMessagesForClass: 'teacher_message.submit_class',
 };
 
 /** 契约与 DDL 的上限，`db_term_eval.eval_text` 是 `VARCHAR(500)`。 */
 const TERM_EVAL_TEXT_MAX = 500;
 /** `db_assessment_item.note` 是 `VARCHAR(300)`。 */
 const ASSESSMENT_NOTE_MAX = 300;
+/** `db_teacher_message.content` 是 `VARCHAR(300) NOT NULL`。trim 之后量。 */
+const MESSAGE_CONTENT_MAX = 300;
 
 /* ── 共用件 ─────────────────────────────────────────────────────────────── */
 
@@ -402,6 +423,157 @@ function termEvalFailureText(err) {
   }
   if (err && err.code === 'no_active_term') {
     return '当前不在学期内，学期评价要在学期中填写';
+  }
+  if (err && err.code === 'not_found') {
+    return '这名幼儿不在本班在园名册上，请返回列表刷新';
+  }
+  return (err && err.userMessage) || '提交失败，请稍后重试';
+}
+
+/* ══ 教师寄语 ══════════════════════════════════════════════════════════════
+ *
+ *   GET  /teacher-messages                       进度看板 ＝ 全班提交的确认页
+ *   POST /teacher-messages                       全班扇出（缺行插、已有跳）
+ *   GET  /children/{child_id}/teacher-message    单条（无行回 404）
+ *   PUT  /children/{child_id}/teacher-message    单幼儿提交，此后永久只读
+ *
+ * 【唯一键 `(child_id, term_id)`，不含 `teacher_id`】—— 与 `db_term_eval` 相反。
+ * 所以同班配班教师读到的是**同一行**，不是各自一行。转班后旧行不改、不接管
+ * （F16 第二点）。
+ *
+ * 【提交后永久只读】：本表无状态列、无 revision、无修改历史，契约里没有本对象的
+ * `PATCH`、改写 `PUT` 或 `DELETE`。**本段因此没有任何编辑、撤回或删除函数** ——
+ * `docs/DO-NOT-BUILD.md` 第 16 条。已完成的圆点点进去只能看，不出编辑器。
+ *
+ * 【指纹是不透明串，本模块不解析、不重算、不比较】：从 `messageBoard()` 拿到，
+ * 原样发回 `submitForClass()`。算法归服务端，客户端猜它等于把服务端的实现细节
+ * 抄进客户端。
+ *
+ * 【两个写入的 `Idempotency-Key` 都必填】，由 `request.js` 的 `IDEMPOTENT_ACTIONS`
+ * 按 `action` 自动补一把新 UUID。**本段一个键都不自己生**。
+ */
+
+/**
+ * 本班本学期寄语进度看板，兼全班提交的确认页。
+ *
+ * 行直接用回包的 `items` —— **这一条不套 `rosterBoard()`**。契约明写服务端已经按
+ * 当前班 `e1` 名册左连接过了，`items` 就是整份名册，再铺一次名册会把服务端的
+ * `roster_e1_count` 与这里的行数拆成两个可能不一致的数，而它们必须是同一个。
+ *
+ * 无进行中学期时服务端回 200 加 `term_id: null`、`items: []`、三个计数 0、
+ * `roster_fingerprint: null`（**这一条不回 409**，是本端点的专属口径）。
+ * `canSubmit` 因此为 false，页面据此渲染空态并禁用提交。
+ */
+async function messageBoard() {
+  const data = await api.get('/teacher-messages');
+  const items = (data && data.items) || [];
+  const rows = items.map((row) => ({
+    childId: row.child_id,
+    name: row.child_name || '',
+    teacherMessageId: row.teacher_message_id === undefined ? null : row.teacher_message_id,
+    status: row.message_status,
+    statusLabel: COMPLETION_STATUS[row.message_status] || '未知状态',
+    done: row.message_status === 'c1',
+    submittedLabel: row.created_at ? time.formatStamp(row.created_at) : '—',
+  }));
+  return {
+    termId: (data && data.term_id) || null,
+    // 原样带着走，页面只把它交回 `submitForClass()`。
+    rosterFingerprint: (data && data.roster_fingerprint) || null,
+    rows,
+    summary: {
+      total: Number(data && data.roster_e1_count) || 0,
+      done: Number(data && data.existing_count) || 0,
+      undone: Number(data && data.pending_count) || 0,
+    },
+    // 学期在、名册非空，才有得提交。两条缺一页面就禁用提交按钮。
+    canSubmit: Boolean(data && data.term_id) && rows.length > 0,
+  };
+}
+
+/**
+ * 该幼儿本学期那一条寄语。**无行回 null** —— 调用方据此提示「本学期尚未提交」，
+ * 不当错误报。
+ *
+ * 时间列是 `created_at`。DDL 上**没有 `published_at` 也没有 `submitted_at`**，
+ * 不要发明一个。
+ */
+async function getTeacherMessage(childId) {
+  let row;
+  try {
+    row = await api.get(`${CHILD_PATH}/${childId}/teacher-message`);
+  } catch (err) {
+    if (err && err.code === 'not_found') return null;
+    throw err;
+  }
+  return {
+    teacherMessageId: row.teacher_message_id,
+    childId: Number(row.child_id),
+    childName: row.child_name || '',
+    termId: row.term_id || '',
+    content: row.content || '',
+    teacherId: row.teacher_id === undefined ? null : row.teacher_id,
+    teacherName: row.teacher_name || '',
+    submittedLabel: row.created_at ? time.formatStamp(row.created_at) : '—',
+  };
+}
+
+/**
+ * 为一名幼儿提交寄语（一次写成，此后永久只读）。
+ *
+ * 请求体**只有 `content` 一个字段**：`school_id`／`class_id`／`teacher_id` 是
+ * derived，`child_id` 在路径上且 scoped，`term_id` 服务端按日期派生。
+ * `TeacherMessageWrite` 是 `additionalProperties: false`，多发一个键回 422。
+ */
+function submitTeacherMessage(childId, { content } = {}) {
+  return api.put(`${CHILD_PATH}/${childId}/teacher-message`, {
+    action: ACTIONS.submitMessage,
+    body: { content: String(content || '').trim() },
+  });
+}
+
+/**
+ * 全班扇出同一段寄语：缺行 INSERT、已有行 skip，单一事务。
+ *
+ * `rosterFingerprint` 必填，取自 `messageBoard()`。名册在确认与提交之间漂移时
+ * 服务端回 409 `fingerprint_drift` 且**零写入**，页面要重取看板再确认。
+ *
+ * `inserted_count` 为 0 也是成功（全班都已有行），**不是失败** —— 所以调用方
+ * 不要把 0 当错误报。回包的 `items` 是提交后的整份进度，可直接重画完成情况表。
+ */
+async function submitTeacherMessagesForClass({ content, rosterFingerprint } = {}) {
+  const data = await api.post('/teacher-messages', {
+    action: ACTIONS.submitMessagesForClass,
+    body: {
+      content: String(content || '').trim(),
+      roster_fingerprint: rosterFingerprint,
+    },
+  });
+  return {
+    termId: (data && data.term_id) || '',
+    insertedCount: Number(data && data.inserted_count) || 0,
+    skippedCount: Number(data && data.skipped_count) || 0,
+  };
+}
+
+/** 提交前的本地预检。**预检不是校验**：服务端独立再验一次。回空串表示可以。 */
+function whyCannotSubmitTeacherMessage({ content } = {}) {
+  const t = String(content || '').trim();
+  if (!t) return '请先填写寄语内容';
+  if (t.length > MESSAGE_CONTENT_MAX) return `寄语最多 ${MESSAGE_CONTENT_MAX} 字`;
+  return '';
+}
+
+/** 只译本族特有的那几个码，其余交回 `errors.js` 的通用文案。 */
+function messageFailureText(err) {
+  if (err && err.code === 'state_precondition_failed') {
+    return '这名幼儿本学期的寄语已经提交，提交后永久只读';
+  }
+  if (err && err.code === 'fingerprint_drift') {
+    return '班级名册刚刚变过，请返回刷新后重新确认';
+  }
+  if (err && err.code === 'no_active_term') {
+    return '当前不在学期内，寄语要在学期中提交';
   }
   if (err && err.code === 'not_found') {
     return '这名幼儿不在本班在园名册上，请返回列表刷新';
@@ -883,6 +1055,15 @@ module.exports = {
   submitTermEvaluation,
   whyCannotSubmitTermEvaluation,
   termEvalFailureText,
+
+  // 教师寄语
+  MESSAGE_CONTENT_MAX,
+  messageBoard,
+  getTeacherMessage,
+  submitTeacherMessage,
+  submitTeacherMessagesForClass,
+  whyCannotSubmitTeacherMessage,
+  messageFailureText,
 
   // 综合评估
   MEASUREMENT_HINT,

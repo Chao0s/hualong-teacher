@@ -1,16 +1,21 @@
-<!-- 寄语详情 —— 对照原型 screens/teacher-message-detail.html。按 ?child= 取内容，只读。 -->
+<!-- 寄语详情 —— 接 GET /children/{child_id}/teacher-message，只读。
+
+     没有编辑、撤回或删除按钮：提交后永久只读，契约里也没有那三个动作
+     （F16 第二点 / docs/DO-NOT-BUILD.md 第 16 条）。 -->
 <view class="page">
 
   <view class="chunk">
     <view class="msg-head">
-      <view class="avatar">{{message.avatar}}</view>
+      <view class="avatar">{{avatarChar}}</view>
       <view>
-        <text class="msg-head__who">{{message.name}}</text>
-        <text class="msg-head__meta">{{message.meta}}</text>
+        <text class="msg-head__who">{{childName}}</text>
+        <text class="msg-head__meta" wx:if="{{message}}">{{message.teacherName}} 提交于 {{message.submittedLabel}}</text>
       </view>
     </view>
 
-    <text class="msg-text">{{message.text}}</text>
+    <text class="msg-text" wx:if="{{message}}">{{message.content}}</text>
+    <text class="msg-text" wx:elif="{{empty}}">本学期尚未提交寄语。</text>
+
     <text class="hint hint--gap">寄语提交后永久只读。如本学期尚未提交，请返回寄语列表填写。</text>
 
     <view class="edit-actions">

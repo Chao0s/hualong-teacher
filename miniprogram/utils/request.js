@@ -47,15 +47,23 @@ const CONTENT_TYPE = 'application/json; charset=utf-8';
 // 幂等键的机制**一次也没触发过**，而它报绿：`opts.action` 查不到就静默不补。
 // 这与 §7.6 那条教训同型 —— 查表查不到不等于「不需要」。
 //
-// 下面四条是登记表里角色为 teacher 且 `idempotency=required` 的全部动作
-// （实测 `awk -F'\t' 'NR>1 && $15=="required" && $2=="teacher"' api/action-registry.tsv`）。
-// 一条在教师档案（`services/profile.js` 的 `submitChange` 带着 `action` 调过来，
-// 命中这张表），三条在成长册那条线上、本仓库还没接。
+// 下面六条是登记表里角色为 teacher 且 `idempotency=required` 的全部动作
+// （实测 `awk -F'\t' 'NR>1 && $15=="required" && $2=="teacher"' api/action-registry.tsv`，
+// 2026-09-09 契约 v0.22 之后）。一条在教师档案（`services/profile.js` 的
+// `submitChange` 带着 `action` 调过来），三条在成长册那条线上、本仓库还没接，
+// 两条是教师寄语（`services/assessment.js`）。
+//
+// **`teacher_message.submit` 的动词是 PUT，不是 POST**（一处已登记的不一致，
+// 后端 G85）。所以下面补键的条件写的是「POST **或** PUT」，不是只 POST ——
+// 只写 POST 的话这一条永远补不到键，而服务端标 `required`，每一次提交都会被
+// `422 validation_failed / Idempotency-Key required` 打回。
 const IDEMPOTENT_ACTIONS = new Set([
   'teacher_profile_change.submit',  // POST /teacher-profile/changes
   'compilation.lock',               // POST /teacher/growth-book/compilation/{id}/lock，单向
   'section.remind',                 // POST /teacher/growth-book/sections/{id}/reminders，建 n4 通知
   'book.publish',                   // POST /teacher/growth-book/books/{id}/publication
+  'teacher_message.submit',         // PUT  /children/{child_id}/teacher-message，单向
+  'teacher_message.submit_class',   // POST /teacher-messages，全班扇出
 ]);
 
 let requestSeq = 0;
@@ -215,7 +223,8 @@ async function request(method, path, opts = {}) {
   header['X-Request-Id'] = nextRequestId();
 
   let idempotencyKey = opts.idempotencyKey;
-  if (!idempotencyKey && verb === 'POST' && opts.action && IDEMPOTENT_ACTIONS.has(opts.action)) {
+  if (!idempotencyKey && (verb === 'POST' || verb === 'PUT')
+      && opts.action && IDEMPOTENT_ACTIONS.has(opts.action)) {
     idempotencyKey = uuid();
   }
   if (idempotencyKey) {
