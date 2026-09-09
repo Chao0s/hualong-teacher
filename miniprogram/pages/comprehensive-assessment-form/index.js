@@ -1,7 +1,8 @@
 /**
  * 开始综合评估 —— 原型 screens/comprehensive-assessment-form.html 的小程序版本。
  *
- * 题库在 ./questions.js（124 题，含提问和 1／3／5 锚点），草稿存储用共用的 AssessStore。
+ * 题库在 ../../data/guide-scale.js（权威，124 题，含提问和 1／3／5 锚点），
+ * 草稿存储用共用的 AssessStore。
  *
  * 口径照抄原型：
  *   每改一个分立刻写草稿；一个分都没打时把这个幼儿从草稿里删掉，而不是留一条空记录。
@@ -13,7 +14,11 @@
  * 折叠态本来就看不见，行为一致。
  */
 
-const QUESTIONS = require('./questions.js');
+const { flatDomains } = require('../../data/guide-scale');
+
+// 权威是 miniprogram/data/guide-scale.js —— 本仓库唯一的一份。此前这一行读的是同目录的
+// questions.js（一份抄本），那份已删（#20）。
+const QUESTIONS = flatDomains();
 const { ASSESS_CHILDREN, AssessStore } = require('../../utils/assessment-store.js');
 
 const TOTAL = AssessStore.TOTAL;

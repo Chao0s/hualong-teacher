@@ -153,50 +153,86 @@ for (const file of wxmls) {
 }
 console.log(`  ${wxmls.length} 个 wxml、${tags} 个标签检查过`);
 
-// 7) 《指南》124 题的两份副本必须逐字相同。
+// 7) 《指南》124 题的量表在本仓库**只有一份**，且没有第二份。
 //
-//    `data/guide-scale.json` 是权威（CLAUDE.md §9），但它在 `miniprogram/` 之外 ——
-//    小程序打不进包，页面 require 不到，所以 `questions.js` 里那一份**删不掉**。
+//    2026-09-09 之前是两份加一份（#20）：权威在 `data/guide-scale.json`，页面旁边一份
+//    抄本 `questions.js`，`utils/assessment-store.js` 里还有第三份（124 个题号与名称）。
+//    这里那道旧闸门只比前两份，且只比「提问」与「三档锚点」两样 —— 另外七个字段可以
+//    静默漂开，包括 H1-1-1 参考表那六行数字，而那是这一题唯一的计分依据。
 //
-//    删不掉就只能让它漂开时当场失败。这正是 CLAUDE.md §7.3 的那条：
-//    **一份复制品不是冗余，是一次静默过期。要么只有一份，要么当场失败。**
-//    2026-09-01 撞过一次同类的事：两个后端克隆，读到旧的那份，全程没有任何报错。
+//    现在权威整份搬进 `miniprogram/data/guide-scale.js`（用 `.js` 是因为小程序的模块
+//    系统只解析 `.js`），两份抄本删掉。所以这一段不再是「比两份」，是**钉住只有一份**：
 //
-//    要真正只留一份，得把题库改成从接口取（db_scale_item 正好 124 行）——
-//    那会牵出 G5／G15／G27 与领域代码两套并存，是另一条线。
-console.log('[7] 《指南》量表两份副本一致');
+//      A. 权威读得出来，且 `instrument.counts` 与实际树逐个相符
+//      B. 摊平后的形状是页面要的那一套，每题都有提问与三档锚点
+//      C. **第二份不许再出现** —— questions.js 不存在，assessment-store 不内嵌题库
+//
+//    C 是这一段的要害。A 与 B 只证明这一份是好的，C 才证明它是唯一的一份。
+//    CLAUDE.md §7.3：一份复制品不是冗余，是一次静默过期。
+//
+//    跨仓库那一份（后端 `db/rubric/guide-scale-v1.json`）不在这道闸门里 ——
+//    跨仓库比对要先解决「两个仓库各在什么版本」，暂未做。
+console.log('[7] 《指南》量表只有一份');
 {
-  const SCALE = ROOT + '../data/guide-scale.json';
-  const PAGE = ROOT + 'pages/comprehensive-assessment-form/questions.js';
-  if (!fs.existsSync(SCALE)) {
-    bad(`找不到权威题库 ${SCALE}`);
-  } else {
-    const flat = (j) => {
-      const out = [];
-      for (const d of j.domains) for (const a of d.aspects) for (const g of a.goals) out.push(...g.items);
-      return out;
-    };
-    const authority = flat(JSON.parse(fs.readFileSync(SCALE, 'utf8')));
-    const copy = [];
-    for (const d of require(require('path').resolve(PAGE))) copy.push(...d.items);
+  const SCALE_JS = ROOT + 'data/guide-scale.js';
+  const OLD_COPY = ROOT + 'pages/comprehensive-assessment-form/questions.js';
+  const STORE = ROOT + 'utils/assessment-store.js';
 
-    let diff = 0;
-    if (authority.length !== copy.length) {
-      bad(`题数不同：权威 ${authority.length}，questions.js ${copy.length}`);
-      diff++;
-    }
-    const byId = new Map(copy.map((x) => [x.id, x]));
-    for (const a of authority) {
-      const b = byId.get(a.item_id);
-      if (!b) { bad(`questions.js 缺题 ${a.item_id}`); diff++; continue; }
-      if ((a.question || '') !== (b.q || '')) { bad(`${a.item_id} 的提问与权威不同`); diff++; }
-      for (const k of ['1', '3', '5']) {
-        if (((a.anchors || {})[k] || '') !== ((b.a || {})[k] || '')) {
-          bad(`${a.item_id} 的 ${k} 分锚点与权威不同`); diff++;
+  // C：第二份不许再出现
+  let dupes = 0;
+  if (fs.existsSync(OLD_COPY)) {
+    bad('pages/comprehensive-assessment-form/questions.js 又出现了 —— 题库只能有一份，改 data/guide-scale.js');
+    dupes += 1;
+  }
+  if (fs.existsSync(STORE) && /const\s+ASSESS_SCALE\s*=\s*\[/.test(fs.readFileSync(STORE, 'utf8'))) {
+    bad('assessment-store.js 又内嵌了 ASSESS_SCALE —— 它该从 ../data/guide-scale 派生');
+    dupes += 1;
+  }
+
+  if (!fs.existsSync(SCALE_JS)) {
+    bad(`找不到权威题库 ${SCALE_JS}`);
+  } else {
+    const mod = require(require('path').resolve(SCALE_JS));
+    const { SCALE, flatDomains } = mod;
+
+    // A：instrument.counts 与实际树逐个相符
+    const counts = (SCALE.instrument || {}).counts || {};
+    const actual = { domains: 0, aspects: 0, goals: 0, items: 0, likert_items: 0, measurement_items: 0 };
+    for (const d of SCALE.domains || []) {
+      actual.domains += 1;
+      for (const a of d.aspects || []) {
+        actual.aspects += 1;
+        for (const g of a.goals || []) {
+          actual.goals += 1;
+          for (const it of g.items || []) {
+            actual.items += 1;
+            if (it.item_type === 'measurement') actual.measurement_items += 1;
+            else actual.likert_items += 1;
+          }
         }
       }
     }
-    console.log(`  ${authority.length} 题逐题比对（提问 + 三档锚点），不一致 ${diff} 处`);
+    for (const k of Object.keys(actual)) {
+      if (counts[k] !== actual[k]) bad(`instrument.counts.${k} 写 ${counts[k]}，实际 ${actual[k]}`);
+    }
+
+    // B：摊平后的形状是页面要的那一套
+    const flat = flatDomains();
+    if (flat.length !== actual.domains) bad(`flatDomains 回 ${flat.length} 个领域，实际 ${actual.domains}`);
+    let n = 0;
+    let shapeBad = 0;
+    for (const d of flat) {
+      if (!d.id || !d.name || !Array.isArray(d.items)) { bad(`领域 ${d.id} 的形状不对`); shapeBad++; continue; }
+      for (const it of d.items) {
+        n += 1;
+        if (!it.id || !it.name || !it.q) { bad(`${it.id} 缺题号／名称／提问`); shapeBad++; continue; }
+        for (const k of ['1', '3', '5']) {
+          if (!((it.a || {})[k])) { bad(`${it.id} 缺 ${k} 分锚点`); shapeBad++; }
+        }
+      }
+    }
+    if (n !== actual.items) bad(`摊平后 ${n} 题，权威树 ${actual.items} 题`);
+    console.log(`  ${n} 题（${flat.map((d) => d.name + d.items.length).join(' ')}），形状不对 ${shapeBad} 处；第二份 ${dupes} 处`);
   }
 }
 

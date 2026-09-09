@@ -441,33 +441,96 @@ id 不在里面」，只写「N 条」的话范围判定改坏了也可能照样
 
 ---
 
-## 9. 两个不要清的题库
+## 9. 两个题库，各一份，都不要清
 
-**两份是两套不同的量表，不是同一份抄了两遍**：
+**两套不同的量表，不是同一份抄了两遍**：
 
 | 文件 | 内容 | 权威 |
 |---|---|---|
 | `miniprogram/pages/assessment-tool/assessment-data.js` | **办园质量评估** 120 题，评的是幼儿园／班级／教师 | 无外部权威，developer 维护的版本化代码资产（F17） |
-| `miniprogram/pages/comprehensive-assessment-form/questions.js` | **《指南》教师评定量表** 124 题，评的是幼儿 | `data/guide-scale.json` |
+| `miniprogram/data/guide-scale.js` | **《指南》教师评定量表** 124 题，评的是幼儿 | **就是它自己** —— 本仓库唯一的一份 |
 
 两者曾共用一张表，那是个错误，见后端 `db/GAPS.md` 的 G5。
 
-### 124 题那一份删不掉，所以给它装了闸门
+### 124 题那一份现在只有一份（2026-09-09，#20）
 
-`data/guide-scale.json` 是权威，但它**在 `miniprogram/` 之外** —— 小程序打不进包，
-页面 `require` 不到。所以 `questions.js` 里那一份**删不掉**。
+**改题库就改 `miniprogram/data/guide-scale.js`。** 别再抄第二份。
 
-删不掉就让它漂开时当场失败：`npm test` 的第 7 段**逐题比对提问与三档锚点**，
-不一致就红。这是 §7.3 那条的同一个应用 —— **一份复制品不是冗余，是一次静默过期；
-要么只有一份，要么当场失败。**
+它此前是三份：权威在 `data/guide-scale.json`（`miniprogram/` 之外，小程序打不进包），
+页面旁边一份抄本 `comprehensive-assessment-form/questions.js`，
+`utils/assessment-store.js` 里还有第三份（124 个题号与名称）。
 
-闸门验过会红：改一个字，`npm test` 当场报 `H1-1-1 的提问与权威不同`。
+三份靠 `npm test` 一道闸门维持，而那道闸门**只盖到前两份、只比两个字段**（提问与
+三档锚点）。剩下七个字段可以静默漂开 —— 包括 `H1-1-1` 参考表那六行数字，而那是这一题
+唯一的计分依据（这题不由教师主观评定，按实测身高体重对表落段）。
 
-**第三份在后端**（`db/rubric/guide-scale-v1.json`，灌数据集用），三份内容目前逐字相同。
-后端那份没有进这个闸门 —— 跨仓库比对要先解决「两个仓库各在什么版本」，暂未做。
+现在权威整份搬进包内，两份抄本删掉：
 
-### 要真正只留一份，就得改成从接口取
+| 谁 | 怎么拿题 |
+|---|---|
+| `comprehensive-assessment-form` | `require('../../data/guide-scale').flatDomains()` |
+| `utils/assessment-store` | 同上（它只用 `domain.name`、`items.length`、`item.id`） |
 
-数据集里 `db_scale_item` 正好 124 行，所以可行。**但那是一个要先问的决策**，
-不要自己拍：它会牵出 G5（五维分数无处存）、G15（量表无模板表）、G27（身高体重题
-无评分规则），还要定领域代码 `H/L/S/K/A` 与 `f1..f5` 哪一套是权威。
+**扩展名是 `.js` 不是 `.json`**：小程序的模块系统只解析 `.js`（官方文档
+`framework/app-service/module` 只写 `require` 加载 `.js`）。`.json` 虽在上传白名单里，
+那是给图片、配置那类文件用的，`require` 不到。文件内容就是那份 JSON，外面套一个
+`module.exports =`。
+
+`flatDomains()` 把权威的四层（`domains → aspects → goals → items`）摊成页面要的
+「一个领域一行、题项平铺」，并把 `reference_table` 由按年龄段分组的对象转成数组。
+页面与 store 因此一行都没改。
+
+### 闸门现在钉的是「只有一份」，不是「两份一致」
+
+`npm test` 第 7 段三条：
+
+| 条 | 钉什么 |
+|---|---|
+| A | `instrument.counts` 与实际树逐个相符（domains 5 / aspects 11 / goals 32 / items 124 / likert 123 / measurement 1） |
+| B | 摊平后是页面要的形状，每题都有题号、名称、提问与三档锚点 |
+| **C** | **第二份不许再出现** —— `questions.js` 不存在，`assessment-store.js` 不内嵌 `ASSESS_SCALE = [` |
+
+**C 是要害。** A 与 B 只证明这一份是好的，C 才证明它是唯一的一份。
+
+三条都反向验过：改坏 `counts.items` → 报「写 123，实际 124」；把 `questions.js` 放回去
+→ 报「又出现了」且退出码 1；把 `ASSESS_SCALE = [` 写回 store → 报「又内嵌了」。
+
+**`version` 与 `scoring_rules` 在 `instrument` 下，不在顶层**（`decision.md` §12）。
+读它们的路径是 `SCALE.instrument.version` / `SCALE.instrument.scoring_rules`。
+
+**第三份在后端**（`db/rubric/guide-scale-v1.json`，灌数据集用），与包内那份逐字相同
+（md5 `6e79d390…`）。它不在这道闸门里 —— 跨仓库比对要先解决「两个仓库各在什么版本」，
+暂未做。
+
+### 为什么没有改成从接口取
+
+数据集里 `db_scale_item` 正好 124 行，契约也有现成的 `GET /scales/{scale_code}/{scale_version}`，
+服务端实作了、回 200。方向是后端 E2 决议的原话「题库入库而非前端内嵌」。
+
+**但今天做不了**，两条挡着：
+
+1. 契约的 `ScaleItem` 没有 `measurement_note` 与 `reference_table` 两个字段，
+   而 G27 与 DDL 列注释都写「仍须显示给教师」。照现在的契约接，`H1-1-1` 那六行数字
+   会从屏幕上消失。
+2. 客户端要拼 URL 就得知道现役是哪个 `(scale_code, scale_version)`，而这件事今天在
+   三处各自硬编码，没有权威落点。
+
+两条都是后端决策，排在 #30／#31 之后。**在那之前，包内这一份就是权威。**
+
+### 量表的版本维度不要删
+
+审核意见曾问「应该是没有版本，所以这个端点可能不用接，甚至可以删除」。**端点可以不接，
+版本不能删**，三处权威都写反了：
+
+| 出处 | 原话 |
+|---|---|
+| 后端 `DECISIONS.md` E2 | 「歷史評估必須綁定填寫時所用的量表版本，升版不得回頭把舊記錄判成草稿」 |
+| `db/01_schema.sql` 的 `db_scale_item` 表注释 | 「改版=新增一个 scale_version, 旧评估仍指向旧版, 历史分数的可解释性不受影响」 |
+| 本仓库 `decision.md` | 两处独立记着同一件事 |
+
+留着版本，量表改一个字就是**新增一批行标 `v2`**，旧评估仍指 `v1`，看旧报告的人知道
+那是按旧口径打的分。删掉版本，就只能原地改那 124 行 —— 于是历史上万条逐题分，
+`H1-2-3` 这个 3 分是按旧问句打的还是新问句打的，**无处可查，也补不回来**。
+
+数据集里确实只有一版，所以屏幕上看不出版本在做什么。那不是「没有版本」，
+是**还没有第二版**。
