@@ -10,7 +10,7 @@
     {
       "key": "assessment-tool:L6:screens.tsv writes=yes",
       "status": "接",
-      "reason": "已接（#19）：assess.scoreAssessmentItem → PUT /assessments/{id}/items/{tool_item_code}。服务端不写 note 也不更新 completed_count，探针已 note 登记，归 #30",
+      "reason": "已接（#19）：assess.scoreAssessmentItem → PUT /assessments/{id}/items/{tool_item_code}。服务端 2026-09-09 起把 note 逐字落库并更新 completed_count（#30 修毕），探针 probe-assessment 钉这两项",
       "author": "Lin",
       "updated_at": "2026-09-09"
     },

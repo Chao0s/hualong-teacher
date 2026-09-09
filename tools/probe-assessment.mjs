@@ -21,17 +21,28 @@
  *   跨源比对    库里 `db_scale_item` 的 124 题与包内 `data/guide-scale.js` 逐题比。
  *              两份内容漂开当场红 —— 一份复制品不是冗余，是一次静默过期。
  *
- * ── 已知会红的项（服务端实作漂移，由 #30 承接，不是本探针的 bug）───────────
+ * ── 已知会红的项（服务端实作漂移）────────────────────────────────────────────
  *
  * 这一类项**用 `note()` 登记，不用 `check()` 报失败**：红久了就没人看了，而删掉之后
  * 「客户端发错了」与「服务端没接住」在报告上长得一模一样。每条 `note()` 写清症状、
  * 证据、解封条件、归谁修。
  *
+ * **#30 已把 20 条翻成 check()。** 服务端补齐 7 处漂移之后，每条 `note()` 的 `else`
+ * 支自己接上了；本探针的客户端一侧一行都没改，那正是「不译服务端的字段名」换来的。
+ * 翻的时候顺手把几个 `check(…, true)` 的恒真项换成钉库里那一行的断言。
+ *
  * **本探针的验收口径是 0 项失败。** `note()` 的条数会打印出来（「N 条服务端已知缺口」），
- * 条数变多就去看新增那一条。**2026-09-09 实测：280 项通过、0 项失败、21 条缺口**
- * （逐组：growth 42/0/2、term 59/0/2、child 113/0/5、report 37/0/4、quality 53/0/6、
- * scale 31/0/2 —— 六组各自跑时都含 8 项共用的会话与基线断言，所以逐组之和大于全跑）。
- * 20 条归 #30，1 条归 G105（`reference_table` 要不要暴露，契约未裁定；2026-09-09 由 #31 登记）。
+ * 条数变多就去看新增那一条。**2026-09-09 实测：346 项通过、0 项失败、4 条缺口**
+ * （逐组：growth 48/0/1、term 73/0/1、child 125/0/1、report 52/0/0、quality 70/0/0、
+ * scale 33/0/1 —— 六组各自跑时都含 8 项共用的会话与基线断言，所以逐组之和大于全跑）。
+ *
+ * 剩的 4 条**都不是实作漂移**，两条缺口各占一部分：
+ *
+ *   G105（1 条）  `GET /scales/...` 不发 `reference_table`。服务端有那一列可发，而契约的
+ *                `ScaleItem` 没声明它 —— 补服务端等于发一个契约没写的字段。
+ *   G107（3 条）  三条名册型进度表拿记录表当基表，没有记录行的幼儿整行消失。
+ *                `rosterHole()` 挖一个洞把它钉出来；换基表要先定「无记录行时
+ *                `required_count` 回什么」，那是一次决策，不是三行 SQL。
  *
  *   node tools/probe-assessment.mjs                 全部六组
  *   node tools/probe-assessment.mjs --group=growth   成长档案
@@ -59,6 +70,8 @@ const require_ = createRequire(import.meta.url);
 const assess = require_(resolve(MP, 'services', 'assessment.js'));
 const co = require_(resolve(MP, 'services', 'co-education.js'));
 const guard = require_(resolve(MP, 'utils', 'guard.js'));
+const session = require_(resolve(MP, 'utils', 'session.js'));
+const config = require_(resolve(MP, 'config.js'));
 const { flatDomains } = require_(resolve(MP, 'data', 'guide-scale.js'));
 const { Client } = require_(resolve(TESTDATA, 'node_modules', 'pg'));
 
@@ -120,6 +133,15 @@ const EXPECT_CLASS_REPORT = {
 };
 /** 题库领域分布（`db_scale_item` 的 `left(item_id,1)`）。 */
 const EXPECT_DOMAIN_SIZE = { H: 36, L: 24, S: 30, K: 23, A: 11 };
+/**
+ * 「已完成那一份也能改分」这一项拿 child 7 的 `H1-1-1` 当靶子，数据集原值 5 分。
+ *
+ * 改完**当场还原**，因为 `EXPECT_REPORT_7.H` 与 `EXPECT_CLASS_REPORT.H` 都是从这
+ * 36 个分算出来的。这个常量的用途是让「上一轮没还回去」当场失败，而不是让探针
+ * 把自己留下的残值当成原始值。
+ */
+const REV_ITEM = 'H1-1-1';
+const EXPECT_REV_SCORE = 5;
 
 /**
  * 本探针改过的行，`cleanup()` 逐条还原。
@@ -146,10 +168,92 @@ async function counts() {
   return r.rows[0];
 }
 
+/**
+ * 裸打一次 PUT，回 `{ status, location, body }`。
+ *
+ * `utils/request.js` 成功时**只回 body**，状态码与响应头都被它吃掉了 —— 而
+ * `term_eval.submit` 要钉的正是「回 201 且带 Location」。所以这一处绕开 service 层，
+ * 自己发一次。用的仍是 `session.getToken()` 那张真票与 `config.env.baseUrl`。
+ */
+async function rawPut(path, body) {
+  const res = await fetch(`${config.env.baseUrl}${path}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${session.getToken()}`,
+    },
+    body: JSON.stringify(body),
+  });
+  const text = await res.text();
+  let parsed = null;
+  try { parsed = text ? JSON.parse(text) : null; } catch { parsed = text; }
+  return { status: res.status, location: res.headers.get('location'), body: parsed };
+}
+
 /** 四位小数比一次。`toFixed` 之后比字符串，避免浮点尾差。 */
 function near(actual, expected, digits = 4) {
   if (actual === null || actual === undefined) return false;
   return Number(actual).toFixed(digits) === Number(expected).toFixed(digits);
+}
+
+/** 名册左连接那一项拿 child 5 当靶子 —— 与 groupTerm 的 INSERT 语义那一项（child 3）不撞。 */
+const HOLE_CHILD = 5;
+
+/**
+ * G107 的验收断言：**拿掉一名幼儿的记录行之后，进度表上那一行还要在。**
+ *
+ * 契约把这三条写成名册左连接，`x-hualong-scope` 逐字是
+ * `WHERE db_child.class_id=$ctx_class AND db_child.enrollment_status='e1'`，
+ * `05 home-school-spec.md` 写「`teacher_term_status … NULL maps to c2`」——
+ * **无行即未完成，不是不存在**。契约把这个情形写进了 schema：
+ * `TermEvaluationProgress.term_eval_id` 与 `ChildAssessmentProgress.child_assessment_id`
+ * 都是 `[integer, 'null']`。
+ *
+ * **为什么非要动库才测得出**：数据集为每名幼儿每学期都预建了三张表的行，所以
+ * 「进度表回 10 行」这一项**恒真** —— 名册驱动与记录驱动在它眼里一模一样。
+ * 本探针的头注一直写着这条不变量，却一直没有一项断言钉它；G107 的「闭合它需要什么」
+ * 点名要的就是这一项。
+ *
+ * 移的是 `class_id` 而不是 DELETE：整行还在，外键与子表（124 个题项分）都不动，
+ * 还原就是一句 UPDATE。`updated_at` 会被 `trg_*_touch` 盖成 `now()` —— 基线核对钉的是
+ * 行数与语义列，不钉 `updated_at`（见 `made` 的头注）。
+ * `finally` 里无条件还原，并**核对还原成功**：还不回去的话，后面两张报告的期望值会一起红。
+ */
+async function rosterHole(table, idCol, endpoint) {
+  const rowId = await scalar(
+    `SELECT ${idCol} FROM ${table} WHERE child_id=$1 AND class_id=$2 AND term_id=$3`,
+    [HOLE_CHILD, CLASS_ID, CURRENT_TERM]);
+  check(`${table} 里 child ${HOLE_CHILD} 本学期有一行（挖洞前的前提）`,
+    rowId !== null, '没找到那一行');
+  if (rowId === null) return;
+  let seen = null;
+  try {
+    // 挪出本班范围 = 该幼儿本学期「没有记录行」。
+    await db.query(`UPDATE ${table} SET class_id=2 WHERE ${idCol}=$1`, [rowId]);
+    const raw = await api_get(endpoint);
+    seen = (raw.items || []).some((r) => r.child_id === HOLE_CHILD);
+  } finally {
+    await db.query(`UPDATE ${table} SET class_id=$2 WHERE ${idCol}=$1`, [rowId, CLASS_ID]);
+  }
+  check(`${table} 那一行已还原回 class ${CLASS_ID}`,
+    await scalar(`SELECT class_id FROM ${table} WHERE ${idCol}=$1`, [rowId]) === CLASS_ID,
+    '没还回去');
+  if (seen === false) {
+    note(
+      `${endpoint} 拿记录表当基表：child ${HOLE_CHILD} 本学期没有记录行时，`
+      + `进度表上**整行消失**（契约要名册左连接，无行即未完成）。`,
+      `实测把 ${table} 那一行挪出本班后，${endpoint} 只回 ${CLASS_SIZE - 1} 行且不含 child ${HOLE_CHILD}；`
+      + ` routes/teacher.mjs 写的是 FROM ${table} JOIN db_child，基表反了。`
+      + ' 数据集为每名幼儿预建了行，所以「回 10 行」那一项恒真、查不出这件事。'
+      + ' 真实场景是插班生：db_child 有他、记录表还没有他，于是教师的进度表上没有这名幼儿，'
+      + ' 而「该做还没做」正是这张表唯一的用途。'
+      + ' 解封：本项由 note 换成 check —— 挖洞后仍回 10 行、那一名幼儿的 id 列为 null。'
+      + ' 归 G107（先定「无记录行时 required_count 回什么」，再换基表）。',
+    );
+  } else {
+    check(`${endpoint} 是名册左连接：child ${HOLE_CHILD} 没有记录行时那一行照样在`,
+      seen === true, `实际 ${seen}`);
+  }
 }
 
 /* ── 组 1 · 成长档案 ────────────────────────────────────────────────────── */
@@ -234,30 +338,36 @@ async function groupGrowth() {
   check('教师月度那一列没有混进上学期的行（上学期全齐，当前学期一个都不齐）',
     teacherMonthDone === 0, `实际 ${teacherMonthDone} 个 done`);
 
-  // 服务端漂移：集合端点不回 is_term_end，也不回 class_id。
+  // 契约的 GrowthRecord 里 `is_term_end` 与 `class_id` 都在。**钉到库里那一行**，
+  // 不只钉「键在不在」—— 整列写死成 false 也照样有这个键。
   const raw = await api_get('/growth-records');
-  const sample = (raw.items || [])[0] || {};
-  if (sample.is_term_end === undefined || sample.class_id === undefined) {
-    note(
-      'GET /growth-records 不回 `is_term_end` 与 `class_id`（契约的 GrowthRecord 两个都 required）。',
-      `实测回包的键：${Object.keys(sample).join(', ')}；`
-      + 'routes/teacher.mjs 的 listGrowthRecords SELECT 里没有这两列。'
-      + ' service 给 isTermEnd 兜底 false（学期末口径的提示语因此一律不显示）。'
-      + ' 解封：本行的 `check(is_term_end 回包带上了)` 由 note 换回 check 并变绿。归 #30。',
-    );
-  } else {
-    check('GET /growth-records 回了 is_term_end 与 class_id', true);
-  }
-  if ((raw.items || []).some((r) => r.term_id && r.term_id !== CURRENT_TERM)) {
-    note(
-      'GET /growth-records 把两个学期都回来了（契约明写学期由服务端派生，只该回当前学期）。',
-      `实测 class ${CLASS_ID} 回 ${(raw.items || []).length} 行，含 ${PREV_TERM} 与 ${CURRENT_TERM}；`
-      + ' 不筛就是一名幼儿两行、进度表翻倍。service 按会话的 current_term.term_id 筛一次'
-      + '（服务端修好后是空操作）。解封：回包里只剩当前学期。归 #30。',
-    );
-  } else {
-    check('GET /growth-records 只回当前学期', true);
-  }
+  const rawById = new Map((raw.items || []).map((r) => [r.child_id, r]));
+  const termEndDb = await db.query(
+    `SELECT child_id, class_id, is_term_end FROM db_growth_record
+      WHERE class_id=$1 AND term_id=$2 ORDER BY child_id`, [CLASS_ID, CURRENT_TERM]);
+  const termEndWrong = termEndDb.rows.filter((r) => {
+    const got = rawById.get(r.child_id);
+    return !got || got.is_term_end !== r.is_term_end || got.class_id !== r.class_id;
+  });
+  check('GET /growth-records 的 is_term_end 与 class_id 与库里逐行相同',
+    termEndWrong.length === 0,
+    `对不上 ${termEndWrong.length} 行，样本 child ${termEndWrong.slice(0, 3).map((r) => r.child_id).join(',')}`);
+  check(`当前学期这 ${CLASS_SIZE} 行的 is_term_end 库里都是 false（不是整列写死的 true）`,
+    termEndDb.rows.every((r) => r.is_term_end === false), '库里出现了 true');
+
+  // 学期两头钉：只剩当前学期，**且**上学期那 10 行的 growth_record_id 一个都没出现。
+  check('GET /growth-records 只回当前学期',
+    (raw.items || []).length === CLASS_SIZE
+    && (raw.items || []).every((r) => r.term_id === CURRENT_TERM),
+    `${(raw.items || []).length} 行，学期 ${[...new Set((raw.items || []).map((r) => r.term_id))].join(',')}`);
+  const prevGrowthIds = (await db.query(
+    'SELECT growth_record_id FROM db_growth_record WHERE class_id=$1 AND term_id=$2',
+    [CLASS_ID, PREV_TERM])).rows.map((r) => r.growth_record_id);
+  check('上学期那 10 行的 growth_record_id 一个都没出现',
+    (raw.items || []).every((r) => !prevGrowthIds.includes(r.growth_record_id)),
+    `漏了 ${(raw.items || []).filter((r) => prevGrowthIds.includes(r.growth_record_id)).map((r) => r.growth_record_id).join(',')}`);
+
+  await rosterHole('db_growth_record', 'growth_record_id', '/growth-records');
 }
 
 /* ── 组 2 · 学期评价 ────────────────────────────────────────────────────── */
@@ -282,6 +392,8 @@ async function groupTerm() {
   check('第一行是 child 1，按 child_id 升序',
     board.rows.map((r) => r.childId).join(',') === '1,2,3,4,5,6,7,8,9,10',
     board.rows.map((r) => r.childId).join(','));
+
+  await rosterHole('db_term_eval', 'term_eval_id', '/term-evaluations');
 
   // 逐行钉到库里：当前学期 class 1 的 10 行全 c2，上学期全 c1。
   for (const row of board.rows) {
@@ -336,7 +448,15 @@ async function groupTerm() {
       + ' 解封：回包带上 file_id[]，照片区接 services/media.js 的 photoUrls。归 #30。',
     );
   } else {
-    check('GET 单条回了 file_id[]', Array.isArray(raw.file_id));
+    // 钉到 db_file_ref 那几行，不只钉「是个数组」。数据集这一笔没有照片，
+    // 所以真值是空数组 —— **空与缺席是两件事**，缺席时上面那条 note 才该出现。
+    const refIds = (await db.query(
+      `SELECT file_id FROM db_file_ref
+        WHERE owner_object='db_term_eval' AND owner_id=$1 ORDER BY file_ref_id`,
+      [dbOne.term_eval_id])).rows.map((r) => r.file_id);
+    check('GET 单条的 file_id[] 与 db_file_ref(owner_object=db_term_eval) 逐个相同',
+      Array.isArray(raw.file_id) && raw.file_id.join(',') === refIds.join(','),
+      `回包 ${JSON.stringify(raw.file_id)} / 库 ${JSON.stringify(refIds)}`);
   }
 
   // 作者范围：唯一键含 teacher_id（B9），本人那条端点不得回别人写的那一列。
@@ -430,21 +550,55 @@ async function groupTerm() {
   check('别班那一行本来就不是本人写的（作者范围的另一头）',
     otherBefore === null || otherBefore.term_eval_id !== before.term_eval_id, 'id 撞了');
 
-  // 契约回 201 + Location，服务端回 200 且改的是已有行。
-  const rawPut = await api_get(`/children/${EMPTY_CHILD}/term-evaluation`);
-  if (rawPut.term_eval_id === before.term_eval_id) {
-    note(
-      'PUT /children/{child_id}/term-evaluation 是 UPDATE 已有行、回 200，契约要 INSERT、'
-      + '回 201 + Location（action-registry 的 term_eval.submit 是 NONE→c1）。',
-      `写入前后 term_eval_id 都是 ${before.term_eval_id}，行数不变（120 行）；`
-      + ' routes/teacher.mjs 的 submitTermEvaluation 走 UPDATE ... WHERE，名册幼儿无行时回 404。'
-      + ' 数据集里每名幼儿每学期都预建了行，所以模拟器里看不出来。'
-      + ' service 两个状态码都接受（request.js 不校验状态码）。'
-      + ' 解封：无行的幼儿 PUT 一次能建出行并回 201。归 #30。',
-    );
-  } else {
-    check('PUT 建了新行', true);
-  }
+  /* ── INSERT 语义：无行的幼儿 PUT 一次要建出行并回 201 + Location ────────
+   *
+   * `action-registry` 的 `term_eval.submit` 是 NONE→c1、`one-way`。数据集为每名幼儿
+   * 每学期都预建了 c2 占位行，所以**要先把那一行拿掉才测得到 INSERT** —— 留着占位行
+   * 只会一直测到 UPDATE 那条路，这正是这条漂移能藏一整轮的原因。
+   */
+  const NEW_CHILD = 3;
+  const kept = (await db.query(
+    `SELECT * FROM db_term_eval WHERE child_id=$1 AND teacher_id=1 AND term_id=$2`,
+    [NEW_CHILD, CURRENT_TERM])).rows[0];
+  check(`child ${NEW_CHILD} 本来有一行占位（c2）`,
+    Boolean(kept) && kept.term_eval_status === 'c2', JSON.stringify(kept && kept.term_eval_status));
+  await db.query('DELETE FROM db_term_eval WHERE term_eval_id=$1', [kept.term_eval_id]);
+  made.push({ kind: 'termEvalReinsert', row: kept });
+
+  const maxBefore = Number(await scalar('SELECT max(term_eval_id)::int FROM db_term_eval'));
+  const NEW_TEXT = `probe-assessment 新建那一笔 ${Date.now()}`;
+  const created = await rawPut(`/children/${NEW_CHILD}/term-evaluation`, { eval_text: NEW_TEXT });
+  check('无行的幼儿 PUT 一次回 201（不是 200，也不是 404）',
+    created.status === 201, `实际 ${created.status} ${JSON.stringify(created.body)}`);
+  check('201 带 Location，指着这一条资源',
+    created.location === `/api/v1/children/${NEW_CHILD}/term-evaluation`,
+    `实际 ${created.location}`);
+  const born = await teRow(NEW_CHILD);
+  check('那一行是**新建**的，不是改了旧行（term_eval_id 大于写入前的最大值）',
+    Boolean(born) && born.term_eval_id > maxBefore,
+    `新行 ${born && born.term_eval_id} / 写入前最大 ${maxBefore}`);
+  check('新建那一行的正文逐字落库',
+    born && born.eval_text === NEW_TEXT, `实际 ${JSON.stringify(born && born.eval_text)}`);
+  check('新建那一行一次写成 c1（本表没有草稿）',
+    born && born.term_eval_status === 'c1', `实际 ${born && born.term_eval_status}`);
+  check('新建那一行的 submitted_at 由服务端盖上了',
+    born && born.submitted_at !== null, '仍是 NULL');
+  // 时间戳钉到库里那一行的裸值，不是钉格式（§7.6）。
+  check('回包的 submitted_at 与库里那一行逐字相同',
+    created.body && created.body.submitted_at === `${born.submitted_text}+08:00`,
+    `回包 ${created.body && created.body.submitted_at} / 库 ${born.submitted_text}+08:00`);
+
+  // one-way：已提交的那一笔重发回 409，且**库里那一行一个字没变**（§7.5）。
+  const dup = await rawPut(`/children/${NEW_CHILD}/term-evaluation`, { eval_text: '第二次提交' });
+  check('已提交的那一笔重发回 409 state_precondition_failed（term_eval.submit 是 one-way）',
+    dup.status === 409 && dup.body && dup.body.code === 'state_precondition_failed',
+    `实际 ${dup.status} ${JSON.stringify(dup.body && dup.body.code)}`);
+  const still = await teRow(NEW_CHILD);
+  check('409 那一发零写入：正文一个字没变',
+    still && still.eval_text === NEW_TEXT, `实际 ${JSON.stringify(still && still.eval_text)}`);
+  check('409 那一发零写入：行数没多',
+    Number(await scalar('SELECT count(*)::int FROM db_term_eval')) === BASE.term_eval,
+    `实际 ${await scalar('SELECT count(*)::int FROM db_term_eval')} 行`);
 }
 
 /** 断言学期评价的某次写入被拒，**且库里那一行没变**（§7.5）。 */
@@ -480,12 +634,22 @@ async function caRow(childId, termId = CURRENT_TERM) {
   return r.rows[0] || null;
 }
 
+/** 某一份评估里某一题的分，直接读库。无行回 null（未评 = 无行，不是 0 分）。 */
+async function caItemScore(childAssessmentId, itemId) {
+  const r = await db.query(
+    'SELECT score FROM db_child_assessment_item WHERE child_assessment_id=$1 AND item_id=$2',
+    [childAssessmentId, itemId]);
+  return r.rows[0] ? r.rows[0].score : null;
+}
+
 async function groupChild() {
   console.log('\n[child] 综合评估 —— GET /child-assessments, GET/PUT /children/{id}/child-assessment');
 
   const board = await assess.childAssessmentProgress();
   check(`进度表回 ${CLASS_SIZE} 行（本班在园名册整份）`,
     board.rows.length === CLASS_SIZE, `拿到 ${board.rows.length} 行`);
+
+  await rosterHole('db_child_assessment', 'child_assessment_id', '/child-assessments');
 
   // 逐幼儿三头钉：回包 = 库里那一列 = 真实题项行数。
   for (const row of board.rows) {
@@ -548,7 +712,19 @@ async function groupChild() {
       + '（进度页上不显示量表编码，今天不咬人）。解封：回包带上这两列。归 #30。',
     );
   } else {
-    check('GET /child-assessments 回了 scale_code 与 scale_version', true);
+    // 钉到库里那两列，不只钉「键在不在」：写死成 `guide-scale/v1` 也照样有这个键，
+    // 而 required_count 要随**该行绑定的版本**解释（升版不回头重判）。
+    const bound = await db.query(
+      `SELECT child_id, scale_code, scale_version FROM db_child_assessment
+        WHERE class_id=$1 AND term_id=$2 ORDER BY child_id`, [CLASS_ID, CURRENT_TERM]);
+    const listById = new Map((rawList.items || []).map((r) => [r.child_id, r]));
+    const bindWrong = bound.rows.filter((r) => {
+      const got = listById.get(r.child_id);
+      return !got || got.scale_code !== r.scale_code || got.scale_version !== r.scale_version;
+    });
+    check('GET /child-assessments 的 scale_code / scale_version 与库里逐行相同',
+      bindWrong.length === 0,
+      `对不上 ${bindWrong.length} 行，样本 child ${bindWrong.slice(0, 3).map((r) => r.child_id).join(',')}`);
   }
   if ((rawList.items || []).some((r) => r.term_id && r.term_id !== CURRENT_TERM)) {
     note(
@@ -558,7 +734,13 @@ async function groupChild() {
       + ' service 按会话的 current_term.term_id 筛一次。解封：回包只剩当前学期。归 #30。',
     );
   } else {
-    check('GET /child-assessments 只回当前学期', true);
+    check('GET /child-assessments 只回当前学期（10 行，学期只有一种）',
+      (rawList.items || []).length === CLASS_SIZE
+      && [...new Set((rawList.items || []).map((r) => r.term_id))].join(',') === CURRENT_TERM,
+      `${(rawList.items || []).length} 行，学期 ${[...new Set((rawList.items || []).map((r) => r.term_id))].join(',')}`);
+    check('上学期那 10 份主记录 id 在裸回包里也一个都没出现',
+      (rawList.items || []).every((r) => !prevIds.includes(r.child_assessment_id)),
+      `漏了 ${(rawList.items || []).filter((r) => prevIds.includes(r.child_assessment_id)).map((r) => r.child_assessment_id).join(',')}`);
   }
 
   /* ── 单条：未评 = 无列 ───────────────────────────────────────────────── */
@@ -625,7 +807,9 @@ async function groupChild() {
       + ' 解封：回包带上 child_name。归 #30。',
     );
   } else {
-    check('GET 单条回了 child_name', true);
+    const dbName = await scalar('SELECT child_name FROM db_child WHERE child_id=$1', [DRAFT_CHILD]);
+    check(`GET 单条的 child_name 与 db_child 那一行逐字相同（${dbName}）`,
+      rawOne.child_name === dbName, `回包 ${JSON.stringify(rawOne.child_name)} / 库 ${dbName}`);
   }
 
   /* ── 写：逐题 UPSERT ─────────────────────────────────────────────────── */
@@ -691,17 +875,36 @@ async function groupChild() {
     [CLASS_ID])).rows[0].child_id;
   await refusesScore(`别班 child ${otherChild}`, otherChild, 'K1-1-2', 3, 'not_found');
 
-  // 已 c1 的那一份改分：契约说 score_item 是 reversible，服务端只找 c2 的主记录。
+  /* ── 已 c1 的那一份改分：契约的 child_assessment.score_item 是 reversible ──
+   *
+   * **改完当场还原，不留给 cleanup。** 这一份的 124 个分数正是下面两张报告的期望值
+   * 来源（`EXPECT_REPORT_7` / `EXPECT_CLASS_REPORT`）；留到 cleanup 才还的话
+   * groupReport 拿着被改过的库对期望值，六项断言会一起红 —— 而根因在这里。
+   */
   const doneBefore = await caRow(C1_CHILD);
+  const revBefore = await caItemScore(doneBefore.child_assessment_id, REV_ITEM);
+  // **钉常量，不钉「是个整数」。** 上一轮跑完没还回去的话，这一项当场红；
+  // 只写 `Number.isInteger` 的话，探针会把自己上次留下的 3 分当成原始值，
+  // 于是下面两张报告的期望值莫名其妙地对不上，而根因在三百行以外。
+  check(`child ${C1_CHILD} 的 ${REV_ITEM} 库里是 ${EXPECT_REV_SCORE} 分（数据集原值）`,
+    revBefore === EXPECT_REV_SCORE, `实际 ${revBefore}`);
+  // 主体半途炸掉时的兜底；正常路径下面几行就自己还原了。
+  made.push({
+    kind: 'caItem',
+    childAssessmentId: doneBefore.child_assessment_id,
+    itemId: REV_ITEM,
+    existed: true,
+    score: revBefore,
+  });
   let code = '(没被拒)';
   try {
-    await assess.scoreItem(C1_CHILD, 'H1-1-1', 3);
+    await assess.scoreItem(C1_CHILD, REV_ITEM, 3);
   } catch (err) { code = err.code; }
   const doneAfter = await caRow(C1_CHILD);
-  check(`拒之后 child ${C1_CHILD} 的 completed_count 没变（仍 124）`,
+  check(`改分前后 child ${C1_CHILD} 的 completed_count 没变（仍 124）`,
     doneAfter.completed_count === doneBefore.completed_count,
     `${doneBefore.completed_count} → ${doneAfter.completed_count}`);
-  check(`拒之后 child ${C1_CHILD} 的状态没变（仍 c1）`,
+  check(`改分前后 child ${C1_CHILD} 的状态没变（仍 c1）`,
     doneAfter.child_assessment_status === doneBefore.child_assessment_status,
     `${doneBefore.child_assessment_status} → ${doneAfter.child_assessment_status}`);
   if (code === 'not_found') {
@@ -714,7 +917,18 @@ async function groupChild() {
       + ' 页面已按 service 的 state 进只读态。解封：c1 的那一份也能改分。归 #30。',
     );
   } else {
-    check(`已完成的那一份可以改分（reversible）`, code === '(没被拒)', `实际 ${code}`);
+    check('已完成的那一份可以改分（reversible）', code === '(没被拒)', `实际 ${code}`);
+    // 断言值，不断言状态码（§7.6）：那一格的分要真的变成 3。
+    check(`${REV_ITEM} 逐值改成 3（回 200 却没改的实作看不出来）`,
+      await caItemScore(doneBefore.child_assessment_id, REV_ITEM) === 3,
+      `实际 ${await caItemScore(doneBefore.child_assessment_id, REV_ITEM)}`);
+    // 当场还原，并核对回到原值 —— 后面两张报告要用这一份的原始分。
+    await db.query(
+      'UPDATE db_child_assessment_item SET score=$3 WHERE child_assessment_id=$1 AND item_id=$2',
+      [doneBefore.child_assessment_id, REV_ITEM, revBefore]);
+    check(`${REV_ITEM} 当场还原成 ${revBefore} 分（报告那两组要用原始分）`,
+      await caItemScore(doneBefore.child_assessment_id, REV_ITEM) === revBefore,
+      `实际 ${await caItemScore(doneBefore.child_assessment_id, REV_ITEM)}`);
   }
 
   const rawPut = await api.put(`/children/${EMPTY_CHILD}/child-assessment/items/K1-1-1`, {
@@ -730,8 +944,18 @@ async function groupChild() {
       + ' 解封：回包是 ChildAssessmentProgress。归 #30。',
     );
   } else {
-    check('PUT 回的是 ChildAssessmentProgress',
-      rawPut && rawPut.completed_count !== undefined, JSON.stringify(rawPut));
+    // 钉到库里那一份：回包的计数与状态要与主记录逐值相同，不只是「有这个键」。
+    const nowRow = await caRow(EMPTY_CHILD);
+    check('PUT 回的是 ChildAssessmentProgress，计数与状态与库里那一份逐值相同',
+      rawPut && rawPut.child_assessment_id === nowRow.child_assessment_id
+      && rawPut.completed_count === nowRow.completed_count
+      && rawPut.required_count === nowRow.required_count
+      && rawPut.child_assessment_status === nowRow.child_assessment_status,
+      `回包 ${JSON.stringify(rawPut)} / 库 ${nowRow.completed_count}/${nowRow.required_count} ${nowRow.child_assessment_status}`);
+    check('PUT 的回包也带 child_name（契约的 ChildAssessmentProgress 上它是 required）',
+      rawPut && rawPut.child_name
+        === await scalar('SELECT child_name FROM db_child WHERE child_id=$1', [EMPTY_CHILD]),
+      `实际 ${JSON.stringify(rawPut && rawPut.child_name)}`);
   }
 }
 
@@ -850,7 +1074,30 @@ async function groupReport() {
       + ' 解封：回包五行齐、缺席的 average 为 null。归 #30。',
     );
   } else {
-    check('草稿的 K 与 A 回了 average null', true);
+    // **null 与 0 是两件事。** 整域未评回 0 分会在雷达图上画出一个真的角，
+    // 那比少画一个角糟得多。所以这里钉 `average === null` 且 `item_count === 0`，
+    // 不是钉「有这一行」。
+    const draftByCode = new Map((rawDraft.domains || []).map((d) => [d.code, d]));
+    check('草稿那一份的报告五个领域齐（H L S K A 都成行）',
+      ['H', 'L', 'S', 'K', 'A'].every((code) => draftByCode.has(code)),
+      `实际 ${[...draftByCode.keys()].join(',')}`);
+    check('K 与 A 两个整域未评：average 是 null（不是 0），item_count 是 0',
+      ['K', 'A'].every((code) => draftByCode.get(code)
+        && draftByCode.get(code).average === null && draftByCode.get(code).item_count === 0),
+      `实际 ${JSON.stringify(['K', 'A'].map((code) => draftByCode.get(code)))}`);
+    // 有分的那三个领域钉到库里那个数（四位小数）。
+    const draftDb = await db.query(
+      `SELECT left(i.item_id,1) AS code, count(*)::int AS item_count, avg(i.score) AS average
+         FROM db_child_assessment_item i JOIN db_child_assessment a USING (child_assessment_id)
+        WHERE a.child_id=$1 AND a.term_id=$2 GROUP BY 1 ORDER BY 1`,
+      [DRAFT_CHILD, CURRENT_TERM]);
+    const draftWrong = draftDb.rows.filter((r) => {
+      const got = draftByCode.get(r.code);
+      return !got || got.item_count !== r.item_count || !near(got.average, r.average);
+    });
+    check('草稿那一份有分的三个领域，item_count 与 average 都与库里逐行相同',
+      draftWrong.length === 0,
+      `对不上 ${draftWrong.length} 行：${draftWrong.map((r) => r.code).join(',')}`);
   }
   const draftReport = await assess.childAssessmentReport(DRAFT_CHILD);
   check('草稿的报告照样铺满 5 个角（缺席的补 null，不补 0）',
@@ -1034,16 +1281,37 @@ async function groupQuality() {
   check('库里教师 1 名下正好三份（回包没有少给）',
     (await scalar('SELECT count(*)::int FROM db_assessment WHERE teacher_id=1')) === 3, '数不对');
 
-  if (page.nextCursor === null && page.items.length === 3) {
-    note(
-      'GET /assessments **完全忽略 `limit` 与 `cursor`**（13 条端点里唯一分页的一条），恒回 `next_cursor: null`。',
-      'limit=2 时仍回 3 条（实测）；routes/teacher.mjs 的 listAssessments 不读这两个参数。'
-      + ' service 仍走 api.getPage（契约的形状），拿到 nextCursor 为 null 就当到底。'
-      + ' 教师 1 只有三份，今天不咬人。解封：limit=2 回 2 条 + 一个非空 cursor。归 #30。',
-    );
-  } else {
-    check('GET /assessments 认 limit', page.items.length === 2, `实际 ${page.items.length} 条`);
-  }
+  check('limit=20 装得下三份，nextCursor 为 null（到底了）',
+    page.nextCursor === null, `实际 ${JSON.stringify(page.nextCursor)}`);
+
+  /* 分页：13 条端点里唯一给了 limit / cursor 的一条。**翻页要真的翻**，
+   * 只钉「第一页 2 条」不够 —— 忽略 cursor 的实作第二页会把同样两条再回一遍。 */
+  const p1 = await assess.listAssessments({ limit: 2 });
+  check('limit=2 只回 2 条', p1.items.length === 2, `实际 ${p1.items.length} 条`);
+  check('limit=2 的两条是 7 与 13（排序不变）',
+    p1.items.map((a) => a.id).join(',') === '7,13', p1.items.map((a) => a.id).join(','));
+  check('还有下一页时 nextCursor 非空',
+    typeof p1.nextCursor === 'string' && p1.nextCursor.length > 0,
+    `实际 ${JSON.stringify(p1.nextCursor)}`);
+  const p2 = await assess.listAssessments({ limit: 2, cursor: p1.nextCursor });
+  check('第二页回剩下那一条（assessment 1），不是把第一页再回一遍',
+    p2.items.map((a) => a.id).join(',') === '1', p2.items.map((a) => a.id).join(','));
+  check('第二页是最后一页，nextCursor 回 null',
+    p2.nextCursor === null, `实际 ${JSON.stringify(p2.nextCursor)}`);
+  check('两页拼起来与整份逐个相同（不重不漏）',
+    p1.items.concat(p2.items).map((a) => a.id).join(',') === page.items.map((a) => a.id).join(','),
+    `${p1.items.concat(p2.items).map((a) => a.id).join(',')} / ${page.items.map((a) => a.id).join(',')}`);
+  // limit 的值域由服务端守（§3.1 的 1..100）。**这一发绕开 service** ——
+  // `api.getPage` 的 `limit || defaultPageLimit` 把 0 换成了 20，客户端发不出 0。
+  let badLimit = '(没被拒)';
+  try { await api.get('/assessments', { query: { limit: 0 } }); } catch (err) { badLimit = err.code; }
+  check('limit=0 回 422（§3.1 的 1..100）', badLimit === 'validation_failed', `实际 ${badLimit}`);
+  let badCursor = '(没被拒)';
+  try {
+    await api.get('/assessments', { query: { cursor: 'not-a-cursor' } });
+  } catch (err) { badCursor = err.code; }
+  check('乱写的 cursor 回 400 cursor_invalid（不静默从第一页开始）',
+    badCursor === 'cursor_invalid', `实际 ${badCursor}`);
 
   /* 详情 */
   const detail = await assess.getAssessment(ASMT_WRITABLE, DATA.scoring.levels);
@@ -1072,7 +1340,17 @@ async function groupQuality() {
       + ' 入口置灰。解封：items 带上 file_id[]。归 #30。',
     );
   } else {
-    check('详情的 items 回了 file_id[]', true);
+    // 钉到 db_file_ref。这一份没有佐证材料，所以真值是**每一题都空数组** ——
+    // 缺席时上面那条 note 才该出现，空不是缺席。
+    const evidence = await scalar(
+      `SELECT count(*)::int FROM db_file_ref
+        WHERE owner_object='db_assessment_item' AND usage_key='evidence'`);
+    check(`库里 db_assessment_item 的 evidence 引用共 ${evidence} 行`,
+      evidence === 0, `实际 ${evidence} 行`);
+    check('详情的 items 每一题都带 file_id[]，且与 db_file_ref 一致（都是空数组）',
+      (rawDetail.items || []).length === 109
+      && (rawDetail.items || []).every((i) => Array.isArray(i.file_id) && i.file_id.length === 0),
+      `${(rawDetail.items || []).length} 题，样本 ${JSON.stringify(sampleItem.file_id)}`);
   }
 
   /* 写：score 与 note 两头钉 */
@@ -1111,7 +1389,7 @@ async function groupQuality() {
       + " 解封：这一项的 `check('note 逐字落库')` 变绿。归 #30。",
     );
   } else {
-    check('note 逐字落库', true);
+    check('note 逐字落库', afterItem.note === NOTE, `实际 ${JSON.stringify(afterItem.note)}`);
   }
 
   const afterRow = await asmtRow(ASMT_WRITABLE);
@@ -1169,8 +1447,16 @@ async function groupQuality() {
       + ' 解封：回包是 Assessment。归 #30。',
     );
   } else {
-    check('PUT 回的是 Assessment', rawPut && rawPut.assessment_status !== undefined,
-      JSON.stringify(rawPut));
+    const nowAsmt = await asmtRow(ASMT_WRITABLE);
+    check('PUT 回的是 Assessment，计数与状态与库里那一份逐值相同',
+      rawPut && rawPut.assessment_id === nowAsmt.assessment_id
+      && rawPut.completed_count === nowAsmt.completed_count
+      && rawPut.required_count === nowAsmt.required_count
+      && rawPut.assessment_status === nowAsmt.assessment_status,
+      `回包 ${JSON.stringify(rawPut)} / 库 ${nowAsmt.completed_count}/${nowAsmt.required_count} ${nowAsmt.assessment_status}`);
+    check('回包的 completed_count 等于库里**有分的题项行数**（不是行数）',
+      rawPut && rawPut.completed_count === nowAsmt.real_scored,
+      `回包 ${rawPut && rawPut.completed_count} / 有分的行 ${nowAsmt.real_scored}`);
   }
 
   /* 拒绝集：拒之后库里那一份没变（§7.5）*/
@@ -1279,7 +1565,14 @@ async function groupScale() {
       + ' 解封：回包带上这两个键。归 #30。',
     );
   } else {
-    check('GET /scales 回了 scale_code 与 scale_version', true);
+    check('GET /scales 的外壳与 path 参数逐字相同（guide-scale / v1）',
+      raw.scale_code === 'guide-scale' && raw.scale_version === 'v1',
+      `实际 ${raw.scale_code}/${raw.scale_version}`);
+    // 本端点**不分页**（reference data，124 题整份下发），所以 `next_cursor` 不该有。
+    // 契约的 `Scale` 只声明三个键，多回一个就是下一次「客户端照着它写」的起点。
+    check('回包只有契约声明的三个键，没有 next_cursor',
+      Object.keys(raw).sort().join(',') === 'items,scale_code,scale_version',
+      `实际 ${Object.keys(raw).sort().join(',')}`);
   }
 
   // 跨源比对：库里那 124 题与包内那一份逐题比。
@@ -1393,6 +1686,21 @@ async function restoreAll() {
         `UPDATE db_term_eval SET eval_text=$2, term_eval_status=$3, submitted_at=$4
            WHERE term_eval_id=$1`,
         [m.termEvalId, m.eval_text, m.term_eval_status, m.submitted_at]);
+    } else if (m.kind === 'termEvalReinsert') {
+      // 测 INSERT 语义时把那名幼儿的占位行删掉了。先清掉服务端新建的那一行，
+      // 再把原来那一行**按原 id 原值**放回去 —— 换个 id 放回来，下一支探针钉
+      // 「term_eval_id 与库里那一行相同」时就会莫名其妙地红。
+      await db.query(
+        'DELETE FROM db_term_eval WHERE child_id=$1 AND teacher_id=$2 AND term_id=$3',
+        [m.row.child_id, m.row.teacher_id, m.row.term_id]);
+      await db.query(
+        `INSERT INTO db_term_eval (term_eval_id, school_id, class_id, child_id, teacher_id,
+                                   term_id, eval_text, term_eval_status, submitted_at,
+                                   created_at, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+        [m.row.term_eval_id, m.row.school_id, m.row.class_id, m.row.child_id, m.row.teacher_id,
+          m.row.term_id, m.row.eval_text, m.row.term_eval_status, m.row.submitted_at,
+          m.row.created_at, m.row.updated_at]);
     } else if (m.kind === 'caItem') {
       if (m.existed) {
         await db.query(

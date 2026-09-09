@@ -136,8 +136,8 @@ node db/tools/check-all.mjs
 
 ## 3. 现状
 
-`miniprogram/` 共 **55 页**，**44 页已接 API**，**11 页仍是写死的字面量**。
-
+`miniprogram/` 共 **55 页**，**44 页已接 API**，**11 页仍是写死的字面量**。
+
 这三个数**每次接一页就变**，权威是 `npm run scan:wiring` 第一行的「页面 55（已接 44）」，不是本节（2026-09-09 实测）。
 
 判断某一页属于哪一类：看 `index.js` 里有没有 `require('../../services/`。
@@ -277,12 +277,18 @@ node server/server.mjs          # → http://localhost:3860/api/v1
 | 权限 | `cd ../hualong-backend/db/testdata && node authz-tests/run.mjs --base http://localhost:3860/api/v1` | 七组越权探针 |
 | **渲染** | **开发者工具里真点** | **上面全部查不出来** |
 
-探针在 `tools/`，共 **13 支**：`probe-session`、`probe-library`、`probe-library-write`、
+探针在 `tools/`，共 **15 支**：`probe-session`、`probe-library`、`probe-library-write`、
 `probe-party`、`probe-moments`、`probe-parent-task`、`probe-coeducation`、`probe-training`、
 `probe-media-fetch`、`probe-task`、`probe-teacher-profile`、`probe-growth-book`、
-`probe-growth-book-compile`。
+`probe-growth-book-compile`、`probe-assessment`、`probe-teacher-message`。
 它们桩掉 `wx.*` 之后**加载未经修改的发布代码**，所以路径写错、字段
 改名、枚举译反都会红。
+
+**记分板有两条通道，不要把它们读成同一件事。** `check()` 是「这里有缺陷」，
+`note()` 是「客户端做对了，对面还没接住」。所以 `probe-assessment` 打印
+「346 项通过，0 项失败，4 条服务端已知缺口」时，那 4 条**不算失败** ——
+它们各自钉着一条已登记的缺口编号，服务端接上那天自己变成 `check()`。
+把已知缺口混进失败数，会让人为了凑绿去放宽断言。
 
 **先写探针再改页面。** 前三条线都靠这个顺序在改页之前就抓到了真问题：
 `resource_access` 是必填、`resource_ids` 不落库、`child_id` 收下即丢。页面改完再测，

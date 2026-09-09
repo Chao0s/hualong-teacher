@@ -65,12 +65,18 @@
  * 同一页两个口径并存，分别走 `tristate()` 与 `binaryDone()` —— 这就是两个都导出的
  * 原因，混用正是 decision.md 第 14 条要防的事。
  *
- * ── 服务端实作漂移（由 #30 承接，不是本模块的 bug）─────────────────────────
+ * ── 与服务端的对齐状态 ─────────────────────────────────────────────────────
  *
- * 逐条实测于 2026-09-09。本模块**照契约发、照契约读**，只在拿不到的字段上给兜底并
- * 在那一行写明为什么；**一处都不译服务端的字段名** —— 译一次就把契约的形状藏进
- * 客户端，服务端修好那天客户端会静默坏掉。逐条见 `tools/probe-assessment.mjs` 的
- * 头注与 `note()` 登记。
+ * 本模块**照契约发、照契约读**，**一处都不译服务端的字段名** —— 译一次就把契约的
+ * 形状藏进客户端，服务端改那天客户端会静默坏掉。这条纪律的回报在 #30 那一轮兑现：
+ * 服务端补齐 7 处漂移之后，本模块**一行都不用改**，`tools/probe-assessment.mjs`
+ * 的 20 条 `note()` 自己变成了 `check()`。
+ *
+ * 现在只剩一条对不上：`GET /scales/...` 不发 `reference_table`（G105，契约的
+ * `ScaleItem` 没声明它，要不要暴露未裁定）。本模块的页面用包内题库，不咬人。
+ *
+ * 拿不到字段时的兜底（`|| ''`、`Array.isArray(...) ? ... : []`）**留着**：
+ * 服务端回归时它们决定页面是少显示还是崩，而探针会把回归钉出来。
  */
 
 const api = require('../utils/request');
@@ -143,14 +149,13 @@ const MESSAGE_CONTENT_MAX = 300;
  * 只留当前学期那一行。
  *
  * 三条名册型集合（`/term-evaluations`、`/child-assessments`、`/growth-records`）按
- * 契约「学期由服务端派生」，只该回当前学期。**实测服务端把两个学期都回来了**
- * （2026-09-09：class 1 每条各回 20 行，`2025-2026-1` 与 `2025-2026-2` 各 10 行）。
- * 不筛就是一名幼儿两行，进度表直接翻倍。
+ * 契约「学期由服务端派生」，只回当前学期，服务端 2026-09-09 起照此实作
+ * （#30；此前两个学期一起回，一名幼儿两行、进度表直接翻倍）。
  *
- * 筛的依据是会话的 `current_term.term_id`，**不是「最大的那个 term_id」** ——
- * 字母序最大的学期不一定是进行中的那一个。服务端修好之后这个筛是空操作，
- * 所以它不会在那天悄悄变形；契约的 `TermEvaluationProgress` 不带 `term_id`，
- * 不带的行一律留下。
+ * **这个筛因此现在是空操作，留着是为了它不咬人的那一面**：筛的依据是会话的
+ * `current_term.term_id`，**不是「最大的那个 term_id」** —— 字母序最大的学期不一定
+ * 是进行中的那一个。契约的 `TermEvaluationProgress` 不带 `term_id`，不带的行一律留下，
+ * 所以服务端形状变了它也不会悄悄丢行。
  *
  * **会话没有 `current_term` 时回空数组**（假期内，或服务端的 `currentTerm()` 回 null）。
  * 三张名册表因此整表空白 —— 页面要据此说一句「当前不在学期内」，不要显示成
@@ -317,8 +322,8 @@ async function growthRecordBoard() {
     recordStatus: c.row ? c.row.record_status : 'c2',
     recordStatusLabel: COMPLETION_STATUS[c.row ? c.row.record_status : 'c2'] || '未知状态',
     recordDone: Boolean(c.row) && c.row.record_status === 'c1',
-    // 【服务端不回 is_term_end】，兜底 false。学期末口径的提示语因此现在一律不显示 ——
-    // 那是「假的少显示」，不是「假的多显示」。
+    // 服务端回 `is_term_end`（#30 补上）。无档案行时兜底 false —— 那名幼儿本学期
+    // 一格都没齐，学期末口径的提示语对它没有意义。
     isTermEnd: Boolean(c.row && c.row.is_term_end),
   }));
   const done = rows.filter((r) => r.recordDone).length;
@@ -379,8 +384,8 @@ async function getTermEvaluation(childId) {
     termId: row.term_id || '',
     text: row.eval_text || '',
     textMax: TERM_EVAL_TEXT_MAX,
-    // 【服务端不回 file_id】。空数组在这里的意思是「查不到」，不是「没有照片」——
-    // 所以照片区本轮不渲染任何一张，入口留着并标明待接入。
+    // 服务端回 `file_id[]`（#30 补上，派生自 db_file_ref owner_object=db_term_eval）。
+    // 数据集里这一族一张照片都没有，所以空数组现在的意思真的是「没有照片」。
     fileIds: Array.isArray(row.file_id) ? row.file_id : [],
     status: row.term_eval_status,
     statusLabel: COMPLETION_STATUS[row.term_eval_status] || '未知状态',
@@ -643,7 +648,8 @@ async function childAssessmentProgress() {
       childId: c.childId,
       name: c.name,
       childAssessmentId: c.row ? c.row.child_assessment_id : null,
-      // 【服务端不回 scale_code / scale_version】，兜底空串。页面上不显示量表编码。
+      // 服务端回 `scale_code` / `scale_version`（#30 补上）。无评估行的幼儿没有绑定
+      // 版本，兜底空串。页面上不显示量表编码。
       scaleCode: (c.row && c.row.scale_code) || '',
       scaleVersion: (c.row && c.row.scale_version) || '',
       completedCount,
@@ -713,7 +719,8 @@ function buildDomains(scored) {
  * 一题未评时**没有主记录**（主记录在首次评分时建立），此时服务端回 404 —— 那不是
  * 错误，是「还没开始」。这里回一个 `completedCount = 0` 的空壳，页面不必判两种情况。
  *
- * 【服务端不回 child_name】，所以 `childName` 由调用方从上一层（进度表）带过来。
+ * `child_name` 服务端已回（#30 补上）。`childName` 仍由调用方从上一层（进度表）
+ * 带过来 —— 一题未评时走的是下面那个空壳分支，那一支没有回包可读。
  */
 async function getChildAssessment(childId) {
   let row = null;
@@ -753,9 +760,9 @@ async function getChildAssessment(childId) {
 /**
  * 逐题增量保存。
  *
- * 【回包不用】。契约说回 `ChildAssessmentProgress`，**服务端回的是题项行**
- * `{ child_assessment_item_id, item_id, score }`。与其两种形状都猜，不如写完重新取
- * 一次进度 —— 多一次往返，换掉一个会在服务端修好那天悄悄变形的分支。
+ * 【回包不用】，写完重新取一次进度。服务端现在照契约回 `ChildAssessmentProgress`
+ * （#30 修毕），但这一支拿的是**摊平到 124 题的填写页形状**，不是进度行 ——
+ * 换成读回包等于在这里再写一份摊平逻辑。多一次往返换掉一份重复。
  */
 async function scoreItem(childId, itemId, score) {
   await api.put(`${CHILD_PATH}/${childId}/child-assessment/items/${itemId}`, {
@@ -881,8 +888,8 @@ async function classReport() {
  * **页面不用它**（题库走包内那一份，见 `flatDomains` 那一段的头注）。
  * 导出它只有一个用途：探针拿它与包内那份**逐题比对**，两份漂开当场红。
  *
- * 【服务端不回 `scale_code` / `scale_version` 外壳】，这里从 path 参数自己带回来 ——
- * 反正是本函数发出去的。
+ * 服务端回 `scale_code` / `scale_version` 外壳（#30 补上）。兜底仍取 path 参数 ——
+ * 反正是本函数发出去的，两者对不上时探针会红。
  */
 async function getScale(scaleCode, scaleVersion) {
   const row = await api.get(`${SCALE_PATH}/${scaleCode}/${scaleVersion}`);
@@ -971,7 +978,9 @@ async function listAssessments({ cursor, limit } = {}) {
  * `ind.code`（`I001`）与库里 `db_assessment_item.tool_item_code` **逐字相同**，
  * 不用换算。
  *
- * 【服务端的 items 不回 file_id】，所以佐证材料本轮不接，`evidence` 一律空数组。
+ * `items[]` 的 `file_id` 服务端已回（#30 补上，派生自 db_file_ref
+ * owner_object=db_assessment_item usage_key=evidence）。数据集里 0 行佐证引用，
+ * 所以 `fileIds` 现在一律是真的空数组。页面那一侧的佐证图片仍未接。
  */
 async function getAssessment(assessmentId, levels) {
   const row = await api.get(`${ASSESSMENT_PATH}/${assessmentId}`);
@@ -991,9 +1000,9 @@ async function getAssessment(assessmentId, levels) {
 /**
  * 逐题作答。请求体 `{ score, note?, file_id? }`，`additionalProperties: false`。
  *
- * `note` **照契约发上去** —— 发对了，服务端修好那天不用改客户端。
- * 【服务端的 INSERT 只有三列，`note` 收下就丢】，所以页面那一侧同时把它存在本机，
- * 并在输入框旁标明。探针钉这一项，红着交给 #30。
+ * `note` 照契约发上去。服务端 2026-09-09 起真的落库（#30 修毕；此前 INSERT 只有
+ * 三列，教师写的评价记录提交即消失）。页面那一侧的本机暂存与那句提示可以撤了 ——
+ * 撤它是另一张票，探针钉的是「note 逐字落库」这一项。
  */
 function scoreAssessmentItem(assessmentId, toolItemCode, { score, note, fileIds } = {}) {
   const body = { score: Number(score) };
