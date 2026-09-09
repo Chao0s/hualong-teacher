@@ -78,3 +78,9 @@
   width: 100%;
   margin-top: 24rpx;
 }
+
+/* 锁定按钮下面那一行：说清这一页为什么锁不了、还差什么。 */
+.lock-note {
+  display: block;
+  margin-top: 16rpx;
+}
