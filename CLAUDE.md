@@ -274,9 +274,10 @@ node server/server.mjs          # → http://localhost:3860/api/v1
 | 权限 | `cd ../hualong-backend/db/testdata && node authz-tests/run.mjs --base http://localhost:3860/api/v1` | 七组越权探针 |
 | **渲染** | **开发者工具里真点** | **上面全部查不出来** |
 
-探针在 `tools/`，共 **12 支**：`probe-session`、`probe-library`、`probe-library-write`、
+探针在 `tools/`，共 **13 支**：`probe-session`、`probe-library`、`probe-library-write`、
 `probe-party`、`probe-moments`、`probe-parent-task`、`probe-coeducation`、`probe-training`、
-`probe-media-fetch`、`probe-task`、`probe-teacher-profile`、`probe-growth-book`。
+`probe-media-fetch`、`probe-task`、`probe-teacher-profile`、`probe-growth-book`、
+`probe-growth-book-compile`。
 它们桩掉 `wx.*` 之后**加载未经修改的发布代码**，所以路径写错、字段
 改名、枚举译反都会红。
 
