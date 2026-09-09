@@ -1,49 +1,53 @@
 /**
  * 2026 春季学期编册 —— 原型 screens/growth-book-edit.html 的小程序版本。
  *
- * 上半是陈小明这一本的实时预览，下半是栏目开关。勾选口径照搬：
- *   预设栏目改 config.selected，新增栏目改自己的 enabled；
- *   改完就地重排预览并停在原来那一页（原版 render(true)）。
+ * 上半是一本册子的翻页预览，下半是栏目开关与「锁定编册」。
  *
- * 从栏目管理页返回要重算，onShow 里重读。
+ * ── 栏目开关写的是服务端那一列 ─────────────────────────────────────────────
  *
- * ── 「锁定编册」这一颗按钮今天做不到，所以它只报告 ─────────────────────────
+ * 勾选存在 `db_growth_book_compilation.enabled_sections`，走
+ * `PATCH /teacher/growth-book/compilation/{compilation_id}`。那一条带 `revision`
+ * 的 CAS（§5.1 三处之一）：同班另一位教师先改了，这一发回 409 `revision_stale`，
+ * 页面照实说并重取，**不重试** —— 重试会把别人的勾选覆盖掉。
  *
- * 真的锁定走 `POST /teacher/growth-book/compilation/{compilation_id}/lock`，
- * 它要一个 `compilation_id`；`compilation_id` 又要先向
- * `POST /teacher/growth-book/compilation`（幂等的取回或建立）要，而那一条属成长册
- * 入口页那一步 —— **issue #27 接**。所以这一页锁不了。
+ * 这一列只收 `'time'`、`'task'` 与班级 `section_id` 的字符串形式。教师综合评估、
+ * 五大领域评估与学期寄语固定启用、不进开关、不得换序（F19），所以列表里没有它们；
+ * 「预设必须存在的章节」那一行把整条固定书脊写出来，让教师知道它们在册子里。
  *
- * 锁不了就照实说，**不写 `compilationStatus`**（原来写一个本机 `e2` 并说「编册已锁定」）。
- * 一颗报告了并没有发生的锁定的按钮，比一颗按不下去的按钮更坏：服务端那一份仍是 `e1`，
- * 还可能挂着未分节的 `m1` 素材，于是这一页与在园时光管理页对同一个问题给出相反的答案。
+ * ── 「锁定编册」现在真的锁 ─────────────────────────────────────────────────
  *
- * 未分节笔数也改问服务端（`loadLockGate`）。以前数的是 `config.material`，那个键在
- * `growth-book-time-manage`（在园时光管理）改读契约之后就没有写入者了 —— 新装的机器
- * 恒为空、数到 0 就放行，旧安装的机器留着 40 项没有 `topicId` 的旧数据、永远卡住。
+ * `POST /teacher/growth-book/compilation/{compilation_id}/lock` 走 e1→e2，
+ * **单向**，且是逐幼儿 b1→b2 的前置（F19 §五：这一层锁归教师）。
+ * 锁定时服务端完整重验（§4 规则 96），任一项没过回 422 且一行不改。
+ *
+ * 页面在按下之前先做一次本地预检并把结果显示出来：未分节的在园活动笔数（问服务端，
+ * 不数本机），以及已勾选却还是草稿的栏目个数。**本地预检不是校验** —— 服务端独立
+ * 再验一次，本地这一份只是让教师少按一次注定被拒的按钮。
+ *
+ * ── 上方那个预览是版式样张，不是本班的正本 ────────────────────────────────
+ *
+ * 正本要 composer 解析 `GET /growth-book/books/{id}/manifest`，而 12 个版式包
+ * 0 个 released，那条端点标着 `x-hualong-blocked-on`（与 `db/GAPS.md` **G93**
+ * 阻在同一件事上）。所以这一块仍是本机的版式样张，**不随栏目勾选变化**，
+ * 屏幕上有一行把这件事说出来。
  */
 
-const {
-  BOOK_CHILDREN,
-  BOOK_ORDER,
-  bookOutline,
-  readBookConfig,
-  writeBookConfig,
-} = require('../../utils/growth-book.js');
+const { BOOK_CHILDREN, readBookConfig } = require('../../utils/growth-book.js');
 const bookApi = require('../../services/growth-book.js');
 const viewer = require('../../utils/book-viewer.js');
 
 const PREVIEW_CHILD = BOOK_CHILDREN[0];
 
-/* 能在这一页管理的只有新增栏目和在园／亲子时光，其余三项不给开关 */
-const manageableSections = (config) => bookOutline(config)
-  .filter((item) => item.custom || item.key === 'time' || item.key === 'task');
-
 Page({
   data: {
     previewName: PREVIEW_CHILD.name,
+    previewNote: '上方是版式样张，不是本班的正本：正本要 composer 解析 manifest，'
+      + '而 12 个版式包 0 个已发布。它不随下方的勾选变化。',
+    spineNote: bookApi.FIXED_SPINE_NOTE,
     sections: [],
     locked: false,
+    lockLabel: '锁定编册',
+    lockDisabled: true,
     pages: [],
     pageIndex: 0,
     indicator: '1 / 1',
@@ -54,63 +58,68 @@ Page({
   },
 
   onShow() {
-    const config = readBookConfig();
-    config.compilationStatus = config.compilationStatus || 'e1';
-    this.config = config;
-    this.ungroupedCount = null;
-    this.gateError = '';
-    this.render(true);
+    /* 预览吃的是本机那份版式样张，与下方的勾选是两件事。 */
+    viewer.load(this, PREVIEW_CHILD.name, readBookConfig(), false, PREVIEW_CHILD);
+    this.load();
+  },
+
+  async load() {
+    try {
+      const book = await bookApi.loadBookEdit();
+      this.book = book;
+      this.setData({
+        sections: book.rows,
+        locked: book.compilation.locked,
+        lockLabel: book.compilation.locked ? '已锁定' : '锁定编册',
+        lockDisabled: book.compilation.locked,
+      });
+    } catch (err) {
+      this.book = null;
+      this.setData({
+        sections: [],
+        locked: false,
+        lockLabel: '锁定编册',
+        lockDisabled: true,
+        lockNote: `读不到本班本学期的编册：${bookApi.sectionFailureText(err)}`,
+      });
+      return;
+    }
     this.loadLockGate();
   },
 
-  locked() {
-    return this.config.compilationStatus === 'e2';
-  },
-
-  render(keepPage) {
-    this.setData({
-      sections: manageableSections(this.config).map((item) => ({
-        key: item.key,
-        name: item.name,
-        on: item.on,
-        custom: !!item.custom,
-        /* 已发布的新增栏目进投稿管理，还是手稿的进版面编辑器 */
-        published: !!(item.custom && item.item && item.item.sectionStatus === 'd2'),
-      })),
-      locked: this.locked(),
-    });
-    this.renderLockNote();
-    viewer.load(this, PREVIEW_CHILD.name, this.config, keepPage, PREVIEW_CHILD);
-  },
-
   /**
-   * 未分节的在园活动有几项 —— 问服务端，不数本机那份。
+   * 锁定前的两项本地预检。
    *
-   * `loadTimeManage()` 取的就是在园时光管理页那一份，两页因此永远给同一个数。
-   * 取不到就说取不到：把「读失败」显示成 0 会让这一页说「可以锁了」。
+   * 未分节的在园活动笔数问服务端，不数本机那份：`loadTimeManage()` 取的就是
+   * 在园时光管理页那一份，两页因此永远给同一个数。取不到就说取不到 ——
+   * 把「读失败」显示成 0 会让这一页说「可以锁了」。
    */
   async loadLockGate() {
+    let gate;
     try {
-      const book = await bookApi.loadTimeManage();
-      this.ungroupedCount = book.ungroupedCount;
-      this.gateError = '';
+      const time = await bookApi.loadTimeManage();
+      gate = `本学期还有 ${time.ungroupedCount} 项在园活动未分节。`;
     } catch (err) {
-      this.ungroupedCount = null;
-      this.gateError = bookApi.actionFailureText(err);
+      gate = `未分节笔数读不到：${bookApi.actionFailureText(err)}`;
     }
-    this.renderLockNote();
+    this.renderLockNote(gate);
   },
 
-  /** 把锁定按钮下面那一行写出来。三段：做不到、还差什么、去哪儿改。 */
-  renderLockNote() {
-    const drafts = (this.config.custom || [])
-      .filter((item) => item.enabled !== false && item.sectionStatus !== 'd2').length;
-    const gate = this.gateError ? `未分节笔数读不到：${this.gateError}`
-      : this.ungroupedCount === null ? '正在读未分节的在园活动笔数。'
-        : `本学期还有 ${this.ungroupedCount} 项在园活动未分节。`;
-    const draftText = drafts ? `另有 ${drafts} 个已勾选栏目未发布。` : '';
+  renderLockNote(gate) {
+    if (!this.book) return;
+    if (this.book.compilation.locked) {
+      this.setData({
+        lockNote: '本学期编册已锁定（e2，单向）。栏目勾选、在园主题与栏目版面都不能再改，'
+          + '现在可以到成长册首页逐册定稿。',
+      });
+      return;
+    }
+    const drafts = this.book.rows
+      .filter((row) => row.custom && row.on && !row.published).length;
+    const draftText = drafts ? `另有 ${drafts} 个已勾选栏目还没有发布。` : '';
     this.setData({
-      lockNote: `锁定编册由服务端执行，这一页还接不上（issue #27 接通编册端点后才能锁）。${gate}${draftText}`,
+      lockNote: `锁定是单向的：锁上之后栏目勾选、在园主题与栏目版面都不能再改，`
+        + `逐幼儿定稿才会打开。${gate}${draftText}`,
     });
   },
 
@@ -130,21 +139,21 @@ Page({
 
   /* ---------- 栏目管理 ---------- */
 
-  onToggleSection(e) {
-    if (this.locked()) return;
+  async onToggleSection(e) {
+    if (this.data.locked || !this.book) return;
     const row = this.data.sections[Number(e.currentTarget.dataset.index)];
     const on = !row.on;
-    if (row.custom) {
-      const section = (this.config.custom || []).find((item) => item.id === row.key);
-      if (section) section.enabled = on;
-    } else {
-      const selected = new Set(this.config.selected || BOOK_ORDER);
-      if (on) selected.add(row.key);
-      else selected.delete(row.key);
-      this.config.selected = BOOK_ORDER.filter((item) => selected.has(item));
+    const enabled = this.data.sections
+      .filter((item) => (item.key === row.key ? on : item.on))
+      .map((item) => item.key);
+    try {
+      await bookApi.updateCompilation(this.book.compilation.id, this.book.compilation.revision, enabled);
+    } catch (err) {
+      wx.showToast({ title: bookApi.sectionFailureText(err), icon: 'none' });
+      this.load();
+      return;
     }
-    writeBookConfig(this.config);
-    this.render(true);
+    await this.load();
     wx.showToast({ title: on ? '栏目已加入成长册' : '栏目已从成长册隐藏', icon: 'none' });
   },
 
@@ -166,17 +175,49 @@ Page({
   },
 
   onAddSection() {
-    if (this.locked()) return;
+    if (this.data.locked) return;
     wx.navigateTo({ url: '/pages/growth-book-section-edit/index?new=1' });
   },
 
   /* ---------- 锁定编册 ---------- */
 
   /**
-   * 这一颗按钮只报告，不锁。理由与去处写在文件头注：真的锁要 `compilation_id`，
-   * 那一条端点属 issue #27。**这里绝不写 `compilationStatus`。**
+   * e1→e2 单向。按下去之前问一次，把「锁上之后不能改什么」逐条写出来（§7.5）。
    */
   onLock() {
-    wx.showToast({ title: '这一页还不能锁定编册', icon: 'none' });
+    if (!this.book) return;
+    if (this.data.locked) {
+      wx.showToast({ title: '本学期编册已经锁定', icon: 'none' });
+      return;
+    }
+    wx.showModal({
+      title: '锁定编册，不可解锁',
+      content: '锁定之后栏目勾选、在园主题、成长素材与栏目版面都不能再改，'
+        + '本学期不提供解锁。锁定成功才能逐册定稿并向家长开放。',
+      confirmText: '确认锁定',
+      cancelText: '再想想',
+      success: (res) => {
+        if (res.confirm) this.lock();
+      },
+    });
+  },
+
+  async lock() {
+    wx.showLoading({ title: '正在锁定', mask: true });
+    try {
+      await bookApi.lockCompilation(this.book.compilation.id, this.book.compilation.revision);
+    } catch (err) {
+      wx.hideLoading();
+      wx.showModal({
+        title: '没有锁定',
+        content: `${bookApi.lockFailureText(err)}。服务端一行都没有改。`,
+        showCancel: false,
+      });
+      this.load();
+      return;
+    }
+    wx.hideLoading();
+    await this.load();
+    wx.showToast({ title: '编册已锁定', icon: 'none' });
   },
 });

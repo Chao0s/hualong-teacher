@@ -28,8 +28,16 @@ Page({
     this.render();
   },
 
+  /**
+   * 这一页读不到编册锁没锁。
+   *
+   * 编册状态是 `db_growth_book_compilation.compilation_status`，只有服务端说了算。
+   * 这一页整页仍是原型数据 —— 教师读不到任何一笔家长提交的内容，也拿不到它的 id
+   * （后端 `db/GAPS.md` **G70**），所以本学期进册的亲子活动一条也取不到。
+   * 既然写入这一侧一条端点都调不了，就没有需要闸住的写入。
+   */
   locked() {
-    return this.config.compilationStatus === 'e2';
+    return false;
   },
 
   render() {

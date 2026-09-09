@@ -136,9 +136,9 @@ node db/tools/check-all.mjs
 
 ## 3. 现状
 
-`miniprogram/` 共 **55 页**，**32 页已接 API**，**23 页仍是写死的字面量**。
+`miniprogram/` 共 **55 页**，**36 页已接 API**，**19 页仍是写死的字面量**。
 
-这三个数**每次接一页就变**，权威是 `npm run scan:wiring` 第一行的「页面 55（已接 32）」，
+这三个数**每次接一页就变**，权威是 `npm run scan:wiring` 第一行的「页面 55（已接 36）」，
 不是本节（2026-09-09 实测）。
 
 判断某一页属于哪一类：看 `index.js` 里有没有 `require('../../services/`。
@@ -154,7 +154,7 @@ node db/tools/check-all.mjs
 | 亲子任务 | `parent-tasks`、`parent-task-detail`、`parent-task-publish` |
 | 社区与评价 | `community-coeducation`、`parent-evaluation-detail`、`teacher-monthly-evaluation`、`teacher-monthly-form` |
 | 家长评价开窗 | `parent-evaluation-publish` |
-| 成长册 | `growth-book-time-manage`、`growth-book-edit` |
+| 成长册 | `growth-book`、`growth-book-edit`、`growth-book-time-manage`、`growth-book-section-edit`、`growth-book-section-materials`、`growth-book-view` |
 | 教研培训 | `training-list`、`training-detail`、`my-training`、`teacher-profile` |
 
 ### 提到页面就写它在屏幕上叫什么、怎么走到
@@ -172,9 +172,9 @@ node db/tools/check-all.mjs
 中文标题的权威是各页 `index.json` 的 `navigationBarTitleText`，**不要自己译目录名**。
 
 底部导航五项（`components/hl-tabbar`）：**首页 / 党建管理 / 综合协调 / 教研培训 / 家园社共育**。
-所有路径都从这五个之一起步。**已接 API 的 32 页**，加上路径上必经、
-**本身还没接 API 的 5 个中转页**（`home-school`、`growth-record`、`teacher-evaluation`、
-`training-center`、`growth-book`，逐个在表里标了），走法如下：
+所有路径都从这五个之一起步。**已接 API 的 36 页**，加上路径上必经、
+**本身还没接 API 的 4 个中转页**（`home-school`、`growth-record`、`teacher-evaluation`、
+`training-center`，逐个在表里标了），走法如下：
 
 | 目录名 | 屏幕上叫 | 怎么走到 |
 |---|---|---|
@@ -202,9 +202,12 @@ node db/tools/check-all.mjs
 | `teacher-monthly-evaluation` | 教师月度评价 | 教师评价 → 月度评价 |
 | `teacher-monthly-form` | 填写月度评价 | 教师月度评价 → 点任一圆点；也可从首页「本月评价」直达 |
 | `parent-evaluation-publish` | 发布家长测评 | 成长档案 → 发布家长评价 |
-| `growth-book` | 成长册 | 成长档案 → 成长册（**这一页本身还没接 API**，只是路径上的一站） |
-| `growth-book-edit` | 2026 春季学期编册 | 成长册 → 编辑样板（只用契约读未分节笔数；「锁定编册」只报告、不锁，issue #27 接） |
+| `growth-book` | 成长册 | 成长档案 → 成长册（「栏目进度」矩阵只列已勾选的班级栏目；「全班定稿」真的定稿并通知监护人） |
+| `growth-book-edit` | 2026 春季学期编册 | 成长册 → 编辑样板（栏目勾选写 `enabled_sections`；「锁定编册」真的走 e1→e2） |
 | `growth-book-time-manage` | 在园时光管理 | 2026 春季学期编册 → 栏目管理里的「在园时光」 |
+| `growth-book-section-edit` | 新建栏目 / 栏目名 | 2026 春季学期编册 → 「＋ 新建栏目」，或点一个还是草稿的班级栏目 |
+| `growth-book-section-materials` | 栏目名 | 2026 春季学期编册 → 点一个已发布的班级栏目；栏目版面编辑器发布后也跳这里 |
+| `growth-book-view` | 成长册预览 | 抬头三格走契约，翻的那一本仍是版式样张（0/12 版式包已发布） |
 | `training-center` | 教研培训部 | 底部导航「教研培训」（**这一页本身还没接 API**，只是路径上的一站） |
 | `training-list` | 教研培训 | 教研培训部 → 教研培训 |
 | `training-detail` | 研修详情 | 教研培训 → 点某一场研修 |

@@ -85,20 +85,6 @@
       "updated_at": "2026-09-08"
     },
     {
-      "key": "contract:DELETE /teacher/growth-book/sections/{section_id}",
-      "status": "接",
-      "reason": "→ #16",
-      "author": "Lin",
-      "updated_at": "2026-09-08"
-    },
-    {
-      "key": "contract:DELETE /teacher/growth-book/sections/{section_id}/collection",
-      "status": "接",
-      "reason": "→ #16",
-      "author": "Lin",
-      "updated_at": "2026-09-08"
-    },
-    {
       "key": "contract:GET /assessments",
       "status": "接",
       "reason": "→ #19",
@@ -169,20 +155,6 @@
       "updated_at": "2026-09-09"
     },
     {
-      "key": "contract:GET /teacher/growth-book/precheck",
-      "status": "接",
-      "reason": "→ #16",
-      "author": "Lin",
-      "updated_at": "2026-09-08"
-    },
-    {
-      "key": "contract:GET /teacher/growth-book/sections",
-      "status": "接",
-      "reason": "要的，因為有些是固定的欄目，有些是老師可以自定義的。；→ #16",
-      "author": "Lin",
-      "updated_at": "2026-09-08"
-    },
-    {
       "key": "contract:GET /term-evaluations",
       "status": "接",
       "reason": "但我想要知道 schema 有沒有對，所以可能要請你確認一下 DB 跟 API 本來寫的 schema 是不是對應。；→ #19",
@@ -204,20 +176,6 @@
       "updated_at": "2026-09-09"
     },
     {
-      "key": "contract:PATCH /teacher/growth-book/compilation/{compilation_id}",
-      "status": "接",
-      "reason": "→ #16",
-      "author": "Lin",
-      "updated_at": "2026-09-08"
-    },
-    {
-      "key": "contract:PATCH /teacher/growth-book/sections/{section_id}",
-      "status": "接",
-      "reason": "→ #16",
-      "author": "Lin",
-      "updated_at": "2026-09-08"
-    },
-    {
       "key": "contract:POST /library/cases/{case_id}/withdrawal",
       "status": "不建",
       "reason": "F27 已定：教师端无作者撤回；端点删除 → #32",
@@ -228,62 +186,6 @@
       "key": "contract:POST /library/resources/{resource_id}/withdrawal",
       "status": "不建",
       "reason": "F27 已定：教师端无作者撤回；端点删除 → #32",
-      "author": "Lin",
-      "updated_at": "2026-09-08"
-    },
-    {
-      "key": "contract:POST /teacher/growth-book/books",
-      "status": "接",
-      "reason": "→ #16",
-      "author": "Lin",
-      "updated_at": "2026-09-08"
-    },
-    {
-      "key": "contract:POST /teacher/growth-book/books/{growth_book_id}/publication",
-      "status": "接",
-      "reason": "→ #16",
-      "author": "Lin",
-      "updated_at": "2026-09-08"
-    },
-    {
-      "key": "contract:POST /teacher/growth-book/compilation",
-      "status": "接",
-      "reason": "→ #16",
-      "author": "Lin",
-      "updated_at": "2026-09-08"
-    },
-    {
-      "key": "contract:POST /teacher/growth-book/compilation/{compilation_id}/lock",
-      "status": "接",
-      "reason": "F19 §五维持：班级编册 e1→e2 归教师。园所设置 d1→d2（F20 §一）本来就只有管理端能动，两层锁不是同一件事；系统里也没有「校长」这个角色。→ #27",
-      "author": "Lin",
-      "updated_at": "2026-09-09"
-    },
-    {
-      "key": "contract:POST /teacher/growth-book/sections",
-      "status": "接",
-      "reason": "要的，因為有些是固定的欄目，有些是老師可以自定義的。；→ #16",
-      "author": "Lin",
-      "updated_at": "2026-09-08"
-    },
-    {
-      "key": "contract:POST /teacher/growth-book/sections/{section_id}/collection",
-      "status": "接",
-      "reason": "→ #16",
-      "author": "Lin",
-      "updated_at": "2026-09-08"
-    },
-    {
-      "key": "contract:POST /teacher/growth-book/sections/{section_id}/publication",
-      "status": "接",
-      "reason": "→ #16",
-      "author": "Lin",
-      "updated_at": "2026-09-08"
-    },
-    {
-      "key": "contract:POST /teacher/growth-book/sections/{section_id}/reminders",
-      "status": "接",
-      "reason": "→ #16",
       "author": "Lin",
       "updated_at": "2026-09-08"
     },
@@ -309,44 +211,9 @@
       "updated_at": "2026-09-08"
     },
     {
-      "key": "contract:PUT /teacher/growth-book/sections/{section_id}/widgets",
-      "status": "接",
-      "reason": "→ #16",
-      "author": "Lin",
-      "updated_at": "2026-09-08"
-    },
-    {
-      "key": "growth-book-edit:L6:screens.tsv writes=yes",
-      "status": "接",
-      "reason": "这里应该要有数据才对，但你具体说的是什么我不清楚；→ #27",
-      "author": "Lin",
-      "updated_at": "2026-09-08"
-    },
-    {
-      "key": "growth-book-section-edit:L6:screens.tsv writes=yes",
-      "status": "接",
-      "reason": "→ #27",
-      "author": "Lin",
-      "updated_at": "2026-09-08"
-    },
-    {
-      "key": "growth-book-section-materials:L6:screens.tsv writes=yes",
-      "status": "接",
-      "reason": "审核人对 screens.tsv 的理解见 #24；→ #27",
-      "author": "Lin",
-      "updated_at": "2026-09-08"
-    },
-    {
       "key": "growth-book-task-manage:L6:screens.tsv writes=yes",
       "status": "接",
       "reason": "审核人对 screens.tsv 的理解见 #24；→ #27",
-      "author": "Lin",
-      "updated_at": "2026-09-08"
-    },
-    {
-      "key": "growth-book-view:L6:screens.tsv writes=yes",
-      "status": "接",
-      "reason": "→ #27",
       "author": "Lin",
       "updated_at": "2026-09-08"
     },

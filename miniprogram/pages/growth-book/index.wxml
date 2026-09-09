@@ -18,15 +18,15 @@
 
   <view class="action-row action-row--gap">
     <view class="btn" hover-class="btn--hover" bindtap="onSample">成长册样本</view>
-    <!-- 原型未发布时是 disabled + opacity .45，这里照搬透明度，点击在 js 里挡掉 -->
+    <!-- 编册未锁定（e1）时置灰：服务端的 book.publish 前置写着 compilation_status=e2 -->
     <view
       class="btn btn--primary"
-      style="{{published ? '' : 'opacity:.45'}}"
+      style="{{locked ? '' : 'opacity:.45'}}"
       hover-class="btn--hover"
       bindtap="onOpenFinalize"
     >全班定稿</view>
   </view>
-  <text class="hint hint--gate" wx:if="{{!published}}">模版尚未发布，只能预览；请先在编辑样板中完整预览并发布班级模板。</text>
+  <text class="hint hint--gate" wx:if="{{gateNote}}">{{gateNote}}</text>
 
   <view class="chunk">
     <view class="chunk__head">
@@ -66,8 +66,9 @@
   <view class="dot-legend">
     <view class="dot-legend__item"><view class="dot-cell dot-cell--done"></view>完成</view>
     <view class="dot-legend__item"><view class="dot-cell dot-cell--miss"></view>未完成</view>
+    <view class="dot-legend__item"><view class="dot-cell dot-cell--none"></view>无判定</view>
   </view>
-  <text class="hint hint--foot">只显示在学期编册页中已经勾选的栏目。</text>
+  <text class="hint hint--foot">{{matrixNote}}</text>
 
 </view>
 
@@ -102,7 +103,7 @@
     </view>
   </scroll-view>
 
-  <text class="hint hint--sheet">问题幼儿默认跳过并保留草稿；请先处理问题，或明确跳过后定稿其余幼儿。</text>
+  <text class="hint hint--sheet">定稿不可撤销：册子永久唯读，并立刻通知每一名监护人。问题幼儿默认跳过并留在准备中。</text>
 
   <view class="sheet-actions">
     <view class="btn btn--ghost" hover-class="btn--hover" bindtap="onCloseFinalize">取消</view>

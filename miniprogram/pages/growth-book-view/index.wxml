@@ -8,10 +8,12 @@
   <view class="child-bar">
     <view class="child-bar__main">
       <text class="child-bar__name">{{childName}}</text>
-      <text class="child-bar__meta">中二班 · 2026 春季学期</text>
+      <text class="child-bar__meta">{{termLabel}}</text>
     </view>
     <text class="ready-tag">{{bookStatus}}</text>
   </view>
+
+  <text class="hint preview-note">{{previewNote}}</text>
 
   <view class="book">
     <template is="bookPage" wx:for="{{pages}}" wx:key="index" wx:for-item="p" data="{{p: p}}" />

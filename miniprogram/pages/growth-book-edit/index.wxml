@@ -1,10 +1,10 @@
 <!-- 2026 春季学期编册 —— 对照原型 screens/growth-book-edit.html。
-     上半是陈小明这一本的实时预览，下半是栏目开关；改一个开关就地重排，停在原页。 -->
+     上半是版式样张的翻页预览，下半是栏目开关与锁定编册。 -->
 <import src="/templates/growth-book-page.wxml" />
 
 <view class="screen">
 
-  <view class="sec sec--first">实时预览 <text class="preview-label">{{previewName}}</text></view>
+  <view class="sec sec--first">版式预览 <text class="preview-label">{{previewName}}</text></view>
 
   <view class="book book--preview">
     <template is="bookPage" wx:for="{{pages}}" wx:key="index" wx:for-item="p" data="{{p: p}}" />
@@ -16,10 +16,14 @@
     <view class="nav-btn {{atLast ? 'nav-btn--off' : ''}}" bindtap="onNext">›</view>
   </view>
 
+  <text class="hint preview-note">{{previewNote}}</text>
+
   <view class="sec">
     栏目管理
     <text class="more" style="{{locked ? 'opacity:.4' : ''}}" bindtap="onAddSection">＋ 新建栏目</text>
   </view>
+
+  <text class="hint spine-note">{{spineNote}}</text>
 
   <view class="section-list">
     <view class="section-row" wx:for="{{sections}}" wx:key="key" wx:for-item="row" wx:for-index="ri">
@@ -35,14 +39,13 @@
     </view>
   </view>
 
-  <!-- 真的锁定要 compilation_id，那一条端点属 issue #27。在它接上之前这颗按钮只报告、
-       不写任何状态，所以一直是灰的；下面那一行把原因与还差什么照实说出来。 -->
+  <!-- e1→e2 单向。已锁定时置灰，未锁定时按下去先弹一次确认，再打服务端。 -->
   <view
     class="btn btn--primary lock-button"
-    style="opacity:.45"
+    style="{{lockDisabled ? 'opacity:.45' : ''}}"
     hover-class="btn--hover"
     bindtap="onLock"
-  >{{locked ? '已锁定' : '锁定编册'}}</view>
+  >{{lockLabel}}</view>
   <text class="hint lock-note">{{lockNote}}</text>
 
 </view>

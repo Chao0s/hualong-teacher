@@ -22,18 +22,25 @@ const {
   GRID,
   TEXT_COLORS,
   bindingOf,
-  bookAnchors,
   contentLength,
   contentRuns,
   contentText,
   overlapIds,
-  readBookConfig,
-  sectionWidgets,
   textCapacity,
   widgetTooSmall,
   widgetsOverlap,
-  writeBookConfig,
 } = require('../../utils/growth-book.js');
+const bookApi = require('../../services/growth-book.js');
+
+/* 新建栏目的默认版面：两个图片征集槽与一个文字征集槽（F19 第四轮） */
+function defaultWidgets() {
+  const seed = `w${Date.now().toString(36)}`;
+  return [
+    { id: `${seed}-1`, page: 0, x: 0, y: 0, w: 7, h: 9, type: 'image', binding: 'collected', content: '', config: { fit: 'cover' } },
+    { id: `${seed}-2`, page: 0, x: 8, y: 0, w: 7, h: 9, type: 'image', binding: 'collected', content: '', config: { fit: 'cover' } },
+    { id: `${seed}-3`, page: 0, x: 0, y: 11, w: 15, h: 8, type: 'text', binding: 'collected', content: '', config: { size: 14, align: 'left' } },
+  ];
+}
 
 /* 征集比例的快捷值：都是整数格数，比例逐像素成立（W1a / W9） */
 const IMAGE_RATIOS = [{ w: 1, h: 1 }, { w: 4, h: 3 }, { w: 3, h: 4 }, { w: 3, h: 2 }, { w: 2, h: 3 }];
@@ -131,57 +138,98 @@ Page({
     metaCell: '',
     metaCount: '',
     drawer: null,
-    locked: false,
-    saveDisabled: false,
+    locked: true,
+    saveDisabled: true,
     delPageDisabled: true,
-    deleteDisabled: false,
+    deleteDisabled: true,
+    layoutNote: '',
+    loadError: '',
   },
 
   onLoad(options) {
-    const config = readBookConfig();
-    let section = (config.custom || []).find((item) => item.id === options.id);
-    if (!section && options.new === '1') {
-      const id = `cs${Date.now()}`;
-      section = {
-        id, name: '', after: 'time', pages: 1, submitted: {}, enabled: true,
-        sectionStatus: 'd1', collectionStatus: 'c1',
-        widgets: [
-          { id: `${id}-w1`, page: 0, x: 0, y: 0, w: 7, h: 9, type: 'image', binding: 'collected', content: '', config: { fit: 'cover' } },
-          { id: `${id}-w2`, page: 0, x: 8, y: 0, w: 7, h: 9, type: 'image', binding: 'collected', content: '', config: { fit: 'cover' } },
-          { id: `${id}-w3`, page: 0, x: 0, y: 11, w: 15, h: 8, type: 'text', binding: 'collected', content: '', config: { size: 14, align: 'left' } },
-        ],
-      };
-      config.custom = (config.custom || []).concat(section);
-    }
-    section = section || (config.custom || [])[0];
+    /* `?id=` 是 db_growth_book_section.section_id；`?new=1` 是还没建的那一个。 */
+    this.sectionId = options.id ? String(options.id) : '';
+    this.section = null;
+    this.sections = [];
+    this.widgets = [];
+    this.pageCount = 1;
+    this.page = 0;
+    this.selected = null;
+    this.zoom = 1;
+    this.seq = 0;
+    /* 取到编册状态之前一律不许写 —— 空的状态不等于「没有限制」。 */
+    this.locked = true;
+    this.anchorIds = [];
+    this.anchorTypes = [];
+    this.load();
+  },
 
+  /**
+   * 取编册与本学期栏目清单。
+   *
+   * **已存的版面读不回来。** 契约里 `/teacher/growth-book/sections/{id}/widgets`
+   * 只有 `PUT`，没有 `GET`（`db/GAPS.md` **G94** —— 栏目版面只写得进去、读不回来），
+   * 所以按「保存手稿」会**整份覆盖**服务端已存的那一份。屏幕上有一行把这件事说出来。
+   *
+   * **所以已经存在的栏目从一张空画布开始，不从 `defaultWidgets()` 开始。**
+   * 两个图片槽加一个文字槽是**新建栏目**的默认版面（decision.md 2026-08-13 第四轮），
+   * 把它画给一个已经排过版的栏目，屏幕上那三个框既不是服务端存的那一份，
+   * 也不是教师排的那一份 —— 它没有数据源（CLAUDE.md §8）。空画布至少是诚实的：
+   * 这里什么都没有，因为读不回来。
+   */
+  async load() {
+    let book;
+    try {
+      book = await bookApi.loadBookEdit();
+    } catch (err) {
+      this.setData({ loadError: bookApi.sectionFailureText(err), locked: true, saveDisabled: true });
+      return;
+    }
+    const section = this.sectionId
+      ? book.sections.find((item) => item.key === this.sectionId) || null
+      : null;
+    if (this.sectionId && !section) {
+      this.setData({ loadError: '这个栏目不在本班本学期的编册里', locked: true, saveDisabled: true });
+      return;
+    }
     /* 已发布的栏目不再编辑版面，直接转去投稿管理（原型的 applyMode） */
-    if (section && section.sectionStatus === 'd2') {
-      wx.redirectTo({ url: `/pages/growth-book-section-materials/index?id=${section.id}` });
+    if (section && section.published) {
+      wx.redirectTo({ url: `/pages/growth-book-section-materials/index?id=${section.key}` });
       return;
     }
 
-    this.config = config;
+    this.compilation = book.compilation;
+    this.sections = book.sections;
     this.section = section;
-    this.locked = !section || config.compilationStatus === 'e2';
-    this.widgets = JSON.parse(JSON.stringify(sectionWidgets(section)));
-    this.pageCount = Math.max(1, (section && section.pages) || 1, ...this.widgets.map((w) => w.page + 1));
+    this.locked = book.compilation.locked;
+    /* 新建的栏目给默认版面；已经存在的栏目给空画布 —— 见本函数头注。 */
+    this.widgets = section ? [] : defaultWidgets();
+    this.pageCount = 1;
     this.page = 0;
     this.selected = null;
     this.zoom = 1;
     this.seq = this.widgets.length;
 
-    const anchors = bookAnchors(config, section && section.id).filter((item) => item.id !== 'cover');
+    const anchors = bookApi.anchorChoices(book.sections, section && section.key);
     this.anchorIds = anchors.map((item) => item.id);
-    const at = this.anchorIds.indexOf(section && section.after);
+    this.anchorTypes = anchors.map((item) => item.type);
+    const at = section ? this.anchorIds.indexOf(section.anchorAfter) : -1;
 
-    wx.setNavigationBarTitle({ title: (section && section.name) || '栏目版面' });
+    wx.setNavigationBarTitle({ title: (section && section.name) || '新建栏目' });
     this.setData({
+      loadError: '',
       sectionName: (section && section.name) || '',
       anchorOptions: anchors.map((item) => item.name),
       anchorIndex: at < 0 ? 0 : at,
       locked: this.locked,
-      deleteDisabled: config.compilationStatus === 'e2',
+      deleteDisabled: this.locked,
+      layoutNote: this.locked
+        ? '本学期编册已锁定，栏目版面不能再改。'
+        : (section
+          ? '这个栏目已存的版面读不回来（契约里 widgets 只有 PUT、没有 GET，缺口 G94），'
+            + '所以画布是空的 —— 这里不画一份编出来的版面。'
+            + '在这里排好之后按「保存手稿」，会用你排的这一份整份覆盖服务端已存的那一份。'
+          : '版面存在服务端，整栏目一次提交、一次校验、一次存档；重叠或越界由服务端拒绝整份。'),
     });
     this.renderCanvas();
   },
@@ -245,6 +293,9 @@ Page({
   /* 存档闸门：重叠、无来源、bound 型框太小、literal 超容量，任一成立都关掉保存 */
   renderWarn(bad) {
     const msgs = [];
+    /* 空画布存不进去：服务端的 `at_least_one` 与本地的 whyCannotSaveWidgets 同一条。
+       已经存在的栏目一进来就是空的，所以这一句要说出来，不能让保存键亮着却存不动。 */
+    if (!this.widgets.length) msgs.push('画布是空的，至少放置一个组件才能保存。');
     if (bad.size) msgs.push(`有 ${bad.size} 个组件重叠（标红），请移开后再保存 —— 重叠一律拒绝放置，不做弹开推挤。`);
     const nobind = this.widgets.filter((w) => !w.binding);
     if (nobind.length) msgs.push(`有 ${nobind.length} 个组件未选内容来源。`);
@@ -599,54 +650,93 @@ Page({
     this.setData({ anchorIndex: Number(e.detail.value) });
   },
 
-  persistSection(status) {
-    let target = (this.config.custom || []).find((item) => item.id === this.section.id);
-    if (!target) {
-      target = this.section;
-      this.config.custom = (this.config.custom || []).concat(target);
-    }
+  /**
+   * 把栏目本身与整份版面写到服务端。**两发**：
+   *
+   *   `POST /sections`（还没建）或 `PATCH /sections/{id}`（已建，仅 d1）
+   *   `PUT  /sections/{id}/widgets`（整栏目一次存档，仅 d1）
+   *
+   * 分两发不是绕路：契约把「栏目这一行」与「它的版面」分成两个动作
+   * （`book_section.create`／`book_section.update` 与 `book_widget.save`），
+   * 因为版面要整份校验、整份拒绝，而改个名字不该被一处重叠挡住。
+   *
+   * 第一发成功、第二发失败时栏目已经建出来了，名字与锚点是新的、版面还是旧的。
+   * 那是一个真实存在的中间态：调用方照实说，页面重进后继续改。
+   */
+  async persist() {
     const name = this.data.sectionName.trim();
-    if (!name) {
-      wx.showToast({ title: '请先填写栏目名称', icon: 'none' });
+    const whyName = bookApi.whyCannotNameSection(
+      name, this.sections, this.section && this.section.id,
+    );
+    if (whyName) {
+      wx.showToast({ title: whyName, icon: 'none' });
       return null;
     }
-    target.name = name;
-    target.after = this.anchorIds[this.data.anchorIndex] || 'time';
-    target.sectionStatus = status || target.sectionStatus || 'd1';
-    target.collectionStatus = status === 'd2' ? 'c2' : (target.collectionStatus || 'c1');
-    target.widgets = this.widgets;
-    target.pages = this.pageCount;
-    target.enabled = target.enabled !== false;
-    this.section = target;
-    writeBookConfig(this.config);
-    wx.setNavigationBarTitle({ title: name });
-    return target;
+    const whyWidgets = bookApi.whyCannotSaveWidgets(this.widgets);
+    if (whyWidgets) {
+      wx.showToast({ title: whyWidgets, icon: 'none' });
+      return null;
+    }
+    const anchorAfter = this.anchorIds[this.data.anchorIndex] || 'time';
+    const anchorType = this.anchorTypes[this.data.anchorIndex] || 'a2';
+    const write = { name, anchorAfter, anchorType };
+
+    const section = this.section
+      ? await bookApi.updateSection(this.section.id, write)
+      : await bookApi.createSection(write);
+    this.section = section;
+    this.sectionId = section.key;
+    wx.setNavigationBarTitle({ title: section.name });
+
+    const saved = await bookApi.saveWidgets(section.id, this.widgets);
+    return { section, saved };
   },
 
-  onSave() {
+  async onSave() {
     if (this.data.saveDisabled) return;
-    if (!this.persistSection('d1')) return;
-    wx.showToast({ title: '手稿已保存', icon: 'none' });
+    this.setData({ saveDisabled: true });
+    try {
+      const done = await this.persist();
+      if (done) wx.showToast({ title: `手稿已保存，${done.saved} 个组件`, icon: 'none' });
+    } catch (err) {
+      wx.showToast({ title: bookApi.sectionFailureText(err), icon: 'none' });
+    }
+    this.renderWarn(overlapIds(this.widgets));
   },
 
-  onDeleteSection() {
-    if (this.config.compilationStatus === 'e2') {
-      wx.showToast({ title: '编册已经锁定', icon: 'none' });
+  /**
+   * 删除栏目。草稿栏目直接执行，不经确认窗（F19 第五轮：宿主会拦截原生确认窗）。
+   *
+   * 服务端同事务删掉这一栏目的 widget 与已收提交（W16，不留孤儿档）。
+   * 还没建到服务端的那一个（`?new=1` 且一次都没保存过）本来就没有行，直接退回。
+   */
+  async onDeleteSection() {
+    if (this.data.deleteDisabled) {
+      wx.showToast({ title: '本学期编册已锁定，栏目不能再删', icon: 'none' });
       return;
     }
-    const target = (this.config.custom || []).find((item) => item.id === this.section.id) || this.section;
-    /* 锚定在这个栏目之后的，改锚到它自己的锚点上，不让它们凭空消失 */
-    (this.config.custom || []).forEach((item) => {
-      if (item.id !== target.id && item.after === target.id) item.after = target.after || 'time';
-    });
-    this.config.custom = (this.config.custom || []).filter((item) => item.id !== target.id);
-    writeBookConfig(this.config);
+    if (!this.section) {
+      wx.navigateBack();
+      return;
+    }
+    try {
+      await bookApi.deleteSection(this.section.id);
+    } catch (err) {
+      wx.showToast({ title: bookApi.sectionFailureText(err), icon: 'none' });
+      return;
+    }
     wx.navigateBack();
   },
 
+  /**
+   * 发布征集 —— 三发：存栏目、存版面、`publishSection()`（发布 + 开始征集两条端点）。
+   *
+   * **发布即冻结**：d2 之后版面永久不能改，只能撤回征集，而撤回的语意是删除
+   * （W16）。所以按下去之前问一次。
+   */
   onPublish() {
     if (this.locked) {
-      wx.showToast({ title: '栏目已经发布或编册已经锁定', icon: 'none' });
+      wx.showToast({ title: '本学期编册已锁定，栏目不能再发布', icon: 'none' });
       return;
     }
     if (!this.data.sectionName.trim()) {
@@ -661,7 +751,32 @@ Page({
       wx.showToast({ title: '请先修正版面问题', icon: 'none' });
       return;
     }
-    if (!this.persistSection('d2')) return;
-    wx.redirectTo({ url: `/pages/growth-book-section-materials/index?id=${this.section.id}` });
+    wx.showModal({
+      title: '发布征集，版面永久冻结',
+      content: '发布之后这个栏目的版面不能再改，家长立刻收到一则待办去交素材。'
+        + '要改只能撤回征集，而撤回会把已收的素材一并删除。',
+      confirmText: '确认发布',
+      cancelText: '再想想',
+      success: (res) => {
+        if (res.confirm) this.publish();
+      },
+    });
+  },
+
+  async publish() {
+    wx.showLoading({ title: '正在发布', mask: true });
+    try {
+      const done = await this.persist();
+      if (!done) {
+        wx.hideLoading();
+        return;
+      }
+      await bookApi.publishSection(done.section.id);
+      wx.hideLoading();
+      wx.redirectTo({ url: `/pages/growth-book-section-materials/index?id=${done.section.key}` });
+    } catch (err) {
+      wx.hideLoading();
+      wx.showToast({ title: bookApi.sectionFailureText(err), icon: 'none' });
+    }
   },
 });
