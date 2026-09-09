@@ -164,16 +164,16 @@
     {
       "key": "contract:PATCH /library/cases/{case_id}",
       "status": "接",
-      "reason": "這個是編輯案例，所以應該是要有的。；→ #13",
+      "reason": "契约与服务端已就绪（#13）：允许状态按 F27 放到 s1|s4，列表新增 mine=true 只列本人上传的，回包补回 created_by。service 已有 updateResource／updateCase／listMyUploads 三个函数，probe-library-write 钉了 7 条（含「s2 改不动且库里那一行没变」）。「我的上传」的页面区块是执行票，见 decision.md 2026-09-09 那节",
       "author": "Lin",
-      "updated_at": "2026-09-08"
+      "updated_at": "2026-09-09"
     },
     {
       "key": "contract:PATCH /library/resources/{resource_id}",
       "status": "接",
-      "reason": "→ #13",
+      "reason": "契约与服务端已就绪（#13）：允许状态按 F27 放到 s1|s4，列表新增 mine=true 只列本人上传的，回包补回 created_by。service 已有 updateResource／updateCase／listMyUploads 三个函数，probe-library-write 钉了 7 条（含「s2 改不动且库里那一行没变」）。「我的上传」的页面区块是执行票，见 decision.md 2026-09-09 那节",
       "author": "Lin",
-      "updated_at": "2026-09-08"
+      "updated_at": "2026-09-09"
     },
     {
       "key": "contract:POST /library/cases/{case_id}/withdrawal",
@@ -255,9 +255,9 @@
     {
       "key": "teacher-message:L1:<view class=\"btn btn--primary sticky-action\"> bindtap=\"onSubmit\"「提交寄语」",
       "status": "接",
-      "reason": "→ #5",
+      "reason": "契约已补齐（#5）：GET/POST /teacher-messages 与 GET/PUT /children/{child_id}/teacher-message，四个操作。onSubmit 按「添加到」选的是全体幼儿还是具体幼儿分走 POST 集合级或 PUT 单幼儿。服务端尚未实作，这四条现在回 501。页面接线 → #26",
       "author": "Lin",
-      "updated_at": "2026-09-08"
+      "updated_at": "2026-09-09"
     },
     {
       "key": "teacher-message:L6:screens.tsv writes=yes",

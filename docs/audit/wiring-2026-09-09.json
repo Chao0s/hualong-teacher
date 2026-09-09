@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-09T04:13:15.540Z",
+  "generatedAt": "2026-09-09T04:14:16.126Z",
   "contract": "G:\\My Drive\\Workplace\\China KG Platform\\hualong-backend\\api\\openapi.yaml",
   "pages": [
     {
@@ -1244,9 +1244,9 @@
           "verdict": {
             "key": "teacher-message:L1:<view class=\"btn btn--primary sticky-action\"> bindtap=\"onSubmit\"「提交寄语」",
             "status": "接",
-            "reason": "→ #5",
+            "reason": "契约已补齐（#5）：GET/POST /teacher-messages 与 GET/PUT /children/{child_id}/teacher-message，四个操作。onSubmit 按「添加到」选的是全体幼儿还是具体幼儿分走 POST 集合级或 PUT 单幼儿。服务端尚未实作，这四条现在回 501。页面接线 → #26",
             "author": "Lin",
-            "updated_at": "2026-09-08"
+            "updated_at": "2026-09-09"
           },
           "falsePositive": false,
           "context": {
@@ -1900,9 +1900,13 @@
     },
     {
       "file": "/miniprogram/services/library.js",
-      "calls": 12,
+      "calls": 16,
       "findings": [],
-      "unusedExports": []
+      "unusedExports": [
+        "listMyUploads",
+        "updateResource",
+        "updateCase"
+      ]
     },
     {
       "file": "/miniprogram/services/party.js",
@@ -1979,38 +1983,6 @@
   ],
   "contractUnused": [
     {
-      "key": "contract:PATCH /library/resources/{resource_id}",
-      "method": "PATCH",
-      "path": "/library/resources/{resource_id}",
-      "tags": "library",
-      "action": "resource.update_draft",
-      "blockedOn": "",
-      "summary": "改内容（s1 草稿与 s4 被驳回）",
-      "verdict": {
-        "key": "contract:PATCH /library/resources/{resource_id}",
-        "status": "接",
-        "reason": "→ #13",
-        "author": "Lin",
-        "updated_at": "2026-09-08"
-      },
-      "falsePositive": false,
-      "context": {
-        "description": "**F27 覆写 F6 的作者撤回分支。** 允许状态是 `s1` 与 `s4` 两个：草稿改草稿 （`s1→s1`），被驳回的直接改（`s4→s4`）再直接重交（`s4→s2`，走 `/submission`），**不经 `s1`**。教师端没有作者撤回。 `s2` 审核期间内容冻结、`s3` 已通过不得原地改、`s5` 已由管理者下架 —— 这三态一律回 409 `state_precondition_failed`。`s3` 要改，由管理者先下架 （`POST /admin/review/actions` 的 `d3`）再重新上传一份。 PATCH 语义：字段缺席 = 不改；显式 `null` = 清空（§1.1）。 `api/action-registry.tsv` 的 `resource.update_draft` 那一行 `from_state` 仍写 `s1`，**与本段短暂",
-        "registry": {
-          "table": "db_resource",
-          "from": "s1",
-          "to": "s1",
-          "precondition": "author_is_caller",
-          "authority": "F6"
-        },
-        "page": "upload-resource",
-        "pageTitle": "上传资料",
-        "path": "首页 → 上传资源",
-        "button": "改草稿后「保存草稿」",
-        "who": "作者教师改自己的草稿（仅 s1）。现在上传页只能新建，不能回来改草稿"
-      }
-    },
-    {
       "key": "contract:POST /library/resources/{resource_id}/withdrawal",
       "method": "POST",
       "path": "/library/resources/{resource_id}/withdrawal",
@@ -2040,38 +2012,6 @@
         "path": "底部导航「教研培训」 → 资源详情",
         "button": "撤回",
         "who": "F27 已推翻这条分支：教师端只有「保存草稿」与「提交审核」，没有作者撤回。被驳回（s4）的资源直接改、直接重交。这条端点待删，见 db/GAPS.md G74 与 #32"
-      }
-    },
-    {
-      "key": "contract:PATCH /library/cases/{case_id}",
-      "method": "PATCH",
-      "path": "/library/cases/{case_id}",
-      "tags": "library",
-      "action": "case.update_draft",
-      "blockedOn": "",
-      "summary": "改内容（s1 草稿与 s4 被驳回）",
-      "verdict": {
-        "key": "contract:PATCH /library/cases/{case_id}",
-        "status": "接",
-        "reason": "這個是編輯案例，所以應該是要有的。；→ #13",
-        "author": "Lin",
-        "updated_at": "2026-09-08"
-      },
-      "falsePositive": false,
-      "context": {
-        "description": "与资源同构，见 `updateResourceDraft`。允许状态 `s1` 与 `s4`（F27）。 本段此前**没有 `x-hualong-scope`** —— 资源侧有，案例侧漏了，本轮补上。",
-        "registry": {
-          "table": "db_case",
-          "from": "s1",
-          "to": "s1",
-          "precondition": "author_is_caller",
-          "authority": "F6"
-        },
-        "page": "upload-resource",
-        "pageTitle": "上传资料",
-        "path": "首页 → 上传资源",
-        "button": "改草稿后「保存草稿」",
-        "who": "作者教师改自己的案例草稿（仅 s1）"
       }
     },
     {
@@ -2674,8 +2614,8 @@
     "likely": 14,
     "review": 8,
     "falsePositives": 10,
-    "decided": 42,
+    "decided": 40,
     "contractTeacherOps": 105,
-    "contractUnused": 26
+    "contractUnused": 24
   }
 }
