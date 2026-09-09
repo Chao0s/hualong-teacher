@@ -31,7 +31,7 @@
  * 条数变多就去看新增那一条。**2026-09-09 实测：280 项通过、0 项失败、21 条缺口**
  * （逐组：growth 42/0/2、term 59/0/2、child 113/0/5、report 37/0/4、quality 53/0/6、
  * scale 31/0/2 —— 六组各自跑时都含 8 项共用的会话与基线断言，所以逐组之和大于全跑）。
- * 20 条归 #30，1 条归 G83（`reference_table` 要不要暴露，契约未裁定）。
+ * 20 条归 #30，1 条归 G105（`reference_table` 要不要暴露，契约未裁定；2026-09-09 由 #31 登记）。
  *
  *   node tools/probe-assessment.mjs                 全部六组
  *   node tools/probe-assessment.mjs --group=growth   成长档案
@@ -1316,10 +1316,10 @@ async function groupScale() {
     check('接口回了 reference_table', true);
   } else {
     note(
-      'GET /scales/... 不暴露 `reference_table`（G83 已登记；它多回了 `measurement_note`）。',
+      'GET /scales/... 不暴露 `reference_table`（G105，#31 已登记；服务端反而多回了 `measurement_note` —— 契约没声明那一个）。',
       `实测 H1-1-1 的键：${Object.keys(byId.get('H1-1-1') || {}).join(', ')}。`
       + ' 参考表因此只能从包内那一份取，而那一份有 npm test 第 7 段的闸门守着。'
-      + ' 本票的页面本来就用包内题库，今天不咬人。解封：契约裁定要不要暴露它。归 G83。',
+      + ' 本票的页面本来就用包内题库，今天不咬人。解封：契约裁定要不要暴露它。归 G105。',
     );
   }
 }

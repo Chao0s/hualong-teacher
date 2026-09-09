@@ -231,21 +231,23 @@ issue 点名了这张表，但它的端点 `GET /scales/{scale_code}/{scale_vers
 
 ### 10.2 差异清单（建议登记到 `db/GAPS.md` 的措辞）
 
-编号 D1–D9 是本文件内部编号。**登记时取 `db/GAPS.md` 当时最小的空号，不要照抄这里写下的起点。**
+编号 D1–D9 是本文件内部编号。**已于 2026-09-09 登记为 G97–G105**（#31，契约 §15 v0.25）—— 下表「建议登记措辞」里的号码已同步成实际登记的号。
+
+登记前逐条对着当时的 `openapi.yaml` 与 `01_schema.sql` 复核过，九条全部仍然成立。**这一步不能省** —— 契约那一天改过五版，照抄本文件当时的措辞就可能登记一条已经被修掉的差异。
 
 本文件原先写「接 G75 起编」，2026-09-09 当天就作废了两次：G74 被 F27 的作者撤回端点缺口占用，G75 被「`downloaded` 事件一笔都不带 `file_id`」占用（契约 v0.12 那一轮），G84 被「`/library/cases` 漏筛三个参数」占用（v0.13 那一轮）。**预留一段号码是靠不住的** —— 两轮并行时，先落地的那一轮就会占掉它。
 
 | # | 差异 | 建议登记措辞 |
 |---|---|---|
-| D1 | `item_id` 长度：契约 `maxLength: 16`（`ChildAssessmentItem`、`ScaleItem`、path 参数三处），DDL `VARCHAR(32)`（`db_child_assessment_item.item_id`、`db_scale_item.item_id`）。现役 124 题最长 6 字符，今天不咬人 | **G75 · `item_id` 契约 16、DDL 32，两边各自成立 —— GAP**。三处契约 `maxLength: 16` 与两张表的 `VARCHAR(32)` 不同。现役最长 `S2-3-5` 6 字符。定一边：把契约改 32，或把 DDL 收到 16 并加 CHECK。任一边改完在 `check-all.mjs` 加一项比对 openapi `maxLength` 与 DDL 长度 |
-| D2 | `db_term_eval.eval_text` 可空，而 `TermEvaluationWrite.eval_text` required 且 minLength 1；c1 行可以没有正文，DDL 不拦 | **G76 · `db_term_eval` 没有「c1 必有正文」的约束 —— GAP**。E6 定 eval_text 是唯一内容列，契约提交时必填，但列可空且无 CHECK。加 `CHECK (term_eval_status='c2' OR eval_text IS NOT NULL)`；若 G46 那格判定 c2 永不写入，直接改 NOT NULL |
-| D3 | `TermEvaluationWrite.file_id[]` 落到 `db_file_ref(owner_object='db_term_eval')`，契约未约定 `usage_key`，DDL 默认 `'attachment'`。与 G72 同型 | **G77 · `db_term_eval` 照片引用的 `usage_key` 未约定 —— GAP**。与 G72（家长提交附件）同型。定一个值（建议沿用 `image`）写进契约 §3 端点描述。`image` 已在 `db_file_ref.usage_key` 的枚举注释里（`db/01_schema.sql` 第 528 行），DDL 不必动 |
-| D4 | 现役量表的编码值：契约 `PUT items` 描述写「现役 `guide` v1.0」；DDL 注释 `guide-scale` / `v1`，数据集 124 行也是 `guide-scale` / `v1` | **G78 · 现役量表编码契约与 DDL 不同名 —— GAP**。契约 `guide` v1.0 vs DDL/数据集 `guide-scale` / `v1`。以数据集为准改契约描述；同时把「现役版本」写到一个可读的位置（建议 `db/rubric/` 的清单），服务端不再硬编码 |
-| D5 | `ChildAssessmentProgress.required_count` required，但名册无行时没有绑定版本，契约没说回 0 还是回现役题数 | **G79 · 无主记录时 `required_count` 回什么，契约没说 —— GAP**。契约的 `ChildAssessmentProgress.description`（第 8254–8258 行）已把 `0`（含 `child_assessment_id=null`）判为未完成，所以未定的只是无行时 `required_count` 带什么值 —— 那一格没有绑定版本可解释。定：无行回现役量表题数（124），并写进 schema 描述 |
-| D6 | `db_child_assessment_item.item_id` 对 `db_scale_item` 无 FK；题号合法性只靠服务端查 `(scale_code, scale_version, item_id)` | **G80 · 逐题分的题号没有 DB 级约束 —— GAP（已知并接受可选）**。四层层级刻意不落表（§2.6），但 `(child_assessment_id, item_id)` 到 `db_scale_item` 的对应只在应用层。可加复合 FK `(scale_code, scale_version, item_id)`，代价是题项表要多抄两列；或明文接受 |
-| D7 | `scope-rules.json` 把 teacher 的 `term_id` 归 scoped；契约三个端点写「学期由服务端派生，无 term_id 参数」。`TermEvaluationWrite` / `ChildAssessmentItemWrite` `additionalProperties: false`，derived 字段入体回 422；scope-rules `tiers.derived` 说「一律忽略，不报错」 | **G81 · derived 字段入请求体：契约回 422、scope-rules 说忽略 —— GAP**。两份权威文件对同一行为给了两种答案。定一种：改 scope-rules `tiers.derived` 的措辞，或把写入 schema 的 `additionalProperties: false` 去掉 |
-| D8 | `ChildAssessmentReport` 不带 `child_assessment_status` / `completed_count` / `required_count`，且 `x-hualong-scope` 不过滤 c1；班级报告只统计 c1，个人报告草稿也出 | **G82 · 个人综合评估报告不区分草稿 —— GAP**。§4 规则 22 的报告流读 c1；本端点 scope 无状态过滤，schema 也不回完成态，客户端无法区分「124 题的报告」与「评了 3 题的报告」。定：scope 加 `child_assessment_status='c1'`（草稿回 404），或 schema 补三列 |
-| D9 | `db_scale_item.measurement_note` / `reference_table` 契约 `ScaleItem` 不暴露；G27 与列注释都写「仍须显示给教师」 | **G83 · G27 要求显示的参考表，契约没有暴露 —— GAP**。`ScaleItem` 缺 `measurement_note` 与 `reference_table`。补两个可空字段；H1-1-1 之外回 null |
+| D1 | `item_id` 长度：契约 `maxLength: 16`（`ChildAssessmentItem`、`ScaleItem`、path 参数三处），DDL `VARCHAR(32)`（`db_child_assessment_item.item_id`、`db_scale_item.item_id`）。现役 124 题最长 6 字符，今天不咬人 | **G97 · `item_id` 契约 16、DDL 32，两边各自成立 —— GAP**。三处契约 `maxLength: 16` 与两张表的 `VARCHAR(32)` 不同。现役最长 `S2-3-5` 6 字符。定一边：把契约改 32，或把 DDL 收到 16 并加 CHECK。任一边改完在 `check-all.mjs` 加一项比对 openapi `maxLength` 与 DDL 长度 |
+| D2 | `db_term_eval.eval_text` 可空，而 `TermEvaluationWrite.eval_text` required 且 minLength 1；c1 行可以没有正文，DDL 不拦 | **G98 · `db_term_eval` 没有「c1 必有正文」的约束 —— GAP**。E6 定 eval_text 是唯一内容列，契约提交时必填，但列可空且无 CHECK。加 `CHECK (term_eval_status='c2' OR eval_text IS NOT NULL)`；若 G46 那格判定 c2 永不写入，直接改 NOT NULL |
+| D3 | `TermEvaluationWrite.file_id[]` 落到 `db_file_ref(owner_object='db_term_eval')`，契约未约定 `usage_key`，DDL 默认 `'attachment'`。与 G72 同型 | **G99 · `db_term_eval` 照片引用的 `usage_key` 未约定 —— GAP**。与 G72（家长提交附件）同型。定一个值（建议沿用 `image`）写进契约 §3 端点描述。`image` 已在 `db_file_ref.usage_key` 的枚举注释里（`db/01_schema.sql` 第 528 行），DDL 不必动 |
+| D4 | 现役量表的编码值：契约 `PUT items` 描述写「现役 `guide` v1.0」；DDL 注释 `guide-scale` / `v1`，数据集 124 行也是 `guide-scale` / `v1` | **G100 · 现役量表编码契约与 DDL 不同名 —— GAP**。契约 `guide` v1.0 vs DDL/数据集 `guide-scale` / `v1`。以数据集为准改契约描述；同时把「现役版本」写到一个可读的位置（建议 `db/rubric/` 的清单），服务端不再硬编码 |
+| D5 | `ChildAssessmentProgress.required_count` required，但名册无行时没有绑定版本，契约没说回 0 还是回现役题数 | **G101 · 无主记录时 `required_count` 回什么，契约没说 —— GAP**。契约的 `ChildAssessmentProgress.description`（第 8254–8258 行）已把 `0`（含 `child_assessment_id=null`）判为未完成，所以未定的只是无行时 `required_count` 带什么值 —— 那一格没有绑定版本可解释。定：无行回现役量表题数（124），并写进 schema 描述 |
+| D6 | `db_child_assessment_item.item_id` 对 `db_scale_item` 无 FK；题号合法性只靠服务端查 `(scale_code, scale_version, item_id)` | **G102 · 逐题分的题号没有 DB 级约束 —— GAP（已知并接受可选）**。四层层级刻意不落表（§2.6），但 `(child_assessment_id, item_id)` 到 `db_scale_item` 的对应只在应用层。可加复合 FK `(scale_code, scale_version, item_id)`，代价是题项表要多抄两列；或明文接受 |
+| D7 | `scope-rules.json` 把 teacher 的 `term_id` 归 scoped；契约三个端点写「学期由服务端派生，无 term_id 参数」。`TermEvaluationWrite` / `ChildAssessmentItemWrite` `additionalProperties: false`，derived 字段入体回 422；scope-rules `tiers.derived` 说「一律忽略，不报错」 | **G103 · derived 字段入请求体：契约回 422、scope-rules 说忽略 —— GAP**。两份权威文件对同一行为给了两种答案。定一种：改 scope-rules `tiers.derived` 的措辞，或把写入 schema 的 `additionalProperties: false` 去掉 |
+| D8 | `ChildAssessmentReport` 不带 `child_assessment_status` / `completed_count` / `required_count`，且 `x-hualong-scope` 不过滤 c1；班级报告只统计 c1，个人报告草稿也出 | **G104 · 个人综合评估报告不区分草稿 —— GAP**。§4 规则 22 的报告流读 c1；本端点 scope 无状态过滤，schema 也不回完成态，客户端无法区分「124 题的报告」与「评了 3 题的报告」。定：scope 加 `child_assessment_status='c1'`（草稿回 404），或 schema 补三列 |
+| D9 | `db_scale_item.measurement_note` / `reference_table` 契约 `ScaleItem` 不暴露；G27 与列注释都写「仍须显示给教师」 | **G105 · G27 要求显示的参考表，契约没有暴露 —— GAP**。`ScaleItem` 缺 `measurement_note` 与 `reference_table`。补两个可空字段；H1-1-1 之外回 null |
 
 D1、D2、D4、D5、D8、D9 是契约或 DDL 要改一边的差异（6 条）；D3、D6、D7 是口径未定（3 条）。合计 9 条，其中 D6 可判「已知并接受」。
 
