@@ -251,16 +251,20 @@ issue 点名了这张表，但它的端点 `GET /scales/{scale_code}/{scale_vers
 
 D1、D2、D4、D5、D8、D9 是契约或 DDL 要改一边的差异（6 条）；D3、D6、D7 是口径未定（3 条）。合计 9 条，其中 D6 可判「已知并接受」。
 
-## 11. 附带观察：实作与契约不符（不在本 issue 范围）
+## 11. 附带观察：实作与契约不符 —— 2026-09-09 已修（#30）
 
-对账时顺手读了 `db/testdata/server/routes/teacher.mjs` 第 997–1156 行。这些是实作对契约，不是契约对 DDL，留给 `probe-assessment` 去钉：
+对账时顺手读了 `db/testdata/server/routes/teacher.mjs`。这些是实作对契约，不是契约对 DDL，当时留给 `probe-assessment` 去钉，并开了 issue #30。
 
-| 端点 | 契约 | 实作 |
-|---|---|---|
-| PUT term-evaluation | INSERT，回 201 | UPDATE 已有行，回 200；名册幼儿无行时 404 |
-| GET /term-evaluations、GET /child-assessments | 名册 LEFT JOIN，无行即 c2 | INNER JOIN，无行的幼儿不出现；另接受契约没有的 `?term_id` |
-| GET term-evaluation | `TermEvaluation`（含 file_id[]） | `SELECT t.*`，多回 school_id / created_at / updated_at，无 file_id |
-| PUT items/{item_id} | 回 `ChildAssessmentProgress`；首次评分建主记录 | 回题项行；只找已有的 c2 主记录，无则 404 |
-| GET report | `domains[].code / average`，有 total_average、scale_code、items | 字段名 `domain / domain_score`，无 total_average、scale_code、items |
-| GET class-report | `ChildAssessmentClassReport`，只统计 c1 | 回逐幼儿逐领域行，不过滤 c1 |
-| GET /scales | `ScaleItem` | 多回 `measurement_note`（正好是 D9 要补的） |
+**#30 已做完**：`teacher.mjs` 的 36 个 handler 里改了 15 个，探针由 282 项通过 / 21 条已知缺口变成 **346 项通过 / 0 项失败 / 4 条已知缺口**。
+
+| 端点 | 契约 | 原实作 | 现在 |
+|---|---|---|---|
+| PUT term-evaluation | INSERT，回 201 | UPDATE 已有行，回 200；名册幼儿无行时 404 | 已修 |
+| GET /term-evaluations、GET /child-assessments | 名册 LEFT JOIN，无行即 c2 | INNER JOIN，无行的幼儿不出现；另接受契约没有的 `?term_id` | 学期已按会话派生；**基表仍是记录表，见 G107** |
+| GET term-evaluation | `TermEvaluation`（含 file_id[]） | `SELECT t.*`，多回 school_id / created_at / updated_at，无 file_id | 已修 |
+| PUT items/{item_id} | 回 `ChildAssessmentProgress`；首次评分建主记录 | 回题项行；只找已有的 c2 主记录，无则 404 | 已修 |
+| GET report | `domains[].code / average`，有 total_average、scale_code、items | 字段名 `domain / domain_score`，无 total_average、scale_code、items | 已修 |
+| GET class-report | `ChildAssessmentClassReport`，只统计 c1 | 回逐幼儿逐领域行，不过滤 c1 | 已修 |
+| GET /scales | `ScaleItem` | 多回 `measurement_note`（正好是 §10.2 G105 要补的） | **仍不回 `reference_table`，见 G105** |
+
+剩下的 4 条已知缺口：3 条归 **G107**（三张名册型进度表拿记录表当基表，插班生整行消失 —— 闭合它要先定 G101「无主记录时 `required_count` 回什么」），1 条归 **G105**（`ScaleItem` 没声明 `reference_table`，要不要暴露未裁定）。两条都是契约面的题目，不是实作漂移。
