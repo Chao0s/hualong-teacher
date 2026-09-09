@@ -10,9 +10,9 @@
     {
       "key": "assessment-tool:L6:screens.tsv writes=yes",
       "status": "接",
-      "reason": "审核人对 screens.tsv 的理解见 #24；→ #26",
+      "reason": "已接（#19）：assess.scoreAssessmentItem → PUT /assessments/{id}/items/{tool_item_code}。服务端不写 note 也不更新 completed_count，探针已 note 登记，归 #30",
       "author": "Lin",
-      "updated_at": "2026-09-08"
+      "updated_at": "2026-09-09"
     },
     {
       "key": "case-library:L5:原型按钮「大班」",
@@ -73,9 +73,9 @@
     {
       "key": "comprehensive-assessment-form:L6:screens.tsv writes=yes",
       "status": "接",
-      "reason": "→ #26",
+      "reason": "已接（#19）：assess.scoreItem → PUT /children/{child_id}/child-assessment/items/{item_id}，逐题即时落库",
       "author": "Lin",
-      "updated_at": "2026-09-08"
+      "updated_at": "2026-09-09"
     },
     {
       "key": "comprehensive-assessment-report:L5:原型跳转 → growth-comprehensive-assessment.html",
@@ -233,10 +233,10 @@
     },
     {
       "key": "growth-comprehensive-assessment:L6:screens.tsv writes=yes",
-      "status": "接",
-      "reason": "→ #26",
+      "status": "误报",
+      "reason": "这一页只读 —— 只调 assess.childAssessmentProgress()，写入在兄弟页 comprehensive-assessment-form。screens.tsv 那一格 writes 已由 #26 改成 no（后端 PR #32）",
       "author": "Lin",
-      "updated_at": "2026-09-08"
+      "updated_at": "2026-09-09"
     },
     {
       "key": "party-brand-detail:L2:<text class=\"chip\">",
@@ -262,9 +262,9 @@
     {
       "key": "teacher-message:L6:screens.tsv writes=yes",
       "status": "接",
-      "reason": "审核人对 screens.tsv 的理解见 #24；→ #26",
+      "reason": "已接（#26）：契约四条由后端 PR #29 合并、服务端由 PR #32 实作，页面走 messageBoard／submitTeacherMessage／submitTeacherMessagesForClass。probe-teacher-message 121 项守着",
       "author": "Lin",
-      "updated_at": "2026-09-08"
+      "updated_at": "2026-09-09"
     },
     {
       "key": "teacher-monthly-form:L5:原型按钮「保存评价」",
@@ -275,10 +275,10 @@
     },
     {
       "key": "teacher-term-evaluation:L6:screens.tsv writes=yes",
-      "status": "接",
-      "reason": "审核人对 screens.tsv 的理解见 #24；→ #19",
+      "status": "误报",
+      "reason": "这一页只读 —— 只调 assess.termEvaluationBoard()，写入在兄弟页 teacher-term-form。screens.tsv 那一格 writes 已由 #26 改成 no（后端 PR #32），照 #25 的先例",
       "author": "Lin",
-      "updated_at": "2026-09-08"
+      "updated_at": "2026-09-09"
     },
     {
       "key": "teacher-term-form:L1:<view class=\"btn btn--primary full full--gap\"> bindtap=\"onSave\"「保存学期评价」",
@@ -290,9 +290,9 @@
     {
       "key": "teacher-term-form:L6:screens.tsv writes=yes",
       "status": "接",
-      "reason": "审核人对 screens.tsv 的理解见 #24；→ #26",
+      "reason": "已接（#19）：assess.submitTermEvaluation → PUT /children/{child_id}/term-evaluation",
       "author": "Lin",
-      "updated_at": "2026-09-08"
+      "updated_at": "2026-09-09"
     }
   ]
 }

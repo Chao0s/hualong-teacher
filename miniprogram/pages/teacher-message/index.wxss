@@ -25,6 +25,11 @@
   color: var(--danger);
 }
 
+/* 置灰：无进行中学期时不能提交（服务端回 409 no_active_term），提交中挡连点。 */
+.btn--off {
+  opacity: .45;
+}
+
 /* 两列：幼儿 + 教师寄语 */
 .prog-row {
   grid-template-columns: 160rpx 1fr;
