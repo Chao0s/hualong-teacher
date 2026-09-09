@@ -355,3 +355,9 @@
   background: #fff;
   color: var(--danger);
 }
+
+/* 版面这一段的一行说明：已存的版面读不回来，保存会整份覆盖。 */
+.layout-note {
+  display: block;
+  margin: 0 0 16rpx;
+}

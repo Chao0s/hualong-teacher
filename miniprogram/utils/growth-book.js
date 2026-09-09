@@ -15,6 +15,12 @@
  * 搬过来的部分只改了两处，其余一字未动：
  *   1. localStorage 换成 wx.getStorageSync / wx.setStorageSync；
  *   2. 末尾补 module.exports —— 原型里这些都挂在全局。
+ *
+ * **编册状态（`e1` 编册中／`e2` 已锁定）不在这个模型里。** 它是
+ * `db_growth_book_compilation.compilation_status` 这一列，只有服务端说了算，
+ * 走 `services/growth-book.js` 的 `ensureCompilation()`。本机存的那份配置里
+ * 没有这一格，`readBookConfig()` 也不认它 —— 一台机器上的本机状态锁不住
+ * 服务端说可以编的东西。
  */
 
 /* 成长册共享数据与书本渲染（样本页 / 单个幼儿查看页 / 编辑样板页共用） */
@@ -29,9 +35,6 @@ const BOOK_CLASS_LEVEL = ['message'];
 
 /* 封面归园所（W19）：db_school.book_cover，一园一份、只有 admin 能改，教师端只读 */
 const SCHOOL_COVER = { layout: 'full', image: '', title: '的成长册' };
-
-/* 模版状态（F16）：草稿可编可预览，首次发布后永久冻结 */
-const COMPILATION_STATUS = { e1: '编册中', e2: '编册已锁定' };
 
 /* F17：整册无最低页数，硬上限 200 页 */
 const BOOK_PAGE_LIMIT = 200;
@@ -169,7 +172,6 @@ function openingDaySection() {
 function defaultBookConfig() {
   return {
     status: 'd1',    // 仅兼容旧原型
-    compilationStatus: 'e1', // 学期编册 e1=editing / e2=locked
     selected: BOOK_ORDER.slice(),
     custom: [openingDaySection()],
     material: [],    // 教师成长资料（班级级）[{ id, title, date, photos:[] }]
@@ -222,12 +224,10 @@ function readBookConfig() {
       if (saved.taskSelections && typeof saved.taskSelections === 'object') base.taskSelections = saved.taskSelections;
       if (Array.isArray(saved.timeTopics)) base.timeTopics = saved.timeTopics;
       if (typeof saved.termMessage === 'string') base.termMessage = saved.termMessage;
-      if (saved.compilationStatus === 'e2') base.compilationStatus = 'e2';
     }
   } catch (e) {}
   return base;
 }
-const bookPublished = config => config.compilationStatus === 'e2';
 const bookChildPublished = (child, config) => (config.publishedChildren || []).includes(child.id);
 /* 该幼儿在某新增栏目上已交的件数 */
 const sectionFilled = (item, childId) => (item.submitted || {})[childId] || 0;
@@ -684,7 +684,6 @@ module.exports = {
   BOOK_ORDER,
   BOOK_CLASS_LEVEL,
   SCHOOL_COVER,
-  COMPILATION_STATUS,
   BOOK_PAGE_LIMIT,
   BOOK_CHILDREN,
   BOOK_TASKS,
@@ -709,7 +708,6 @@ module.exports = {
   defaultBookConfig,
   normalizeSection,
   readBookConfig,
-  bookPublished,
   bookChildPublished,
   sectionFilled,
   sectionSubmission,

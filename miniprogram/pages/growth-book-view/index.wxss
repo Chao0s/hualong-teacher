@@ -46,3 +46,9 @@
   font-weight: 700;
   white-space: nowrap;
 }
+
+/* 抬头下面那一行：翻的是版式样张，不是这一本的正本。 */
+.preview-note {
+  display: block;
+  margin: 0 8rpx 20rpx;
+}

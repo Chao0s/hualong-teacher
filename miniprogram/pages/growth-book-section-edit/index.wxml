@@ -47,6 +47,11 @@
     <view class="tool-btn" bindtap="onZoomIn">+</view>
   </view>
 
+  <view class="warn" wx:if="{{loadError}}">
+    <text class="warn__line">{{loadError}}</text>
+  </view>
+  <text class="hint layout-note" wx:if="{{layoutNote}}">{{layoutNote}}</text>
+
   <view class="warn" wx:if="{{warns.length}}">
     <text class="warn__line" wx:for="{{warns}}" wx:key="index">{{item}}</text>
   </view>

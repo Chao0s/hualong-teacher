@@ -79,8 +79,20 @@
   margin-top: 24rpx;
 }
 
-/* 锁定按钮下面那一行：说清这一页为什么锁不了、还差什么。 */
+/* 锁定按钮下面那一行：说清锁定是单向的、还差什么。 */
 .lock-note {
   display: block;
   margin-top: 16rpx;
+}
+
+/* 预览下面那一行：说清它是版式样张，不是本班的正本。 */
+.preview-note {
+  display: block;
+  margin-top: 12rpx;
+}
+
+/* 栏目管理下面那一行：固定书脊有哪几项、哪几项不进开关。 */
+.spine-note {
+  display: block;
+  margin-bottom: 16rpx;
 }
