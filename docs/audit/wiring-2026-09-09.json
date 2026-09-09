@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-09T01:25:05.021Z",
+  "generatedAt": "2026-09-09T02:32:26.848Z",
   "contract": "G:\\My Drive\\Workplace\\China KG Platform\\hualong-backend\\api\\openapi.yaml",
   "pages": [
     {
@@ -2563,7 +2563,7 @@
       "path": "/teacher/growth-book/precheck",
       "tags": "growth-book",
       "action": "",
-      "blockedOn": "",
+      "blockedOn": "G93（total_pages／section_pages／publishable 要 composer，0/12 released layout pack；其余部分可实作）",
       "summary": "全班预检（零写入）",
       "verdict": {
         "key": "contract:GET /teacher/growth-book/precheck",
@@ -2574,7 +2574,7 @@
       },
       "falsePositive": false,
       "context": {
-        "description": "§4 规则 87：按幼儿返回总页数、逐栏目页数、缺失内容与超限原因，并返回 **roster／内容 fingerprint**。默认修完后全班一次定稿；教师可明确跳过问题幼儿， 只提交选中的合法集合，跳过者留 b1。 **班级共享内容本身导致超限时不得跳过** —— 必须先从 `db_growth_material` 调整， 因为跳过一个幼儿不会让共享内容变短。 预检零写入、无不可逆副作用，因此**不在 `api/action-registry.tsv` 里** （与转班预览、审核队列同样处置）。",
+        "description": "§4 规则 87：按幼儿返回总页数、逐栏目页数、缺失内容与超限原因，并返回 **roster／内容 fingerprint**。默认修完后全班一次定稿；教师可明确跳过问题幼儿， 只提交选中的合法集合，跳过者留 b1。 **班级共享内容本身导致超限时不得跳过** —— 必须先从 `db_growth_material` 调整， 因为跳过一个幼儿不会让共享内容变短。 预检零写入、无不可逆副作用，因此**不在 `api/action-registry.tsv` 里** （与转班预览、审核队列同样处置）。 **`total_pages`／`section_pages`／`publishable` 现在产不出来**（`db/GAPS.md` **G93**）：三者都要 composer，而 §4 规则 93 禁止近似页数公式，composer 又要一份 released 版式包 —— `node d",
         "registry": null,
         "page": "growth-book",
         "pageTitle": "成长册",

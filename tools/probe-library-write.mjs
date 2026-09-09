@@ -135,9 +135,10 @@ async function main() {
 
   // ---- 同一张票据提交两次，回同一行 ----------------------------------------
   //
-  // `Idempotency-Key` 那颗头目前到不了服务端的 handler（后端 issue #29），
-  // 而 `uk_file_object UNIQUE (bucket, object_key)` 会让第二笔 INSERT 变成 500。
-  // 实际挡住重放的是票据，所以断言钉在这里：同一个 file_id，且没有第二行。
+  // 这两发**不带** `Idempotency-Key`，钉的是票据那一把键：
+  // `uk_file_object UNIQUE (bucket, object_key)` 会让第二笔 INSERT 变成 500，
+  // 而没带幂等键的重试正是会撞上它的那一种。断言因此钉在这里：
+  // 同一个 file_id，且没有第二行。
   await postBytes(cred, COVER_PATH);
   const first = await api.post('/media/files', { body: { upload_ticket: cred.upload_ticket } });
   if (first && first.file_id) made.files.push(first.file_id);
