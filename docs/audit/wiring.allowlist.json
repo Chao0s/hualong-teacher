@@ -176,20 +176,6 @@
       "updated_at": "2026-09-09"
     },
     {
-      "key": "contract:POST /library/cases/{case_id}/withdrawal",
-      "status": "不建",
-      "reason": "F27 已定：教师端无作者撤回；端点删除 → #32",
-      "author": "Lin",
-      "updated_at": "2026-09-08"
-    },
-    {
-      "key": "contract:POST /library/resources/{resource_id}/withdrawal",
-      "status": "不建",
-      "reason": "F27 已定：教师端无作者撤回；端点删除 → #32",
-      "author": "Lin",
-      "updated_at": "2026-09-08"
-    },
-    {
       "key": "contract:PUT /assessments/{assessment_id}/items/{tool_item_code}",
       "status": "接",
       "reason": "→ #19",

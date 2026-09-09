@@ -84,11 +84,11 @@
   "ops": {
     "PATCH /library/resources/{resource_id}": { "page": "upload-resource", "button": "改草稿后「保存草稿」", "who": "作者教师改自己的草稿（仅 s1）。现在上传页只能新建，不能回来改草稿" },
     "POST /library/resources/{resource_id}/submission": { "page": "upload-resource", "button": "提交审核", "who": "作者教师 → 管理端审核（s1→s2，s4 也走这条，见 F27）。service 的 submitResource 已覆盖" },
-    "POST /library/resources/{resource_id}/withdrawal": { "page": "resource-detail（自己的）", "button": "撤回", "who": "F27 已推翻这条分支：教师端只有「保存草稿」与「提交审核」，没有作者撤回。被驳回（s4）的资源直接改、直接重交。这条端点待删，见 db/GAPS.md G74 与 #32" },
+    "POST /library/resources/{resource_id}/withdrawal": { "page": "resource-detail（自己的）", "button": "撤回", "who": "已删（#32，契约 §15 v0.24）。F27 推翻了这条分支：教师端只有「保存草稿」与「提交审核」。被驳回（s4）的资源直接改、直接重交。这一条留在词表里只为解释历史 —— 契约里已经没有它，扫描器也不会再报它" },
     "POST /library/resources/{resource_id}/download-link": { "page": "resource-detail", "button": "下载", "who": "教师取一份已通过资源的 Word 详案。service 的 resourceDownloadLink 已覆盖，resource-detail 的「下载Word详案」按钮调它" },
     "PATCH /library/cases/{case_id}": { "page": "upload-resource", "button": "改草稿后「保存草稿」", "who": "作者教师改自己的案例草稿（仅 s1）" },
     "POST /library/cases/{case_id}/submission": { "page": "upload-resource", "button": "提交审核", "who": "作者教师 → 管理端审核。service 的 submitCase 已覆盖" },
-    "POST /library/cases/{case_id}/withdrawal": { "page": "case-detail（自己的）", "button": "撤回", "who": "同资源：F27 已推翻，教师端不做撤回按钮。这条端点待删，见 G74 与 #32" },
+    "POST /library/cases/{case_id}/withdrawal": { "page": "case-detail（自己的）", "button": "撤回", "who": "同资源：已删（#32）。教师端不做撤回按钮 —— DO-NOT-BUILD 第 15 条" },
     "POST /library/cases/{case_id}/download-link": { "page": "case-detail", "button": "下载", "who": "service 的 caseDownloadLink 已覆盖，case-detail 的「下载Word详案」按钮调它" },
     "GET /teacher-profile": { "page": "teacher-profile", "button": "进页即读", "who": "教师读自己的专业档案（姓名与班级不在这里，那是名册字段）" },
     "GET /teacher-profile/changes": { "page": "teacher-profile", "button": "「修改申请」区块", "who": "教师看自己提交过的修改申请到了哪一步（待审／通过／驳回）。没有它，提交完就没有回执" },

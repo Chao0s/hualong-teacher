@@ -24,7 +24,8 @@ const ROUTE = [
   // submitForReview／downloadLink 已随 #10 拆成四个明确函数，这两个名字不再出现在
   // 扫描结果里。正则留着只为了复现 c1／c2 那两份原始答复的路由，命中不了任何新 key。
   [/submitForReview|downloadLink/, 'L3-lib'],
-  // withdrawal 不进路由：F27 已经把它定完了，OVERRIDE 里的结论自带 #32，再追一次 → #14 就是往回指。
+  // withdrawal 不进路由：F27 已经把它定完了，端点也已随 #32 删除，这两条 key 不再产生。
+  // OVERRIDE 留着只为让重跑此脚本时结论仍然正确（它会按 c1／c2 把原始答复写回来）。
   [/PATCH \/library/, 'L4-myuploads'],
   [/teacher-profile\b.*L1|contract:.*teacher-profile/, 'L4-profile'],
   [/compilation\/\{compilation_id\}\/lock/, 'L4-lock'],
@@ -57,7 +58,7 @@ for (const r of [...c2, ...c1]) { // c1 后写，c1 优先
 }
 
 const OVERRIDE = {
-  withdrawal: { status: '不建', reason: 'F27 已定：教师端无作者撤回；端点删除 → #32' },
+  withdrawal: { status: '不建', reason: 'F27 已定：教师端无作者撤回。两条端点已于 2026-09-09 从契约删除（#32，契约 §15 v0.24），此后这两条 key 不再产生' },
   lock: { status: '阻于', reason: '锁定权限（教师 vs 校长）在 #17 讨论' },
 };
 const out = [];
