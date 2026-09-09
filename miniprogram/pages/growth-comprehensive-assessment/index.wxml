@@ -1,6 +1,6 @@
-<!-- 综合评估 —— 对照原型 screens/growth-comprehensive-assessment.html。
-     进度和状态都从共用的草稿存储读（utils/assessment-store.js），
-     从填写页返回时 onShow 会重新算一遍，和原型监听 pageshow 是一个意思。 -->
+<!-- 综合评估 —— 进度接 GET /child-assessments。
+     三态由 services/assessment.js 的 tristate() 判，页面不再判。
+     从填写页返回时 onShow 会重新取一遍，和原型监听 pageshow 是一个意思。 -->
 <view class="page">
 
   <view class="sec sec--first">综合评估</view>
@@ -16,7 +16,7 @@
     <view class="assessment-card">
       <view>
         <text class="assessment-card__title">进度</text>
-        <text class="assessment-card__desc">中二班综合评估已完成人数</text>
+        <text class="assessment-card__desc">本班综合评估已完成人数</text>
       </view>
       <text class="ratio">{{doneRatio}}</text>
     </view>
@@ -34,13 +34,13 @@
     <view class="outline-btn" hover-class="btn--hover" bindtap="onOpenExport">导出报告</view>
   </view>
 
-  <view class="student" wx:for="{{students}}" wx:key="id">
+  <view class="student" wx:for="{{students}}" wx:key="childId">
     <view class="student__main">
       <text class="student__name">{{item.name}}</text>
       <text class="student__sub">{{item.sub}}</text>
     </view>
     <text class="pill pill--{{item.state}}">{{item.stateLabel}}</text>
-    <view class="small-btn" hover-class="btn--hover" data-id="{{item.id}}" data-state="{{item.state}}" bindtap="onStudentTap">{{item.action}}</view>
+    <view class="small-btn" hover-class="btn--hover" data-child-id="{{item.childId}}" data-child-name="{{item.name}}" data-state="{{item.state}}" bindtap="onStudentTap">{{item.action}}</view>
   </view>
 
 </view>
@@ -61,7 +61,7 @@
     <view class="checkbox {{allChecked ? 'checkbox--on' : ''}}">{{allChecked ? '✓' : ''}}</view>
   </view>
 
-  <view class="check-row" wx:for="{{exportables}}" wx:key="id" wx:for-index="ei" data-index="{{ei}}" bindtap="onToggleRow">
+  <view class="check-row" wx:for="{{exportables}}" wx:key="childId" wx:for-index="ei" data-index="{{ei}}" bindtap="onToggleRow">
     <view class="check-row__main">
       <text class="check-row__name">{{item.name}}</text>
       <text class="check-row__desc">{{item.desc}}</text>

@@ -2693,9 +2693,8 @@ const SCALE = {
 /**
  * 摊平成页面要的形状：一个领域一行，题项平铺（aspects 与 goals 两层折掉）。
  *
- * 两个调用者：`comprehensive-assessment-form`（要全部字段）与
- * `utils/assessment-store`（只要题号与名称）。短键名沿用原来抄本的那一套，
- * 这样页面与 store 一行都不用改。
+ * 唯一的调用者是 `services/assessment.js`（`buildDomains` 要全部字段，
+ * `scaleItemCount` 只数题）。短键名沿用原来抄本的那一套。
  *
  * `reference_table` 在权威里是按年龄段分组的对象，页面要的是数组，所以在这里转。
  */

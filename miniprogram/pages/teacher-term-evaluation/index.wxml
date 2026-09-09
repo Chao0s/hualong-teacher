@@ -1,10 +1,9 @@
-<!-- 教师学期评价 —— 对照原型 screens/teacher-term-evaluation.html。
-     「选择操作」打开一个勾选浮层，导出报告或发给家长。 -->
-<view class="page">
+<!-- 教师学期评价 —— 进度表接 GET /term-evaluations。
+     「选择操作」打开一个勾选浮层；导出与发送在契约里没有端点，只报「待接入」。
 
-  <view class="chunk">
-    <view class="btn btn--primary" hover-class="btn--hover" bindtap="onAdd">添加评价</view>
-  </view>
+     原型的「添加评价」按钮去掉了：一名幼儿一列，行由在园名册决定，
+     契约里没有「新增」这个动作。 -->
+<view class="page">
 
   <view class="section-head">
     <text class="sec sec--flat">完成情况</text>
@@ -16,11 +15,12 @@
       <text class="prog-cell prog-cell--name">幼儿</text>
       <text class="prog-cell">学期评价</text>
     </view>
-    <view class="prog-row" wx:for="{{rows}}" wx:key="child" wx:for-item="row">
+    <view class="prog-row" wx:for="{{rows}}" wx:key="childId" wx:for-item="row">
       <text class="prog-cell prog-cell--name">{{row.name}}</text>
       <view
         class="prog-cell dot-link"
-        data-child="{{row.child}}"
+        data-child-id="{{row.childId}}"
+        data-child-name="{{row.name}}"
         data-done="{{row.done}}"
         bindtap="onDotTap"
       >
@@ -53,7 +53,7 @@
   </view>
 
   <scroll-view class="check-list" scroll-y>
-    <view class="check-row" wx:for="{{rows}}" wx:key="child" wx:for-item="row" wx:for-index="ri" data-index="{{ri}}" bindtap="onToggleRow">
+    <view class="check-row" wx:for="{{rows}}" wx:key="childId" wx:for-item="row" wx:for-index="ri" data-index="{{ri}}" bindtap="onToggleRow">
       <view class="check-row__main">
         <text class="check-row__name">{{row.name}}</text>
         <text class="check-row__desc">{{row.done ? '已完成 · 可导出 / 可发送' : '未完成 · 仅记录进度'}}</text>

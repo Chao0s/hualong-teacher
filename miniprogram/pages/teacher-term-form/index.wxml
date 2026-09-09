@@ -1,9 +1,10 @@
-<!-- 填写学期评价 —— 对照原型 screens/teacher-term-form.html。
-     相册按月分组，全部显示，不像月度评价那样按月过滤。
+<!-- 填写学期评价 —— 接 GET/PUT /children/{child_id}/term-evaluation。
 
      原型删掉了「五大领域评价」那个 textarea：五大领域已经由 124 题量表逐题打分、
      领域分即时聚合，再用文字写一遍是重复劳动，两份说法还可能互相矛盾。
-     db_term_eval 只有 eval_text 一个内容列。量表给分数，寄语给温度。 -->
+     db_term_eval 只有 eval_text 一个内容列。量表给分数，寄语给温度。
+
+     照片区本轮不接（GET 不回 file_id），入口置灰并写明待接入。 -->
 <view class="page">
 
   <view class="chunk">
@@ -12,8 +13,8 @@
       <view class="select">{{children[childIndex]}}</view>
     </picker>
 
-    <text class="form-label">学期综合评语（最多 500 字）</text>
-    <textarea class="textarea" maxlength="500" value="{{content}}" bindinput="onContentInput" />
+    <text class="form-label">学期综合评语（最多 {{textMax}} 字）</text>
+    <textarea class="textarea" maxlength="{{textMax}}" disabled="{{readonly}}" value="{{content}}" bindinput="onContentInput" />
 
     <text class="form-label">关联月度评价照片</text>
     <scroll-view class="photo-row" scroll-x enable-flex wx:if="{{imported.length}}">
@@ -22,10 +23,10 @@
         <view class="remove" catchtap="onRemoveImported" data-label="{{item}}">×</view>
       </view>
     </scroll-view>
-    <view class="empty-hint" wx:else>尚未导入照片，点击下方按钮从该幼儿的相册中选择。</view>
+    <view class="empty-hint" wx:else>{{photoHint}}</view>
 
-    <view class="btn btn--blue full" hover-class="btn--hover" bindtap="onOpenAlbum">选择照片</view>
-    <view class="btn btn--primary full full--gap" hover-class="btn--hover" bindtap="onSave">保存学期评价</view>
+    <view class="btn btn--blue full btn--off" bindtap="onOpenAlbum">选择照片</view>
+    <view class="btn btn--primary full full--gap {{readonly ? 'btn--off' : ''}}" hover-class="btn--hover" bindtap="onSave">{{readonly ? '已提交，不可修改' : '保存学期评价'}}</view>
   </view>
 
 </view>

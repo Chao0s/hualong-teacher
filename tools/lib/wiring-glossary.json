@@ -129,6 +129,6 @@
     "GET /children/{child_id}/growth-record": { "page": "growth-record", "button": "点某名幼儿", "who": "单名幼儿的齐备度明细" },
     "GET /assessments": { "page": "assessment-tool", "button": "进页即读", "who": "教师看自己的质量评估列表（120 题工具，版本化）" },
     "GET /assessments/{assessment_id}": { "page": "assessment-tool", "button": "点某一份", "who": "教师读回已作答的题；题文由客户端按工具版本自己解析，不随作答回传" },
-    "PUT /assessments/{assessment_id}/items/{tool_item_code}": { "page": "assessment-tool", "button": "逐题打分", "who": "教师逐题作答（首题 s1→s2，末题 s2→s3）→ 结果供管理端看。现在页面把作答存在本机 assessment-store，没有上传" }
+    "PUT /assessments/{assessment_id}/items/{tool_item_code}": { "page": "assessment-tool", "button": "逐题打分", "who": "教师逐题作答（首题 s1→s2，末题 s2→s3）→ 结果供管理端看。页面已逐题上传（#19），本机不再存分数。服务端还不写 note、也不更新 completed_count 与 assessment_status，探针已 note 登记，归 #30" }
   }
 }

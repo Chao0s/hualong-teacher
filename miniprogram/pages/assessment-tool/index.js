@@ -1,23 +1,35 @@
 /**
- * 质量评估 —— 原型 screens/assessment-tool.html 的小程序版本。
+ * 质量评估 —— 接 `GET /assessments`、`GET /assessments/{id}` 与
+ * `PUT /assessments/{id}/items/{tool_item_code}`（services/assessment.js）。
  *
- * 题库 120 条在 ./assessment-data.js，原样搬自原型的外链脚本。
+ * 题库 120 条在 `./assessment-data.js`（F17 的版本化代码资产，一个字不改）。
+ * `ind.code`（`I001`）就是契约的 `tool_item_code`，与库里逐字相同，不用换算 ——
+ * 所以本页的分数与评价记录**都按 `ind.code` 存**，不按 `ind.id`（那是 DDL 里
+ * `db_assessment_item` 的整数代理键，两张表同名一列含义不同）。
  *
- * 口径全部照抄原型：
- *   得分率 = 已评项分数之和 ÷ (已评项数 × 5)，未评的项不进分母
- *   等级   = 在 scoring.levels 里找最后一条 ratio >= min 的
- *   再点一次同一个分数会取消该项评分
- *   1 分和 5 分要留佐证，指标里会多出一条红色提示
- *   筛选  全部 / 未评 / 低分（1–2 分）
+ * 【本页不创建评估】。契约明写 `NONE→s1` 没有任何决议指定谁建、何时建。
+ * 进来时取 `GET /assessments` 的第一份（契约的排序是 period DESC, id DESC，
+ * 客户端不重排），或者用 `?assessmentId=` 指定。`s3`（已完成）进只读态 ——
+ * 契约里没有 `s3→*` 的任何转移。
  *
- * 存储键也照抄：hualong_assessment_<code>_<version>，评价记录另存一个键。
+ * 【「再点一次取消评分」去掉了】。读写值域不对称是真的：`AssessmentItem.score`
+ * 可 null，`AssessmentItemWrite.score` **必须 1—5** —— 用 PUT 把分抹掉在契约上
+ * 没有出路。
+ *
+ * 【得分率与等级是纯客户端派生】。契约与 DDL 里没有 `ratio`、没有等级、没有
+ * `levels`；`db_assessment` 只有 `completed_count` / `required_count` /
+ * `assessment_status`。算在 service 的 `scoreRate()` 里，页面不再算一遍。
+ *
+ * 【评价记录暂存本机】。service 照契约把 `note` 发上去，但**服务端的 INSERT 只有
+ * 三列，收下就丢**（实测库里 1176 行 note 全为 NULL，由 #30 修）。所以这里同时把它
+ * 写进本机存储，输入框旁标明。存储键按 `tool_item_code`。
+ *
+ * 【佐证图片本轮不接】。契约的 `file_id[]` 要 `POST /media/files` 先落库，而
+ * `GET /assessments/{id}` 的 items 现在不回 `file_id` —— 入口留着并置灰。
  */
 
 const DATA = require('./assessment-data.js');
-
-const TOOL = { code: 'school-quality-120', version: '1.0.0', itemCount: 120 };
-const KEY = `hualong_assessment_${TOOL.code}_${TOOL.version}`;
-const NKEY = `hualong_assessment_notes_${TOOL.code}_${TOOL.version}`;
+const assess = require('../../services/assessment.js');
 
 const OPTIONS = DATA.scoring.options;
 const LEVELS = DATA.scoring.levels;
@@ -35,10 +47,9 @@ function chipCls(score) {
   return 'chip-score--high';
 }
 
-function levelOf(ratio) {
-  let label = LEVELS[0].label;
-  LEVELS.forEach((r) => { if (ratio >= r.min) label = r.label; });
-  return label;
+/** 本机存的评价记录，键是 `tool_item_code`。评估一换就换一个键。 */
+function noteKey(assessmentId) {
+  return `hualong_assessment_notes_${assessmentId}`;
 }
 
 Page({
@@ -48,11 +59,21 @@ Page({
     label3: LABELS[3],
     label5: LABELS[5],
 
+    assessmentId: null,
+    periodLabel: '',
+    scopeLabel: '',
+    statusLabel: '',
+    readonly: false,
+    // 分数与评价记录一起 PUT 上去（service 照契约发），但服务端只落分数、丢掉
+    // 评价记录（#30）。所以这一句写的是「服务端暂未保存」，不是「尚未上传」。
+    noteHint: '评价记录暂存本机，服务端暂未保存',
+    eviHint: '佐证图片待接入',
+
     sections: [],
     mode: 'all',
     filters: [
-      { key: 'all', label: '全部', count: TOOL.itemCount },
-      { key: 'todo', label: '未评', count: TOOL.itemCount },
+      { key: 'all', label: '全部', count: 0 },
+      { key: 'todo', label: '未评', count: 0 },
       { key: 'low', label: '低分', count: 0 },
     ],
     emptyText: '',
@@ -60,18 +81,49 @@ Page({
     dialPct: 0,
     dialText: '—',
     sumLevel: '未开始',
-    sumCount: `已评 0 / ${TOOL.itemCount} 项 · ${TOOL.code} v${TOOL.version}`,
+    sumCount: '',
     barPct: 0,
     footScore: '—',
     footUnit: ' 分',
     footLevel: '尚未开始评价',
   },
 
-  onLoad() {
-    this.scores = this.readStore(KEY);
-    this.notes = this.readStore(NKEY);
-    this.setData({ sections: this.buildSections() });
-    this.refreshAll();
+  async onLoad(options) {
+    this.scores = {};
+    this.notes = {};
+    this.required = DATA.indicators.length;
+    try {
+      const page = await assess.listAssessments({ limit: 20 });
+      const id = Number(options.assessmentId) || (page.items[0] && page.items[0].id);
+      if (!id) {
+        wx.showToast({ title: '还没有分配给你的质量评估', icon: 'none' });
+        return;
+      }
+      const detail = await assess.getAssessment(id, LEVELS);
+      // 未评的题**没有分**（items 里可能有行但 score 为 null）。这里只把有分的搬进来，
+      // 不用 `|| 0` 兜底 —— 0 分在契约里不存在（CHECK 1..5）。
+      detail.items.forEach((cell, code) => {
+        if (cell.score !== null) this.scores[code] = cell.score;
+      });
+      this.notes = this.readStore(noteKey(id));
+      // 服务端回过来的 note 优先（它是权威）；本机那份只补服务端还没接住的部分。
+      detail.items.forEach((cell, code) => {
+        if (cell.note) this.notes[code] = cell.note;
+      });
+      this.required = detail.requiredCount || DATA.indicators.length;
+      this.assessmentId = id;
+      this.setData({
+        assessmentId: id,
+        periodLabel: detail.period,
+        scopeLabel: detail.scopeLabel,
+        statusLabel: detail.statusLabel,
+        readonly: !detail.can.score,
+        sections: this.buildSections(),
+      });
+      this.refreshAll();
+    } catch (err) {
+      wx.showToast({ title: (err && err.userMessage) || '评估加载失败，请返回重试', icon: 'none' });
+    }
   },
 
   readStore(key) {
@@ -93,7 +145,7 @@ Page({
           inds: inSection
             .filter((ind) => (sub.name ? ind.sub === sub.name : true))
             .map((ind) => {
-              const score = this.scores[ind.id];
+              const score = this.scores[ind.code];
               return {
                 id: ind.id,
                 code: ind.code,
@@ -107,8 +159,7 @@ Page({
                 needEvi: score === 1 || score === 5,
                 open: false,
                 rubOpen: false,
-                note: this.notes[ind.id] || '',
-                eviCount: 0,
+                note: this.notes[ind.code] || '',
                 visible: true,
               };
             }),
@@ -136,39 +187,71 @@ Page({
     this.setData({ [`${p}.rubOpen`]: !this.indAt(e).rubOpen });
   },
 
-  onScoreTap(e) {
+  /**
+   * 打一题分。**没有「再点一次取消」** —— `AssessmentItemWrite.score` 必须 1—5，
+   * 用 PUT 把分抹掉在契约上没有出路。
+   *
+   * 先乐观更新那一格再落库（120 题逐题打分，每次等一个往返会很难用），
+   * 落库失败把那一格退回去 —— 不能留一个只在屏幕上存在的分。
+   */
+  async onScoreTap(e) {
+    if (this.data.readonly) {
+      wx.showToast({ title: '这份评估已完成，不能再改分', icon: 'none' });
+      return;
+    }
     const ind = this.indAt(e);
-    const tapped = Number(e.currentTarget.dataset.score);
-    // 再点一次同一个分数就取消，和原型一致
-    const score = ind.score === tapped ? 0 : tapped;
-
-    if (score) this.scores[ind.id] = score;
-    else delete this.scores[ind.id];
+    const score = Number(e.currentTarget.dataset.score);
+    const before = ind.score;
+    const why = assess.whyCannotScoreAssessmentItem({ score, note: this.notes[ind.code] });
+    if (why) {
+      wx.showToast({ title: why, icon: 'none' });
+      return;
+    }
 
     const p = this.path(e);
+    this.paint(p, score);
+    this.scores[ind.code] = score;
+    this.refreshAll();
+
+    try {
+      // note 照契约一起发上去（服务端现在收下就丢，见文件头注）。
+      await assess.scoreAssessmentItem(this.assessmentId, ind.code, {
+        score,
+        note: this.notes[ind.code] || undefined,
+      });
+    } catch (err) {
+      if (before) this.scores[ind.code] = before;
+      else delete this.scores[ind.code];
+      this.paint(p, before);
+      this.refreshAll();
+      wx.showToast({ title: assess.assessmentFailureText(err), icon: 'none' });
+    }
+  },
+
+  /** 一格的四个显示值一起改。`score` 为 0 就是「未评」的显示态。 */
+  paint(p, score) {
     this.setData({
-      [`${p}.score`]: score,
+      [`${p}.score`]: score || 0,
       [`${p}.chipText`]: chipText(score),
       [`${p}.chipCls`]: chipCls(score),
       [`${p}.needEvi`]: score === 1 || score === 5,
     });
-    this.persist(KEY, this.scores);
-    this.refreshAll();
   },
 
+  /**
+   * 评价记录只写本机。契约没有「只改 note」的端点（`score` 是 required），
+   * 而服务端现在连随 score 发上去的那一份也不落库 —— 所以这里存本机，
+   * 下一次打分时随 score 一起补发。输入框旁的 `noteHint` 写明了这一点。
+   */
   onNoteInput(e) {
     const ind = this.indAt(e);
-    this.notes[ind.id] = e.detail.value;
-    this.persist(NKEY, this.notes);
+    this.notes[ind.code] = e.detail.value;
+    this.persist(noteKey(this.assessmentId), this.notes);
   },
 
-  onAddEvidence(e) {
-    const p = this.path(e);
-    wx.chooseMedia({
-      count: 9,
-      mediaType: ['image'],
-      success: (res) => this.setData({ [`${p}.eviCount`]: res.tempFiles.length }),
-    });
+  /** 佐证图片没有接：契约要先 `POST /media/files` 落库，而详情不回 file_id。 */
+  onAddEvidence() {
+    wx.showToast({ title: this.data.eviHint, icon: 'none' });
   },
 
   onFilterTap(e) {
@@ -176,10 +259,10 @@ Page({
     this.applyFilter();
   },
 
+  /** 分数每一题在点下去那一刻就 PUT 过了，这里只把本机那份评价记录写稳。 */
   onSave() {
-    this.persist(KEY, this.scores);
-    this.persist(NKEY, this.notes);
-    wx.showToast({ title: '已保存', icon: 'none' });
+    this.persist(noteKey(this.assessmentId), this.notes);
+    wx.showToast({ title: `已评 ${Object.keys(this.scores).length} / ${this.required} 项`, icon: 'none' });
   },
 
   /* ── 工具 ──────────────────────────────────────────────────────────── */
@@ -209,22 +292,22 @@ Page({
     this.applyFilter();
   },
 
+  /** 得分率与等级由 service 的 `scoreRate()` 算，页面不再算一遍。 */
   refreshSummary() {
-    const ids = Object.keys(this.scores).filter((k) => this.scores[k] >= 1);
-    const sum = ids.reduce((acc, k) => acc + this.scores[k], 0);
-    const n = ids.length;
-    const ratio = n ? sum / (n * 5) : 0;
-    const pct = Math.round(ratio * 100);
+    const items = Object.keys(this.scores).map((code) => ({ score: this.scores[code] }));
+    const sum = assess.scoreRate(items, LEVELS);
+    const n = sum.rated;
+    const pct = sum.percent;
 
     this.setData({
       dialPct: n ? pct : 0,
       dialText: n ? `${pct}%` : '—',
-      sumLevel: n ? levelOf(ratio) : '未开始',
-      sumCount: `已评 ${n} / ${TOOL.itemCount} 项 · ${TOOL.code} v${TOOL.version}`,
-      barPct: Math.round((n / TOOL.itemCount) * 100),
+      sumLevel: n ? sum.level : '未开始',
+      sumCount: `已评 ${n} / ${this.required} 项 · ${this.data.periodLabel} ${this.data.statusLabel}`,
+      barPct: Math.round((n / this.required) * 100),
       footScore: n ? String(pct) : '—',
       footUnit: n ? ' 分（得分率）' : ' 分',
-      footLevel: n ? `总体等级：${levelOf(ratio)} · 有效评价 ${n} 项` : '尚未开始评价',
+      footLevel: n ? `总体等级：${sum.level} · 有效评价 ${n} 项` : '尚未开始评价',
     });
   },
 
@@ -233,8 +316,8 @@ Page({
     const scored = keys.filter((k) => this.scores[k] >= 1).length;
     const low = keys.filter((k) => this.scores[k] >= 1 && this.scores[k] <= 2).length;
     this.setData({
-      'filters[0].count': TOOL.itemCount,
-      'filters[1].count': TOOL.itemCount - scored,
+      'filters[0].count': this.required,
+      'filters[1].count': this.required - scored,
       'filters[2].count': low,
     });
   },
@@ -243,9 +326,9 @@ Page({
     const patch = {};
     this.data.sections.forEach((section, si) => {
       const all = [].concat(...section.subs.map((sub) => sub.inds));
-      const scored = all.filter((ind) => this.scores[ind.id] >= 1);
+      const scored = all.filter((ind) => this.scores[ind.code] >= 1);
       const avg = scored.length
-        ? (scored.reduce((acc, ind) => acc + this.scores[ind.id], 0) / scored.length).toFixed(1)
+        ? (scored.reduce((acc, ind) => acc + this.scores[ind.code], 0) / scored.length).toFixed(1)
         : '—';
       patch[`sections[${si}].scored`] = scored.length;
       patch[`sections[${si}].avg`] = avg;
@@ -270,7 +353,7 @@ Page({
       section.subs.forEach((sub, bi) => {
         let visibleInSub = 0;
         sub.inds.forEach((ind, ii) => {
-          const score = this.scores[ind.id];
+          const score = this.scores[ind.code];
           const show = mode === 'all' ? true
             : mode === 'todo' ? !(score >= 1)
               : score >= 1 && score <= 2;
@@ -291,7 +374,7 @@ Page({
     });
 
     patch.emptyText = mode !== 'all' && !anyVisible
-      ? (mode === 'todo' ? `全部 ${TOOL.itemCount} 项均已评价 🎉` : '暂无低分（1–2 分）指标')
+      ? (mode === 'todo' ? `全部 ${this.required} 项均已评价 🎉` : '暂无低分（1–2 分）指标')
       : '';
 
     this.setData(patch);

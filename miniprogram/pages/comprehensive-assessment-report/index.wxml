@@ -1,5 +1,6 @@
-<!-- 综合评估结果 —— 对照原型 screens/comprehensive-assessment-report.html。
-     原型的雷达图是内联 SVG，小程序没有这个标签，改用 canvas 画同样的几何（utils/radar.js）。 -->
+<!-- 综合评估结果 —— 接 GET /children/{child_id}/child-assessment/report。
+     原型的雷达图是内联 SVG，小程序没有这个标签，改用 canvas 画同样的几何（utils/radar.js）。
+     明细里 `未评` 那一格判的是 rated，不是 `score` 为 0 —— 0 分在契约里不存在。 -->
 <view class="page">
 
   <view class="chunk child-card">
@@ -38,7 +39,7 @@
       <view class="detail-row" wx:for="{{domain.items}}" wx:key="id" wx:for-item="item">
         <view class="detail-name">
           <text>{{item.name}}</text>
-          <text class="none" wx:if="{{!item.score}}">未评</text>
+          <text class="none" wx:if="{{!item.rated}}">未评</text>
         </view>
         <view class="scale-view">
           <text class="scale-view__n {{item.score === num ? 'scale-view__n--on' : ''}}" wx:for="{{scaleNums}}" wx:key="*this" wx:for-item="num">{{num}}</text>

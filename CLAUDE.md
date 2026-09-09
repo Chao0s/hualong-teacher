@@ -136,10 +136,9 @@ node db/tools/check-all.mjs
 
 ## 3. 现状
 
-`miniprogram/` 共 **55 页**，**36 页已接 API**，**19 页仍是写死的字面量**。
-
-这三个数**每次接一页就变**，权威是 `npm run scan:wiring` 第一行的「页面 55（已接 36）」，
-不是本节（2026-09-09 实测）。
+`miniprogram/` 共 **55 页**，**44 页已接 API**，**11 页仍是写死的字面量**。
+
+这三个数**每次接一页就变**，权威是 `npm run scan:wiring` 第一行的「页面 55（已接 44）」，不是本节（2026-09-09 实测）。
 
 判断某一页属于哪一类：看 `index.js` 里有没有 `require('../../services/`。
 在开发者工具里看 Network 面板有没有 `/api/v1/...` 请求，是同一件事的另一种查法。
@@ -156,6 +155,7 @@ node db/tools/check-all.mjs
 | 家长评价开窗 | `parent-evaluation-publish` |
 | 成长册 | `growth-book`、`growth-book-edit`、`growth-book-time-manage`、`growth-book-section-edit`、`growth-book-section-materials`、`growth-book-view` |
 | 教研培训 | `training-list`、`training-detail`、`my-training`、`teacher-profile` |
+| 评估族 | `growth-record`、`teacher-term-evaluation`、`teacher-term-form`、`growth-comprehensive-assessment`、`comprehensive-assessment-form`、`comprehensive-assessment-report`、`comprehensive-assessment-class-report`、`assessment-tool` |
 
 ### 提到页面就写它在屏幕上叫什么、怎么走到
 

@@ -484,3 +484,16 @@
 .save-btn--hover {
   background: var(--accent-dark);
 }
+
+/* 佐证图片没有接（详情不回 file_id），入口留着但置灰。 */
+.evi-add--off {
+  opacity: .45;
+}
+
+/* 评价记录暂存本机的说明。服务端的 INSERT 现在不含 note 列。 */
+.note-hint {
+  display: block;
+  margin: 0 0 8rpx;
+  font-size: 22rpx;
+  color: #9aa4b2;
+}

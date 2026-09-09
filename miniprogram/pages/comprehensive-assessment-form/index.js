@@ -1,87 +1,77 @@
 /**
- * 开始综合评估 —— 原型 screens/comprehensive-assessment-form.html 的小程序版本。
+ * 开始综合评估 —— 接 `GET /children/{child_id}/child-assessment` 与
+ * `PUT /children/{child_id}/child-assessment/items/{item_id}`（services/assessment.js）。
  *
- * 题库在 ../../data/guide-scale.js（权威，124 题，含提问和 1／3／5 锚点），
- * 草稿存储用共用的 AssessStore。
+ * 题库在 `../../data/guide-scale.js`（权威，124 题，含提问和 1／3／5 锚点）。
+ * 题库 × 已评分的合并在 service 的 `buildDomains()` 里做，页面只循环。
  *
- * 口径照抄原型：
- *   每改一个分立刻写草稿；一个分都没打时把这个幼儿从草稿里删掉，而不是留一条空记录。
- *   领域标题右侧显示「已评/总数 · 平均 x.x」，一题没评显示「未评 0/n」。
- *   底部平均分只统计已评题项。
- *   保存按钮按已评题数给三种提示：没评过 / 草稿 / 已完成。
+ * **逐题即时落库，没有本机草稿。** `PUT .../items/{item_id}` 就是增量保存，契约明写
+ * 中途退出可续填 —— 本机再存一份是「一份复制品静默过期」，而页面显示的是哪一份
+ * 没有任何规则可查。
+ *
+ * **未评 = 该题无列，不是 0 分。** `score` 为 0 只是给 wxml 的显示值（不高亮任何
+ * 一档），均值一律走 service 的 `rated`。
  *
  * 一处优化：折叠的领域不渲染题目。124 题全展开是几千个节点，小程序会卡；
  * 折叠态本来就看不见，行为一致。
  */
 
-const { flatDomains } = require('../../data/guide-scale');
-
-// 权威是 miniprogram/data/guide-scale.js —— 本仓库唯一的一份。此前这一行读的是同目录的
-// questions.js（一份抄本），那份已删（#20）。
-const QUESTIONS = flatDomains();
-const { ASSESS_CHILDREN, AssessStore } = require('../../utils/assessment-store.js');
-
-const TOTAL = AssessStore.TOTAL;
-
-/** 把题库摊成 wxml 能直接循环的形状，顺便把参考表的数对拼成字符串。 */
-function buildDomains(scores) {
-  return QUESTIONS.map((domain) => ({
-    id: domain.id,
-    name: domain.name,
-    open: false,
-    scoreText: '',
-    items: domain.items.map((item) => ({
-      id: item.id,
-      name: item.name,
-      q: item.q,
-      a1: item.a['1'],
-      a3: item.a['3'],
-      a5: item.a['5'],
-      measured: !!item.m,
-      note: item.note || '',
-      ref: item.ref
-        ? item.ref.map((row) => ({
-          age: row.age,
-          bh: `${row.b[0][0]}~${row.b[0][1]}`,
-          bw: `${row.b[1][0]}~${row.b[1][1]}`,
-          gh: `${row.g[0][0]}~${row.g[0][1]}`,
-          gw: `${row.g[1][0]}~${row.g[1][1]}`,
-        }))
-        : null,
-      score: scores[item.id] || 0,
-    })),
-  }));
-}
+const assess = require('../../services/assessment.js');
 
 Page({
   data: {
-    children: ASSESS_CHILDREN,
+    // 名册整份（真名册）。picker 的 range 是 { childId, name } 数组。
+    children: [],
     childIndex: 0,
+    childId: null,
     scaleNums: [1, 2, 3, 4, 5],
     domains: [],
     avg: '—',
-    progressHint: `已评 0/${TOTAL} · 草稿自动保存`,
+    progressHint: '',
+    readonly: false,
   },
 
-  onLoad(options) {
-    AssessStore.seedIfEmpty();
-    let index = ASSESS_CHILDREN.findIndex((c) => c.id === options.child);
-    if (index < 0) index = 0;
-    this.setData({ childIndex: index });
-    this.loadChild();
+  async onLoad(options) {
+    const wanted = Number(options.childId) || null;
+    try {
+      const board = await assess.childAssessmentProgress();
+      let index = board.rows.findIndex((row) => row.childId === wanted);
+      if (index < 0) index = 0;
+      this.setData({
+        children: board.rows.map((row) => ({ childId: row.childId, name: row.name })),
+        childIndex: index,
+      });
+      await this.loadChild();
+    } catch (err) {
+      wx.showToast({ title: (err && err.userMessage) || '加载失败，请返回重试', icon: 'none' });
+    }
   },
 
-  loadChild() {
-    const childId = ASSESS_CHILDREN[this.data.childIndex].id;
-    const record = (AssessStore.read() || {})[childId];
-    this.scores = record && record.scores ? { ...record.scores } : {};
-    this.setData({ domains: buildDomains(this.scores) });
-    this.updateScores();
+  async loadChild() {
+    const child = this.data.children[this.data.childIndex];
+    if (!child) return;
+    const detail = await assess.getChildAssessment(child.childId);
+    this.setData({ childId: child.childId, ...this.viewOf(detail) });
   },
 
-  onChildChange(e) {
+  /** service 的返回值直接摊进 data，页面一格都不再算。 */
+  viewOf(detail) {
+    return {
+      domains: detail.domains,
+      avg: detail.avg,
+      progressHint: detail.progressHint,
+      // 已完成的那一份改分服务端现在会回 404（见 service 的头注），提示语照实说。
+      readonly: detail.state === 'done',
+    };
+  },
+
+  async onChildChange(e) {
     this.setData({ childIndex: Number(e.detail.value) });
-    this.loadChild();
+    try {
+      await this.loadChild();
+    } catch (err) {
+      wx.showToast({ title: (err && err.userMessage) || '加载失败，请稍后重试', icon: 'none' });
+    }
   },
 
   onToggleDomain(e) {
@@ -89,53 +79,38 @@ Page({
     this.setData({ [`domains[${di}].open`]: !this.data.domains[di].open });
   },
 
-  onScoreTap(e) {
+  /**
+   * 打一题分。
+   *
+   * 先乐观更新那一格再落库 —— 124 题逐题打分，每次等一个往返会很难用。
+   * 落库失败要把那一格**退回去**，不能留一个只在屏幕上存在的分。
+   */
+  async onScoreTap(e) {
     const { di, ii, score } = e.currentTarget.dataset;
     const item = this.data.domains[di].items[ii];
-    this.scores[item.id] = Number(score);
-    this.setData({ [`domains[${di}].items[${ii}].score`]: Number(score) });
-    this.persist();
-    this.updateScores();
-  },
-
-  /** 每次改动即写草稿。一个分都没有时删掉这条，不留空记录。 */
-  persist() {
-    const childId = ASSESS_CHILDREN[this.data.childIndex].id;
-    const all = AssessStore.read() || {};
-    const rated = Object.keys(this.scores).length;
-    if (rated === 0) delete all[childId];
-    else all[childId] = { scores: this.scores, rated, total: TOTAL, status: rated === TOTAL ? 'done' : 'draft' };
-    AssessStore.write(all);
-  },
-
-  updateScores() {
-    const patch = {};
-    let all = [];
-
-    this.data.domains.forEach((domain, di) => {
-      const nums = domain.items.map((item) => this.scores[item.id]).filter(Boolean);
-      all = all.concat(nums);
-      patch[`domains[${di}].scoreText`] = nums.length
-        ? `${nums.length}/${domain.items.length} · 平均 ${(nums.reduce((a, b) => a + b, 0) / nums.length).toFixed(1)}`
-        : `未评 0/${domain.items.length}`;
+    const before = { score: item.score, rated: item.rated };
+    this.setData({
+      [`domains[${di}].items[${ii}].score`]: Number(score),
+      [`domains[${di}].items[${ii}].rated`]: true,
     });
-
-    patch.avg = all.length ? (all.reduce((a, b) => a + b, 0) / all.length).toFixed(1) : '—';
-    patch.progressHint = all.length === TOTAL
-      ? `已评 ${TOTAL}/${TOTAL} · 可保存为已完成`
-      : `已评 ${all.length}/${TOTAL} · 草稿自动保存`;
-
-    this.setData(patch);
+    try {
+      // 服务端算出来的 completedCount 才是权威，所以整份重取。
+      const fresh = await assess.scoreItem(this.data.childId, item.id, score);
+      this.setData(this.viewOf(fresh));
+    } catch (err) {
+      this.setData({
+        [`domains[${di}].items[${ii}].score`]: before.score,
+        [`domains[${di}].items[${ii}].rated`]: before.rated,
+      });
+      wx.showToast({ title: assess.scoreFailureText(err), icon: 'none' });
+    }
   },
 
+  /**
+   * 「保存」没有对应的端点 —— 每一题在点下去那一刻就已经落库了。
+   * 按钮留着（教师会找它），文案照实说已经保存到哪一步。
+   */
   onSave() {
-    this.persist();
-    const rated = Object.keys(this.scores).length;
-    wx.showToast({
-      title: rated === 0 ? '尚未评分，无内容可保存'
-        : rated === TOTAL ? '综合评估已完成并保存'
-          : `已保存为草稿（${rated}/${TOTAL}）`,
-      icon: 'none',
-    });
+    wx.showToast({ title: this.data.progressHint, icon: 'none' });
   },
 });
