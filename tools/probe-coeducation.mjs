@@ -37,6 +37,11 @@ const require_ = createRequire(import.meta.url);
 const co = require_(resolve(MP, 'services', 'co-education.js'));
 const guard = require_(resolve(MP, 'utils', 'guard.js'));
 const time = require_(resolve(MP, 'utils', 'time.js'));
+const config = require_(resolve(MP, 'config.js'));
+// `--base <url>` 打另一个实例（与 probe-growth-book 同一种收法）：3860 是别人开的，
+// 改了服务端要重启才生效，验证时另起一个 3861。
+const baseAt = process.argv.indexOf('--base');
+if (baseAt !== -1 && process.argv[baseAt + 1]) config.env.baseUrl = process.argv[baseAt + 1];
 const { Client } = require_(resolve(TESTDATA, 'node_modules', 'pg'));
 
 const sb = scoreboard();
@@ -703,6 +708,53 @@ async function monthEvalWriteSection() {
     `${saved.month_eval_id} vs ${again.month_eval_id}`);
   const after = await scalar('SELECT count(*)::int FROM db_month_eval');
   check('行数只多了 1（不是两行）', after === before + 1, `${before} → ${after}`);
+
+  /* 照片范围是幼儿级（G79 已修，#70）：两头钉 —— 有这名幼儿的 moment 的照片进得去，
+   * 本班别的幼儿的照片进不去，且拒掉之后原来那张还挂着（事务回滚）。 */
+  const ownFile = await scalar(
+    `SELECT fr.file_id FROM db_file_ref fr
+       JOIN db_moment m ON m.moment_id = fr.owner_id
+       JOIN db_moment_upload mu ON mu.moment_id = m.moment_id AND mu.child_id = $1
+      WHERE fr.owner_object = 'db_moment' AND m.class_id = $2
+      ORDER BY fr.file_id LIMIT 1`,
+    [childId, CLASS_ID],
+  );
+  const otherFile = await scalar(
+    `SELECT fr.file_id FROM db_file_ref fr
+       JOIN db_moment m ON m.moment_id = fr.owner_id
+      WHERE fr.owner_object = 'db_moment' AND m.class_id = $2
+        AND NOT EXISTS (SELECT 1 FROM db_moment_upload mu
+                         WHERE mu.moment_id = m.moment_id AND mu.child_id = $1)
+      ORDER BY fr.file_id LIMIT 1`,
+    [childId, CLASS_ID],
+  );
+  check(`数据集里 child ${childId} 有一张自己的照片（${ownFile}）与一张本班别人的照片（${otherFile}）`,
+    ownFile !== null && otherFile !== null, `own=${ownFile} other=${otherFile}`);
+  const withOwn = await co.saveMonthEvalDraft({ childId, month: MONTH, text: '改过的草稿。', fileIds: [ownFile] });
+  check('挂该幼儿有份的 moment 的照片：成功，回包 file_id 就是那一张',
+    JSON.stringify(withOwn.file_id) === JSON.stringify([ownFile]), JSON.stringify(withOwn.file_id));
+  const refsOwn = await db.query(
+    "SELECT file_id FROM db_file_ref WHERE owner_object = 'db_month_eval' AND owner_id = $1",
+    [saved.month_eval_id],
+  );
+  check('库里 db_file_ref 正好一行，file_id 就是那一张',
+    refsOwn.rows.length === 1 && refsOwn.rows[0].file_id === ownFile,
+    JSON.stringify(refsOwn.rows));
+  let fileCode = '(没被拒)';
+  let fileRule = null;
+  try {
+    await co.saveMonthEvalDraft({ childId, month: MONTH, text: '改过的草稿。', fileIds: [otherFile] });
+  } catch (err) { fileCode = err.code; fileRule = err.details && err.details.rule; }
+  check('挂本班别的幼儿的照片：422 validation_failed', fileCode === 'validation_failed', `实际 ${fileCode}`);
+  check('422 带 details.rule=file_in_child_moment（不再是班级级的 file_in_class_moment）',
+    fileRule === 'file_in_child_moment', String(fileRule));
+  const refsAfter = await db.query(
+    "SELECT file_id FROM db_file_ref WHERE owner_object = 'db_month_eval' AND owner_id = $1",
+    [saved.month_eval_id],
+  );
+  check('被拒之后原来那一张还挂着，别人的那一张没进来（删旧引用与插新引用同一事务）',
+    refsAfter.rows.length === 1 && refsAfter.rows[0].file_id === ownFile,
+    JSON.stringify(refsAfter.rows));
 
   /* 发布：转 e3 并写 saved_at。 */
   const pub = await co.publishMonthEval(saved.month_eval_id);
