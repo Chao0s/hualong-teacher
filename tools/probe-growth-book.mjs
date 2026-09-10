@@ -53,6 +53,7 @@
  * 逐表行数回到 `STATS.md` 的基线。
  *
  *   node tools/probe-growth-book.mjs
+ *   node tools/probe-growth-book.mjs --base http://localhost:3861/api/v1   # 打另一个端口
  */
 
 import { createRequire } from 'node:module';
@@ -73,6 +74,12 @@ const guard = require_(resolve(MP, 'utils', 'guard.js'));
 const auth = require_(resolve(MP, 'utils', 'auth.js'));
 const session = require_(resolve(MP, 'utils', 'session.js'));
 const config = require_(resolve(MP, 'config.js'));
+
+// `--base <url>` 把请求改打到另一个端口。改了服务端要重启才生效，而 3860 那扇窗口
+// 不一定是自己开的：另起一个 `PORT=3861 node server/server.mjs`，探针打它。
+// `utils/request.js` 每次发出前都现读 `config.env.baseUrl`，改这一格就够。
+const baseAt = process.argv.indexOf('--base');
+if (baseAt !== -1 && process.argv[baseAt + 1]) config.env.baseUrl = process.argv[baseAt + 1];
 const { Client } = require_(resolve(TESTDATA, 'node_modules', 'pg'));
 
 const sb = scoreboard();
@@ -372,6 +379,8 @@ async function main() {
   check('POST /time-topics 建出来的行确实在库里', Boolean(topicRowNow), '库里查不到');
   check('新主题落在本班本学期的 compilation 2',
     topicRowNow && topicRowNow.compilation_id === MY_COMPILATION, `实际 ${topicRowNow && topicRowNow.compilation_id}`);
+  check('新主题的 title 逐字落库（#63：这一格就是那个既在 SELECT 列表又在 WHERE 里的 $1）',
+    topicRowNow && topicRowNow.title === '探针主题·龙舟鼓点', `实际「${topicRowNow && topicRowNow.title}」`);
   check(`新主题的 created_seq 接在现有最大值之后（${beforeSeq} + 1）`,
     topicRowNow && topicRowNow.created_seq === beforeSeq + 1, `实际 ${topicRowNow && topicRowNow.created_seq}`);
   check('新主题的 created_by 是登录的这位教师（服务端派生，客户端没发）',
@@ -468,14 +477,20 @@ async function main() {
       `compilation ${MY_COMPILATION} 的 m2 行数为 0`);
   }
 
-  /* ── 负例三：碰已锁的 e2 编册 —— 拒了，且一行没清 ─────────────────────── */
+  /* ── 负例三：碰同班上学期那份已锁的 e2 编册 —— 拒了，且一行没清 ─────────── */
 
   // 服务端删主题必须先清 time_topic_id 再删主题（FK 方向决定），所以「清了一半再拒」
   // 是这一族最容易出的错。快照钉的正是那几行。
+  //
+  // 回的是 404，不是 409 `compilation_locked`：登记表 `time_topic.delete`／
+  // `growth_material.delete` 的前置有 `term_scope_inline`，上学期的行落在范围之外，
+  // 与「不存在」逐字节相同（§2.3），服务端不泄露「有这么一行，只是锁了」。
+  // 409 那一支要本学期的编册是 e2 才走得到，本数据集里 compilation 2 是 e1，
+  // 本探针也不去锁它（锁是单向的），所以那一支今天到不了 —— 见下面那条 note。
   await refuses(
     `删同班上学期（compilation ${LOCKED_COMPILATION}，已 e2）的主题 ${LOCKED_TOPIC}`,
     () => book.deleteTopic(LOCKED_TOPIC),
-    'state_precondition_failed', 'compilation_locked',
+    'not_found', '',
     async () => `${(await topicRow(LOCKED_TOPIC)) ? 'topic在' : 'topic没了'}/${await membersOf(LOCKED_TOPIC)}`,
   );
 
@@ -484,11 +499,13 @@ async function main() {
     [LOCKED_COMPILATION],
   )).rows[0].growth_material_id;
   await refuses(
-    `移出已 e2 编册里的素材 ${lockedMaterial}`,
+    `移出同班上学期（compilation ${LOCKED_COMPILATION}，已 e2）的素材 ${lockedMaterial}`,
     () => book.removeMaterial(lockedMaterial),
-    'state_precondition_failed', 'compilation_locked',
+    'not_found', '',
     async () => JSON.stringify(await materialRow(lockedMaterial)),
   );
+  note('409 `compilation_locked`（本学期编册已 e2 时删主题／移出素材）这一支本数据集到不了',
+    `compilation ${MY_COMPILATION} 是 e1，上学期那份 e2 落在 term 范围之外回 404`);
 
   /* ── 负例四：主题重名 ─────────────────────────────────────────────────── */
 

@@ -91,6 +91,7 @@
  * `locked_at` 全部回到原值，只有这两个时间戳往前走。
  *
  *   node tools/probe-growth-book-compile.mjs
+ *   node tools/probe-growth-book-compile.mjs --base http://localhost:3861/api/v1   # 打另一个端口
  */
 
 import { createRequire } from 'node:module';
@@ -112,6 +113,12 @@ const guard = require_(resolve(MP, 'utils', 'guard.js'));
 const auth = require_(resolve(MP, 'utils', 'auth.js'));
 const session = require_(resolve(MP, 'utils', 'session.js'));
 const config = require_(resolve(MP, 'config.js'));
+
+// `--base <url>` 把请求改打到另一个端口。改了服务端要重启才生效，而 3860 那扇窗口
+// 不一定是自己开的：另起一个 `PORT=3861 node server/server.mjs`，探针打它。
+// `utils/request.js` 每次发出前都现读 `config.env.baseUrl`，改这一格就够。
+const baseAt = process.argv.indexOf('--base');
+if (baseAt !== -1 && process.argv[baseAt + 1]) config.env.baseUrl = process.argv[baseAt + 1];
 const { Client } = require_(resolve(TESTDATA, 'node_modules', 'pg'));
 
 const sb = scoreboard();
@@ -373,7 +380,7 @@ async function main() {
     start.books === BASE_BOOKS, `实际 ${start.books}`);
 
   await auth.ensureSession();
-  check('登录后角色是 teacher', guard.currentRole() === 'teacher', `实际 ${guard.currentRole()}`);
+  check('登录后角色是 teacher', session.getRole() === 'teacher', `实际 ${session.getRole()}`);
 
   /* ── 取回不是建立 ────────────────────────────────────────────────────── */
 
@@ -697,9 +704,11 @@ async function main() {
     Number(lockedRow.locked_by) === ME.teacher_id, `实际 ${lockedRow.locked_by}`);
 
   // 再锁一发：单向，第二发必须什么都不写。**只看状态码看不出「又盖了一次时间戳」。**
+  // 契约 `lockCompilation` 的 409 原话：「`state_precondition_failed` —— 编册已经是 e2，
+  // 不需要再锁一次」。不是 404：这一行在本班范围之内，只是状态不对。
   await refuses('已经 e2 之后再锁一发',
     () => bookApi.lockCompilation(comp.id, comp.revision),
-    'not_found');
+    'state_precondition_failed');
   const lockedAgain = await lockRow(MY_COMPILATION);
   check('第二发锁定没有再盖一次 locked_at，locked_by 也没换人',
     lockedAgain.locked_label === lockedRow.locked_label
