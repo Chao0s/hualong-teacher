@@ -72,6 +72,10 @@ const co = require_(resolve(MP, 'services', 'co-education.js'));
 const guard = require_(resolve(MP, 'utils', 'guard.js'));
 const session = require_(resolve(MP, 'utils', 'session.js'));
 const config = require_(resolve(MP, 'config.js'));
+// `--base <url>` 打另一个实例（与 probe-growth-book 同一种收法）：3860 是别人开的，
+// 改了服务端要重启才生效，验证时另起一个 3861。
+const baseAt = process.argv.indexOf('--base');
+if (baseAt !== -1 && process.argv[baseAt + 1]) config.env.baseUrl = process.argv[baseAt + 1];
 const { flatDomains } = require_(resolve(MP, 'data', 'guide-scale.js'));
 const { Client } = require_(resolve(TESTDATA, 'node_modules', 'pg'));
 
@@ -103,6 +107,8 @@ const C1_CHILD = 7;
 const DRAFT_CHILD = 2;
 /** child 1 一题未评（无题项行）。本探针的写入都打在这一个身上，跑完删干净。 */
 const EMPTY_CHILD = 1;
+/** child 8 同样 0 题项。#64「首次评分建主记录」把它的主记录删掉再评，跑完按原 id 放回。 */
+const NEW_ASMT_CHILD = 8;
 /** 教师 1 的三份质量评估：7 是唯一 s2（可写）的一份，1 与 13 都是 s3。 */
 const ASMT_WRITABLE = 7;
 const ASMT_DONE = 1;
@@ -957,6 +963,75 @@ async function groupChild() {
         === await scalar('SELECT child_name FROM db_child WHERE child_id=$1', [EMPTY_CHILD]),
       `实际 ${JSON.stringify(rawPut && rawPut.child_name)}`);
   }
+
+  await firstScoreCreatesMaster();
+}
+
+/**
+ * #64：**首次评分建主记录（NONE→c2）。**
+ *
+ * 契约 summary 逐字是「首次评分建主记录 NONE→c2」，登记表 `child_assessment.score_item`
+ * 的 from_state 是 NONE。数据集为每名幼儿每学期预建了主记录，所以 `EMPTY_CHILD`
+ * 那一路（有主记录、0 题项）盖住了「无主记录」这条路径 —— #30 标「已修」实际只去掉
+ * 了 c2 筛，无行仍 404，与 G107 插班生同型。这里真的把主记录删掉再评首题。
+ *
+ * 靶子挑 `NEW_ASMT_CHILD`（0 题项）：删主记录时没有题项要跟着删，还原就是把 SELECT
+ * 出来的那一行**按原 id 原值**放回去（`caReinsert`）。
+ */
+async function firstScoreCreatesMaster() {
+  const orig = (await db.query(
+    'SELECT * FROM db_child_assessment WHERE child_id=$1 AND term_id=$2',
+    [NEW_ASMT_CHILD, CURRENT_TERM])).rows[0];
+  check(`child ${NEW_ASMT_CHILD} 本学期有主记录且 0 题项（挖洞前的前提）`,
+    Boolean(orig) && (await caRow(NEW_ASMT_CHILD)).real_items === 0,
+    orig ? `real_items=${(await caRow(NEW_ASMT_CHILD)).real_items}` : '没找到主记录');
+  if (!orig) return;
+  // 先登记还原，再挖洞：主体半途炸掉时 cleanup 也放得回去。
+  made.push({ kind: 'caReinsert', row: orig });
+  await db.query('DELETE FROM db_child_assessment WHERE child_assessment_id=$1',
+    [orig.child_assessment_id]);
+  check(`child ${NEW_ASMT_CHILD} 的主记录已删掉（NONE 状态）`,
+    (await caRow(NEW_ASMT_CHILD)) === null, '还在');
+
+  const res = await rawPut(`/children/${NEW_ASMT_CHILD}/child-assessment/items/H1-1-1`, { score: 4 });
+  // 契约对这一端点只声明 200（首建与续评同一形状），所以钉 200，不钉 201。
+  check('无主记录时 PUT 首题回 200（不再 404）', res.status === 200,
+    `实际 ${res.status} ${JSON.stringify(res.body)}`);
+  const created = await caRow(NEW_ASMT_CHILD);
+  check(`db_child_assessment 多出 child ${NEW_ASMT_CHILD} 本学期的一行`,
+    created !== null, '库里没有新行');
+  if (created) {
+    const full = (await db.query(
+      'SELECT school_id, class_id, teacher_id FROM db_child_assessment WHERE child_assessment_id=$1',
+      [created.child_assessment_id])).rows[0];
+    check('新行是 c2（首建 = 未完成，不是 c1）',
+      created.child_assessment_status === 'c2', created.child_assessment_status);
+    check('新行绑定现役量表 guide-scale / v1，required_count 124',
+      created.scale_code === 'guide-scale' && created.scale_version === 'v1'
+      && created.required_count === 124,
+      `${created.scale_code}/${created.scale_version} required=${created.required_count}`);
+    check('新行的 school_id/class_id/teacher_id 由服务端派生为 1/1/1',
+      full.school_id === 1 && full.class_id === 1 && full.teacher_id === 1, JSON.stringify(full));
+    check('新行的 completed_count 是 1，且等于真实题项行数',
+      created.completed_count === 1 && created.real_items === 1,
+      `completed=${created.completed_count} real=${created.real_items}`);
+    check('那一题的 score 逐值落库为 4',
+      await caItemScore(created.child_assessment_id, 'H1-1-1') === 4,
+      `实际 ${await caItemScore(created.child_assessment_id, 'H1-1-1')}`);
+    check('回包是新建那一行的 ChildAssessmentProgress（id 与计数逐值相同）',
+      res.body && res.body.child_assessment_id === created.child_assessment_id
+      && res.body.completed_count === 1 && res.body.child_assessment_status === 'c2',
+      JSON.stringify(res.body));
+    // 第二题走的是 ON CONFLICT 那一支：复用同一行，不再建第二行。
+    const res2 = await rawPut(`/children/${NEW_ASMT_CHILD}/child-assessment/items/H1-1-2`, { score: 3 });
+    const rows = await scalar(
+      'SELECT count(*)::int FROM db_child_assessment WHERE child_id=$1 AND term_id=$2',
+      [NEW_ASMT_CHILD, CURRENT_TERM]);
+    check('第二题复用同一份主记录：仍只有一行，completed_count 变 2',
+      res2.status === 200 && rows === 1 && res2.body && res2.body.completed_count === 2
+      && res2.body.child_assessment_id === created.child_assessment_id,
+      `行数 ${rows}，回包 ${JSON.stringify(res2.body)}`);
+  }
 }
 
 /** 断言某次逐题评分被拒，**且库里那一份一个字没变**（§7.5）。 */
@@ -1549,11 +1624,15 @@ async function groupScale() {
       row.n === EXPECT_DOMAIN_SIZE[row.code], `实际 ${row.n}`);
   }
 
-  const scale = await assess.getScale('guide-scale', 'v1');
-  check('外壳的 scaleCode / scaleVersion 带得回来（服务端不回时由 path 参数补）',
-    scale.scaleCode === 'guide-scale' && scale.scaleVersion === 'v1',
-    `${scale.scaleCode}/${scale.scaleVersion}`);
-  check('接口回 124 题', scale.items.length === 124, `实际 ${scale.items.length} 题`);
+  // 跨源比对直接读库。#69（2026-09-10）：service 不再导出 getScale() —— 页面用包内题库，
+  // 客户端没有任何调用者需要 GET /scales，allowlist 记「不建」。端点本身仍在契约里，下面
+  // 用裸请求钉它的形状；题文与锚点的逐题比对走 SQL，比走一条客户端不用的端点更贴近权威。
+  check('service 不再导出 getScale（#69：客户端不接 GET /scales）', typeof assess.getScale === 'undefined',
+    `实际 ${typeof assess.getScale}`);
+  const scaleRows = await db.query(
+    "SELECT item_id, item_name, question, item_type, anchors, reference_table FROM db_scale_item WHERE scale_code='guide-scale' AND scale_version='v1' ORDER BY item_id");
+  const scale = { scaleCode: 'guide-scale', scaleVersion: 'v1', items: scaleRows.rows };
+  check('库里 guide-scale / v1 共 124 题', scale.items.length === 124, `实际 ${scale.items.length} 题`);
 
   const raw = await api_get('/scales/guide-scale/v1');
   if (raw.scale_code === undefined || raw.scale_version === undefined) {
@@ -1605,12 +1684,14 @@ async function groupScale() {
   check('H1-1-1 的参考表在包内是 3 行（3~4 / 4~5 / 5~6 岁）',
     flat.find((q) => q.id === 'H1-1-1').ref.length === 3,
     `实际 ${flat.find((q) => q.id === 'H1-1-1').ref.length} 行`);
-  if (scale.items.some((it) => it.reference_table !== undefined)) {
+  const rawItems = Array.isArray(raw.items) ? raw.items : [];
+  const rawH111 = rawItems.find((it) => it.item_id === 'H1-1-1') || {};
+  if (rawItems.some((it) => it.reference_table !== undefined)) {
     check('接口回了 reference_table', true);
   } else {
     note(
       'GET /scales/... 不暴露 `reference_table`（G105，#31 已登记；服务端反而多回了 `measurement_note` —— 契约没声明那一个）。',
-      `实测 H1-1-1 的键：${Object.keys(byId.get('H1-1-1') || {}).join(', ')}。`
+      `实测 H1-1-1 的键：${Object.keys(rawH111).join(', ')}。`
       + ' 参考表因此只能从包内那一份取，而那一份有 npm test 第 7 段的闸门守着。'
       + ' 本票的页面本来就用包内题库，今天不咬人。解封：契约裁定要不要暴露它。归 G105。',
     );
@@ -1716,6 +1797,25 @@ async function restoreAll() {
         `UPDATE db_child_assessment SET completed_count=$2, child_assessment_status=$3, submitted_at=$4
            WHERE child_assessment_id=$1`,
         [m.childAssessmentId, m.completed_count, m.child_assessment_status, m.submitted_at]);
+    } else if (m.kind === 'caReinsert') {
+      // #64 那一项把主记录删了让服务端重建。先连题项一起清掉服务端建的那一行，
+      // 再把原行**按原 id 原值**放回去（与 termEvalReinsert 同一条理由）。
+      await db.query(
+        `DELETE FROM db_child_assessment_item WHERE child_assessment_id IN
+           (SELECT child_assessment_id FROM db_child_assessment WHERE child_id=$1 AND term_id=$2)`,
+        [m.row.child_id, m.row.term_id]);
+      await db.query('DELETE FROM db_child_assessment WHERE child_id=$1 AND term_id=$2',
+        [m.row.child_id, m.row.term_id]);
+      await db.query(
+        `INSERT INTO db_child_assessment (child_assessment_id, school_id, class_id, child_id, teacher_id,
+                                          term_id, scale_code, scale_version, required_count,
+                                          completed_count, child_assessment_status, submitted_at,
+                                          created_at, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+        [m.row.child_assessment_id, m.row.school_id, m.row.class_id, m.row.child_id, m.row.teacher_id,
+          m.row.term_id, m.row.scale_code, m.row.scale_version, m.row.required_count,
+          m.row.completed_count, m.row.child_assessment_status, m.row.submitted_at,
+          m.row.created_at, m.row.updated_at]);
     } else if (m.kind === 'asmtItem') {
       if (m.existed) {
         await db.query(
@@ -1736,6 +1836,7 @@ async function restoreAll() {
 
   // 序列回退，让下一次灌库不出现空洞。
   await db.query("SELECT setval('db_child_assessment_item_child_assessment_item_id_seq', (SELECT max(child_assessment_item_id) FROM db_child_assessment_item))");
+  await db.query("SELECT setval('db_child_assessment_child_assessment_id_seq', (SELECT max(child_assessment_id) FROM db_child_assessment))");
   await db.query("SELECT setval('db_assessment_item_item_id_seq', (SELECT max(item_id) FROM db_assessment_item))");
   await db.query("SELECT setval('db_term_eval_term_eval_id_seq', (SELECT max(term_eval_id) FROM db_term_eval))");
 }

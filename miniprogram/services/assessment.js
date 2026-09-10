@@ -90,7 +90,6 @@ const TERM_EVAL_PATH = '/term-evaluations';
 const CHILD_ASSESSMENT_PATH = '/child-assessments';
 const GROWTH_RECORD_PATH = '/growth-records';
 const ASSESSMENT_PATH = '/assessments';
-const SCALE_PATH = '/scales';
 const CHILD_PATH = '/children';
 
 /**
@@ -611,8 +610,8 @@ function messageFailureText(err) {
  *
  * 理由：题文与三档锚点在打分页每一题都要显示，走接口等于每次进页面拉一份 124 题的
  * 大回包；而包内那一份有 `npm test` 第 7 段的闸门守着（逐题比对提问与三档锚点，
- * 改一个字当场红）。`getScale()` 仍然导出 —— 探针用它做**跨源比对**：库里那 124 题
- * 与包内那份逐题比，漂开当场红。
+ * 改一个字当场红）。跨源比对（库里那 124 题与包内那份逐题比）由 `probe-assessment` 直接读
+ * `db_scale_item` 做，**本模块不导出 `getScale()`**（#69，2026-09-10）—— 客户端没有任何页面需要那条端点。
  */
 const { flatDomains } = require('../data/guide-scale');
 
@@ -882,24 +881,6 @@ async function classReport() {
   };
 }
 
-/**
- * 量表题库（reference data，园所无关，没有 `x-hualong-scope`）。
- *
- * **页面不用它**（题库走包内那一份，见 `flatDomains` 那一段的头注）。
- * 导出它只有一个用途：探针拿它与包内那份**逐题比对**，两份漂开当场红。
- *
- * 服务端回 `scale_code` / `scale_version` 外壳（#30 补上）。兜底仍取 path 参数 ——
- * 反正是本函数发出去的，两者对不上时探针会红。
- */
-async function getScale(scaleCode, scaleVersion) {
-  const row = await api.get(`${SCALE_PATH}/${scaleCode}/${scaleVersion}`);
-  return {
-    scaleCode: row.scale_code || scaleCode,
-    scaleVersion: row.scale_version || scaleVersion,
-    items: row.items || [],
-  };
-}
-
 /* ══ 办园质量评估 ══════════════════════════════════════════════════════════
  *
  *   GET /assessments                                     本人的评估列表（唯一分页的一条）
@@ -1085,7 +1066,6 @@ module.exports = {
   scoreFailureText,
   childAssessmentReport,
   classReport,
-  getScale,
 
   // 办园质量评估
   scoreRate,
