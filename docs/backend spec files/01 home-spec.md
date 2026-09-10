@@ -175,7 +175,7 @@ task_title (任务标题), 1:1, max_len=50, ui=home.todo.task|task.card.title|ta
 task_intro (任务说明), 1:1, max_len=300, ui=task.card.summary|task_detail.intro
 task_division (任务分工), 1:1, max_len=300, ui=task_detail.division
 due_at (截止时间), 1:1, datetime, ui=task.card.deadline|task_detail.deadline
-task_status (任务状态), 1:1, t1=wait_accept(待接收)|t2=in_progress(进行中)|t3=complete(已完成)|t4=cancelled(已取消), ui=task.card.status|task_detail.status
+task_status (任务状态), 1:1, t1=wait_accept(待接收)|t2=in_progress(进行中)|t3=complete(已完成)|t4=cancelled(已取消), ui=task.hidden
 created_by (任务发起人ID), 1:1, integer, ui=task.card.creator|task_detail.creator
 file_id (任务附件ID), 0:k, integer, ui=task_detail.attachment
 
@@ -184,9 +184,10 @@ rel_db (关联表) = db_task_assign, db_file
 rel_map (关系字段) = db_task{task_id}<->db_task_assign{task_id}; db_task{file_id}<->db_file{file_id}
 
 method (方法):
-current = task_status IN(t1,t2)
-history = task_status IN(t3,t4)
+current = db_task_assign.assign_status IN(a1,a2)
+history = db_task_assign.assign_status = a3
 click = return task_id
+任务级 task_status 由管理端维护，教师端不读（F28）；task.card.status 与 task_detail.status 只由本教师那一行 db_task_assign.assign_status 驱动
 
 
 待办任务分配 (Task Assignment / db_task_assign)
