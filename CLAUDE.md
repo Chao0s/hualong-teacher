@@ -136,9 +136,9 @@ node db/tools/check-all.mjs
 
 ## 3. 现状
 
-`miniprogram/` 共 **55 页**，**44 页已接 API**，**11 页仍是写死的字面量**。
+`miniprogram/` 共 **55 页**，**46 页已接 API**，**9 页仍是写死的字面量**。
 
-这三个数**每次接一页就变**，权威是 `npm run scan:wiring` 第一行的「页面 55（已接 44）」，不是本节（2026-09-09 实测）。
+这三个数**每次接一页就变**，权威是 `npm run scan:wiring` 第一行的「页面 55（已接 46）」，不是本节（2026-09-10 实测）。
 
 判断某一页属于哪一类：看 `index.js` 里有没有 `require('../../services/`。
 在开发者工具里看 Network 面板有没有 `/api/v1/...` 请求，是同一件事的另一种查法。
@@ -349,7 +349,7 @@ node server/server.mjs          # → http://localhost:3860/api/v1
 `docs/audit/wiring-<日期>.html` 与它的外壳模板 `tools/lib/wiring-viewer.html` 都是
 `.html`，于是被当成「没登记的屏幕」。2026-09-09 已修：`check-consistency.mjs` 的
 `NOT_A_PAGE` 加上 `audit` 与 `tools` 两个目录名。**排除的数目照旧打印出来**
-（现为 4 个），静默跳过与静默截短是同一种毛病。
+（数目随目录增减而变，以那一行输出为准），静默跳过与静默截短是同一种毛病。
 
 **本仓库的目录名因此进了后端的检查逻辑**，改动这三处要留意：
 

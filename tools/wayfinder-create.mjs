@@ -12,7 +12,9 @@ const MAP = Number(process.argv[2]);
 if (!MAP) { console.error('用法：node tools/wayfinder-create.mjs <map-number>'); process.exit(1); }
 
 const gh = (args, input) => execFileSync('gh', args, { encoding: 'utf8', input, maxBuffer: 1e7 }).trim();
-const tickets = ['part1', 'part2'].flatMap((p) => JSON.parse(readFileSync(`docs/audit/wiring-issues-2026-09-08.${p}.json`, 'utf8')));
+// 默认建 2026-09-08 那两批；也可以指定别的规格文件：node tools/wayfinder-create.mjs <map> <file.json> ...
+const PARTS = process.argv.slice(3).length ? process.argv.slice(3) : ['docs/audit/wiring-issues-2026-09-08.part1.json', 'docs/audit/wiring-issues-2026-09-08.part2.json'];
+const tickets = PARTS.flatMap((p) => JSON.parse(readFileSync(p, 'utf8')));
 
 // 依赖表：谁阻着谁（id → 被它阻的 id）
 const BLOCKED_BY = {
@@ -50,9 +52,14 @@ for (const t of tickets) {
 }
 
 // 原生依赖
+// 规格文件里也可以写 blockedBy: ["L4-lock", "#27"]（票 id 或现成的 issue 号）
+for (const t of tickets) for (const b of t.blockedBy || []) (BLOCKED_BY[t.id] ||= []).push(b);
+const numberOf = (ref) => (String(ref).startsWith('#') ? Number(ref.slice(1)) : created[ref]);
 for (const [child, blockers] of Object.entries(BLOCKED_BY)) {
+  if (!created[child]) continue;
   for (const b of blockers) {
-    const blockerDb = gh(['api', `repos/${REPO}/issues/${created[b]}`, '--jq', '.id']);
+    if (!numberOf(b)) continue;
+    const blockerDb = gh(['api', `repos/${REPO}/issues/${numberOf(b)}`, '--jq', '.id']);
     try {
       gh(['api', '--method', 'POST', `repos/${REPO}/issues/${created[child]}/dependencies/blocked_by`, '-F', `issue_id=${blockerDb}`]);
       console.log(`阻塞 #${created[child]} ← #${created[b]}`);

@@ -262,7 +262,7 @@ D1、D2、D4、D5、D8、D9 是契约或 DDL 要改一边的差异（6 条）；
 | PUT term-evaluation | INSERT，回 201 | UPDATE 已有行，回 200；名册幼儿无行时 404 | 已修 |
 | GET /term-evaluations、GET /child-assessments | 名册 LEFT JOIN，无行即 c2 | INNER JOIN，无行的幼儿不出现；另接受契约没有的 `?term_id` | 学期已按会话派生；**基表仍是记录表，见 G107** |
 | GET term-evaluation | `TermEvaluation`（含 file_id[]） | `SELECT t.*`，多回 school_id / created_at / updated_at，无 file_id | 已修 |
-| PUT items/{item_id} | 回 `ChildAssessmentProgress`；首次评分建主记录 | 回题项行；只找已有的 c2 主记录，无则 404 | 已修 |
+| PUT items/{item_id} | 回 `ChildAssessmentProgress`；首次评分建主记录 | 回题项行；只找已有的 c2 主记录，无则 404 | 回包 #30 已修；#30 只去掉了 c2 筛，无主记录仍 404，**首次建主记录 2026-09-10 才修（#64）** |
 | GET report | `domains[].code / average`，有 total_average、scale_code、items | 字段名 `domain / domain_score`，无 total_average、scale_code、items | 已修 |
 | GET class-report | `ChildAssessmentClassReport`，只统计 c1 | 回逐幼儿逐领域行，不过滤 c1 | 已修 |
 | GET /scales | `ScaleItem` | 多回 `measurement_note`（正好是 §10.2 G105 要补的） | **仍不回 `reference_table`，见 G105** |

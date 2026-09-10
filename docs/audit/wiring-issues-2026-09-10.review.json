@@ -1,0 +1,58 @@
+[
+  {
+    "id": "R-profile-500", "layer": "L4", "type": "task", "labels": ["claude"],
+    "title": "L4｜教师档案「提交审核」每次回 500：本机库缺唯一索引 uk_tpc_one_pending（#15 回归）",
+    "body": "## Question\n\n审核（2026-09-10）实跑 `probe-teacher-profile`：60 过 3 败。`POST /teacher-profile/changes`（提交档案修改申请，NONE→s2）**每一次都回 500 `internal_error`**，不是并发才坏。\n\n根因：服务端 `db/testdata/server/routes/teacher-content.mjs:724` 的 INSERT 带 `ON CONFLICT (teacher_id) WHERE change_status = 's2'`，PG 要求存在匹配的唯一索引；`db/01_schema.sql:989` 有 `CREATE UNIQUE INDEX uk_tpc_one_pending …`，但本机 `hualong_test` 库里 `pg_indexes` 只有主键 —— 库没按新 DDL 重建。PR 24 的 `DATABASE_SPEC.md` v1.129 第 5 点自己写了「未在真实 PG 上跑过」。\n\n做法：(1) 查清数据集重建流程为什么漏了这条索引（`db/testdata` 的建库脚本是否读 `01_schema.sql` 全文）；(2) 补建索引或重建库；(3) 探针跑到 63/0；(4) 崩溃那次留在 `db_content_access_event` 的 1 行一并清掉，逐表行数回 `STATS.md`。\n\n完成判据：`node tools/probe-teacher-profile.mjs` 0 失败；`SELECT indexname FROM pg_indexes WHERE tablename='db_teacher_profile_change'` 含 `uk_tpc_one_pending`。"
+  },
+  {
+    "id": "R-gb-500", "layer": "L4", "type": "task", "labels": ["claude"],
+    "title": "L4｜成长册两条写入端点回 500：time-topics 与 books 的 SQL 参数类型推断失败（42P08，#27／#28 回归）",
+    "body": "## Question\n\n审核（2026-09-10）curl 复现两条 500，把 handler 的 SQL 放进 ROLLBACK 事务跑，PG 都报 `42P08 inconsistent types deduced for parameter`：\n\n| 端点 | 位置 | 病灶 |\n|---|---|---|\n| `POST /teacher/growth-book/time-topics`（新建在园时光主题，#28） | `teacher-book.mjs:537-547` | `$1`（title）既在 SELECT 列表又在 `d.title = $1`，一处推 unknown 一处推 varchar |\n| `POST /teacher/growth-book/books`（逐幼儿建册取回，#27） | `teacher-book.mjs:1089-1101` | `$5`（term_id）既写进 INT 列又用于 `LIKE '%-1'` |\n\n后者是定稿的唯一取 id 路径，所以「全班定稿」线上必失败。`probe-growth-book` 74 过 1 败停在第 369 行；`probe-growth-book-compile` 50 过后停在第 2 条 500。#28 的完成报告写「8 条新端点全部有人调」，但没人跑过。\n\n做法：两处参数显式转型（`$1::varchar`、`$5::text`／或把 `term_id` 的季节判断改成 `(SELECT term_season FROM db_school_term WHERE term_id=$5)`），加探针用例；同时核对同文件其它 INSERT … SELECT 有没有同型写法。\n\n完成判据：`probe-growth-book` 与 `probe-growth-book-compile` 0 失败，三表行数回 1203/12/120。"
+  },
+  {
+    "id": "R-score-item", "layer": "L3", "type": "task", "labels": ["claude"],
+    "title": "L3｜逐题评分「首次建主记录 NONE→c2」标已修但没修，新幼儿仍 404（#30 回归）",
+    "body": "## Question\n\n契约 `PUT /children/{child_id}/child-assessment/items/{item_id}` 的 summary 写「首次评分建主记录 NONE→c2」。审核（2026-09-10）读 `db/testdata/server/routes/teacher.mjs:1469` 起的 handler：查不到 `db_child_assessment` 主记录仍 `notFound()`，全文件没有 `INSERT INTO db_child_assessment (`。#30 的评论表与 `docs/audit/schema-audit-assessment.md` §11 却都标「已修」——实际只去掉了 c2 筛。\n\n探针为什么没抓到：`probe-assessment.mjs` 的 `EMPTY_CHILD = 1` 是「有主记录、0 题项」的幼儿，数据集预建了主记录，把「首次建行」的路径盖住了（与 G107 插班生同型）。\n\n做法：(1) handler 在无主记录时同事务 INSERT 主记录（绑定 `scale_code`／`scale_version`、`term_id`、`teacher_id`，状态 c2），再写题项；(2) 探针加「先删主记录再 PUT 首题」用例，跑完把主记录恢复；(3) #30 评论与审计文档 §11 改回事实。\n\n完成判据：对一名没有主记录的名册幼儿 PUT 首题回 201 且 `db_child_assessment` 多一行 c2；`probe-assessment` 0 失败。"
+  },
+  {
+    "id": "R-upload-visible", "layer": "L1", "type": "task", "labels": ["claude"],
+    "title": "L1｜上传能传却看不见：草稿封面取档授权（G78）与文件名落库（G77）（#2 回归）",
+    "body": "## Question\n\n#2 把四个「选文件」按钮接通了（三步上传链本机 79/0），但用户看不到结果：\n\n| 缺口 | 现象 | 位置 |\n|---|---|---|\n| G78 | 教师刚建的 s1 草稿的封面，本人也取不到。取档授权 `fileReachable` 对 `db_resource`／`db_case` 的直连列分支只放 `s3`；「自己上传的」那支要求 `db_file_ref` 行，而封面是直连列没有那一行 | `routes/shared.mjs` teacher 分支末两支 |\n| G77 | 文件名不是教师选的。`POST /media/files` 请求体 `additionalProperties:false` 只收 `upload_ticket`，`file_name` 由 object_key 派生 | `lib/upload.mjs:162 deriveFileName`；契约 `openapi.yaml` |\n\n两条都登了缺口、契约未动。要闭合：G78 改 `shared.mjs` 的授权分支（作者本人对自己 s1／s4 的直连列放行），先在契约描述里写清；G77 是契约变更 —— `FileCommit` 加 `file_name`（maxLength 按 DDL `db_file.file_name`），服务端收下，同轮改 `openapi.yaml` + §15。\n\n顺带一条：`home-school-moment-publish/index.js:161-165` 逐张上传中 `requireSession` 失败即 `return`，已传成功的几张不进 `photos`，留下无宿主的 `db_file` 孤行。\n\n完成判据：`probe-library-write` 加「作者取自己草稿封面回 200」断言并全绿；G77／G78 标已修。"
+  },
+  {
+    "id": "R-media-probe", "layer": "L1", "type": "task", "labels": ["claude"],
+    "title": "L1｜取档探针每跑一次漏收 1 行 viewed，库里已残留（#3 回归）",
+    "body": "## Question\n\n`tools/probe-media-fetch.mjs:306` 先调 `training.getTraining()` —— 它触发 `GET /trainings/{id}` 在服务端写一笔 `viewed` 事件（`teacher-content.mjs:258`）—— 而 `before = await maxEventId()` 在第 311 行才取，那一行永远进不了 `made`，`cleanup()` 删不到它。违反 CLAUDE.md §6「会改数据库的探针必须自己收拾」。\n\n库里现在残留 `content_access_event_id=146`（k7、training 2、viewed），`probe-library-write` 随后把 143 当基线也照过。下一次跑 `BASE_EVENTS=142` 必红。\n\n做法：在 `getTraining()` 之前取一次 `before`，调完立刻 `await newEvents(before)` 把 viewed 那行登进 `made`，再重新取 `before` 给取档那一步；删掉残留行；两支探针连跑两遍确认收敛到 142。本票由地图维护者顺手修，开票是为了记账。"
+  },
+
+  {
+    "id": "R-reject-reason", "layer": "L4", "type": "grilling", "labels": ["claude"],
+    "title": "L4｜#13 的驳回理由：契约没有字段、教师没有读审核记录的端点 —— 补契约还是改决议",
+    "body": "## Question\n\n2026-09-09 拍板：被驳回（s4）的资源／案例在「我的上传」里与 s1 同组显示，**带 `db_review_action` 最近一条的驳回理由**。审核（2026-09-10）核对交付：`openapi.yaml` 的 `Resource`／`Case` 回包没有理由字段；teacher 角色没有任何读 `db_review_action` 的端点；`services/library.js:425-436` 的 `myUploadRow` 没有理由字段；`db/GAPS.md` 也没登记这条差距。#13 的完成报告改成「五档各自徽章、s4 标已驳回」，一字未提理由。\n\n两条路：(1) 补契约 —— `Resource`／`Case` 加只读 `review_note`（来自最近一条 d2 驳回的 `db_review_action.note`），或加 `GET /library/{resources|cases}/{id}/review-actions` 只回本人内容的记录；登记缺口、改服务端、改 service；(2) 改决议 —— 教师只看到「已驳回」不看理由，理由留在 PC 端。F6 原意「驳回理由必填并向作者显示」倾向 (1)。同时要定：「我的上传」页面区块（`upload-resource` 顶部或 `resource-center` 一格）由谁做，#13 关票时没有承接票。"
+  },
+  {
+    "id": "R-task-spec", "layer": "L4", "type": "grilling", "labels": ["claude"],
+    "title": "L4｜#18 之后 01 home-spec 的 method 段与 ui-binding 仍按 task_status 分组，spec 改不改",
+    "body": "## Question\n\nF28 定：`db_task.task_status` 是管理端的独立四态列，教师端只看自己的 `assign_status`，列表不回 `task_status`、不按它分组。契约／登记表／服务端／API-CONTRACT v0.16–v0.17 四处同步，计数实测相符。\n\n但 `docs/backend spec files/01 home-spec.md:178` 仍写 `task_status … ui=task.card.status|task_detail.status`，`:187-188` 仍写 `current = task_status IN(t1,t2)`／`history = IN(t3,t4)`；后端 `db/spec/ui-binding.tsv:42-43` 仍把 `task_status` 绑到卡片。F28 自己写「本条不改标注，只记下不一致」。\n\n要决定：(1) spec 与 ui-binding 跟着 F28 改（current／history 改按 `assign_status`，`task.card.status` 绑到 `db_task_assign.assign_status`），还是保留 spec、在 F28 加一句「spec 的 method 段描述的是管理端视角」；(2) 教师端「当前／历史」两段到底按哪一列分（现在页面按 `assign_status` a1|a2 / a3）。spec 是权威顺序第四位，DECISIONS 第一位，但两者不该长期矛盾。"
+  },
+  {
+    "id": "R-getscale", "layer": "L3", "type": "grilling", "labels": ["claude"],
+    "title": "L3｜#19 与 #20 矛盾：#20 定「GET /scales 不接」，#19 的 assessment.js 却导出了 getScale()",
+    "body": "## Question\n\n#20 的结论与 allowlist：`GET /scales/{scale_code}/{scale_version}` 记「不建」，理由「版本对客户端是只读展示物，题干已在包内 `data/guide-scale.js`」。#19 合入的 `miniprogram/services/assessment.js:895` 却有 `getScale(scaleCode, scaleVersion)`，扫描器 L3 因此报 1 条待审（路径前缀由变量决定）且没有结论。\n\n要决定：(1) 删 `getScale()`，allowlist 保持「不建」；(2) 保留并改口径为「接，只用于核对包内题库与服务端 `db_scale_item` 是否同版」——`probe-assessment` 已有跨源比对（库里 124 题与包内逐题比），那个比对走的是 SQL 不是这条端点；(3) 两者都留但 `getScale()` 标 internal。牵 G100（量表编码契约与 DDL 不同名）与 G105（`ScaleItem` 缺 `reference_table`）。"
+  },
+  {
+    "id": "R-g79", "layer": "L3", "type": "grilling", "labels": ["claude"],
+    "title": "L3｜G79：月评照片写入范围从「无检查」放宽到「本班 moment 挂过」，契约要不要跟",
+    "body": "## Question\n\n#2 的后端 PR 23 顺带改了 `PUT /home-school/month-evals`（教师保存月度评价）的 `file_id` 校验：从完全不检查改成「本班任一 moment 挂过的文件」。契约写的是**幼儿级相册**（该幼儿被拍到的照片），实作比契约宽一圈。同轮登记 G79，未改 `openapi.yaml`。\n\n要决定：(1) 契约改成班级级（教师给某幼儿写月评时可以挂本班任何一张照片，即便照片里没有这名幼儿）；(2) 实作收紧到幼儿级（`db_moment_upload` JOIN `db_moment.child_id` 含该幼儿）；(3) 维持现状登记不动。涉及 PIPL 最小必要：月评是家长可见的，挂别家孩子的照片给这家家长看，是不是合适。"
+  },
+  {
+    "id": "R-gap-numbers", "layer": "L3", "type": "grilling", "labels": ["claude"],
+    "title": "L3｜GAPS 编号口径：G80–G83 成了永久空号，「取最小空号」的规则谁遵守",
+    "body": "## Question\n\n`db/GAPS.md:2386／2388` 写「G80–G83 留给评估族（#31）」，#31 却登成 G97–G105，评论称「取当时最小空号 G97」—— 当时最小空号是 G80。`git log -S\"### G80\"` 为空，G80–G83 从未存在，现在 103 条正文、最大号 G107，四个永久空号。\n\n要决定：(1) 接受空号，在 GAPS.md 开头写一句「编号只增不回填，空号是历史」；(2) 把 G97–G105 重编到 G80–G88（要改 #31 评论、审计文档、API-CONTRACT §15、探针里的 note 引用 —— 至少 5 处）；(3) 只把「预留」那两行删掉，不再预留。同时定：预留编号这个做法以后还用不用。"
+  },
+  {
+    "id": "R-gap-levels", "layer": "L3", "type": "grilling", "labels": ["claude"],
+    "title": "L3｜GAPS 汇总表没有「已解」这一级，G50／G51／G71 进不了表",
+    "body": "## Question\n\n`db/GAPS.md` 文末汇总表只有 BLOCKER／AMBIGUOUS／GAP／已决待实作／已修 五行。G50（家长评价 fan-out）、G51（月评 PUT）的小节级别写「已解」（由 F26／F25 解），G71 是 2026-09-01 另一条线的，三条都进不了表，所以表说 100 个编号、正文 103 条。\n\n要决定：(1) 加一行「已解（由决议解，实作已落）」；(2) 把「已解」统一改成「已修」，以后只用五级；(3) 「已解」与「已修」的区别是什么 —— 决议解掉 vs 代码修掉？如果区别有意义，两级都留并写进 GAPS.md 开头的级别定义。定了之后 `check-consistency` 的计数校验要跟着改。"
+  }
+]

@@ -128,10 +128,10 @@
     },
     {
       "key": "contract:GET /children/{child_id}/growth-record",
-      "status": "接",
-      "reason": "→ #19",
+      "status": "不建",
+      "reason": "#19 决定不接：成长档案页只要班级整表，单条无页面使用；service 头注写明本模块不接",
       "author": "Lin",
-      "updated_at": "2026-09-08"
+      "updated_at": "2026-09-10"
     },
     {
       "key": "contract:GET /children/{child_id}/term-evaluation",
@@ -160,20 +160,6 @@
       "reason": "但我想要知道 schema 有沒有對，所以可能要請你確認一下 DB 跟 API 本來寫的 schema 是不是對應。；→ #19",
       "author": "Lin",
       "updated_at": "2026-09-08"
-    },
-    {
-      "key": "contract:PATCH /library/cases/{case_id}",
-      "status": "接",
-      "reason": "契约与服务端已就绪（#13）：允许状态按 F27 放到 s1|s4，列表新增 mine=true 只列本人上传的，回包补回 created_by。service 已有 updateResource／updateCase／listMyUploads 三个函数，probe-library-write 钉了 7 条（含「s2 改不动且库里那一行没变」）。「我的上传」的页面区块是执行票，见 decision.md 2026-09-09 那节",
-      "author": "Lin",
-      "updated_at": "2026-09-09"
-    },
-    {
-      "key": "contract:PATCH /library/resources/{resource_id}",
-      "status": "接",
-      "reason": "契约与服务端已就绪（#13）：允许状态按 F27 放到 s1|s4，列表新增 mine=true 只列本人上传的，回包补回 created_by。service 已有 updateResource／updateCase／listMyUploads 三个函数，probe-library-write 钉了 7 条（含「s2 改不动且库里那一行没变」）。「我的上传」的页面区块是执行票，见 decision.md 2026-09-09 那节",
-      "author": "Lin",
-      "updated_at": "2026-09-09"
     },
     {
       "key": "contract:PUT /assessments/{assessment_id}/items/{tool_item_code}",
