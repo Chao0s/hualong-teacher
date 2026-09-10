@@ -431,3 +431,127 @@
   font-size: 22rpx;
   color: var(--muted);
 }
+
+/* ── 我的上传（#67） ───────────────────────────────────────────────────── */
+
+.group-title {
+  display: block;
+  margin-bottom: 12rpx;
+  font-size: 24rpx;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.group-title--gap {
+  margin-top: 24rpx;
+}
+
+.upload-list {
+  display: grid;
+  gap: 12rpx;
+}
+
+.upload-item {
+  padding: 20rpx 22rpx;
+  border: 1rpx solid var(--border);
+  border-radius: 24rpx;
+  background: #fbfdfd;
+}
+
+.upload-item--hover {
+  opacity: 0.85;
+}
+
+.upload-item--on {
+  border-color: var(--accent);
+  background: var(--accent-light);
+}
+
+.upload-item__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.upload-item__name {
+  min-width: 0;
+  font-size: 26rpx;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.upload-item__meta {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  color: var(--muted);
+}
+
+/* 驳回理由：来自 db_review_action 最近一条 d2 的备注，只有 s4 才有 */
+.upload-item__reject {
+  display: block;
+  margin-top: 10rpx;
+  padding: 12rpx 16rpx;
+  border-radius: 16rpx;
+  background: #fff4e5;
+  color: #9a5b00;
+  font-size: 22rpx;
+  line-height: 1.5;
+}
+
+.badge {
+  flex: 0 0 auto;
+  padding: 6rpx 16rpx;
+  border-radius: 999rpx;
+  background: #f2f6f6;
+  color: var(--muted);
+  font-size: 20rpx;
+  font-weight: 700;
+}
+
+.badge--warn {
+  background: #fff4e5;
+  color: #9a5b00;
+}
+
+.empty {
+  display: block;
+  font-size: 22rpx;
+  color: var(--muted);
+}
+
+/* ── 编辑中的提示条 ───────────────────────────────────────────────────── */
+
+.editing-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16rpx;
+  padding: 18rpx 22rpx;
+  margin-bottom: 20rpx;
+  border: 1rpx solid var(--accent);
+  border-radius: 24rpx;
+  background: var(--accent-light);
+}
+
+.editing-bar__main {
+  min-width: 0;
+}
+
+.editing-bar__title {
+  display: block;
+  font-size: 26rpx;
+  font-weight: 700;
+  color: var(--accent-dark);
+}
+
+.editing-bar__note {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  line-height: 1.45;
+  color: var(--muted);
+}

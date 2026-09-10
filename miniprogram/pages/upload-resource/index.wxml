@@ -10,6 +10,56 @@
     <text class="banner__desc">选择提交到资源库或案例库，系统会按对应资料标准生成表单，提交后进入审核流程。</text>
   </view>
 
+  <!-- 我的上传（#67）。两组由 service 分好：drafts 是 s1 与 s4（可点进改），
+       submitted 是 s2／s3／s5（点了只说那句话）。s4 那一行带驳回理由。 -->
+  <view class="chunk" wx:if="{{uploadsLoaded}}">
+    <view class="section-head">
+      <text class="sec">我的上传</text>
+      <text class="hint">点草稿或被驳回的条目可继续编辑</text>
+    </view>
+
+    <text class="group-title">草稿（含被驳回）</text>
+    <view class="upload-list" wx:if="{{myDrafts.length}}">
+      <view
+        class="upload-item {{editing && editing.kind === item.kind && editing.id === item.id ? 'upload-item--on' : ''}}"
+        hover-class="upload-item--hover"
+        wx:for="{{myDrafts}}"
+        wx:key="id"
+        data-kind="{{item.kind}}"
+        data-id="{{item.id}}"
+        bindtap="onMyUploadTap"
+      >
+        <view class="upload-item__row">
+          <text class="upload-item__name">{{item.name}}</text>
+          <text class="badge {{item.status === 's4' ? 'badge--warn' : ''}}">{{item.statusLabel}}</text>
+        </view>
+        <text class="upload-item__meta">{{item.kind === 'case' ? '案例' : '资源'}} · {{item.updatedAt}} · {{item.note}}</text>
+        <text class="upload-item__reject" wx:if="{{item.reviewNote}}">驳回理由：{{item.reviewNote}}</text>
+      </view>
+    </view>
+    <text class="empty" wx:else>没有草稿</text>
+
+    <text class="group-title group-title--gap">已提交／已通过</text>
+    <view class="upload-list" wx:if="{{mySubmitted.length}}">
+      <view
+        class="upload-item"
+        hover-class="upload-item--hover"
+        wx:for="{{mySubmitted}}"
+        wx:key="id"
+        data-kind="{{item.kind}}"
+        data-id="{{item.id}}"
+        bindtap="onMyUploadTap"
+      >
+        <view class="upload-item__row">
+          <text class="upload-item__name">{{item.name}}</text>
+          <text class="badge">{{item.statusLabel}}</text>
+        </view>
+        <text class="upload-item__meta">{{item.kind === 'case' ? '案例' : '资源'}} · {{item.updatedAt}} · {{item.note}}</text>
+      </view>
+    </view>
+    <text class="empty" wx:else>还没有提交过</text>
+  </view>
+
   <view class="chunk">
     <view class="section-head">
       <text class="sec">上传目标</text>
@@ -53,6 +103,17 @@
       <text class="hint">{{type === 'resource' ? '资源标准表单' : '案例标准表单'}}</text>
     </view>
 
+    <!-- 编辑中：说清正在改哪一条，并给一个退出口。被驳回的把理由再放一遍，
+         教师改的时候看得见「上次为什么没过」。 -->
+    <view class="editing-bar" wx:if="{{editing}}">
+      <view class="editing-bar__main">
+        <text class="editing-bar__title">正在编辑：{{editing.name}}</text>
+        <text class="editing-bar__note" wx:if="{{editing.reviewNote}}">驳回理由：{{editing.reviewNote}}</text>
+        <text class="editing-bar__note">编辑时不更换封面与附件</text>
+      </view>
+      <text class="mini-btn" hover-class="btn--hover" bindtap="onCancelEdit">取消编辑</text>
+    </view>
+
     <view class="form">
       <!-- ── 资源表单 ── -->
       <block wx:if="{{type === 'resource'}}">
@@ -64,7 +125,7 @@
           <input class="input" maxlength="20" value="{{resource.name}}" data-key="name" bindinput="onResourceInput" />
         </view>
 
-        <view class="image-upload">
+        <view class="image-upload" wx:if="{{!editing}}">
           <text class="image-upload__title">封面图片</text>
           <view class="image-box" bindtap="onPickCover">
             <text class="upload-note">{{coverNote}}</text>
@@ -107,7 +168,7 @@
              ResourceWrite 没有 case_ids 这一列 —— 关联关系存在 db_case.resource_ids
              那一侧，方向是案例引用资源。选了也存不下去，所以移除。 -->
 
-        <view class="upload-row">
+        <view class="upload-row" wx:if="{{!editing}}">
           <view class="upload-row__main">
             <text class="upload-name">Word附件</text>
             <text class="upload-note">资源说明、授权材料或整理文档</text>
@@ -130,7 +191,7 @@
           <input class="input" maxlength="20" value="{{caseForm.name}}" data-key="name" bindinput="onCaseInput" />
         </view>
 
-        <view class="image-upload">
+        <view class="image-upload" wx:if="{{!editing}}">
           <text class="image-upload__title">封面图片</text>
           <view class="image-box" bindtap="onPickCover">
             <text class="upload-note">{{coverNote}}</text>
@@ -201,7 +262,7 @@
           </view>
         </view>
 
-        <view class="upload-row">
+        <view class="upload-row" wx:if="{{!editing}}">
           <view class="upload-row__main">
             <text class="upload-name">Word附件</text>
             <text class="upload-note">活动详案、反思或图文案例文档</text>

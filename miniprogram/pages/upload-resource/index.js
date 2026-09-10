@@ -20,14 +20,22 @@
  *    「文件传输助手」，再回来选；点了没选到时，页面就把这句话说出来。
  *    扩展名锁死 `docx`：契约的 6 值 `content_type` 枚举里 Word 只有 .docx 这一种。
  *
- * 3. **屏幕上显示的是教师挑的那个文件名，落库的不是。** 两个媒体端点的请求体都
- *    放不下原始文件名（后端 `db/GAPS.md` G77），服务端因此从 object_key 派生一个。
- *    这里显示本地那个名字是为了让教师认出自己选的是哪一份，**不是**在说库里存的
- *    就是这个名字。
+ * 3. **Word 附件落库的就是教师挑的那个文件名。** `services/media.js` 把
+ *    `wx.chooseMessageFile` 回的 `name` 随 `POST /media/files` 送上去（G77 已修）。
+ *    封面走 `wx.chooseMedia`，图片没有原名，服务端派生一个。
  *
  * 4. **年级是多选。** `db_resource.grade` 是 `TEXT[]`，DDL 注释写着「适用年级
  *    (多选)」；而 `db_case.case_grade` 是单值。两张表在这一列上不同形，表单
  *    因此也不同形，不强行统一。
+ *
+ * ── 「我的上传」与改草稿（#67） ─────────────────────────────────────────────
+ *
+ * 页顶列出本人上传过的资源与案例，分两组：「草稿（含被驳回）」与「已提交／已通过」。
+ * 分组、能不能改、驳回理由全部由 `library.listMyUploads()` 给（`drafts`／`submitted`／
+ * `editable`／`reviewNote`），页面不判状态码。点一条可改的，把它的正文回填进下面
+ * 同一张表单（`editing` 非空），「保存草稿」变成 PATCH，「提交审核」是 PATCH 之后
+ * 再走一次 `/submission`（s4 直接重交，F27）。编辑时不换封面与附件：`PATCH` 的
+ * 请求体只收正文那几格。
  */
 
 const library = require('../../services/library');
@@ -77,6 +85,12 @@ Page({
     selectedResourceMeta: '不关联现有资源',
     selectedResourceId: null,
 
+    // 「我的上传」两组，与正在改的那一条（null = 新建）。见头注最后一节。
+    myDrafts: [],
+    mySubmitted: [],
+    uploadsLoaded: false,
+    editing: null,
+
     // 浮层状态
     picker: '',
     filterA: '全部',
@@ -103,12 +117,91 @@ Page({
           className: scope.class_name || '',
         },
       });
+      await this.loadMyUploads();
     } catch (err) {
       guard.endSessionOnAuthFailure(err);
     }
   },
 
+  /** 「我的上传」两组。失败只 toast，表单照常可用 —— 列表不是上传的前置。 */
+  async loadMyUploads() {
+    try {
+      const mine = await library.listMyUploads({ limit: 100 });
+      this.setData({ myDrafts: mine.drafts, mySubmitted: mine.submitted, uploadsLoaded: true });
+    } catch (err) {
+      if (guard.endSessionOnAuthFailure(err)) return;
+      this.setData({ uploadsLoaded: true });
+      wx.showToast({ title: err.userMessage || '我的上传加载失败', icon: 'none' });
+    }
+  },
+
+  /**
+   * 点「我的上传」里的一条：可改的回填进表单进入编辑；不可改的把那句话说出来。
+   * 能不能改由 service 给（`editable`），这里不看状态码。
+   */
+  async onMyUploadTap(e) {
+    const { kind, id } = e.currentTarget.dataset;
+    const row = this.data.myDrafts.concat(this.data.mySubmitted)
+      .find((r) => r.kind === kind && r.id === Number(id));
+    if (!row) return;
+    if (!row.editable) {
+      wx.showToast({ title: row.note, icon: 'none' });
+      return;
+    }
+    try {
+      await guard.requireSession();
+      const draft = kind === 'case'
+        ? await library.caseDraft(row.id)
+        : await library.resourceDraft(row.id);
+      if (!draft.editable) {
+        wx.showToast({ title: '这一条现在不能改', icon: 'none' });
+        await this.loadMyUploads();
+        return;
+      }
+      this.fillForm(draft);
+      wx.pageScrollTo({ selector: '.form', duration: 300 });
+    } catch (err) {
+      if (guard.endSessionOnAuthFailure(err)) return;
+      wx.showToast({ title: err.userMessage || '读取草稿失败', icon: 'none' });
+    }
+  },
+
+  /** 把一条草稿的正文放进表单。picker 存的是下标，所以按标签反查。 */
+  fillForm(draft) {
+    const patch = {
+      type: draft.kind,
+      editing: { kind: draft.kind, id: draft.id, name: draft.name, reviewNote: draft.reviewNote },
+      // 编辑时不换封面与附件（PATCH 不收那两格），清掉表单里残留的 file_id。
+      coverFileId: null,
+      coverNote: '未选择文件',
+      wordFileId: null,
+      wordNote: '',
+    };
+    if (draft.kind === 'resource') {
+      const tagIndex = this.data.resourceTags.indexOf(draft.tag);
+      patch.resource = { name: draft.name, explain: draft.explain, access: draft.access, trans: draft.trans };
+      patch.resourceTagIndex = tagIndex > -1 ? tagIndex : 0;
+    } else {
+      const gradeIndex = this.data.grades.indexOf(draft.grade);
+      const fieldIndex = this.data.fields.indexOf(draft.field);
+      patch.caseForm = { name: draft.name, intro: draft.intro, trans: draft.trans };
+      patch.gradeIndex = gradeIndex > -1 ? gradeIndex : 0;
+      patch.fieldIndex = fieldIndex > -1 ? fieldIndex : 0;
+      patch.caseAreas = draft.areas;
+    }
+    this.setData(patch);
+  },
+
+  onCancelEdit() {
+    this.resetForm();
+  },
+
   onTargetTap(e) {
+    // 编辑中切目标没有意义：一条资源改不成案例。先取消编辑再切。
+    if (this.data.editing) {
+      wx.showToast({ title: '先取消编辑，再切换上传目标', icon: 'none' });
+      return;
+    }
     this.setData({ type: e.currentTarget.dataset.type });
   },
 
@@ -334,8 +427,34 @@ Page({
     wx.showLoading({ title: alsoSubmitForReview ? '正在提交' : '正在保存', mask: true });
 
     const target = this.data.type;
+    const editing = this.data.editing;
     try {
       await guard.requireSession();
+      if (editing) {
+        // 改草稿：PATCH 正文那几格；提交审核再走一次 /submission（s1 或 s4 → s2）。
+        if (editing.kind === 'resource') {
+          await library.updateResource(editing.id, {
+            name: this.data.resource.name,
+            explain: this.data.resource.explain,
+            access: this.data.resource.access,
+            trans: this.data.resource.trans,
+          });
+          if (alsoSubmitForReview) await library.submitResource(editing.id);
+        } else {
+          await library.updateCase(editing.id, {
+            name: this.data.caseForm.name,
+            intro: this.data.caseForm.intro,
+            trans: this.data.caseForm.trans,
+          });
+          if (alsoSubmitForReview) await library.submitCase(editing.id);
+        }
+        wx.hideLoading();
+        this.setData({ submitting: false });
+        wx.showToast({ title: alsoSubmitForReview ? '已重新提交审核' : '已保存修改', icon: 'success' });
+        this.resetForm();
+        await this.loadMyUploads();
+        return;
+      }
       const created = target === 'resource'
         ? await library.createResource({
           name: this.data.resource.name,
@@ -369,6 +488,7 @@ Page({
       this.setData({ submitting: false });
       wx.showToast({ title: alsoSubmitForReview ? '已提交审核' : '已保存草稿', icon: 'success' });
       this.resetForm();
+      await this.loadMyUploads();
     } catch (err) {
       wx.hideLoading();
       this.setData({ submitting: false });
@@ -379,6 +499,7 @@ Page({
 
   resetForm() {
     this.setData({
+      editing: null,
       resource: { ...EMPTY_RESOURCE },
       caseForm: { ...EMPTY_CASE },
       caseAreas: [],

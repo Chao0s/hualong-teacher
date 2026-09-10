@@ -419,9 +419,16 @@ const STATUS_NOTE = {
 };
 
 // 只有这两档能点进去改（F27：s1→s1 与 s4→s4，s4 直接重交不经 s1）。
+// 页面把它们放在同一组「草稿（含被驳回）」里，其余三档是「已提交／已通过」。
 const EDITABLE = { s1: true, s4: true };
 
-/** 「我的上传」的一行。比列表卡多两样：那句话，与能不能点进改。 */
+/**
+ * 「我的上传」的一行。比列表卡多三样：那句话、能不能点进改、驳回理由。
+ *
+ * `reviewNote` 是契约 `Resource.review_note`／`Case.review_note`：最近一条驳回
+ * （`db_review_action` 的 d2）的备注，服务端只在 s4 且作者本人时给非空，其余 null。
+ * 这里只把 null 换成空串，页面按有没有字决定渲不渲染 —— 不编一句「未填写理由」。
+ */
 function myUploadRow(row, kind) {
   const status = kind === 'case' ? row.case_status : row.resource_status;
   return {
@@ -431,6 +438,7 @@ function myUploadRow(row, kind) {
     status,
     statusLabel: CONTENT_STATUS[status] || '未知状态',
     note: STATUS_NOTE[status] || '',
+    reviewNote: row.review_note || '',
     editable: Boolean(EDITABLE[status]),
     updatedAt: time.formatDay(row.updated_at),
   };
@@ -448,10 +456,55 @@ async function listMyUploads({ limit = 100 } = {}) {
     api.getPage(RESOURCE_PATH, { limit, mine: true }),
     api.getPage(CASE_PATH, { limit, mine: true }),
   ]);
-  const items = res.items.map((r) => myUploadRow(r, 'resource'))
-    .concat(cases.items.map((r) => myUploadRow(r, 'case')));
-  items.sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
-  return { items, nextCursor: null };
+  // 先按原始 `updated_at`（PlannedTime 字串，同偏移量下字典序即时间序）排，再装饰。
+  // 装饰后的 `updatedAt` 是 `MM-DD`，拿它排会跨年错序、同一天内乱序。
+  const rows = res.items.map((r) => [r, 'resource']).concat(cases.items.map((r) => [r, 'case']));
+  rows.sort((a, b) => String(b[0].updated_at).localeCompare(String(a[0].updated_at)));
+  const items = rows.map(([r, kind]) => myUploadRow(r, kind));
+  // 两组是同一份 items 按 editable 分开，页面直接各渲染一组，不再自己判状态。
+  return {
+    items,
+    drafts: items.filter((r) => r.editable),
+    submitted: items.filter((r) => !r.editable),
+    nextCursor: null,
+  };
+}
+
+/**
+ * 改草稿时表单要回填的那几格。资源的三段正文、标签与年级，全部译成页面在用的中文
+ * 标签（表单的 picker 与 chip 存的就是标签）。不在可改范围（s2／s3／s5）时 `editable`
+ * 为假，页面据此拒绝进入编辑 —— 不靠 PATCH 回 404 才发现。
+ */
+async function resourceDraft(resourceId) {
+  const row = await api.get(`${RESOURCE_PATH}/${resourceId}`);
+  return {
+    kind: 'resource',
+    id: row.resource_id,
+    name: row.resource_name || '',
+    tag: RESOURCE_TAG[row.resource_tag] || '',
+    explain: row.resource_explain || '',
+    access: row.resource_access || '',
+    trans: row.resource_trans || '',
+    editable: Boolean(EDITABLE[row.resource_status]),
+    reviewNote: row.review_note || '',
+  };
+}
+
+/** 同资源。案例的年级与领域是单值，活动类型是多选。 */
+async function caseDraft(caseId) {
+  const row = await api.get(`${CASE_PATH}/${caseId}`);
+  return {
+    kind: 'case',
+    id: row.case_id,
+    name: row.case_name || '',
+    grade: GRADE[row.case_grade] || '',
+    field: CASE_FIELD[row.case_field] || '',
+    areas: (row.case_area || []).map((a) => CASE_AREA[a]).filter(Boolean),
+    intro: row.case_intro || '',
+    trans: row.case_trans || '',
+    editable: Boolean(EDITABLE[row.case_status]),
+    reviewNote: row.review_note || '',
+  };
 }
 
 /**
@@ -559,6 +612,8 @@ module.exports = {
   createResource,
   createCase,
   listMyUploads,
+  resourceDraft,
+  caseDraft,
   updateResource,
   updateCase,
   submitResource,

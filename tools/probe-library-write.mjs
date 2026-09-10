@@ -16,6 +16,7 @@
  * 但它意味着测试残渣只能从库这一侧收走。
  *
  *   node tools/probe-library-write.mjs
+ *   node tools/probe-library-write.mjs --base http://localhost:3861/api/v1   # 打另一个端口
  */
 
 import { createRequire } from 'node:module';
@@ -37,7 +38,14 @@ const library = require_(resolve(MP, 'services', 'library.js'));
 const media = require_(resolve(MP, 'services', 'media.js'));
 const guard = require_(resolve(MP, 'utils', 'guard.js'));
 const api = require_(resolve(MP, 'utils', 'request.js'));
+const config = require_(resolve(MP, 'config.js'));
 const { Client } = require_(resolve(TESTDATA, 'node_modules', 'pg'));
+
+// `--base <url>` 把请求改打到另一个端口。改了服务端要重启才生效，而 3860 那扇窗口
+// 是别人开的；起一个 3861 验完再关。`utils/request.js` 每次发出前都现读
+// `config.env.baseUrl`，改这一格就够。
+const baseAt = process.argv.indexOf('--base');
+if (baseAt !== -1 && process.argv[baseAt + 1]) config.env.baseUrl = process.argv[baseAt + 1];
 
 const sb = scoreboard();
 const check = sb.check.bind(sb);
@@ -50,12 +58,13 @@ async function counts() {
     'SELECT (SELECT count(*)::int FROM db_resource) AS resources,'
     + ' (SELECT count(*)::int FROM db_case) AS cases,'
     + ' (SELECT count(*)::int FROM db_file) AS files,'
-    + ' (SELECT count(*)::int FROM db_content_access_event) AS events'
+    + ' (SELECT count(*)::int FROM db_content_access_event) AS events,'
+    + ' (SELECT count(*)::int FROM db_review_action) AS reviews'
   );
   return r.rows[0];
 }
 
-const made = { resources: [], cases: [], files: [], events: [] };
+const made = { resources: [], cases: [], files: [], events: [], reviews: [] };
 
 /**
  * 要传的两个文件，探针自己在磁盘上造。
@@ -81,8 +90,10 @@ async function main() {
   const before = await counts();
   filesBaseline = before.files;
   started.events = before.events;
+  started.reviews = before.reviews;
   console.log(`基线：db_resource=${before.resources}，db_case=${before.cases}`
-    + `，db_file=${before.files}，db_content_access_event=${before.events}`);
+    + `，db_file=${before.files}，db_content_access_event=${before.events}`
+    + `，db_review_action=${before.reviews}`);
 
   await guard.requireSession();
 
@@ -188,10 +199,29 @@ async function main() {
     'SELECT file_type, file_name FROM db_file WHERE file_id = $1', [plan.fileId],
   )).rows[0];
   check('Word 附件落库为 f2（docx）', planRow.file_type === 'f2', `实际 ${planRow.file_type}`);
-  // G77：两个媒体端点的请求体都放不下原始文件名，服务端从 object_key 派生一个。
-  // 所以「教师挑的名字存下来了」这件事**不成立**，断言钉的是它确实没存下来。
-  check('库里存的不是教师挑的那个文件名（后端 G77）',
-    planRow.file_name !== '探针详案.docx', `实际 ${planRow.file_name}`);
+  // G77（已修）：`POST /media/files` 的可选 `file_name` 把教师挑的名字送到库里。
+  // 钉的是库里那一格，不是回包 —— 回包照抄请求体也能骗过。
+  check('库里存的就是教师挑的那个文件名（G77 已修）',
+    planRow.file_name === '探针详案.docx', `实际 ${planRow.file_name}`);
+  // 封面走 wx.chooseMedia，没有原名，服务端派生一个 —— 派生名以扩展名结尾、不是空串。
+  const coverName = (await db.query(
+    'SELECT file_name FROM db_file WHERE file_id = $1', [cover.fileId],
+  )).rows[0].file_name;
+  check('没给 file_name 的封面落了派生名（.png 结尾，不为空）',
+    /\.png$/.test(coverName || ''), `实际 ${coverName}`);
+  // 传一个 trim 后为空的名字要被拒，不能落成没有名字的一行。
+  const blankCred = await api.post('/media/upload-credentials', {
+    body: { usage_key: 'image', content_type: 'image/png', byte_size: PNG_BYTES.length },
+  });
+  await postBytes(blankCred, COVER_PATH);
+  let blankRejected = null;
+  try {
+    const bad = await api.post('/media/files', { body: { upload_ticket: blankCred.upload_ticket, file_name: '   ' } });
+    if (bad && bad.file_id) made.files.push(bad.file_id);
+  } catch (err) { blankRejected = err; }
+  check('file_name 全是空白回 422 validation_failed',
+    Boolean(blankRejected) && blankRejected.statusCode === 422 && blankRejected.code === 'validation_failed',
+    blankRejected ? `实际 ${blankRejected.statusCode} ${blankRejected.code}` : '这一发落库了');
 
   // ---- 建资源草稿 ----------------------------------------------------------
   const res = await library.createResource({
@@ -234,6 +264,30 @@ async function main() {
   check('grade 存的是编码数组 [k3]', JSON.stringify(s.grade) === JSON.stringify(['k3']),
     `实际 ${JSON.stringify(s.grade)}`);
 
+  // ---- G78：作者取自己 s1 草稿的封面回 200，别人的 s1／s4 仍是 404 ---------------
+  //
+  // 两头都钉（§7.4）：只钉「自己的取得到」，把那一支放宽成「本园的都取得到」也照样绿。
+  // 数据集里 resource 5 是教师 5 的 s1（封面 20），resource 7 是教师 7 的 s4（封面 24）；
+  // 探针以教师 1 登录，两条都不是他的。
+  const ownCover = await media.fileUrl(cover.fileId, { object: media.OWNER.RESOURCE, id: res.resource_id });
+  check('作者取自己 s1 草稿的封面回 200（G78 已修）',
+    Boolean(ownCover && ownCover.url) && ownCover.fileId === cover.fileId,
+    `实际 ${JSON.stringify(ownCover)}`);
+  const ownWord = await media.fileUrl(plan.fileId, { object: media.OWNER.RESOURCE, id: res.resource_id });
+  check('作者取自己 s1 草稿的 Word 回 200，且 file_name 是教师挑的名字',
+    Boolean(ownWord && ownWord.url) && ownWord.name === '探针详案.docx',
+    `实际 ${JSON.stringify(ownWord)}`);
+  for (const [label, fileId, ownerId] of [
+    ['别人的 s1 草稿（resource 5 / file 20）', 20, 5],
+    ['别人的 s4 被驳回（resource 7 / file 24）', 24, 7],
+  ]) {
+    let code = 0;
+    try {
+      await media.fileUrl(fileId, { object: media.OWNER.RESOURCE, id: ownerId });
+    } catch (err) { code = err.statusCode; }
+    check(`${label}的封面仍是 404`, code === 404, `实际 ${code || '200'}`);
+  }
+
   // ---- 自己的草稿自己看得见（与读探针里「别人的草稿看不见」互为对照） --------
   const mine = await library.listResources({ limit: 100 });
   check('自己新建的草稿在列表里看得见',
@@ -272,6 +326,13 @@ async function main() {
     `回包 ${submitted && submitted.submitted_at}，库里 ${row.rows[0].wire}`);
   check('详情页读到的状态文案是「待审核」', after.statusLabel === '待审核',
     `实际「${after.statusLabel}」`);
+  // G78 的边：放行只到 s1／s4。交上去（s2）之后作者自己也取不到 —— 与 PATCH 的可改范围同一条。
+  let s2CoverCode = 0;
+  try {
+    await media.fileUrl(cover.fileId, { object: media.OWNER.RESOURCE, id: res.resource_id });
+  } catch (err) { s2CoverCode = err.statusCode; }
+  check('交上去（s2）之后作者取自己的封面回 404（放行只到 s1／s4）',
+    s2CoverCode === 404, `实际 ${s2CoverCode || '200'}`);
 
   // ---- 建案例草稿，并关联一条资源 ------------------------------------------
   const kase = await library.createCase({
@@ -304,6 +365,11 @@ async function main() {
   check('case_grade/case_field 存的是编码 k3/f3',
     storedCase.rows[0].case_grade === 'k3' && storedCase.rows[0].case_field === 'f3',
     `实际 ${storedCase.rows[0].case_grade}/${storedCase.rows[0].case_field}`);
+
+  // 案例那一支也钉：同一个封面 file_id 经 db_case 这个宿主取，作者 s1 放行。
+  const ownCaseCover = await media.fileUrl(cover.fileId, { object: media.OWNER.CASE, id: kase.case_id });
+  check('作者取自己 s1 案例草稿的封面回 200（G78 已修，db_case 那一支）',
+    Boolean(ownCaseCover && ownCaseCover.url), `实际 ${JSON.stringify(ownCaseCover)}`);
 
   const kaseDetail = await library.getCase(kase.case_id);
   // 取档前置是 s3。刚建的草稿不该给下载按钮 —— 给了，教师点下去只能拿到 404，
@@ -443,6 +509,86 @@ async function main() {
     `实际「${patched.rows[0].resource_explain}」`);
   check('改草稿不动状态（s1→s1）', patched.rows[0].resource_status === 's1',
     `实际 ${patched.rows[0].resource_status}`);
+  // 三段正文都要落库。此前 PATCH 只收 name／explain，access／trans 送了也静默丢 ——
+  // 改草稿的表单接上（#67）之后这两格才有人送，所以钉到库里那两列。
+  await library.updateResource(draft.resource_id, { access: '改之后的获取。', trans: '改之后的转化。' });
+  const patched2 = await db.query(
+    'SELECT resource_access, resource_trans, resource_name FROM db_resource WHERE resource_id=$1',
+    [draft.resource_id]);
+  check('PATCH 的 resource_access／resource_trans 真的落库',
+    patched2.rows[0].resource_access === '改之后的获取。' && patched2.rows[0].resource_trans === '改之后的转化。',
+    `实际「${patched2.rows[0].resource_access}」「${patched2.rows[0].resource_trans}」`);
+  check('只改 access／trans 时名字没动', patched2.rows[0].resource_name === '探针草稿（已改名）',
+    `实际「${patched2.rows[0].resource_name}」`);
+
+  // ---- review_note（#67）：s4 且作者本人才有，其余 null ---------------------------
+  //
+  // 数据集里 t1／t2 一条 d2 都没有（两条 s4 的历史是 d1 + d3），所以理由只能由探针
+  // 自己造：把刚建的草稿按管理端驳回的形状写成 s4 + 一条 d2 的 db_review_action。
+  // 两行都是本探针造的，cleanup 收走；db_review_action 的行数要回到基线。
+  const REJECT_NOTE = '探针驳回理由：封面出现幼儿正面，请更换后重交。';
+  // 先钉 s1：没有驳回过 → null，而且回包里这一格要**存在**（不是没这个字段，§7.6）。
+  const rawS1 = await api.get(`/library/resources/${draft.resource_id}`);
+  check('自己的 s1 草稿 review_note 是 null（字段存在）',
+    Object.hasOwn(rawS1, 'review_note') && rawS1.review_note === null,
+    `实际 ${JSON.stringify(rawS1.review_note)}`);
+  await db.query("UPDATE db_resource SET resource_status = 's4', updated_at = now() WHERE resource_id = $1",
+    [draft.resource_id]);
+  const ra = await db.query(
+    `INSERT INTO db_review_action (school_id, admin_id, target_type, resource_id, decision, decision_reason)
+     VALUES (1, 1, 't1', $1, 'd2', $2) RETURNING review_action_id`,
+    [draft.resource_id, REJECT_NOTE]);
+  made.reviews.push(ra.rows[0].review_action_id);
+  // 再插一条更早的 d2，钉「取的是最近一条」而不是随便一条。
+  const raOld = await db.query(
+    `INSERT INTO db_review_action (school_id, admin_id, target_type, resource_id, decision, decision_reason, created_at)
+     VALUES (1, 1, 't1', $1, 'd2', '探针旧理由（不该被取到）', now() - interval '1 day') RETURNING review_action_id`,
+    [draft.resource_id]);
+  made.reviews.push(raOld.rows[0].review_action_id);
+
+  const myUp2 = await library.listMyUploads({ limit: 100 });
+  const rejectedRow = myUp2.items.find((r) => r.kind === 'resource' && r.id === draft.resource_id);
+  check('我的上传里 s4 那一条带驳回理由，且逐字等于 db_review_action 最近一条 d2 的备注',
+    Boolean(rejectedRow) && rejectedRow.reviewNote === REJECT_NOTE,
+    `实际 ${JSON.stringify(rejectedRow)}`);
+  check('s4 那一条落在「草稿（含被驳回）」组、可改',
+    myUp2.drafts.some((r) => r.kind === 'resource' && r.id === draft.resource_id && r.editable === true)
+      && !myUp2.submitted.some((r) => r.kind === 'resource' && r.id === draft.resource_id),
+    `drafts=${myUp2.drafts.map((r) => r.kind + r.id).join(',')}`);
+  check('两组是同一份 items 的划分（drafts + submitted = items，且 submitted 全不可改）',
+    myUp2.drafts.length + myUp2.submitted.length === myUp2.items.length
+      && myUp2.submitted.every((r) => r.editable === false),
+    `drafts ${myUp2.drafts.length} + submitted ${myUp2.submitted.length} ≠ items ${myUp2.items.length}`);
+  const draftForEdit = await library.resourceDraft(draft.resource_id);
+  check('回填表单的 resourceDraft 也带同一条理由，且可改',
+    draftForEdit.reviewNote === REJECT_NOTE && draftForEdit.editable === true
+      && draftForEdit.access === '改之后的获取。',
+    `实际 ${JSON.stringify(draftForEdit)}`);
+  // 别人的 s4：给数据集里教师 7 的 resource 7 临时插一条 d2，教师 1 看得见这一行、
+  // 看不见理由。两头钉：行在列表里，note 是 null。
+  const raOther = await db.query(
+    `INSERT INTO db_review_action (school_id, admin_id, target_type, resource_id, decision, decision_reason)
+     VALUES (1, 1, 't1', 7, 'd2', '探针：别人的驳回理由，教师 1 不该看到') RETURNING review_action_id`);
+  made.reviews.push(raOther.rows[0].review_action_id);
+  const rawOther = await api.get('/library/resources/7');
+  const listOther = (await api.getPage('/library/resources', { limit: 100 })).items
+    .find((r) => r.resource_id === 7);
+  check('别人的 s4 看得见那一行，但 review_note 是 null（详情与列表两处）',
+    rawOther.resource_status === 's4' && rawOther.review_note === null
+      && Boolean(listOther) && listOther.review_note === null,
+    `详情 ${JSON.stringify(rawOther.review_note)}，列表 ${JSON.stringify(listOther && listOther.review_note)}`);
+
+  // s4 直接改、直接重交（F27）：PATCH 成功、/submission 落成 s2。
+  await library.updateResource(draft.resource_id, { name: '探针草稿（驳回后再改）' });
+  await library.submitResource(draft.resource_id);
+  const resubmitted = await db.query(
+    'SELECT resource_name, resource_status FROM db_resource WHERE resource_id=$1', [draft.resource_id]);
+  check('s4 改得动且重交后库里是 s2（F27：不经 s1）',
+    resubmitted.rows[0].resource_name === '探针草稿（驳回后再改）' && resubmitted.rows[0].resource_status === 's2',
+    `实际「${resubmitted.rows[0].resource_name}」${resubmitted.rows[0].resource_status}`);
+  const rawS2 = await api.get(`/library/resources/${draft.resource_id}`);
+  check('重交成 s2 之后 review_note 回到 null（只在 s4 时非空）', rawS2.review_note === null,
+    `实际 ${JSON.stringify(rawS2.review_note)}`);
   // ---- derived 注入（DO-NOT-BUILD 8 / 契约 §7.3，越权测试的 F 组） ----------
   //
   // 走 api.post 而不是 library.createResource：service 只把认识的字段拼进 body，
@@ -538,6 +684,11 @@ function postBytes(cred, filePath) {
 }
 
 async function cleanup() {
+  // 审核动作最先删：fk_ra_resource 指着资源行。它们是本探针为 review_note 造的，
+  // 表本身「只插不改不删」的规矩管的是生产审计，不管测试残渣。
+  for (const id of made.reviews) {
+    await db.query('DELETE FROM db_review_action WHERE review_action_id=$1', [id]);
+  }
   // 先删案例（它引用资源），再删资源，**最后才删文件**：封面与 Word 是
   // db_resource／db_case 上的外键列，文件先删就撞 fk_res_cover 那一族。
   for (const id of made.cases) {
@@ -560,6 +711,7 @@ async function cleanup() {
   await db.query("SELECT setval('db_case_case_id_seq', (SELECT max(case_id) FROM db_case))");
   await db.query("SELECT setval('db_file_file_id_seq', (SELECT max(file_id) FROM db_file))");
   await db.query("SELECT setval('db_content_access_event_content_access_event_id_seq', (SELECT max(content_access_event_id) FROM db_content_access_event))");
+  await db.query("SELECT setval('db_review_action_review_action_id_seq', (SELECT max(review_action_id) FROM db_review_action))");
   // 磁盘上那两个临时文件也是本次造的。没造出来就没什么可删。
   for (const path of [COVER_PATH, WORD_PATH]) {
     try { unlinkSync(path); } catch { /* 没造出来 */ }
@@ -569,7 +721,7 @@ async function cleanup() {
 // 资源与案例的基线是数据集不变量（12／10 行），写死；对不上就是数据集变了或有残渣。
 // 存取事件不同：它是 append-only 的事件表，别的探针与别的轮次也在往里写，所以这里
 // 只钉「本探针收走了自己加的那几行」—— 拿开工时的行数当基线，不去管别人留下的。
-const started = { resources: 12, cases: 10, events: null };
+const started = { resources: 12, cases: 10, events: null, reviews: null };
 
 main()
   .catch((err) => check(`探针本身出错：${err && err.stack ? err.stack : err}`, false))
@@ -588,8 +740,12 @@ main()
       // db_file 的基线不写死：它是本次开跑那一刻量的，本探针没有别的行可依。
       check('清理后 db_file 回到基线', filesBaseline !== null && after.files === filesBaseline,
         `基线 ${filesBaseline} 行，实际 ${after.files} 行`);
+      check('清理后 db_review_action 回到开工时的行数（review_note 的驳回行是本探针造的）',
+        started.reviews === null || after.reviews === started.reviews,
+        `基线 ${started.reviews} 行，实际 ${after.reviews} 行`);
       console.log(`清理后：db_resource=${after.resources}，db_case=${after.cases}`
-        + `，db_file=${after.files}，db_content_access_event=${after.events}`);
+        + `，db_file=${after.files}，db_content_access_event=${after.events}`
+        + `，db_review_action=${after.reviews}`);
     } catch (err) {
       check(`清理失败，数据库可能残留了行：${err.message}`, false);
     }
