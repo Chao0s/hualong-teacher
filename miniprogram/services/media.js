@@ -82,6 +82,10 @@ const OWNER = {
   TRAINING: 'db_training',
   TASK: 'db_task',
   TEACHER_CREDENTIAL: 'db_teacher_credential',
+  // 也是直连列宿主：`db_resource.cover_file_id`／`word_file_id` 与 `db_case` 同名两列。
+  // `owner_id` 是 `resource_id`／`case_id`。s3 人人可取；作者本人的 s1／s4 也可取（G78）。
+  RESOURCE: 'db_resource',
+  CASE: 'db_case',
 };
 
 // db_file.file_type —— 01_schema.sql:498 逐字：
@@ -321,9 +325,9 @@ function objectStoreError(res) {
  * 任何业务对象的图片额度（契约 §8.3）。所以调用方只要 catch 住这一发即可，
  * 不需要回滚什么。
  *
- * `file_name` 是**服务端派生的**，不是教师挑的那个名字：两个端点的请求体都放不下
- * 原始文件名（后端 `db/GAPS.md` G77）。要在屏幕上显示教师挑的名字，就用本地那一个，
- * 不要拿这里回的名字去冒充。
+ * `fileName` 给了就随落库那一发送上去（`POST /media/files` 的可选 `file_name`，G77），
+ * 库里存的就是教师挑的那个名字；没给（`wx.chooseMedia` 的图片没有原名）服务端从
+ * `object_key` 派生一个。回的 `name` 是库里那一格。
  */
 async function uploadFile(filePath, { usageKey, byteSize, fileName } = {}) {
   const contentType = contentTypeOf(fileName) || contentTypeOf(filePath);
@@ -357,9 +361,12 @@ async function uploadFile(filePath, { usageKey, byteSize, fileName } = {}) {
   await postObject(cred, filePath);
   // `idempotency` 在登记表里是 `optional`，所以 utils/request.js 不为它生成键。
   // 这一发真正的幂等键是 upload_ticket：同一张票据再提交一次回同一行，不新建。
+  const commit = { upload_ticket: cred.upload_ticket };
+  // 只在真的有原名时才带这一格：发 null 与不发在服务端是同一件事（派生一个）。
+  if (fileName) commit.file_name = fileName;
   const file = await api.post(FILE_PATH, {
     action: ACTIONS.commit,
-    body: { upload_ticket: cred.upload_ticket },
+    body: commit,
   });
   return {
     fileId: file.file_id,

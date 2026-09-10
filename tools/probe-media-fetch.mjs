@@ -300,7 +300,11 @@ async function main() {
     [ME.school_id],
   )).rows[0];
   if (trainFix) {
+    // getTraining() 会让服务端写一笔 viewed（规则 21）。先取基线、调完立刻登进 made，
+    // 否则那一行永远收拾不到 —— 2026-09-10 审核发现库里就残留了这样一行（id 146）。
+    before = await maxEventId();
     const detail = await training.getTraining(trainFix.training_id);
+    await newEvents(before);
     check('services/training 给出宿主那一对',
       detail.fileOwner.object === 'db_training' && detail.fileOwner.id === trainFix.training_id,
       JSON.stringify(detail.fileOwner));
