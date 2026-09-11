@@ -601,6 +601,11 @@ module.exports = {
   CASE_FIELD,
   CASE_AREA,
   CONTENT_STATUS,
+  // 色表与标签助手也导出：教研培训首页的推荐卡要用同一份（G111）。
+  // 不导出的话，那一页只能在 training.js 里另抄一张色表 —— 两张表就会漂。
+  TAG_TONE,
+  FIELD_TONE,
+  gradeLabel,
   tagFilters,
   gradeFilters,
   fieldFilters,
