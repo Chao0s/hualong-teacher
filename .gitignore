@@ -43,3 +43,6 @@ captures/_extracted/
 # 进库的是那一批批起草的草稿（eli10-drafts/）—— 那才是那 167 句人话的出处。
 .scratch/screen-operations/eli10-facts.jsonl
 .scratch/screen-operations/out/
+
+# playwright-cli 的快照目录（.playwright-cli/page-*.yml），工具产物，可随时重生成。
+.playwright-cli/
