@@ -122,7 +122,7 @@ function countStrip(b) {
  * @param {{homeUrl: string, rolesUrl: string, rawUrl: string, specUrl: string}} links
  */
 export function pagesPage({ homeUrl, rolesUrl, rawUrl, rawViewerUrl = '', specUrl, specViewerUrl = '' }) {
-  const { screenOps, byScreen, eli10, opById, titles, unused, notTeacher, unusedNoService, serviceReport } = buildPageView();
+  const { screenOps, byScreen, eli10, opById, titles, unused, notTeacher, unusedNoService, serviceReport, utilsCalled } = buildPageView();
 
   const cards = [...byScreen.keys()].sort().map((screen) => {
     const rows = byScreen.get(screen);
@@ -329,6 +329,23 @@ ${cards}
     </tr></thead><tbody>${unusedRows}</tbody></table>
   </div>
 </section>
+${utilsCalled.length ? `<section class="card" id="utils">
+  <header><h2>由 utils 内部调用</h2><code class="dir">miniprogram/utils/</code><span class="cnt">${utilsCalled.length} 条</span></header>
+  <div class="sec">
+    <p class="note">这几条不挂在任何屏幕上 —— 是 <code>utils/auth.js</code> 直接调的（登录那两发）。没有这一段，按屏幕看的人看不到它们存在：它们既然没有屏调用，就不在任何卡里，而排出了下面那张「无人认领」表。</p>
+    <table class="tbl"><thead><tr>${HEAD.map((h) => `<th>${h}</th>`).join('')}</tr></thead><tbody>
+    ${utilsCalled.map((o) => `<tr class="r">`
+      + '<td>—</td>'
+      + `<td>${esc(o.method)}</td>`
+      + `<td>${escPath(o.path)}</td>`
+      + `<td>${esc(o.operationId)}</td>`
+      + `<td>${esc((eli10.get(o.operationId) || {})['幹嘛'] || '')}</td>`
+      + '<td><i class="mut">随页面加载</i></td>'
+      + '<td><b class="chip">由 utils 调</b></td>'
+      + '</tr>').join('\n    ')}
+    </tbody></table>
+  </div>
+</section>` : ''}
 </div>
 </body></html>`;
 }

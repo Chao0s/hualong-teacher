@@ -127,6 +127,10 @@ export function buildPageView() {
     .map((r) => r.key));
   const unused = teacherOps.filter((o) => !callers.has(o.operationId) && !viaUtils.has(o.operationId));
   const notTeacher = ops.filter((o) => !(o.roles || []).includes('teacher') && !o.isPublic);
+  // 由 utils 内部调的那几条（`utils/auth.js` 的登录两发）。它们**必须有落点**：
+  // 没有屏调它们，所以不在任何卡里；又把它们排出了 unused，所以也不在文末清单里 ——
+  // 结果是「按屏幕看」的人永远看不到登录那一发存在。单列一段，与派生 spec 的同一组 tag 对齐。
+  const utilsCalled = teacherOps.filter((o) => viaUtils.has(o.operationId));
 
   // 无页面认领的那 10 条里，哪些 service 层写了却没有任何页面走得到（scan:wiring 报 6，
   // 差的 4 条就是这个）—— 两者都要报，因为它们要修的东西不一样。
@@ -148,7 +152,7 @@ export function buildPageView() {
 
   return {
     screenOps, byScreen, eli10, ops, opById, titles, callers, unused, notTeacher,
-    unusedNoService, serviceReport: wiringFile,
+    unusedNoService, serviceReport: wiringFile, utilsCalled,
   };
 }
 
