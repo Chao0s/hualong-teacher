@@ -46,8 +46,14 @@ export async function cover(r) {
   // `--emit` writes the two tables but NOT the wiring report. A stale report
   // makes the service-layer column look current when it is not. Measured
   // 56 minutes stale on 2026-09-12.
+  // NOTE: no `shell` here. This repo lives under a path containing a space
+  // ("My Drive"), and running `node <absolute path>` through a shell splits it —
+  // node never starts, the exec throws, and this catch then reports a stale
+  // report that is not stale. That produced a false high on 2026-09-12; the
+  // same bug was fixed in repo.mjs and render.mjs, and missed here.
+  // Verify the instrument before the finding.
   try {
-    await run('node', [join(REPO, 'tools', 'check-report-freshness.mjs'), '--strict'], { cwd: REPO, shell: process.platform === 'win32' });
+    await run('node', [join(REPO, 'tools', 'check-report-freshness.mjs'), '--strict'], { cwd: REPO });
     console.log('   [cover/report] fresh — not older than the files it scanned');
   } catch (err) {
     r.add({
@@ -130,8 +136,11 @@ export async function cover(r) {
   console.log(`   [cover/rows] ${mpScreens.length} screens on disk, ${mpScreens.length - missing.length} have rows, ${ops.length} rows total`);
 
   // ── the ELI10 table covers every operation ─────────────────────────────
+  // The table's first column is `key`, not `operation_id`. Reading the wrong
+  // name made 168 rows look like 0 and produced "135 operations without an
+  // entry" on 2026-09-12 — a finding that described my reader, not the repo.
   const eli = readTsv(join(SPEC, 'operation-eli10.tsv'));
-  const opIds = new Set(eli.map((e) => e.operation_id).filter(Boolean));
+  const opIds = new Set(eli.map((e) => e.key).filter(Boolean));
   const missingEli = ops.map((o) => o.operation_id).filter((id) => id && id !== 'NONE' && !opIds.has(id));
   if (missingEli.length) {
     r.add({
