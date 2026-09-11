@@ -19,9 +19,9 @@
 </style>
 </head>
 <body>
-<div class="phone" data-intent="growth-book-time-manage.phone">
+<div class="phone">
   <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
-  <div class="nav-bar"><a class="back" href="growth-book-edit.html" data-intent="growth-book-time-manage.back">‹</a><div class="nav-title">在园时光管理</div><span></span></div>
+  <div class="nav-bar"><a class="back" href="growth-book-edit.html">‹</a><div class="nav-title">在园时光管理</div><span></span></div>
   <div class="scroll">
     <div class="count-line">
       <div class="count-pill" data-intent="growth-book-time-manage.count-pill">主题<b id="topicCount">0</b></div>
@@ -48,7 +48,7 @@
     </div>
     <div class="pending-list" id="ungrouped"></div>
   </div>
-  <div class="toast" id="toast" data-intent="growth-book-time-manage.toast"></div>
+  <div class="toast" id="toast"></div>
 </div>
 <script src="growth-book-render.js"></script>
 <script>
@@ -122,7 +122,7 @@ function render() {
     const heading = editingTopicId === topic.id
       ? `<input class="topic-title-input mutating" maxlength="30" value="${topic.title}" data-topic-title="${topic.id}" data-ui="growth_book_time_topic.title" data-intent="growth-book-time-manage.topic-title-input"><button class="text-button mutating" data-save-rename="${topic.id}">保存</button><button class="text-button mutating" data-cancel-rename="${topic.id}">取消</button>`
       : `<b>${topic.title}</b><span class="count" data-intent="growth-book-time-manage.count">${items.length} 项</span><button class="text-button mutating" data-rename="${topic.id}">重命名</button><button class="text-button danger mutating" data-delete="${topic.id}">删除</button>`;
-    return `<section class="topic" data-intent="growth-book-time-manage.topic"><div class="topic-head">${heading}</div>${items.length ? items.map(item => activityRow(item, false)).join('') : '<div class="empty" data-intent="growth-book-time-manage.empty">暂无活动</div>'}</section>`;
+    return `<section class="topic" data-intent="growth-book-time-manage.topic"><div class="topic-head">${heading}</div>${items.length ? items.map(item => activityRow(item, false)).join('') : '<div class="empty">暂无活动</div>'}</section>`;
   }).join('');
 
   const visible = visibleUngrouped();

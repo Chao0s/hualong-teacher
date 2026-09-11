@@ -32,7 +32,7 @@
 </style>
 </head>
 <body>
-<div class="phone" data-intent="training-detail.phone">
+<div class="phone">
   <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
   <div class="nav-bar">
     <a href="training-list.html" aria-label="返回研修列表"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></a>
@@ -79,7 +79,7 @@
     </section>
 
   </div>
-  <div class="toast" id="toast" data-intent="training-detail.toast">已提交</div>
+  <div class="toast" id="toast">已提交</div>
 </div>
 <script>
 const DATA = {
@@ -149,7 +149,7 @@ document.getElementById("copyMeetingBtn").addEventListener("click", async () => 
 });
 function renderFeedbacks(){
   document.getElementById("feedbacks").innerHTML = feedbacks.map(([teacher,time,text]) => `
-    <div class="feedback" data-intent="training-detail.feedback"><div class="feedback-top"><span class="teacher" data-intent="training-detail.teacher">${teacher}</span><span class="time" data-intent="training-detail.time">${time}</span></div><div class="text" data-intent="training-detail.text">${text}</div></div>
+    <div class="feedback" data-intent="training-detail.feedback"><div class="feedback-top"><span class="teacher" data-intent="training-detail.teacher">${teacher}</span><span class="time">${time}</span></div><div class="text" data-intent="training-detail.text">${text}</div></div>
   `).join("");
   document.getElementById("feedbackCount").textContent = feedbacks.length + " 条";
 }
