@@ -8,6 +8,16 @@
  * 先说清楚它做不到什么：**挂不进 CI。** 它要微信开发者工具，而工具要 GUI 与扫码登录，
  * GitHub Actions 上跑不起来。所以「每页截图」只能是本机能力。
  *
+ * **不用手工打开 IDE。** `automator.launch()` 不停在旁边等一个已开的窗口 —— 它自己把 IDE
+ * 起起来。做法是拼一条 CLI 命令（读 `miniprogram-automator/out/Launcher.js` 得到）：
+ *
+ *     cli.bat auto --project <工程路径> --auto-port <端口> --trust-project
+ *
+ * 于是 `auto` 子命令拉起 IDE 并开出自动化端口，人在旁边什么都不用点。
+ * 两个仍然只能人做一次的：**扫码登录**，以及安装本身。
+ * 源码里另有 `--ticket` 与 `--auto-account` 两个参数 —— 那条路能免扫码，
+ * 但 ticket 本身要从一个**已登录的 IDE** 里取，所以第一步还是人。
+ *
  * 跑之前的两件事：
  *   1. 装微信开发者工具（官方下载）。`miniprogram-automator` 已在 package.json 的
  *      devDependencies 里，但**没装** —— 先 `npm i`。
