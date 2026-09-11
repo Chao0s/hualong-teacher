@@ -147,50 +147,152 @@ window.ui = SwaggerUIBundle({
 }
 
 /**
+ * 七列。列名只写一份 —— 顶栏下面那条 sticky 图例用它，168 行里不再重复。
+ */
+const ROLE_HEAD = ['方法', '路径', '说人话', 'x-hualong-roles', 'action_key', '成功码', '阻断'];
+
+/**
+ * 长路径在 `/` 后插一个 `<wbr>`：折行落在路径分隔符上，不是断在词中间。
+ * 短路径一行放得下，不插。与 `pages-view.mjs` 同一套写法，理由写在那里。
+ */
+const WBR_OVER = 28;
+const escPath = (p) => {
+  const s = escapeHtml(p);
+  return s.length > WBR_OVER ? s.replace(/\//g, '/<wbr>') : s;
+};
+
+/**
  * The view stock Swagger UI cannot give: authorization at a glance.
  *
- * @param {{homeUrl: string, rawUrl: string}} links
+ * 列宽只写一处（下面 `.tbl` 的 `:nth-child`），与 /pages 同一套写法，理由见
+ * `pages-view.mjs` 头注：`table-layout: fixed` + 一处定宽，任意两行的同一列等宽。
+ * 除「说人话」外全部定宽，那一列拿余量 —— 它是给人读的，机器键 `action_key` 不是。
+ *
+ * 上一版的三个版面缺陷在这里修掉：
+ *   ① `escapeHtml(r.actions.join('<br>'))` —— `<br>` 被一起转义，那 10 个 action_key
+ *      渲染成一行 226 字的不可断文本，把这一列撑到 1489px，页面横向滚 1178px。
+ *   ② `table-layout: auto` —— 列宽由内容决定，`阻断` 被挤成 121px 反复折行，
+ *      `说人话` 只剩 127px，最高一行 237px。
+ *   ③ 表头只有 `position:sticky` 的 `<th>`，滚过一屏就没了；现在是顶栏下那条图例。
+ *
+ * @param {{homeUrl: string, rawUrl: string, pagesUrl?: string, specUrl?: string}} links
  */
 export function rolesPage({ homeUrl, rawUrl, pagesUrl = '', specUrl = '' }) {
   const rows = operations(loadSpec());
   const eli = eli10OneLine();
-  const cells = rows.map((r) => `<tr class="${r.roles.includes('teacher') ? 'teacher' : ''}">
-      <td class="m m-${r.method}">${r.method}</td>
-      <td><code>${escapeHtml(r.path)}</code></td>
-      <td class="why">${escapeHtml(eli.get(r.operationId) || '')}</td>
-      <td>${r.isPublic ? '<em>登录前公开</em>' : escapeHtml(r.roles.join(', ')) || '<b class="bad">无</b>'}</td>
-      <td>${escapeHtml(r.actions.join('<br>')) || '&mdash;'}</td>
-      <td>${escapeHtml(r.successCodes.join(', ')) || '&mdash;'}</td>
-      <td>${r.blockedOn.length ? `<b class="bad">${escapeHtml(r.blockedOn.join('; '))}</b>` : '&mdash;'}</td>
-    </tr>`).join('\n');
+  const cells = rows.map((r) => `<tr class="r ${r.method}${r.roles.includes('teacher') ? ' t' : ''}">`
+    + `<td>${r.method}</td>`
+    + `<td>${escPath(r.path)}</td>`
+    + `<td>${escapeHtml(eli.get(r.operationId) || '')}</td>`
+    + `<td>${r.isPublic ? '<em>登录前公开</em>' : escapeHtml(r.roles.join(', ')) || '<b class="bad">无</b>'}</td>`
+    + `<td>${r.actions.length ? r.actions.map((a) => `<b>${escapeHtml(a)}</b>`).join(' ') : '<i class="mut">&mdash;</i>'}</td>`
+    + `<td>${escapeHtml(r.successCodes.join(', ')) || '<i class="mut">&mdash;</i>'}</td>`
+    + `<td>${r.blockedOn.length ? `<b class="bad">${escapeHtml(r.blockedOn.join('; '))}</b>` : '<i class="mut">&mdash;</i>'}</td>`
+    + '</tr>').join('');
 
   const teacherCount = rows.filter((r) => r.roles.includes('teacher')).length;
   const eliCount = rows.filter((r) => eli.has(r.operationId)).length;
   return `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>化龙 API · 角色矩阵</title>
 <style>
- body { font: 14px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; margin: 0; padding: 0 0 40px; }
- .hl-bar { background:#1f2937; color:#f9fafb; padding:10px 16px; }
- .hl-bar a { color:#93c5fd; margin-left:16px; }
- table { border-collapse: collapse; width: 100%; }
- th, td { border-bottom: 1px solid #e5e7eb; padding: 6px 10px; text-align: left; vertical-align: top; }
- th { position: sticky; top: 0; background: #f3f4f6; }
- tr.teacher { background: #f0f9ff; }
- .m { font-weight: 700; white-space: nowrap; }
- .m-GET { color:#047857 } .m-POST { color:#1d4ed8 } .m-PUT { color:#b45309 }
- .m-PATCH { color:#7c3aed } .m-DELETE { color:#b91c1c }
- .bad { color:#b91c1c }
- .why { color:#475569; font-size:12.5px; max-width: 30ch; }
- code { font: 13px/1.4 ui-monospace, Consolas, monospace; }
- .sum { padding: 10px 16px; background:#fffbeb; }
+ :root{
+  --bg:#f4f6fa; --panel:#fff; --panel2:#f8fafc; --bar:#1f2937;
+  --ink:#0f172a; --ink2:#475569; --ink3:#64748b; --ink4:#94a3b8;
+  --line:#e3e8ef; --line2:#eef2f7; --blue:#eff6ff;
+  --ok:#047857; --warn:#b45309; --bad:#b91c1c; --violet:#7c3aed;
+  --mono:ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  --sans:system-ui, -apple-system, "Segoe UI", "Noto Sans SC", sans-serif;
+  --pad-page:16px; --pad-card:14px;
+  --inset:calc(var(--pad-page) + var(--pad-card) + 1px);
+ }
+ @media (prefers-color-scheme: dark){
+  :root{
+   --bg:#0b1220; --panel:#111a2b; --panel2:#0e1728; --bar:#0a0f1a;
+   --ink:#e7edf5; --ink2:#c2ccd9; --ink3:#94a3b8; --ink4:#64748b;
+   --line:#243044; --line2:#1b2537; --blue:#14233c;
+   --ok:#34d399; --warn:#fbbf24; --bad:#f87171; --violet:#c4b5fd;
+  }
+ }
+ *{box-sizing:border-box}
+ body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.55 var(--sans);
+      -webkit-text-size-adjust:100%}
+ a{color:#1d4ed8;text-decoration:none} a:hover{text-decoration:underline}
+ code{font:12.5px/1.4 var(--mono)}
+ .top{position:sticky;top:0;z-index:9}
+ .hl-bar{background:var(--bar);color:#f9fafb;padding:9px 16px;display:flex;
+         flex-wrap:wrap;align-items:baseline;gap:2px 14px;font-size:13.5px}
+ .hl-bar a{color:#93c5fd;margin:0}
+ .hl-bar a:hover{text-decoration:underline}
+ /* 汇总条是说明，不是警告：中性底 + 一条细的左侧标尺。与 /pages 同一套。 */
+ .sum{padding:11px 16px;background:var(--panel2);color:var(--ink2);
+      border-bottom:1px solid var(--line);border-left:3px solid var(--ink4);font-size:13px}
+ .sum b{color:var(--ink);font-weight:650} .sum code{color:var(--ink3)}
+ .legend{padding:0 var(--inset)} .legend th{font:600 11px/1.5 var(--sans);
+          letter-spacing:.06em;color:var(--ink3);white-space:nowrap}
+
+ .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+       margin:14px var(--pad-page) 40px;padding:0 var(--pad-card);overflow:hidden}
+ .tbl{width:100%;table-layout:fixed;border-collapse:collapse}
+ /* 右边留一道 14px 沟：没有沟时相邻两列的正文会贴在一起。末列不留。 */
+ .tbl th,.tbl td{padding:7px 14px 7px 0;text-align:left;vertical-align:top;
+                 border-bottom:1px solid var(--line2);overflow-wrap:break-word}
+ .tbl th:last-child,.tbl td:last-child{padding-right:0}
+ .tbl th{padding-bottom:5px}
+ /* 一处定宽，七列共用。第 3 列（说人话）不定宽，fixed 布局把余量全给它。
+    第 5 列 280px 是按最长那一格定的：10 个 action_key 每个 19 字，280px 刚好放下两个
+    （2×19+1 = 39 字 × 6.9px ≈ 269px），于是那一格 5 行而不是 10 行。它是全表唯一的长格。 */
+ .tbl th:nth-child(1),.tbl td:nth-child(1){width:56px}
+ .tbl th:nth-child(2),.tbl td:nth-child(2){width:204px}
+ .tbl th:nth-child(4),.tbl td:nth-child(4){width:116px}
+ .tbl th:nth-child(5),.tbl td:nth-child(5){width:280px}
+ .tbl th:nth-child(6),.tbl td:nth-child(6){width:56px}
+ .tbl th:nth-child(7),.tbl td:nth-child(7){width:168px}
+ .tbl td{border-bottom-color:var(--line2)}
+ .tbl tbody tr:last-child td{border-bottom:0}
+ /* 说人话：给人读的那一列，行距放松、色压一档。 */
+ .tbl td:nth-child(3){color:var(--ink2);line-height:1.6}
+ .tbl td:nth-child(1){font:11.5px/1.6 var(--mono);font-weight:700;white-space:nowrap}
+ .tbl td:nth-child(2){font:12.5px/1.5 var(--mono);color:var(--ink2)}
+ .tbl td:nth-child(4){font-size:12.5px}
+ .tbl td:nth-child(5),.tbl td:nth-child(6){font-size:12px}
+ .tbl td:nth-child(7){font-size:12.5px;line-height:1.5}
+ /* action_key 是机器键：等宽、压小、允许在任意位置折行。它是 167 行里最长的一格
+    （226 字／10 个键），给成 inline-block 会一格一行、把那一行顶到 260px。 */
+ .tbl td:nth-child(5) b{font:600 11.5px/1.7 var(--mono)}
+ .r.GET td:nth-child(1){color:var(--ok)} .r.POST td:nth-child(1){color:#1d4ed8}
+ .r.PUT td:nth-child(1){color:var(--warn)} .r.PATCH td:nth-child(1){color:var(--violet)}
+ .r.DELETE td:nth-child(1){color:var(--bad)}
+ .r.t{background:var(--blue)}
+ .bad{color:var(--bad)}
+ .mut{font-style:normal;color:var(--ink4)}
+
+ @media (max-width: 1100px){
+  :root{--pad-page:12px;--pad-card:12px}
+  .legend{display:none}
+  .tbl,.tbl tbody,.tbl tr,.tbl td{display:block;width:auto}
+  /* 定宽那几条是 .tbl td:nth-child(5)（0,2,1），width:auto 压不住它 —— 竖排时必须
+     用同级的 :nth-child(n) 覆盖，否则格子还是桌面宽度，标签与值会挤在 56px 里溢出去。 */
+  .tbl th:nth-child(n),.tbl td:nth-child(n){width:auto}
+  .tbl tr{padding:9px var(--pad-card);border-bottom:1px solid var(--line2)}
+  .tbl td{padding:0;border:0}
+  .tbl td:empty{display:none}
+  .tbl td::before{content:"";display:inline-block;width:96px;color:var(--ink4);
+                  font:600 11px/1.7 var(--sans);letter-spacing:.04em;vertical-align:top}
+  .tbl td:nth-child(1)::before{content:"方法"} .tbl td:nth-child(2)::before{content:"路径"}
+  .tbl td:nth-child(3)::before{content:"说人话"} .tbl td:nth-child(4)::before{content:"角色"}
+  .tbl td:nth-child(5)::before{content:"action_key"} .tbl td:nth-child(6)::before{content:"成功码"}
+  .tbl td:nth-child(7)::before{content:"阻断"}
+ }
+ @media (prefers-reduced-motion: no-preference){ html{scroll-behavior:smooth} }
 </style></head><body>
+<div class="top">
 <div class="hl-bar">化龙 API · 角色矩阵<a href="${homeUrl}">回到 Swagger UI</a>${pagesUrl ? `<a href="${pagesUrl}">按屏幕看</a>` : ''}${specUrl ? `<a href="${specUrl}">按屏幕看的规格</a>` : ''}<a href="${rawUrl}">原始 YAML</a></div>
+<div class="legend"><table class="tbl"><thead><tr>${ROLE_HEAD.map((h) => `<th>${h}</th>`).join('')}</tr></thead></table></div>
+</div>
 <div class="sum">共 <b>${rows.length}</b> 个操作，其中教师端可达 <b>${teacherCount}</b> 个（浅蓝行）。
 已写「说人话」的 <b>${eliCount}/${rows.length}</b>（来源：<code>db/spec/operation-eli10.tsv</code>，不在契约里）。
 越权回 <b>404</b> 不回 403（契约 §7.2）；401 只用于无会话与会话失效。</div>
-<table><thead><tr>
-<th>方法</th><th>路径</th><th>说人话</th><th>x-hualong-roles</th><th>action_key</th><th>成功码</th><th>阻断</th>
-</tr></thead><tbody>
-${cells}
-</tbody></table></body></html>`;
+<div class="card"><table class="tbl"><tbody>${cells}</tbody></table></div>
+</body></html>`;
 }
