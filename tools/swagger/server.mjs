@@ -23,6 +23,7 @@ import { specPath, specText } from '../openapi-source.mjs';
 import { usedFrom } from '../lib/screen-ops-data.mjs';
 import { indexPage, rolesPage, specForUi, pagesSpecForUi } from './pages.mjs';
 import { pagesPage } from './pages-view.mjs';
+import { reviewPage } from './review-view.mjs';
 import { readFeedback, upsertFeedback, STATUS, STATUS_VALUES } from '../lib/feedback.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -119,6 +120,7 @@ const server = createServer((req, res) => {
   if (path === '/' || path === '/index.html') return send(200, MIME['.html'], INDEX);
   if (path === '/roles') return send(200, MIME['.html'], rolesPage({ homeUrl: '/', rawUrl: '/openapi.yaml', pagesUrl: '/pages', specUrl: '/pages.yaml' }));
   if (path === '/pages') return send(200, MIME['.html'], pagesPage({ homeUrl: '/', rolesUrl: '/roles', rawUrl: '/openapi.yaml', specUrl: '/pages.yaml' }));
+  if (path === '/review') return send(200, MIME['.html'], reviewPage({ homeUrl: '/', pagesUrl: '/pages', rolesUrl: '/roles' }));
   if (path === '/pages.yaml') return send(200, MIME['.yaml'], pagesSpecForUi());
   if (path === '/openapi.yaml') return send(200, MIME['.yaml'], specText());
   if (path === '/openapi.local.yaml') return send(200, MIME['.yaml'], specForUi());
@@ -137,6 +139,7 @@ server.listen(PORT, '127.0.0.1', () => {
   console.log(`Swagger UI      ->  http://localhost:${PORT}/`);
   console.log(`角色矩阵         ->  http://localhost:${PORT}/roles`);
   console.log(`按屏幕看         ->  http://localhost:${PORT}/pages`);
+  console.log(`检测评审（可写） ->  http://localhost:${PORT}/review`);
   console.log(`按屏幕看的规格   ->  http://localhost:${PORT}/pages.yaml`);
   console.log(`契约文件         ->  ${specPath()}`);
 {

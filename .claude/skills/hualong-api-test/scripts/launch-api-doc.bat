@@ -98,6 +98,7 @@ set "PORT=!PICKED!"
 echo.
 echo   Swagger UI    http://127.0.0.1:!PICKED!/
 echo   By screen     http://127.0.0.1:!PICKED!/pages
+echo   Review (write) http://127.0.0.1:!PICKED!/review
 echo   Role matrix   http://127.0.0.1:!PICKED!/roles
 echo   Screen spec   http://127.0.0.1:!PICKED!/pages.yaml
 echo   Raw contract  http://127.0.0.1:!PICKED!/openapi.yaml
