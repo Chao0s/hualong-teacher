@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-11T15:43:42.040Z",
+  "generatedAt": "2026-09-11T17:39:25.347Z",
   "contract": "G:\\My Drive\\Workplace\\China KG Platform\\hualong-backend\\api\\openapi.yaml",
   "pages": [
     {
@@ -21,6 +21,43 @@
         "links": 9
       },
       "findings": []
+    },
+    {
+      "name": "login",
+      "title": "登录",
+      "wired": false,
+      "writes": "no",
+      "context": {
+        "title": "登录",
+        "path": "（从五个底部导航都走不到——只能由别处深链进来，或尚未挂入口）",
+        "module": "登录",
+        "role": "",
+        "flow": ""
+      },
+      "events": 2,
+      "prototype": null,
+      "findings": [
+        {
+          "key": "login:L1:<button class=\"phone-btn\"> bindgetphonenumber=\"onGetPhoneNumber\"「验证手机号」",
+          "level": "likely",
+          "layer": "L1",
+          "line": 24,
+          "what": "<button class=\"phone-btn\"> bindgetphonenumber=\"onGetPhoneNumber\"「验证手机号」",
+          "detail": "handler 无 setData、无导航、无 service 调用，只弹提示或为空",
+          "verdict": null,
+          "falsePositive": null,
+          "context": {
+            "page": "login",
+            "title": "登录",
+            "path": "（从五个底部导航都走不到——只能由别处深链进来，或尚未挂入口）",
+            "module": "登录",
+            "role": "",
+            "flow": "",
+            "button": "验证手机号",
+            "note": ""
+          }
+        }
+      ]
     },
     {
       "name": "upload-resource",
@@ -1014,7 +1051,7 @@
         "role": "全班成长档案齐备度总览",
         "flow": "只读派生：月评、学期评、综合评估齐不齐"
       },
-      "events": 1,
+      "events": 2,
       "prototype": {
         "buttons": 0,
         "listeners": 0,
@@ -1025,7 +1062,7 @@
     {
       "name": "teacher-evaluation",
       "title": "教师评价",
-      "wired": false,
+      "wired": true,
       "writes": "no",
       "context": {
         "title": "教师评价",
@@ -1034,7 +1071,7 @@
         "role": "教师评价入口：月度、学期、综合、寄语",
         "flow": "聚合入口"
       },
-      "events": 1,
+      "events": 2,
       "prototype": {
         "buttons": 0,
         "listeners": 0,
@@ -1862,7 +1899,7 @@
     },
     {
       "file": "/miniprogram/services/assessment.js",
-      "calls": 16,
+      "calls": 17,
       "findings": [],
       "unusedExports": [
         "itemMap",
@@ -2017,14 +2054,14 @@
     }
   ],
   "summary": {
-    "pages": 55,
-    "wired": 47,
+    "pages": 56,
+    "wired": 48,
     "sure": 0,
-    "likely": 9,
+    "likely": 10,
     "review": 10,
     "falsePositives": 10,
     "decided": 17,
-    "contractTeacherOps": 104,
+    "contractTeacherOps": 105,
     "contractUnused": 6
   }
 }
