@@ -377,6 +377,16 @@ git checkout -- db/spec/columns.tsv db/spec/constraints.tsv db/spec/enums.tsv \
 **把刚做出来的 42 行改动静默抹掉**，而两次跑的闸门都全绿 —— 绿的是被抹掉之后的状态。
 判据：`git diff --numstat db/spec/` 里**有数字的那几份**是真改动，没数字的只是行尾。
 
+**同一天还吃了一次更隐蔽的：把「可重现的红」读成「状态残留」。**
+后端 `check-screen-operations.mjs` 有一份**写死的旗标清单**（前后端的接缝）。
+前端换了旗标名、这里没改，42 行报错。第一次跑看到 1/10 红，接着连跑三次 0 红，
+于是判成「状态残留」放过了 —— **而那三次是绿的，因为前一条 `git checkout -- db/spec/`
+已经把带新旗标的文件还原了**。证据被抹掉之后，红当然消失。
+
+**规矩**：**重跑之前，先确认你改的是同一批文件。** 一条红要判「可重现」，必须
+**不动任何东西**地重跑；中间做过还原、重启、重建，那就不是同一次实验。
+判据：重跑前后 `git status --short db/spec/` 必须一致。
+
 `check-all.mjs` 现在 **8 项全过**。它的 `check-consistency` 一步曾经红过一阵：那一步扫
 前端所有 `.html` 与 `.wxml`，问每个文件有没有 `screens.tsv` 的登记行，而登记表只认原型
 文件名（`screens/home.html`），不认识 `miniprogram/pages/home/index.wxml`。

@@ -82,11 +82,23 @@ for (const f of readdirSync(DIR).filter((x) => x.endsWith('.html')).sort()) {
     const primary = cls.split(/\s+/)[0];
     if (NOT_INTENT.has(primary)) continue;
 
+    // **`class` 裡可能有模板字面量。**
+    // 原型的 class 寫成 `class="check-row${ok ? '' : ' blocked'}"`，而
+    // `class="${score === num ? 'on' : ''}"` 整個 class 就是一個模板。
+    // 2026-09-12 的錯：直接拿第一個空白分隔詞當類名，於是生出
+    // `growth-book.check-row${ok`、`comprehensive-assessment-report.${score` 這類垃圾 id
+    // （583 個裡有 8 個）。而且乾淨的 `check-row` 與帶模板的 `check-row${ok`
+    // 被當成**兩個不同的 id**，各標一次。
+    //
+    // 規矩：`${` 之前那段才是類名；那段為空就**沒有穩定名字，不標**。
+    const name = primary.split('${')[0];
+    if (!name) continue;
+
     // **計數要在「已標過」的判斷之前。**
     // 2026-09-12 的錯：先 `if (已有 data-intent) continue` 再計數，於是重跑時
     // 第一個（已標的）沒被算進去，第二個同類元素就變成「第一個」而被標上 ——
     // 每跑一次多加一批（dry-run 顯示 259 個／48 份），原型會被越標越花。
-    const id = `${screen}.${primary}`;
+    const id = `${screen}.${name}`;
     const n = (seen.get(id) ?? 0) + 1;
     seen.set(id, n);
     if (n > 1) continue;

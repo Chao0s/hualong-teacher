@@ -163,7 +163,7 @@ function openPick(card) {
   document.getElementById('pickTitle').textContent = item ? '调整收录照片' : '加入成长资料';
   pickGrid.innerHTML = photos.map(label => {
     const on = item && item.photos.includes(label);
-    return `<div class="pick-photo${on ? ' sel' : ''}" data-label="${label}" data-intent="home-school-moment-feed.pick-photo${on">${label}</div>`;
+    return `<div class="pick-photo${on ? ' sel' : ''}" data-label="${label}" data-intent="home-school-moment-feed.pick-photo">${label}</div>`;
   }).join('');
   syncConfirm();
   mask.classList.add('show');

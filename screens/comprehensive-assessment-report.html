@@ -161,7 +161,7 @@ function renderDetail() {
             ${score ? '' : '<span class="none" data-intent="comprehensive-assessment-report.none">未评</span>'}
           </div>
           <div class="scale-view" role="img" aria-label="${item.name} 评分 ${score || '未评'}">
-            ${[1,2,3,4,5].map(num => `<span class="${score === num ? 'on' : ''}" data-intent="comprehensive-assessment-report.${score">${num}</span>`).join('')}
+            ${[1,2,3,4,5].map(num => `<span class="${score === num ? 'on' : ''}" >${num}</span>`).join('')}
           </div>
         </div>`;
       }).join('')}

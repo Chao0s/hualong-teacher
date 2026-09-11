@@ -258,7 +258,7 @@ function widgetLabel(widget) {
 }
 function renderTabs() {
   document.getElementById('pageTabs').innerHTML = Array.from({ length: pageCount }, (_, i) =>
-    `<button class="tool-btn${i === page ? ' on' : ''}" data-page="${i}" data-intent="growth-book-section-edit.tool-btn${i">第 ${i + 1} 页</button>`).join('');
+    `<button class="tool-btn${i === page ? ' on' : ''}" data-page="${i}" data-intent="growth-book-section-edit.tool-btn">第 ${i + 1} 页</button>`).join('');
   document.getElementById('delPage').disabled = locked || pageCount < 2;
 }
 /* 存档闸门：重叠、无来源、bound 型框太小，任何一项成立都关掉保存（W6 / W18） */
@@ -317,14 +317,14 @@ function renderDrawer() {
         </select>
         <span class="sep"></span>
         ${[['left','靠左','左'],['center','置中','中'],['right','靠右','右']].map(([v, t, icon]) =>
-          `<button data-align="${v}" class="${(cfg.align || 'left') === v ? 'on' : ''}" title="${t}" style="font-size:12px" data-intent="growth-book-section-edit.${(cfg.align">${icon}</button>`).join('')}
+          `<button data-align="${v}" class="${(cfg.align || 'left') === v ? 'on' : ''}" title="${t}" style="font-size:12px" >${icon}</button>`).join('')}
       </div>
       <div class="rt" id="literalText" contenteditable
            style="font-size:${cfg.size || 14}px;text-align:${cfg.align || 'left'}" data-intent="growth-book-section-edit.rt">${runsToHtml(widget.content)}</div>` : ''}
     ${widget.type === 'image' && widget.binding === 'collected' ? `
       <div class="field-label">征集比例（家长端的裁剪框按此出框）</div>
       <div class="seg" id="ratioSeg" data-intent="growth-book-section-edit.seg">
-        ${IMAGE_RATIOS.map(r => `<button data-ratio="${r.w}:${r.h}" class="${widget.w * r.h === widget.h * r.w ? 'on' : ''}" data-intent="growth-book-section-edit.${widget.w">${r.w}:${r.h}</button>`).join('')}
+        ${IMAGE_RATIOS.map(r => `<button data-ratio="${r.w}:${r.h}" class="${widget.w * r.h === widget.h * r.w ? 'on' : ''}" >${r.w}:${r.h}</button>`).join('')}
       </div>
       <div class="cap" data-intent="growth-book-section-edit.cap">家长在手机上按 ${ratioText(widget)} 裁好才提交，进册后不会变形也不会被二次裁切，因此这里不需要设定显示方式。</div>` : ''}
     ${widget.type === 'text' ? `
@@ -346,7 +346,7 @@ function renderDrawer() {
       <div class="field-label">显示方式</div>
       <div class="seg" id="fitSeg">
         ${[['fill','拉伸'],['cover','裁切填满'],['crop','自订裁切']].map(([v, t]) =>
-          `<button data-fit="${v}" class="${(cfg.fit || 'cover') === v ? 'on' : ''}" data-intent="growth-book-section-edit.${(cfg.fit">${t}</button>`).join('')}
+          `<button data-fit="${v}" class="${(cfg.fit || 'cover') === v ? 'on' : ''}" >${t}</button>`).join('')}
       </div>
       <div class="cap">「${bind.name}」的照片不经成长册的裁剪工具，比例不定，需要指定对不上框时怎么放。</div>`}
     <button class="btn-del" id="delWidget" data-intent="growth-book-section-edit.btn-del">删除此组件</button>`;
