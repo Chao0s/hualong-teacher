@@ -1085,12 +1085,16 @@ api/action-registry.tsv（动作登记表）的 target_table / also_writes
 
 | 计数 | 值 | 出处 |
 |---|---|---|
-| 契约 | 137 paths／167 operations／153 schemas | `npm run spec:inventory` |
-| 教师端可达操作 | 104 | 同上 |
-| 教师端屏幕 | 55（46 已接 service，9 未接） | `docs/audit/wiring-2026-09-10.md` |
-| 教师端写屏 | 20（只读 36） | `hualong-backend/db/spec/screens.tsv` 的 `writes` 列 |
-| 动作登记表 | 135 行 | `hualong-backend/api/action-registry.tsv` |
-| 屏幕登记表 | 84 行（教师 57／家长 18／管理端 9） | 同上 `screens.tsv` |
+| 契约规模 | **不写在这里** —— 一改就过期 | `node tools/spec-inventory.mjs` |
+| 教师端可达操作 | **不写在这里** | 同上 |
+| 教师端屏幕 | **不写在这里** | `npm run scan:wiring` 第一行的「页面 N（已接 M）」 |
+| 教师端写屏 | **不写在这里** | `hualong-backend/db/spec/screens.tsv` 的 `writes` 列，数 `yes` |
+| 动作登记表 | **不写在这里** | `awk 'END{print NR-1}' hualong-backend/api/action-registry.tsv` |
+| 屏幕登记表 | **不写在这里** | `awk 'END{print NR-1}' hualong-backend/db/spec/screens.tsv`；按 `role` 分 teacher／parent／admin |
+
+**这张表从前写着具体的数，而 2026-09-12 一量，六个里有四个是错的**（登记表 84→85、
+教师 57→58、写屏 20→32，而「管理端 9」那格的 `role` 其实是 `admin` 不是 `admin-pc`）。
+所以现在只留**去哪量**，不留量出来的数 —— 写下来的当天就开始误导人。
 
 **一条容易搞错的判据：** `require('../../services/…')` **不等于已接**。`home-school`（「家园社共育」，底部导航那一项）`require` 了 `co-education`，却**一次都没调用**，扫描器判它未接——**扫描器是对的**。按「有没有 require」数得 47，按「有没有真调用」数才得 46。
 
