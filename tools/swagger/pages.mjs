@@ -127,14 +127,14 @@ export function rawViewer({ text, title, backUrl, backLabel, downloadUrl, downlo
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escapeHtml(title)}</title>
 <style>
- body { margin: 0; background: #0b1220; color: #e2e8f0;
+ body { margin: 0; background: #f6fbfa; color: #1f3a37;
         font: 13px/1.55 ui-monospace, SFMono-Regular, Consolas, monospace; }
- .hl-bar { position: sticky; top: 0; z-index: 2; background: #1f2937; color: #f9fafb;
-           padding: 9px 16px; font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+ .hl-bar { position: sticky; top: 0; z-index: 2; background: #e4f1ee; color: #12413c;
+           padding: 9px 16px; font: 14px/1.5 system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
            display: flex; gap: 16px; align-items: baseline; flex-wrap: wrap; }
- .hl-bar a { color: #93c5fd; text-decoration: none; }
+ .hl-bar a { color: #0f6b62; text-decoration: none; }
  .hl-bar a:hover { text-decoration: underline; }
- .hl-bar .meta { margin-left: auto; color: #94a3b8; font-size: 12px; }
+ .hl-bar .meta { margin-left: auto; color: #55766f; font-size: 12px; }
  pre { margin: 0; padding: 14px 16px 40px; white-space: pre; overflow-x: auto; tab-size: 2; }
 </style>
 </head>
@@ -162,11 +162,11 @@ export function indexPage({ specUrl, rolesUrl, pagesUrl = '', rawUrl, rawViewerU
 <title>化龙 API 契约 · Swagger UI</title>
 <link rel="stylesheet" href="./swagger-ui.css">
 <style>
-  body { margin: 0; }
-  .hl-bar { background: #1f2937; color: #f9fafb; padding: 10px 16px;
-            font: 14px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; }
-  .hl-bar a { color: #93c5fd; margin-left: 16px; }
-  .hl-bar code { color: #fcd34d; }
+  body { margin: 0; background: #eef5f3; }
+  .hl-bar { background: #e4f1ee; color: #12413c; padding: 10px 16px;
+            font: 14px/1.6 system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; }
+  .hl-bar a { color: #0a6472; margin-left: 16px; }
+  .hl-bar code { color: #0d5a53; }
 </style>
 </head>
 <body>
@@ -250,32 +250,26 @@ export function rolesPage({ homeUrl, rawUrl, rawViewerUrl = '', pagesUrl = '', s
 <title>化龙 API · 角色矩阵</title>
 <style>
  :root{
-  --bg:#f4f6fa; --panel:#fff; --panel2:#f8fafc; --bar:#1f2937;
-  --ink:#0f172a; --ink2:#475569; --ink3:#64748b; --ink4:#94a3b8;
-  --line:#e3e8ef; --line2:#eef2f7; --blue:#eff6ff;
-  --ok:#047857; --warn:#b45309; --bad:#b91c1c; --violet:#7c3aed;
+  --bg:#eef5f3; --panel:#fff; --panel2:#f5faf9; --bar:#e4f1ee;
+  --bar-ink:#12413c; --bar-link:#0f6b62;
+  --ink:#10302d; --ink2:#35564f; --ink3:#55766f; --ink4:#73908a;
+  --line:#d5e6e2; --line2:#e7f1ef; --blue:#e8f4f9; --link:#0a6472;
+  --ok:#0b7a4b; --warn:#9a5a06; --bad:#ad2b2b; --violet:#6b4fa8;
   --mono:ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
-  --sans:system-ui, -apple-system, "Segoe UI", "Noto Sans SC", sans-serif;
+  --sans:system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", "Noto Sans SC", sans-serif;
   --pad-page:16px; --pad-card:14px;
   --inset:calc(var(--pad-page) + var(--pad-card) + 1px);
- }
- @media (prefers-color-scheme: dark){
-  :root{
-   --bg:#0b1220; --panel:#111a2b; --panel2:#0e1728; --bar:#0a0f1a;
-   --ink:#e7edf5; --ink2:#c2ccd9; --ink3:#94a3b8; --ink4:#64748b;
-   --line:#243044; --line2:#1b2537; --blue:#14233c;
-   --ok:#34d399; --warn:#fbbf24; --bad:#f87171; --violet:#c4b5fd;
-  }
  }
  *{box-sizing:border-box}
  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.55 var(--sans);
       -webkit-text-size-adjust:100%}
- a{color:#1d4ed8;text-decoration:none} a:hover{text-decoration:underline}
+ a{color:var(--link);text-decoration:none} a:hover{text-decoration:underline}
  code{font:12.5px/1.4 var(--mono)}
  .top{position:sticky;top:0;z-index:9}
- .hl-bar{background:var(--bar);color:#f9fafb;padding:9px 16px;display:flex;
-         flex-wrap:wrap;align-items:baseline;gap:2px 14px;font-size:13.5px}
- .hl-bar a{color:#93c5fd;margin:0}
+ .hl-bar{background:var(--bar);color:var(--bar-ink);padding:9px 16px;display:flex;
+         flex-wrap:wrap;align-items:baseline;gap:2px 14px;font-size:13.5px;
+         border-bottom:1px solid var(--line)}
+ .hl-bar a{color:var(--bar-link);margin:0}
  .hl-bar a:hover{text-decoration:underline}
  /* 汇总条是说明，不是警告：中性底 + 一条细的左侧标尺。与 /pages 同一套。 */
  .sum{padding:11px 16px;background:var(--panel2);color:var(--ink2);
@@ -313,7 +307,7 @@ export function rolesPage({ homeUrl, rawUrl, rawViewerUrl = '', pagesUrl = '', s
  /* action_key 是机器键：等宽、压小、允许在任意位置折行。它是 167 行里最长的一格
     （226 字／10 个键），给成 inline-block 会一格一行、把那一行顶到 260px。 */
  .tbl td:nth-child(5) b{font:600 11.5px/1.7 var(--mono)}
- .r.GET td:nth-child(1){color:var(--ok)} .r.POST td:nth-child(1){color:#1d4ed8}
+ .r.GET td:nth-child(1){color:var(--ok)} .r.POST td:nth-child(1){color:var(--link)}
  .r.PUT td:nth-child(1){color:var(--warn)} .r.PATCH td:nth-child(1){color:var(--violet)}
  .r.DELETE td:nth-child(1){color:var(--bad)}
  .r.t{background:var(--blue)}

@@ -23,9 +23,10 @@
  */
 import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { screenTitles } from './screen-ops-data.mjs';
 
 const HEAD_SCREEN_OPS = [
-  'screen', 'mp_file', 'screen_title', 'state', 'operation_id', 'method', 'path',
+  'screen', 'mp_file', 'screen_title', 'title_source', 'state', 'operation_id', 'method', 'path',
   'source', 'trigger_wxml', 'trigger_prototype', 'trigger_flag', 'gap', 'notes',
 ];
 const HEAD_ELI10 = ['key', '幹嘛', '怎麼走', '碰到誰', 'derived_from'];
@@ -203,7 +204,12 @@ export function emitScreenOperations(ctx) {
   // 客户端调了、契约里没有的调用。**不是垃圾** —— 它是「页面要用而契约没有」那一桶的事实来源。
   // 声明要排在 utils 那一段之前：utils 也会往这里投，`const` 之后用会 TDZ。
   const offContract = [];
-  const titles = new Map(pages.map((p) => [p.name, p.title]));
+  // 页名与它的出处：**与 /pages 用同一个权威**（`screenTitles()`，以原型可见字为准）。
+  // 第一版这里自己造了张 `titles`（取自各页 index.json），于是生成器与视图是**两份实现** ——
+  // 今天它们恰好一致（实测 55/56 逐字相同、0 不同），但那正是会漂开的那种结构。
+  const titleInfo = screenTitles();
+  const titleOf = (n) => (titleInfo.get(n) || {}).title || n;
+  const sourceOf = (n) => (titleInfo.get(n) || {}).source || '';
   const utilsCallers = new Map();
   if (utilsDir && existsSync(utilsDir)) {
     for (const f of readdirSync(utilsDir).filter((x) => x.endsWith('.js'))) {
@@ -324,7 +330,8 @@ export function emitScreenOperations(ctx) {
       genRows.push({
         screen: p.name,
         mp_file: (screensTsv.get(p.name) || {}).mp_file || `miniprogram/pages/${p.name}/index.wxml`,
-        screen_title: p.title,
+        screen_title: titleOf(p.name),
+        title_source: sourceOf(p.name),
         state: stateOf({ handler: fn, trigger, op: hit.op }),
         operation_id: opId,
         method: hit.op.method,
@@ -353,7 +360,8 @@ export function emitScreenOperations(ctx) {
     return [...byKey.values()].map((o) => ({
       screen: o.screen,
       mp_file: o.screen === '(utils)' ? `miniprogram/${o.file}` : (screensTsv.get(o.screen) || {}).mp_file || `miniprogram/pages/${o.screen}/index.wxml`,
-      screen_title: o.screen === '(utils)' ? 'utils（不经页面）' : titles.get(o.screen) || o.screen,
+      screen_title: o.screen === '(utils)' ? 'utils（不经页面）' : titleOf(o.screen),
+      title_source: o.screen === '(utils)' ? '伪屏' : sourceOf(o.screen),
       state: '',
       operation_id: '',
       method: o.verb,

@@ -25,6 +25,7 @@ import { indexPage, rolesPage, specForUi, pagesSpecForUi } from './pages.mjs';
 import { pagesPage } from './pages-view.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
+const REPO = resolve(HERE, '..', '..');   // tools/swagger → 仓库根（服务 screens/ 要用）
 const PORT = Number(process.env.PORT || 3830);
 
 // swagger-ui-dist ships the browser bundle; resolving through import.meta
@@ -56,6 +57,17 @@ const server = createServer((req, res) => {
     res.writeHead(status, { 'content-type': type, 'cache-control': 'no-store' });
     res.end(body);
   };
+
+  // 原型页：/pages 的卡头把 `screens/<名>.html` 链接印出来了（页名取自那里的可见字，
+  // 见 tools/lib/screen-ops-data.mjs 的 screenTitles）。GitHub Pages 上 `screens/` 本来就发布，
+  // 但**本机 server 不服务它** —— 不补这一条，本地点那个链接就是 404，而页面看起来是好的。
+  if (path.startsWith('/screens/')) {
+    const rel = normalize(path.slice('/screens/'.length));
+    const file = join(REPO, 'screens', rel);
+    const root = join(REPO, 'screens');
+    if (!file.startsWith(root) || !existsSync(file)) return send(404, MIME['.html'], '<h1>404</h1>');
+    return send(200, MIME[extname(file)] || 'application/octet-stream', readFileSync(file));
+  }
 
   if (path === '/' || path === '/index.html') return send(200, MIME['.html'], INDEX);
   if (path === '/roles') return send(200, MIME['.html'], rolesPage({ homeUrl: '/', rawUrl: '/openapi.yaml', pagesUrl: '/pages', specUrl: '/pages.yaml' }));

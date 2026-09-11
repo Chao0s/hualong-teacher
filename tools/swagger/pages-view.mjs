@@ -21,8 +21,11 @@
  *
  * ## 表头
  *
- * 表头只有一份，是页面顶部那条 sticky 图例（`.legend`）。理由：每张卡重复一次表头是
- * 50 次噪音；而图例 sticky 之后始终贴顶，读哪张卡都看得见列名，也就不需要每张卡再有。
+ * 每张表自带一行 `<thead>`（模块下的 `THEAD`）。上一版是页面顶部一条 sticky 图例，
+ * 已删。它有两个毛病：①只有桌面看得见 —— 窄屏的列名是 `td::before` 另生成的一套；
+ * ②**它会对文末两张表说错列名**：「无人认领的操作」是「… service 层 链接」、
+ * 「由 utils 内部调用」的末列是「由 utils 调」，图例却一律写「触发／缺口」。
+ * 列名跟着表走，才不会说错；窄屏把 `<thead>` 隐藏，只留 `td::before` 那一套。
  */
 import { buildPageView } from '../lib/screen-ops-data.mjs';
 
@@ -40,8 +43,21 @@ const escPath = (p) => {
   return s.length > WBR_OVER ? s.replace(/\//g, '/<wbr>') : s;
 };
 
-/** 七列。列名只在这里写一份，页面顶部图例用它。 */
+/** 七列。列名只在这里写一份 —— 每张表自带的一行 `<thead>` 用它。 */
 const HEAD = ['状态', '方法', '路径', '操作', '说人话', '触发', '缺口'];
+
+/**
+ * 每张表自带的一行表头。
+ *
+ * 上一版只有顶部一条 sticky 图例。它有两个毛病：①只有桌面看得见，窄屏的列名靠 `td::before`
+ * 另生成一套；②**它对文末两张表说错了列名** ——「无人认领的操作」是
+ * `状态 方法 路径 操作 说人话 service 层 链接`、「由 utils 内部调用」的末列是「由 utils 调」，
+ * 而图例一律写「触发／缺口」。表头回到表上，就跟着表走。
+ *
+ * 列宽不靠这里：宽度仍是 `.tbl th/td:nth-child(n)` 一处写死，`table-layout:fixed`
+ * 让每张表的首行（就是这一行 `<thead>`）定下七列轨道，于是各表逐列等宽。
+ */
+const THEAD = `<thead><tr>${HEAD.map((h) => `<th>${h}</th>`).join('')}</tr></thead>`;
 
 /**
  * 一行的两种形态：有契约的（可深链）与还没有契约的（planned，不可点）。
@@ -126,13 +142,18 @@ function countStrip(b) {
  * @param {{homeUrl: string, rolesUrl: string, rawUrl: string, specUrl: string}} links
  */
 export function pagesPage({ homeUrl, rolesUrl, rawUrl, rawViewerUrl = '', specUrl, specViewerUrl = '' }) {
-  const { screenOps, byScreen, eli10, opById, titles, unused, notTeacher, unusedNoService, serviceReport, utilsCalled } = buildPageView();
+  const { screenOps, byScreen, eli10, opById, titles, titleInfo, unused, notTeacher, unusedNoService, serviceReport, utilsCalled } = buildPageView();
 
   const cards = [...byScreen.keys()].sort().map((screen) => {
     const rows = byScreen.get(screen);
     const b = bucketOf(rows);
+    const info = titleInfo.get(screen) || {};
     const label = screen === '(utils)' ? 'utils（不经页面）' : titles.get(screen) || screen;
     const dir = screen === '(utils)' ? 'miniprogram/utils/' : `miniprogram/pages/${screen}/`;
+    // **原型文件名要印出来。** 用户 2026-09-11 的原话是「對齊我才可以知道是原型的哪個」——
+    // 只给小程序目录，读的人没法把这一卡对回原型那一屏；而页名本身取自原型里可见的字
+    // （见 `screenTitles()`），两者摆在一起才叫对得上。
+    const proto = screen === '(utils)' ? '' : info.protoFile || '';
     const body = SEGMENTS.map(([k, title, tone]) => {
       const list = b[k];
       if (!list.length) return '';
@@ -142,14 +163,17 @@ export function pagesPage({ homeUrl, rolesUrl, rawUrl, rawViewerUrl = '', specUr
       }
       if (k === 'offContract') {
         return `<div class="sec"><h3 class="${tone}">${title}</h3>`
-          + `<table class="tbl"><tbody>${list.map((r) => opRow(r, opById, eli10)).join('')}</tbody></table>`
+          + `<table class="tbl">${THEAD}<tbody>${list.map((r) => opRow(r, opById, eli10)).join('')}</tbody></table>`
           + '<p class="note">客户端真的在调，契约里没有这条路径。生成器原先把它静默丢掉 —— 于是这一桶永远是 0，而看不出是空还是坏。</p></div>';
       }
       return `<div class="sec"><h3 class="${tone}">${title}</h3>`
-        + `<table class="tbl"><tbody>${list.map((r) => opRow(r, opById, eli10)).join('')}</tbody></table></div>`;
+        + `<table class="tbl">${THEAD}<tbody>${list.map((r) => opRow(r, opById, eli10)).join('')}</tbody></table></div>`;
     }).join('');
     return `<section class="card" id="s-${esc(screen)}">`
-      + `<header><h2>${esc(label)}</h2><code class="dir">${esc(dir)}</code>`
+      + `<header><h2>${esc(label)}</h2>`
+      + `<code class="dir">${esc(dir)}</code>`
+      + (proto ? `<code class="proto" title="页名取自这一份原型里可见的字">原型 <a href="../${esc(proto)}">${esc(proto)}</a></code>` : '')
+      + (proto ? '' : '<code class="proto muted" title="这一屏还没有原型">无原型</code>')
       + `<span class="cnt">${rows.length} 条</span></header>`
       + countStrip(b)
       + (body || '<p class="note">这一屏没有任何记录，且不是 no-api —— 是一个缺口（缺行与「本来就没有」必须分得开）。</p>')
@@ -180,27 +204,18 @@ export function pagesPage({ homeUrl, rolesUrl, rawUrl, rawViewerUrl = '', specUr
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>化龙 API · 按屏幕看</title>
 <style>
- /* 一份 token，两处用：浅色与深色各一套变量，其余规则只认变量名。 */
+ /* 一份 token：只有一套亮色变量，其余规则只认变量名。 */
  :root{
-  --bg:#f4f6fa; --panel:#fff; --panel2:#f8fafc; --bar:#1f2937;
-  --ink:#0f172a; --ink2:#475569; --ink3:#64748b; --ink4:#94a3b8;
-  --line:#e3e8ef; --line2:#eef2f7;
-  --link:#1d4ed8; --accent:#eef2ff; --accent-ink:#3730a3;
-  --ok:#047857; --warn:#b45309;
-  --bad:#b91c1c; --bad-bg:#fee2e2;
+  --bg:#eef5f3; --panel:#fff; --panel2:#f5faf9; --bar:#e4f1ee;
+  --bar-ink:#12413c; --bar-link:#0f6b62; --bar-ink2:#4f6f68;
+  --ink:#10302d; --ink2:#35564f; --ink3:#55766f; --ink4:#73908a;
+  --line:#d5e6e2; --line2:#e7f1ef;
+  --link:#0a6472; --accent:#d9f0eb; --accent-ink:#0d5a53;
+  --ok:#0b7a4b; --warn:#9a5a06; --violet:#6b4fa8;
+  --bad:#ad2b2b; --bad-bg:#fde8e6;
   --mono:ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
-  --sans:system-ui, -apple-system, "Segoe UI", "Noto Sans SC", sans-serif;
+  --sans:system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", "Noto Sans SC", sans-serif;
   --pad-page:16px; --pad-card:14px;
-  --inset:calc(var(--pad-page) + var(--pad-card) + 1px);
- }
- @media (prefers-color-scheme: dark){
-  :root{
-   --bg:#0b1220; --panel:#111a2b; --panel2:#0e1728; --bar:#0a0f1a;
-   --ink:#e7edf5; --ink2:#c2ccd9; --ink3:#94a3b8; --ink4:#64748b;
-   --line:#243044; --line2:#1b2537;
-   --link:#93c5fd; --accent:#1b2740; --accent-ink:#bfdbfe;
-   --ok:#34d399; --warn:#fbbf24; --bad:#f87171; --bad-bg:#2a1414;
-  }
  }
  *{box-sizing:border-box}
  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.55 var(--sans);
@@ -211,17 +226,17 @@ export function pagesPage({ homeUrl, rolesUrl, rawUrl, rawViewerUrl = '', specUr
 
  /* 顶栏 + 图例共用一个 sticky 容器 —— 两截贴顶时不用猜顶栏高度。 */
  .top{position:sticky;top:0;z-index:9}
- .hl-bar{background:var(--bar);color:#f9fafb;padding:9px 16px;display:flex;
-         flex-wrap:wrap;align-items:baseline;gap:2px 14px;font-size:13.5px}
- .hl-bar b{color:#fff}
- .hl-bar a{color:#93c5fd;text-decoration:none}
+ .hl-bar{background:var(--bar);color:var(--bar-ink);padding:9px 16px;display:flex;
+         flex-wrap:wrap;align-items:baseline;gap:2px 14px;font-size:13.5px;
+         border-bottom:1px solid var(--line)}
+ .hl-bar b{color:var(--ink)}
+ .hl-bar a{color:var(--bar-link);text-decoration:none}
  .hl-bar a:hover{text-decoration:underline}
- .hl-bar .now{margin-left:auto;color:#94a3b8;font-size:12px}
+ .hl-bar .now{margin-left:auto;color:var(--bar-ink2);font-size:12px}
 
- /* 表头：一份，贴在图例条里，宽度与每张卡的表格逐列相同（同一套 fixed 轨道）。 */
- .legend{background:var(--panel);border-bottom:1px solid var(--line);
-         padding:0 var(--inset);box-shadow:0 1px 0 rgba(15,23,42,.03)}
- .legend th{font:600 11px/1.5 var(--sans);letter-spacing:.06em;color:var(--ink3)}
+ /* 表头：每张表自带一行。上一版是顶部一条 sticky 图例 —— 它只在桌面显示，
+    而且「无人认领的操作」与「由 utils 内部调用」两张表的列跟它不同（那两张写的是
+    service 层／链接），滚到那里图例上的列名就是错的。表头回到表上，就不会说错。 */
 
  /* 表格：fixed 布局 + 七列定宽写在一处。除第 5 列外都定宽，那一列吃余量。
     右边留一道 14px 沟：没有沟时相邻两列的正文会贴在一起（上一轮实测：
@@ -231,6 +246,9 @@ export function pagesPage({ homeUrl, rolesUrl, rawUrl, rawViewerUrl = '', specUr
                  border-bottom:1px solid var(--line2);overflow-wrap:break-word}
  .tbl th:last-child,.tbl td:last-child{padding-right:0}
  .tbl th{padding-bottom:5px}
+ /* 表头是每张表自己的一行。列名只有一份（模块下的 THEAD），card 与 card 之间不会漂开。 */
+ .tbl thead th{font:600 11px/1.5 var(--sans);letter-spacing:.06em;color:var(--ink3);
+               white-space:nowrap;border-bottom:1px solid var(--line)}
  .tbl th:nth-child(1),.tbl td:nth-child(1){width:62px}
  .tbl th:nth-child(2),.tbl td:nth-child(2){width:58px}
  .tbl th:nth-child(3),.tbl td:nth-child(3){width:228px}
@@ -248,7 +266,7 @@ export function pagesPage({ homeUrl, rolesUrl, rawUrl, rawViewerUrl = '', specUr
  tr.GET td:nth-child(2){color:var(--ok)}
  tr.POST td:nth-child(2){color:var(--link)}
  tr.PUT td:nth-child(2){color:var(--warn)}
- tr.PATCH td:nth-child(2){color:#7c3aed}
+ tr.PATCH td:nth-child(2){color:var(--violet)}
  tr.DELETE td:nth-child(2){color:var(--bad)}
  tr.stale td:nth-child(3){color:var(--warn)}
  tr.noapi td:nth-child(3){color:var(--ink4)}
@@ -267,6 +285,10 @@ export function pagesPage({ homeUrl, rolesUrl, rawUrl, rawViewerUrl = '', specUr
               padding:11px var(--pad-card) 0}
  .card h2{margin:0;font-size:15px;font-weight:650;letter-spacing:-.005em}
  .dir{color:var(--ink4)}
+ .proto{color:var(--ink4)}
+ .proto a{color:var(--ink4)}
+ .proto.muted{opacity:.55;font-style:italic}
+ .proto::before{content:"· ";opacity:.5}
  .cnt{margin-left:auto;color:var(--ink3);font-size:12px;font-variant-numeric:tabular-nums}
  .bk{display:flex;flex-wrap:wrap;gap:3px 14px;margin:6px 0 0;
      padding:0 var(--pad-card) 11px;border-bottom:1px solid var(--line2)}
@@ -291,7 +313,7 @@ export function pagesPage({ homeUrl, rolesUrl, rawUrl, rawViewerUrl = '', specUr
  /* 窄屏：七列排不下就竖排，列名由 CSS 生成（行里不带 data- 属性，省下 13KB）。 */
  @media (max-width: 900px){
   :root{--pad-page:12px;--pad-card:12px}
-  .legend{display:none}
+  .tbl thead{display:none}
   .hl-bar .now{display:none}
   .tbl,.tbl tbody,.tbl tr,.tbl td{display:block;width:auto}
   /* 定宽那几条是 .tbl td:nth-child(3)（0,2,1），width:auto 压不住它 —— 竖排时必须
@@ -319,7 +341,6 @@ export function pagesPage({ homeUrl, rolesUrl, rawUrl, rawViewerUrl = '', specUr
   ${specViewerUrl ? `<a href="${specViewerUrl}">按屏幕的规格（HTML，中文不乱码）</a>` : ''}
   <span class="now">一屏一卡 · 分段计数 · 0 也写出来 · 「说人话」机器交叉核过、无人逐条读过</span>
 </div>
-<div class="legend"><table class="tbl"><thead><tr>${HEAD.map((h) => `<th>${h}</th>`).join('')}</tr></thead></table></div>
 </div>
 <div class="wrap">
 <div class="sum">
@@ -343,7 +364,7 @@ ${utilsCalled.length ? `<section class="card" id="utils">
   <header><h2>由 utils 内部调用</h2><code class="dir">miniprogram/utils/</code><span class="cnt">${utilsCalled.length} 条</span></header>
   <div class="sec">
     <p class="note">这几条不挂在任何屏幕上 —— 是 <code>utils/auth.js</code> 直接调的（登录那两发）。没有这一段，按屏幕看的人看不到它们存在：它们既然没有屏调用，就不在任何卡里，而排出了下面那张「无人认领」表。</p>
-    <table class="tbl"><thead><tr>${HEAD.map((h) => `<th>${h}</th>`).join('')}</tr></thead><tbody>
+    <table class="tbl">${THEAD}<tbody>
     ${utilsCalled.map((o) => `<tr class="r">`
       + '<td>—</td>'
       + `<td>${esc(o.method)}</td>`

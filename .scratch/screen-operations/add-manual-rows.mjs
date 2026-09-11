@@ -19,8 +19,12 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, '..', '..');
 const TSV = resolve(REPO, '..', 'hualong-backend', 'db', 'spec', 'screen-operations.tsv');
 
-const HEAD = ['screen', 'mp_file', 'screen_title', 'state', 'operation_id', 'method', 'path',
+const HEAD = ['screen', 'mp_file', 'screen_title', 'title_source', 'state', 'operation_id', 'method', 'path',
   'source', 'trigger_wxml', 'trigger_prototype', 'trigger_flag', 'gap', 'notes'];
+
+// 页名与出处**取自同一个权威**（原型的可见标题），不在这个脚本里再抄一份。
+import { screenTitles } from '../../tools/lib/screen-ops-data.mjs';
+const TITLE = screenTitles();
 
 // 每行固定 9 格：[screen, title, state, op, method, path, source, flag, 说明]
 // 说明的去向由 source 决定：no-api → notes；human／planned → gap（见下面的组装）。
@@ -74,7 +78,10 @@ for (const [screen, title, state, op, method, path, source, flag, text] of rows)
   // 说明的去向：no-api 写 notes（那是在说「为什么不调」），
   // human／planned 写 gap（那是在说「缺什么」），notes 留给一句判据来源。
   const push = {
-    screen, mp_file: mp(screen), screen_title: title, state,
+    screen, mp_file: mp(screen),
+    screen_title: (TITLE.get(screen) || {}).title || title,
+    title_source: (TITLE.get(screen) || {}).source || '（手写，未查出处）',
+    state,
     operation_id: op, method, path, source,
     trigger_wxml: '', trigger_prototype: '', trigger_flag: flag,
     gap: '', notes: '',

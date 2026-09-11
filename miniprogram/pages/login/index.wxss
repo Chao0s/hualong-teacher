@@ -1,0 +1,105 @@
+/* 登录 —— 本页自己的样式。整页一个居中卡片，三个状态共用一套排版。 */
+
+.page {
+  min-height: 100vh;
+  padding: 140rpx 48rpx calc(80rpx + env(safe-area-inset-bottom));
+  background: var(--bg);
+}
+
+.intro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 56rpx 40rpx;
+  border-radius: var(--radius);
+  background: var(--surface);
+  text-align: center;
+}
+
+.intro__glyph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 128rpx;
+  height: 128rpx;
+  border-radius: 50%;
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  font-size: 52rpx;
+  font-weight: 700;
+}
+
+.intro__glyph--phone {
+  background: var(--amber-light);
+  color: var(--orange);
+}
+
+.intro__glyph--fail {
+  background: var(--danger-light);
+  color: var(--danger);
+}
+
+.intro__title {
+  margin-top: 32rpx;
+  font-size: 36rpx;
+  font-weight: 700;
+}
+
+.intro__body {
+  margin-top: 20rpx;
+  color: var(--muted);
+  font-size: 26rpx;
+  line-height: 1.7;
+}
+
+/* 说明块。左对齐：它是三段话，居中读起来会散。 */
+.intro__note {
+  margin-top: 32rpx;
+  padding: 20rpx 24rpx;
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 24rpx;
+  line-height: 1.7;
+  text-align: left;
+}
+
+.phone-btn {
+  width: 100%;
+  height: 88rpx;
+  margin-top: 40rpx;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: #fff;
+  font-size: 30rpx;
+  font-weight: 700;
+  line-height: 88rpx;
+}
+
+.phone-btn--hover {
+  opacity: 0.85;
+}
+
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 88rpx;
+  margin-top: 40rpx;
+  border: 1rpx solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-size: 30rpx;
+  font-weight: 700;
+}
+
+.btn--primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn--hover {
+  opacity: 0.85;
+}
