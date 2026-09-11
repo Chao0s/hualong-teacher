@@ -121,7 +121,7 @@ function countStrip(b) {
 /**
  * @param {{homeUrl: string, rolesUrl: string, rawUrl: string, specUrl: string}} links
  */
-export function pagesPage({ homeUrl, rolesUrl, rawUrl, specUrl }) {
+export function pagesPage({ homeUrl, rolesUrl, rawUrl, rawViewerUrl = '', specUrl, specViewerUrl = '' }) {
   const { screenOps, byScreen, eli10, opById, titles, unused, notTeacher, unusedNoService, serviceReport } = buildPageView();
 
   const cards = [...byScreen.keys()].sort().map((screen) => {
@@ -305,6 +305,8 @@ export function pagesPage({ homeUrl, rolesUrl, rawUrl, specUrl }) {
   <a href="${rolesUrl}">角色矩阵</a>
   <a href="${specUrl}">按屏幕看的规格</a>
   <a href="${rawUrl}">原始 YAML</a>
+  ${rawViewerUrl ? `<a href="${rawViewerUrl}">原文（HTML，中文不乱码）</a>` : ''}
+  ${specViewerUrl ? `<a href="${specViewerUrl}">按屏幕的规格（HTML，中文不乱码）</a>` : ''}
   <span class="now">一屏一卡 · 分段计数 · 0 也写出来</span>
 </div>
 <div class="legend"><table class="tbl"><thead><tr>${HEAD.map((h) => `<th>${h}</th>`).join('')}</tr></thead></table></div>

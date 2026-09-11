@@ -23,7 +23,7 @@ import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { specPath, specText } from './openapi-source.mjs';
 import { usedFrom } from './lib/screen-ops-data.mjs';
-import { indexPage, rolesPage, specForUi, pagesSpecForUi } from './swagger/pages.mjs';
+import { indexPage, rolesPage, specForUi, pagesSpecForUi, rawViewer } from './swagger/pages.mjs';
 import { pagesPage } from './swagger/pages-view.mjs';
 
 const UI_DIST = dirname(fileURLToPath(import.meta.resolve('swagger-ui-dist/swagger-ui.css')));
@@ -43,23 +43,47 @@ writeFileSync(join(out, 'index.html'), indexPage({
   rolesUrl: './roles.html',
   pagesUrl: './pages.html',
   rawUrl: './openapi.yaml',
+  rawViewerUrl: './openapi.html',
   note: NOTE,
 }));
 writeFileSync(join(out, 'roles.html'), rolesPage({
   homeUrl: './index.html',
   rawUrl: './openapi.yaml',
+  rawViewerUrl: './openapi.html',
   pagesUrl: './pages.html',
-  specUrl: './pages.yaml',
+  specUrl: './pages-spec.html',
 }));
 writeFileSync(join(out, 'pages.html'), pagesPage({
   homeUrl: './index.html',
   rolesUrl: './roles.html',
   rawUrl: './openapi.yaml',
+  rawViewerUrl: './openapi.html',
   specUrl: './pages.yaml',
+  specViewerUrl: './pages-spec.html',
 }));
 writeFileSync(join(out, 'pages.yaml'), pagesSpecForUi());
 writeFileSync(join(out, 'openapi.yaml'), specText());
 writeFileSync(join(out, 'openapi.local.yaml'), specForUi());
+
+// 原文的「人读」视图。**只在 Pages 构建里生成**：本地的 server 已经把 .yaml 发成
+// `charset=utf-8`，只有 Pages 会发无 charset 的 `text/yaml`，中文在那里才会乱码。
+// 理由与完整解释见 pages.mjs 的 rawViewer()。
+writeFileSync(join(out, 'openapi.html'), rawViewer({
+  text: specText(),
+  title: 'hualong-backend/api/openapi.yaml（原始契约，未注入 ELI10）',
+  backUrl: './index.html',
+  backLabel: '回到 Swagger UI',
+  downloadUrl: './openapi.yaml',
+  downloadLabel: '下载 YAML',
+}));
+writeFileSync(join(out, 'pages-spec.html'), rawViewer({
+  text: pagesSpecForUi(),
+  title: '按屏幕分组的派生 spec（167 个操作全保留，tag = 屏幕名）',
+  backUrl: './pages.html',
+  backLabel: '回到按屏幕看',
+  downloadUrl: './pages.yaml',
+  downloadLabel: '下载 YAML',
+}));
 
 for (const a of ASSETS) {
   const from = join(UI_DIST, a);
@@ -71,4 +95,4 @@ console.log(`契约   ${specPath()}`);
 const u = usedFrom();
 console.log(`两份表 ${u.root}  （来源：${u.how}）`);
 console.log(`站点   ${out}`);
-console.log(`文件   ${['index.html', 'roles.html', 'pages.html', 'openapi.yaml', 'openapi.local.yaml', 'pages.yaml', ...ASSETS].join(', ')}`);
+console.log(`文件   ${['index.html', 'roles.html', 'pages.html', 'openapi.html', 'pages-spec.html', 'openapi.yaml', 'openapi.local.yaml', 'pages.yaml', ...ASSETS].join(', ')}`);

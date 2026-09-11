@@ -99,9 +99,57 @@ export function escapeHtml(s) {
 }
 
 /**
+ * 原文的「人读」视图：把 YAML 原样放进一个自声明 UTF-8 的 HTML 里。
+ *
+ * **不是为了好看，是为了编码。** GitHub Pages 把 `.yaml` 发成 `Content-Type: text/yaml`，
+ * **没有 `charset`**。浏览器用 URL 直接打开这种响应时不会默认 UTF-8，而是退回系统编码
+ * （中文 Windows 上是 GBK/ANSI），于是整篇中文变成 `å¤-é%™` 那样的乱码。
+ * 文件本身是合法 UTF-8（复核过：无 BOM、无替换字符）—— **坏的是 header，不是文件**。
+ *
+ * 本地的 `tools/swagger/server.mjs` 不受影响：它发 `application/yaml; charset=utf-8`。
+ * 所以这个包裹页只在 Pages 构建时生成，`.yaml` 原件仍留作下载。
+ *
+ * API 给的 `fetch()` 也不受影响（对 `text/*` 默认 UTF-8），所以 Swagger UI 一直正常 ——
+ * 只有「人点原始契约那个链接」这一条路会踩到。
+ */
+export function rawViewer({ text, title, backUrl, backLabel, downloadUrl, downloadLabel }) {
+  const shown = text.length > 400000
+    ? `${text.slice(0, 200000)}\n\n…（中间省略 ${text.length - 400000} 字符，用下面的下载链接取全文）…\n\n${text.slice(-200000)}`
+    : text;
+  return `<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${escapeHtml(title)}</title>
+<style>
+ body { margin: 0; background: #0b1220; color: #e2e8f0;
+        font: 13px/1.55 ui-monospace, SFMono-Regular, Consolas, monospace; }
+ .hl-bar { position: sticky; top: 0; z-index: 2; background: #1f2937; color: #f9fafb;
+           padding: 9px 16px; font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+           display: flex; gap: 16px; align-items: baseline; flex-wrap: wrap; }
+ .hl-bar a { color: #93c5fd; text-decoration: none; }
+ .hl-bar a:hover { text-decoration: underline; }
+ .hl-bar .meta { margin-left: auto; color: #94a3b8; font-size: 12px; }
+ pre { margin: 0; padding: 14px 16px 40px; white-space: pre; overflow-x: auto; tab-size: 2; }
+</style>
+</head>
+<body>
+<div class="hl-bar">
+  <a href="${backUrl}">${escapeHtml(backLabel)}</a>
+  <a href="${downloadUrl}" download>${escapeHtml(downloadLabel)}</a>
+  <span class="meta">${escapeHtml(title)} &middot; ${shown.length.toLocaleString('en-US')} 字符 &middot; 本页以 UTF-8 声明，原文与下载件逐字节相同</span>
+</div>
+<pre>${escapeHtml(shown)}</pre>
+</body>
+</html>
+`;
+}
+
+/**
  * @param {{specUrl: string, rolesUrl: string, rawUrl: string, note: string}} links
  */
-export function indexPage({ specUrl, rolesUrl, pagesUrl = '', rawUrl, note }) {
+export function indexPage({ specUrl, rolesUrl, pagesUrl = '', rawUrl, rawViewerUrl = '', note }) {
   return `<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -124,6 +172,7 @@ export function indexPage({ specUrl, rolesUrl, pagesUrl = '', rawUrl, note }) {
   <a href="${rolesUrl}">按角色查看（x-hualong-roles）</a>
   ${pagesUrl ? `<a href="${pagesUrl}">按屏幕查看（某一页要用哪些 API）</a>` : ''}
   <a href="${rawUrl}">原始契约</a>
+  ${rawViewerUrl ? `<a href="${rawViewerUrl}">原始契约（HTML，中文不乱码）</a>` : ''}
 </div>
 <div id="swagger-ui"></div>
 <script src="./swagger-ui-bundle.js"></script>
@@ -177,7 +226,7 @@ const escPath = (p) => {
  *
  * @param {{homeUrl: string, rawUrl: string, pagesUrl?: string, specUrl?: string}} links
  */
-export function rolesPage({ homeUrl, rawUrl, pagesUrl = '', specUrl = '' }) {
+export function rolesPage({ homeUrl, rawUrl, rawViewerUrl = '', pagesUrl = '', specUrl = '' }) {
   const rows = operations(loadSpec());
   const eli = eli10OneLine();
   const cells = rows.map((r) => `<tr class="r ${r.method}${r.roles.includes('teacher') ? ' t' : ''}">`
@@ -287,7 +336,7 @@ export function rolesPage({ homeUrl, rawUrl, pagesUrl = '', specUrl = '' }) {
  @media (prefers-reduced-motion: no-preference){ html{scroll-behavior:smooth} }
 </style></head><body>
 <div class="top">
-<div class="hl-bar">化龙 API · 角色矩阵<a href="${homeUrl}">回到 Swagger UI</a>${pagesUrl ? `<a href="${pagesUrl}">按屏幕看</a>` : ''}${specUrl ? `<a href="${specUrl}">按屏幕看的规格</a>` : ''}<a href="${rawUrl}">原始 YAML</a></div>
+<div class="hl-bar">化龙 API · 角色矩阵<a href="${homeUrl}">回到 Swagger UI</a>${pagesUrl ? `<a href="${pagesUrl}">按屏幕看</a>` : ''}${specUrl ? `<a href="${specUrl}">按屏幕看的规格</a>` : ''}<a href="${rawUrl}">原始 YAML</a>${rawViewerUrl ? `<a href="${rawViewerUrl}">原文（HTML，中文不乱码）</a>` : ''}</div>
 <div class="legend"><table class="tbl"><thead><tr>${ROLE_HEAD.map((h) => `<th>${h}</th>`).join('')}</tr></thead></table></div>
 </div>
 <div class="sum">共 <b>${rows.length}</b> 个操作，其中教师端可达 <b>${teacherCount}</b> 个（浅蓝行）。
