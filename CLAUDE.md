@@ -1,717 +1,764 @@
-# CLAUDE.md — 化龙教师端小程序
+# CLAUDE.md — 化龙教师端小程序
+
+本仓库是微信小程序的教师端。后端在**另一个仓库** `hualong-backend`，两者靠一份
+OpenAPI 契约连起来。
+
+---
+
+## 1. 怎么跟我说话
+
+**用中文的 ASD-STE100。** 简化技术英语的规则，用在中文上：
+
+| 规则 | 做法 |
+|---|---|
+| 一句一义 | 一个句子只讲一件事。描述句不超过 20 个字 |
+| 一词一义 | 同一样东西自始至终用同一个词。不要为了不重复而换说法 |
+| 主动语态 | 写「服务端拒绝这次写入」，不写「这次写入被拒绝」 |
+| 指令以动词开头 | 写「打开 config.js」，不写「你需要打开 config.js」 |
+| 一句一个否定 | 不要写「不是不能改」 |
+
+**原样保留、不要翻译也不要改写**：代码、文件路径、命令、API 名、错误码、标识符、
+状态编码（`s1`／`e2`／`g3` 之类）。
+
+**报结果给数字。** 写「73 项通过，0 项失败」，不写「测试通过了」。写「12 页已接，
+40 页未接」，不写「大部分页面已完成」。做不到验证就写「已做完，未验证」。
+
+**先说结论，再说依据。** 我要先知道结果是什么，再知道你怎么得出来的。
+
+### 术语第一次出现要带一句注解
+
+我和同事都记不住这些名字。**每次对话里第一次提到，紧跟一句它是什么。** 名字本身原样
+保留，注解写在后面。两类都要注解：
+
+**第一类 · 缺口与决议编号**（`G71`、`F17`、`B12`、`W19`、`Q62-j39`）。注解写它指什么
+问题。
+
+```
+不要：接那条线之前先修 G71。
+要　：接那条线之前先修 G71（社区共育 feed 的实作回任务行，契约声明的是家长投稿行）。
+```
+
+**第二类 · schema 名、表名、端点名**（`ParentTaskSubmission`、`db_month_eval`、
+`/home-school/community-feed`）。注解要写**哪个模块的哪个功能、谁做的这件事**，不要
+只翻译名字。
+
+```
+不要：feed 回的是 ParentTaskSubmission。
+要　：feed 回的是 ParentTaskSubmission（教师发的亲子任务，家长交上来的那一笔，
+      含家长写的正文与照片）。
+```
+
+判断注解够不够：**同名的东西在别处还有一个吗？** 有就要写清是哪一个。系统里有两条
+「家长提交」，名字像、事情不同：
+
+| 名字 | 是什么 |
+|---|---|
+| `db_parent_task_submission` | 教师发亲子任务，家长交作业。一条任务对 N 名幼儿 |
+| `db_book_material_submission` | 成长册的栏目要素材，教师向家长征集。一个槽位对一名幼儿 |
+
+注解要短，一句话。同一次对话里再提同一个名字，直接用，不用重复注解。表格里的名字
+同样适用——用一个独立的列写注解，或者写在同一格的括号里。
+
+状态编码（`s1`／`e2`／`g3` 之类）不在此列。它们的含义写在契约与 DDL 的列注释里，
+必要时才展开。
+
+### 写位置就只写现状
+
+记录某样东西**在哪**的时候，直接写它现在在哪。不要写它以前在哪、什么时候搬的、
+旧的那份还在不在。
+
+```
+不要：utils/ 原本只有成长册的数据模型，service 层接入后新增了 request 与 auth，
+      旧的那套已归档到 Archive/20260831/
+要　：utils/ —— request（唯一 HTTP 出口）、auth、guard、session、errors、
+      derived、time，及成长册与量表的数据模型
+```
+
+沿革只写在**记录决策理由的地方**：`decision.md`、`docs/handoff/`、后端的
+`DECISIONS.md` 与 `db/GAPS.md`、以及 `API-CONTRACT.md` 的修订记录。那些文件的
+用途就是回答「为什么会变成这样」。
+
+README、目录树、文件头注、代码注释里的路径说明，一律只写现状。读的人要的是
+「东西在哪」，不是「东西怎么走到这儿的」。
+
+---
+
+## 2. 改了前后端之间的关系，就要更新 API 文档
+
+**这一条是硬要求，不是提醒。**
+
+只要改动落在下面任何一格，`hualong-backend` 的契约与登记表必须在同一轮里一起改：
+
+| 改了什么 | 要同步的文件 |
+|---|---|
+| 新增／删除／改名端点 | `api/openapi.yaml` |
+| 改请求体或响应体的字段 | `api/openapi.yaml` |
+| 改状态机（哪个状态能做哪个动作） | `api/openapi.yaml` + `api/action-registry.tsv` + `api/action-coverage.tsv` |
+| 改范围规则（derived／scoped／free） | `api/openapi.yaml` + `db/spec/scope-rules.json` |
+| 发现契约与实作对不上，但暂时不修 | `db/GAPS.md` 登记一条，给编号 |
+
+改完在 `docs/API-CONTRACT.md` §15 追加一条修订记录，写清楚**为什么**这么改、
+**代价**是什么、**计数怎么变**（paths / operations / schemas / 动作数 / 缺口数）。
+计数要实测，不要照抄上一条。
+
+然后跑后端仓库的 harness：
+
+```bash
+cd ../hualong-backend
+node db/tools/check-all.mjs
+```
+
+**Swagger 站点不用手工改，也没有一份要同步的副本。** 本仓库只读契约、从不复制一份
+（`tools/openapi-source.mjs` 的头注写明了理由：一份复制品会悄悄过期，而过期的契约比
+没有契约更糟）。三处各自取一次：
+
+| 哪一份 | 读谁 | 什么时候更新 |
+|---|---|---|
+| `npm run swagger`（本机看） | 每次请求现读 `../hualong-backend/api/openapi.yaml` | 改完契约存盘即生效，刷新页面就有 |
+| `npm run docs:api`（生成静态站） | 同上，写到 `dist/`（已 gitignore，**产物从不提交**） | 手动跑才生成 |
+| GitHub Pages 上那份 | CI 从 **GitHub 上的 `hualong-backend`** 现 checkout | 推前端 master，或后端触发 `contract-changed` |
+
+**所以线上那份跟的是后端 remote，不是本机。** 契约改完只提交在本地时，线上仍是旧的；
+只推前端也不行 —— CI 会重建，但它 checkout 的后端 remote 还是旧 HEAD，站点照样是旧的，
+看起来像「我明明改了却没生效」。**要先推后端。**
+
+### 顺序不能反
+
+薄契约服务端的**路由表是从契约生成的**。所以顺序永远是：
+
+1. 先改 `api/openapi.yaml`
+2. 再改服务端实作
+3. 最后改客户端
+
+跳过第 1 步，服务端会回 `501`，而且「漏实作」与「不存在」在外面看起来一模一样。
+
+---
+
+## 3. 现状
+
+`miniprogram/` 共 **56 页**，**48 页已接 API**，**8 页仍是写死的字面量**。
+
+这三个数**每次接一页就变**，权威是 `npm run scan:wiring` 第一行的「页面 56（已接 48）」，不是本节（2026-09-12 实测）。
+
+判断某一页属于哪一类：看它**真的调用过** `services/*` 吗 —— **`require` 了不算**。
+`home-school` 就 `require` 了 `co-education` 却一次都没调用（后来才接上），按 `require` 数会把它算成已接。
+两种数法今天恰好一致，但判据要按调用，与扫描器一致。
+
+**`login` 是例外，它不在这三个数里**：它走的是 `utils/auth.js`（不是 `services/*`），
+所以扫描器按上面那条判据把它算成「未接」，**而它确实在调 API**（`POST`／`GET /auth/session`）。
+这一点在 `db/spec/screen-operations.tsv` 里由两行 `source=human` 记着 —— 生成器只追
+pages→services，看不见 utils 这一层。**别因为「未接」就去给它补一个假的 service 调用。**
+在开发者工具里看 Network 面板有没有 `/api/v1/...` 请求，是同一件事的另一种查法。
+
+| 已接 | 页 |
+|---|---|
+| 首页 | `home` |
+| 待办任务 | `teacher-tasks`、`teacher-task-detail` |
+| 资源与案例库 | `resource-library`、`resource-detail`、`case-library`、`case-detail`、`upload-resource` |
+| 党建 | `school-affairs`、`party-study-list/detail`、`party-activity-list/detail`、`party-brand-list/detail` |
+| 在园时光 | `home-school-moments`、`home-school-moment-feed`、`home-school-moment-publish` |
+| 亲子任务 | `parent-tasks`、`parent-task-detail`、`parent-task-publish` |
+| 社区与评价 | `community-coeducation`、`parent-evaluation-detail`、`teacher-monthly-evaluation`、`teacher-monthly-form` |
+| 家长评价开窗 | `parent-evaluation-publish` |
+| 成长册 | `growth-book`、`growth-book-edit`、`growth-book-time-manage`、`growth-book-section-edit`、`growth-book-section-materials`、`growth-book-view` |
+| 教研培训 | `training-list`、`training-detail`、`my-training`、`teacher-profile` |
+| 评估族 | `growth-record`、`teacher-term-evaluation`、`teacher-term-form`、`growth-comprehensive-assessment`、`comprehensive-assessment-form`、`comprehensive-assessment-report`、`comprehensive-assessment-class-report`、`assessment-tool` |
+
+### 提到页面就写它在屏幕上叫什么、怎么走到
+
+**目录名我对不上屏幕。** `teacher-monthly-form` 是哪一页，光看名字认不出来。
+
+**表格里提到页面，加一列写中文标题与到达路径。** 正文里提到，直接在括号里标：
+
+```
+不要：teacher-monthly-form 整页重写，风险最高。
+要　：teacher-monthly-form（「填写月度评价」，家园社共育 → 成长档案 → 教师评价
+      → 月度评价 → 点任一圆点）整页重写，风险最高。
+```
+
+中文标题的权威是各页 `index.json` 的 `navigationBarTitleText`，**不要自己译目录名**。
+
+底部导航五项（`components/hl-tabbar`）：**首页 / 党建管理 / 综合协调 / 教研培训 / 家园社共育**。
+所有路径都从这五个之一起步。**已接 API 的 48 页**，加上路径上必经、
+**本身还没接 API 的 4 个中转页**（`comprehensive-coordination`、`coordination-file-list`、
+`resource-center`、`training-center`，逐个在表里标了），走法如下：
+
+| 目录名 | 屏幕上叫 | 怎么走到 |
+|---|---|---|
+| `home` | 首页 | 底部导航「首页」 |
+| `teacher-tasks` | 待办任务 | 首页 → 待办任务 |
+| `teacher-task-detail` | 任务详情 | 待办任务 → 点某条任务 |
+| `school-affairs` | 党建管理部 | 底部导航「党建管理」 |
+| `party-study-list` / `-detail` | 党建学习 / 文件预览 | 党建管理 → 党建学习 → 点条目 |
+| `party-activity-list` / `-detail` | 党建活动 / 活动介绍 | 党建管理 → 党建活动 → 点条目 |
+| `party-brand-list` / `-detail` | 品牌建设 / 图文介绍 | 党建管理 → 品牌建设 → 点条目 |
+| `resource-library` / `resource-detail` | 资源库 / 资源详情 | 教研培训 → 课程资源 → 资源库 |
+| `case-library` / `case-detail` | 案例库 / 案例详情 | 教研培训 → 课程资源 → 案例库 |
+| `upload-resource` | 上传资料 | 首页 → 上传资源 |
+| `home-school` | 家园社共育 | 底部导航「家园社共育」（**这一页本身还没接 API**，只是路径上的一站） |
+| `home-school-moments` | 在园时光 | 家园社共育 → 在园时光 |
+| `home-school-moment-feed` | 全部活动 | 在园时光 → 全部活动 |
+| `home-school-moment-publish` | 发布活动 | 在园时光 → 发布活动 |
+| `parent-tasks` | 亲子任务 | 家园社共育 → 亲子任务 |
+| `parent-task-detail` | 任务详情 | 亲子任务 → 点某条已发布的任务 |
+| `parent-task-publish` | 发布新任务 | 亲子任务 → 发布新任务（点草稿进来是改草稿） |
+| `community-coeducation` | 社区共育 | 家园社共育 → 社区共育 |
+| `growth-record` | 儿童成长档案 | 家园社共育 → 成长档案（**这一页本身还没接 API**，只是路径上的一站） |
+| `parent-evaluation-detail` | 测评进度 | 发布家长测评 → 点某一期 |
+| `teacher-evaluation` | 教师评价 | 成长档案 → 教师评价（**这一页本身还没接 API**，只是路径上的一站） |
+| `teacher-monthly-evaluation` | 教师月度评价 | 教师评价 → 月度评价 |
+| `teacher-monthly-form` | 填写月度评价 | 教师月度评价 → 点任一圆点；也可从首页「本月评价」直达 |
+| `parent-evaluation-publish` | 发布家长测评 | 成长档案 → 发布家长评价 |
+| `growth-book` | 成长册 | 成长档案 → 成长册（「栏目进度」矩阵只列已勾选的班级栏目；「全班定稿」真的定稿并通知监护人） |
+| `growth-book-edit` | 2026 春季学期编册 | 成长册 → 编辑样板（栏目勾选写 `enabled_sections`；「锁定编册」真的走 e1→e2） |
+| `growth-book-time-manage` | 在园时光管理 | 2026 春季学期编册 → 栏目管理里的「在园时光」 |
+| `growth-book-section-edit` | 新建栏目 / 栏目名 | 2026 春季学期编册 → 「＋ 新建栏目」，或点一个还是草稿的班级栏目 |
+| `growth-book-section-materials` | 栏目名 | 2026 春季学期编册 → 点一个已发布的班级栏目；栏目版面编辑器发布后也跳这里 |
+| `growth-book-view` | 成长册预览 | 抬头三格走契约，翻的那一本仍是版式样张（0/12 版式包已发布） |
+| `training-center` | 教研培训部 | 底部导航「教研培训」（**这一页本身还没接 API**，只是路径上的一站） |
+| `training-list` | 教研培训 | 教研培训部 → 教研培训 |
+| `training-detail` | 研修详情 | 教研培训 → 点某一场研修 |
+| `login` | 登录 | **启动页**（`app.json` 第一项）。已登录就直接跳首页；会话失效时 `guard.endSessionOnAuthFailure` 也 reLaunch 过来。手机号那一步等 G1 |
+| `my-training` | 我的研修 | 教研培训 → 我的研修（「我的档案」那一格） |
+| `teacher-profile` | 个人档案 | 教研培训 → 个人档案（「我的档案」那一格） |
+| `assessment-tool` | 质量评估 | 底部导航「首页」 → 质量评估 |
+| `resource-detail` | 资源详情 | 底部导航「教研培训」 → 资源详情 |
+| `case-detail` | 案例详情 | 底部导航「首页」 → 案例详情 |
+| `party-study-detail` | 文件预览 | 党建管理 → 党建学习 → 点条目 |
+| `party-activity-detail` | 活动介绍 | 党建管理 → 党建活动 → 点条目 |
+| `party-brand-detail` | 图文介绍 | 党建管理 → 品牌建设 → 点条目 |
+| `teacher-term-evaluation` | 教师学期评价 | 底部导航「家园社共育」 → 儿童成长档案 → 教师评价 → 教师学期评价 |
+| `teacher-term-form` | 填写学期评价 | 底部导航「家园社共育」 → 儿童成长档案 → 教师评价 → 教师学期评价 → 填写学期评价 |
+| `teacher-message` | 教师寄语 | 底部导航「家园社共育」 → 儿童成长档案 → 教师评价 → 教师寄语 |
+| `teacher-message-detail` | 寄语详情 | 底部导航「家园社共育」 → 儿童成长档案 → 教师评价 → 教师寄语 → 寄语详情 |
+| `growth-comprehensive-assessment` | 综合评估 | 底部导航「家园社共育」 → 儿童成长档案 → 教师评价 → 综合评估 |
+| `comprehensive-assessment-report` | 综合评估结果 | （从五个底部导航都走不到——只能由别处深链进来，或尚未挂入口） |
+| `comprehensive-assessment-class-report` | 班级评估报告 | 底部导航「家园社共育」 → 儿童成长档案 → 教师评价 → 综合评估 → 班级评估报告 |
+
+**两个「任务详情」重名**：`parent-task-detail`（亲子任务的，家园社共育那条线）与
+`teacher-task-detail`（待办任务的，首页那条线）标题逐字相同。提到时必须写目录名。
+
+**新增页面要同时做三件事**：`app.json` 注册、`index.json` 写
+`navigationBarTitleText`、后端 `db/spec/screens.tsv` 登记一行（§7.3）。
+
+---
+
+## 4. service 层的写法
+
+一个模块一个文件，页面 `require` service，**页面里不拼 URL、不译枚举、不格式化日期、
+不判状态机**。service 返回的每个值都可以直接 `setData`。
+
+```
+config.js              环境与 devSubjectId
+utils/request.js       唯一的 HTTP 出口。契约 §1–§5 只在这里实现一次
+utils/errors.js        §2.4 错误码登记表，ApiError
+utils/derived.js       §7.3 derived 键，发出前剥离
+utils/session.js       §6.3 会话状态
+utils/time.js          §1.2 时间戳。偏移量是字面量，不是换算
+utils/auth.js          登录
+utils/guard.js         §7.2 角色闸门
+services/*.js          一个契约模块一个文件
+```
+
+**枚举表只写一份，写在 service 里。** 权威是 `hualong-backend/db/01_schema.sql` 的列
+注释与 `db/DATABASE_SPEC.md` §2。页面再抄一份，就是这次要清掉的那种假数据。
+
+**必填字段以 DDL 的 `NOT NULL` 为准。** 不要照契约的 `required`（好几个写入 schema
+根本没写 `required`），更不要照表单长什么样——原型的上传表单漏了一个 `NOT NULL` 列，
+那张表单在原型里根本提交不成功。
+
+---
+
+## 5. 怎么跑起来
+
+```bash
+# 1. PostgreSQL（本地 5432）要在跑
+# 2. 薄契约服务端
+cd ../hualong-backend/db/testdata
+node server/server.mjs          # → http://localhost:3860/api/v1
+```
+
+`project.config.json` 与 `project.private.config.json` 里 `urlCheck` 都是 `false`，
+开发者工具可以直接打 `http://127.0.0.1`。
+
+**换用户看不同的人看到什么**：改 `miniprogram/config.js` 的 `devSubjectId`，重新编译。
+名册写在那个文件的注释里。1–12 在职，**13 罗慧兰已离职，登录会失败**——那是数据集
+刻意造的反例，用来验证凭证撤销，不是坏数据。
+
+---
+
+## 6. 怎么验证
+
+| 检查 | 命令 | 查得出什么 |
+|---|---|---|
+| 结构 | `npm test` | 四件套缺文件、类名落空、`wx:for`+`wx:else` 同节点 |
+| 孤儿样式 | `node tools/scan-orphans.mjs` | 本次改动新造成的孤儿（见 §7） |
+| 接口 | `node tools/probe-*.mjs` | 路径、字段、枚举、状态机、范围 |
+| 接线 | `npm run scan:wiring` | 元素→事件→handler→service→契约哪一环断了；契约有而客户端没调的操作。写到 `docs/audit/wiring-<日期>.md/.json/.html`；审核结论落在 `docs/audit/wiring.allowlist.json`，重扫会带上 |
+| 权限 | `cd ../hualong-backend/db/testdata && node authz-tests/run.mjs --base http://localhost:3860/api/v1` | 七组越权探针 |
+| **渲染** | **开发者工具里真点** | **上面全部查不出来** |
+
+探针在 `tools/`，共 **15 支**：`probe-session`、`probe-library`、`probe-library-write`、
+`probe-party`、`probe-moments`、`probe-parent-task`、`probe-coeducation`、`probe-training`、
+`probe-media-fetch`、`probe-task`、`probe-teacher-profile`、`probe-growth-book`、
+`probe-growth-book-compile`、`probe-assessment`、`probe-teacher-message`。
+它们桩掉 `wx.*` 之后**加载未经修改的发布代码**，所以路径写错、字段
+改名、枚举译反都会红。
+
+**记分板有两条通道，不要把它们读成同一件事。** `check()` 是「这里有缺陷」，
+`note()` 是「客户端做对了，对面还没接住」。所以 `probe-assessment` 打印
+「346 项通过，0 项失败，4 条服务端已知缺口」时，那 4 条**不算失败** ——
+它们各自钉着一条已登记的缺口编号，服务端接上那天自己变成 `check()`。
+把已知缺口混进失败数，会让人为了凑绿去放宽断言。
+
+**先写探针再改页面。** 前三条线都靠这个顺序在改页之前就抓到了真问题：
+`resource_access` 是必填、`resource_ids` 不落库、`child_id` 收下即丢。页面改完再测，
+问题会混在渲染问题里。
+
+**会改数据库的探针必须自己收拾**：跑完删掉自己建的行，并核对逐表行数回到 `STATS.md`。
+
+---
+
+## 7. 会咬人的地方
+
+### 7.1 `npm test` 的孤儿样式检查有盲点
+
+`tools/verify-miniprogram.js` 第 118–121 行：WXML 里只要出现一处
+`class="a {{cond ? 'x' : ''}}"`，**整个文件跳过孤儿规则检查**。所以它报「未被引用的
+规则 0 条」不代表真的没有。用 `node tools/scan-orphans.mjs` 补这一刀。
+
+### 7.2 会话在服务端进程内存里，token 在 Storage 里
+
+`server/lib/auth.mjs`：`const SESSIONS = new Map()`，重启即失效。而客户端 token 存在
+`wx.setStorageSync`，**跨重启存活**。服务端每重启一次，模拟器里那张票就是死票。
+
+`utils/request.js` 已经处理：401 且 `devSession` 时清票、重签、重放一次。
+**改那一段之前先读它的注释**，那里有两个坑：登录过程内部那次 `GET /auth/session`
+必须带 `skipAuthRetry`（否则它会 await 当前这次登录，等自己）；登录失败必须清票
+（否则 `isLoggedIn()` 从此说谎）。`probe-session.mjs` 是这两条的回归测试，**带超时**——
+死锁会红，不会挂住。
+
+### 7.3 契约只能有一份，不要留第二份当备份
+
+后端是本仓库的**兄弟目录** `../hualong-backend`。`tools/openapi-source.mjs` 与
+`tools/lib/testdata-path.mjs` 都按 `../hualong-backend` 找它，**不复制一份**。
+
+2026-09-01 撞过一次：当时有**两份**后端克隆，D 盘一份、Google Drive 一份，
+候选表把 D 盘排在前面，而 D 盘那份落后两个提交。于是 `npm run spec:inventory`
+报的是 v0.6 的 128/153，`npm run docs:api` 在本机生成的也是 v0.6 的站点，
+**全程没有任何报错**。候选表里那条备用路径已经删掉：一份复制品不是冗余，
+是一次静默过期。**要么只有一份，要么当场失败。**
+
+**线上那份没受影响** —— CI 从 GitHub checkout 后端，碰不到本机这两份克隆。
+受影响的只有在这台机器上跑的命令。
+
+判断读到的是哪一份：`node tools/spec-inventory.mjs` 第一行会打印契约文件的**绝对路径** ——
+那才是判据，认路径，不认计数。**不要在这里写计数**：契约一改它就过期，而且写下来的当天
+就开始误导人（本节从前写过 `131 paths / 156 operations / 140 schemas`，那是 2026-09-09 的值，
+今天对不上是正常的，不是读错了文件）。要规模数字就现场跑那条命令。
+
+`node db/tools/check-all.mjs` 现在会重新生成 `db/spec/ui-binding.tsv` 且**行数正确**
+（833 行，前后端在同一个盘上、生成器找得到前端了）。但它会刷新 70 行标签文案，
+那是生成物的正常更新、不是你的改动 —— **跑完要还原的只有这六个**：
+
+```bash
+git checkout -- db/spec/columns.tsv db/spec/constraints.tsv db/spec/enums.tsv \
+                db/spec/relations.tsv db/spec/tables.tsv db/spec/ui-binding.tsv
+```
+
+**不要写 `git checkout -- db/spec/`。** 那个目录里有**两个产生器**写着两类文件：
+
+| 谁产 | 哪些文件 | 跑完怎么处理 |
+|---|---|---|
+| 后端 `check-all` 的 `schema-to-tsv`（从 DDL 抽） | 上列六份 | **还原**，那是生成物 |
+| **前端** `npm run emit:screens`（扫页面与契约） | `screen-operations.tsv`、`operation-eli10.tsv` | **提交**，那是本次改动 |
+
+2026-09-12 就吃了一次：改完旗标想「按惯例还原 db/spec」，一条 `git checkout -- db/spec/`
+**把刚做出来的 42 行改动静默抹掉**，而两次跑的闸门都全绿 —— 绿的是被抹掉之后的状态。
+判据：`git diff --numstat db/spec/` 里**有数字的那几份**是真改动，没数字的只是行尾。
+
+**同一天还吃了一次更隐蔽的：把「可重现的红」读成「状态残留」。**
+后端 `check-screen-operations.mjs` 有一份**写死的旗标清单**（前后端的接缝）。
+前端换了旗标名、这里没改，42 行报错。第一次跑看到 1/10 红，接着连跑三次 0 红，
+于是判成「状态残留」放过了 —— **而那三次是绿的，因为前一条 `git checkout -- db/spec/`
+已经把带新旗标的文件还原了**。证据被抹掉之后，红当然消失。
+
+**规矩**：**重跑之前，先确认你改的是同一批文件。** 一条红要判「可重现」，必须
+**不动任何东西**地重跑；中间做过还原、重启、重建，那就不是同一次实验。
+判据：重跑前后 `git status --short db/spec/` 必须一致。
+
+`check-all.mjs` 现在 **8 项全过**。它的 `check-consistency` 一步曾经红过一阵：那一步扫
+前端所有 `.html` 与 `.wxml`，问每个文件有没有 `screens.tsv` 的登记行，而登记表只认原型
+文件名（`screens/home.html`），不认识 `miniprogram/pages/home/index.wxml`。
+2026-09-01 已修：`screens.tsv` 加了 `mp_file` 列，一个屏幕一行、两个定位符。
+
+同一步在 2026-09-08 又红过一次，原因同类：接线扫描器写出的报告
+`docs/audit/wiring-<日期>.html` 与它的外壳模板 `tools/lib/wiring-viewer.html` 都是
+`.html`，于是被当成「没登记的屏幕」。2026-09-09 已修：`check-consistency.mjs` 的
+`NOT_A_PAGE` 加上 `audit` 与 `tools` 两个目录名。**排除的数目照旧打印出来**
+（数目随目录增减而变，以那一行输出为准），静默跳过与静默截短是同一种毛病。
+
+**本仓库的目录名因此进了后端的检查逻辑**，改动这三处要留意：
+
+| 目录 | 后端怎么看它 |
+|---|---|
+| `miniprogram/pages/<名>/index.wxml` | `screens.tsv` 的 `mp_file` 逐行指着它。**新增页面要在后端登记一行**，否则 `check-consistency` 报未登记 |
+| `captures/`、`miniprogram/components/`、`miniprogram/templates/` | 按「不是页面」排除，报告里会打印排除的数目 |
+
+`check-all.mjs --with-frontend` 仍有一项红（`check-ui-binding`）：小程序的 wxml 一个
+`data-ui` 都没带，而它要求每个写入控件都带。CLAUDE.md 与后端 §2 让你跑的是**不带**
+`--with-frontend` 的那条命令，补那一条等于给 55 页的写入控件逐个补标注。
+
+### 7.4 范围判定不是 bug
+
+服务端的范围 predicate 是真的。同一份数据，不同教师看到的笔数不同：别人的草稿看不见，
+管理端未发布的党建内容看不见。**探针的断言要两头都钉**——写「看得见 N 条**且**这几个
+id 不在里面」，只写「N 条」的话范围判定改坏了也可能照样是 N 条。
+
+### 7.5 不可逆动作只测状态码等于没测
+
+删除、状态迁移这类动作，**状态码对不算过**，还要回库里核对行数／状态没变。一个回
+409 却真的删了行的实作，只看状态码是看不出来的。
+
+### 7.6 断言形状 ≠ 断言值
+
+`^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+08:00$` 对 `12:00` 和 `20:00` 一样通过。
+
+2026-09-01 撞过一次：服务端的 `fmtAt` 把裸值当本地时间转成 UTC 再缀上 `+08:00`，
+**每个端点的每个 `*_at` 都早 8 小时**（库里 `2026-04-21 16:18:00`，线上
+`2026-04-21T08:18:00+08:00`）。五支探针 212 项断言**一支都没抓到**，因为它们断言的
+是格式。同一个根因还偏了游标的边界。
+
+所以：**时间、计数、枚举这类有确定答案的值，断言要钉到库里的那一行**，
+不是钉到回包的形状。`probe-parent-task.mjs` 的写法是拿
+`to_char(start_at, 'YYYY-MM-DD"T"HH24:MI:SS') || '+08:00'` 与回包逐条比。
+
+这与 §7.4「范围断言两头钉」、上一轮那条「回包不带某一列时，只看回包会把『没落库』
+读成『没这个字段』」是同一条教训的三种形态。
+
+---
+
+### 7.7 ELI10 不在契约里，它是渲染时注入的
+
+Swagger UI 上每个操作那段「说人话」，**来源不是 `openapi.yaml`**，而是：
+
+```
+hualong-backend/db/spec/operation-eli10.tsv      一个操作一行，三个固定标签
+  ├─ 「幹嘛」    手工写的
+  ├─ 「怎麼走」  手工写的
+  └─ 「碰到誰」  生成器每次重算（调用: 来自 screen-operations.tsv；影响: 来自 action-registry ∩ screens.tsv）
+```
+
+`tools/swagger/pages.mjs` 的 `injectEli10()` 在**每次渲染时**把它拼到 `description` 前面，
+契约原文一个字不动。所以**翻 `openapi.yaml` 找不到它**，也不必去找。
+
+为什么这样放（理由与代价都写在那里）：契约是手写的共享权威，`hualong-parent`、
+`hualong-admin-pc` 与三端网页原型都读同一份；往里塞 167 行人工中文会让那份文件多一层
+与代码无关的维护面。代价就是上面那句 —— 看契约的人不知道有这一层。
+
+**改那两句人话，改 tsv，不改契约。** 改完 `npm run docs:api` 重生成静态站；
+本机看的话 `npm run swagger` 每次请求现读，刷新即可。
+
+**`operation-eli10.tsv` 也有生成器，但它保留「幹嘛」「怎麼走」。**
+`npm run emit:screens` 会重算 `碰到誰` 与 `derived_from`，手写的那两列原样留着 ——
+所以重跑生成器不会抹掉评审结论。起草的草稿在
+`.scratch/screen-operations/eli10-drafts/*.json`，`apply-eli10-drafts.mjs` 合并。
+
+---
+
+### 7.8 起本地库：两份数据集，名字像、差一个数量级
+
+`db/02_seed.sql` 与 `db/testdata/testdata.sql` **不是同一份东西**。
+
+| 文件 | 是什么 | 规模 |
+|---|---|---|
+| `db/02_seed.sql` | **演示**数据集 | 3 教师 / 6 幼儿 / 7 家长 / 1 管理 |
+| `db/testdata/testdata.sql` | **测试服务端要的那一份** | 12 在职 + 1 离职 / 60 幼儿 / 79 家长 / 3 管理 / 6 班 |
+
+灌错那份**不会报错**。它只会让名册看起来变小，于是 `db/testdata/accounts.env`（家长 1 = 杨秀兰 之类）
+和 CLAUDE.md §5 的「13 罗慧兰已离职」读起来**全像错的** —— 2026-09-12 就这么误报过一次，
+**错的是库，不是那些文件**。
+
+正确的顺序（`db/testdata/README.md` 也写着）：
+
+```bash
+docker run -d --name hl-pg -e POSTGRES_HOST_AUTH_METHOD=trust -p 127.0.0.1:5432:5432 postgres:16
+docker exec hl-pg psql -U postgres -c "CREATE DATABASE hualong_test;"
+docker exec -i hl-pg psql -U postgres -d hualong_test -q < db/01_schema.sql
+docker exec -i hl-pg psql -U postgres -d hualong_test -q < db/testdata/testdata.sql
+docker exec -i hl-pg psql -U postgres -d hualong_test -q < db/testdata/verify.sql   # 20 段，每段应 (0 rows)
+cd db/testdata && node server/server.mjs                                           # 3860
+```
+
+**绑 `127.0.0.1`，不要写 `-p 5432:5432`。** Docker 默认把端口绑到 `0.0.0.0`，
+而这份容器跑的是 `trust`（无密码）。不写地址，同一局域网里任何机器都能无密码连成 `postgres`。
+本机开发只要 `127.0.0.1`（2026-09-12 收紧）。
+
+**重建容器不会丢库。** postgres 镜像自己建一个匿名卷挂在 `/var/lib/postgresql/data`，
+所以 `docker stop` / `start` 之后数据还在。`docker rm` **不带 `-v`** 时卷也留着，
+重建时把它挂回去即可：
+
+```bash
+VOL=$(docker inspect hl-pg --format '{{range .Mounts}}{{.Name}}{{end}}')
+docker rm hl-pg && docker run -d --name hl-pg ... -v "$VOL:/var/lib/postgresql/data" postgres:16
+```
+
+**判据**：服务端启动横幅会印幼儿数。**印「6 名幼儿」就是灌错了**，应该是 60。
+
+### 7.9 Google Drive 上装不了 npm 包
+
+`npm install` 落在 Drive 路径上会报 `TAR_ENTRY_ERROR UNKNOWN: unknown error, write`，
+**写出 0 字节的 `package.json`，然后照报「added N packages」**。于是 `node server/server.mjs`
+起不来，报 `ERR_INVALID_PACKAGE_CONFIG` 或 `ERR_MODULE_NOT_FOUND`，看起来像缺包，其实是文件写坏了。
+
+解法：**在 Drive 之外装好，再把 `node_modules` 复制回来**。
+
+```bash
+DEP="$LOCALAPPDATA/Temp/hl-testdata-deps"; mkdir -p "$DEP" && cd "$DEP"
+cp "<仓库>/db/testdata/package.json" pkg-source.json
+node -e "const f=require('fs'),s=JSON.parse(f.readFileSync('pkg-source.json','utf8'));f.writeFileSync('package.json',JSON.stringify({name:'d',private:true,dependencies:s.dependencies},null,2))"
+npm install
+cp -r "$DEP/node_modules/." "<仓库>/db/testdata/node_modules/"
+```
+
+`node_modules` 不进 git，所以这一步是本机的、每台机器各做一次。
+
+### 7.10 提交信息里有反引号或 `{}`，bash 会吃掉那几个字
+
+`git commit -m "…"` 走的是 shell。信息里有反引号、`$(` 或 `{ }`，bash 先做命令替换 ——
+**替换失败它只报一行错，而提交照样成功**，于是信息里少了一个词，谁都不会注意到。
+
+本仓已撞过两次，都在已推的提交里：
+
+| 提交 | 原话 | 落地成了 |
+|---|---|---|
+| `30951df` | ``…was `return true` with no redirect`` | `…was  with no redirect` |
+| `823af45` | ``appending a bare `Page({})` to index.js`` | `appending a bare  to index.js` |
+
+**判据**：信息里出现**「一个词的位置上只有两个空格」**，就是它。
+
+**规矩**：信息里有反引号、`$(` 或 `{}`，**一律走文件**。
+
+```bash
+# 写到 .git/COMMIT.txt，再：
+git commit -F .git/COMMIT.txt
+```
+
+**不改写已推的历史** —— 共享仓库，force push 会打断另一边。发现了就在下一次提交里说清。
+
+### 7.11 钩子按仓库配置，克隆下来默认不跑
+
+`.githooks/pre-commit` 挡「远端 `<script src="http…">` 混进仓库」（小程序加载不了远端脚本，
+这个错只会在打包时才炸）。但 git 只认 `core.hooksPath`，**而它不在仓库里、每台机器各配一次** ——
+2026-09-12 实测这份克隆从头到尾就没配过，**那道闸一次都没跑**。
+
+装它（也是 `package.json` 里那一条）：
+
+```bash
+npm run hooks:install      # git config core.hooksPath .githooks
+```
+
+**判据**：`git config core.hooksPath` 印出 `.githooks` 才算装上。印不出就是没跑。
+
+### 7.12 `npm run render` 的三道障碍，症状都像「工具版本不对」
 
-本仓库是微信小程序的教师端。后端在**另一个仓库** `hualong-backend`，两者靠一份
-OpenAPI 契约连起来。
+渲染那一层要同时满足三个条件。任何一个不对，`npm run render` 都红，**而三者的讯息长得很像**。
 
----
+**① 套件用 `@weapp-vite/miniprogram-automator`，不是官方的 `miniprogram-automator`。**
 
-## 1. 怎么跟我说话
-
-**用中文的 ASD-STE100。** 简化技术英语的规则，用在中文上：
-
-| 规则 | 做法 |
-|---|---|
-| 一句一义 | 一个句子只讲一件事。描述句不超过 20 个字 |
-| 一词一义 | 同一样东西自始至终用同一个词。不要为了不重复而换说法 |
-| 主动语态 | 写「服务端拒绝这次写入」，不写「这次写入被拒绝」 |
-| 指令以动词开头 | 写「打开 config.js」，不写「你需要打开 config.js」 |
-| 一句一个否定 | 不要写「不是不能改」 |
-
-**原样保留、不要翻译也不要改写**：代码、文件路径、命令、API 名、错误码、标识符、
-状态编码（`s1`／`e2`／`g3` 之类）。
-
-**报结果给数字。** 写「73 项通过，0 项失败」，不写「测试通过了」。写「12 页已接，
-40 页未接」，不写「大部分页面已完成」。做不到验证就写「已做完，未验证」。
-
-**先说结论，再说依据。** 我要先知道结果是什么，再知道你怎么得出来的。
-
-### 术语第一次出现要带一句注解
-
-我和同事都记不住这些名字。**每次对话里第一次提到，紧跟一句它是什么。** 名字本身原样
-保留，注解写在后面。两类都要注解：
-
-**第一类 · 缺口与决议编号**（`G71`、`F17`、`B12`、`W19`、`Q62-j39`）。注解写它指什么
-问题。
+官方的最后一次发版是 2023-11-07（`0.12.1`），之后没再动。它与本机的 DevTools
+（`2.02.2608070`）协议不符：`connect()` 连得上，但任何要读页面的调用都抛
 
 ```
-不要：接那条线之前先修 G71。
-要　：接那条线之前先修 G71（社区共育 feed 的实作回任务行，契约声明的是家长投稿行）。
+Cannot destructure property 'rawPath' of 't.getPageMetaByWebviewId(...)' as it is null
 ```
 
-**第二类 · schema 名、表名、端点名**（`ParentTaskSubmission`、`db_month_eval`、
-`/home-school/community-feed`）。注解要写**哪个模块的哪个功能、谁做的这件事**，不要
-只翻译名字。
+于是一屏都截不出来。替代实现的 API 是**类别**，不是顶层函式：
 
-```
-不要：feed 回的是 ParentTaskSubmission。
-要　：feed 回的是 ParentTaskSubmission（教师发的亲子任务，家长交上来的那一笔，
-      含家长写的正文与照片）。
+```js
+const { Automator } = await import('@weapp-vite/miniprogram-automator');
+const mp = await new Automator().connect({ wsEndpoint: 'ws://127.0.0.1:9420' });
 ```
 
-判断注解够不够：**同名的东西在别处还有一个吗？** 有就要写清是哪一个。系统里有两条
-「家长提交」，名字像、事情不同：
-
-| 名字 | 是什么 |
-|---|---|
-| `db_parent_task_submission` | 教师发亲子任务，家长交作业。一条任务对 N 名幼儿 |
-| `db_book_material_submission` | 成长册的栏目要素材，教师向家长征集。一个槽位对一名幼儿 |
-
-注解要短，一句话。同一次对话里再提同一个名字，直接用，不用重复注解。表格里的名字
-同样适用——用一个独立的列写注解，或者写在同一格的括号里。
-
-状态编码（`s1`／`e2`／`g3` 之类）不在此列。它们的含义写在契约与 DDL 的列注释里，
-必要时才展开。
-
-### 写位置就只写现状
-
-记录某样东西**在哪**的时候，直接写它现在在哪。不要写它以前在哪、什么时候搬的、
-旧的那份还在不在。
-
-```
-不要：utils/ 原本只有成长册的数据模型，service 层接入后新增了 request 与 auth，
-      旧的那套已归档到 Archive/20260831/
-要　：utils/ —— request（唯一 HTTP 出口）、auth、guard、session、errors、
-      derived、time，及成长册与量表的数据模型
-```
-
-沿革只写在**记录决策理由的地方**：`decision.md`、`docs/handoff/`、后端的
-`DECISIONS.md` 与 `db/GAPS.md`、以及 `API-CONTRACT.md` 的修订记录。那些文件的
-用途就是回答「为什么会变成这样」。
-
-README、目录树、文件头注、代码注释里的路径说明，一律只写现状。读的人要的是
-「东西在哪」，不是「东西怎么走到这儿的」。
-
----
-
-## 2. 改了前后端之间的关系，就要更新 API 文档
-
-**这一条是硬要求，不是提醒。**
-
-只要改动落在下面任何一格，`hualong-backend` 的契约与登记表必须在同一轮里一起改：
-
-| 改了什么 | 要同步的文件 |
-|---|---|
-| 新增／删除／改名端点 | `api/openapi.yaml` |
-| 改请求体或响应体的字段 | `api/openapi.yaml` |
-| 改状态机（哪个状态能做哪个动作） | `api/openapi.yaml` + `api/action-registry.tsv` + `api/action-coverage.tsv` |
-| 改范围规则（derived／scoped／free） | `api/openapi.yaml` + `db/spec/scope-rules.json` |
-| 发现契约与实作对不上，但暂时不修 | `db/GAPS.md` 登记一条，给编号 |
-
-改完在 `docs/API-CONTRACT.md` §15 追加一条修订记录，写清楚**为什么**这么改、
-**代价**是什么、**计数怎么变**（paths / operations / schemas / 动作数 / 缺口数）。
-计数要实测，不要照抄上一条。
-
-然后跑后端仓库的 harness：
-
-```bash
-cd ../hualong-backend
-node db/tools/check-all.mjs
-```
-
-**Swagger 站点不用手工改，也没有一份要同步的副本。** 本仓库只读契约、从不复制一份
-（`tools/openapi-source.mjs` 的头注写明了理由：一份复制品会悄悄过期，而过期的契约比
-没有契约更糟）。三处各自取一次：
-
-| 哪一份 | 读谁 | 什么时候更新 |
-|---|---|---|
-| `npm run swagger`（本机看） | 每次请求现读 `../hualong-backend/api/openapi.yaml` | 改完契约存盘即生效，刷新页面就有 |
-| `npm run docs:api`（生成静态站） | 同上，写到 `dist/`（已 gitignore，**产物从不提交**） | 手动跑才生成 |
-| GitHub Pages 上那份 | CI 从 **GitHub 上的 `hualong-backend`** 现 checkout | 推前端 master，或后端触发 `contract-changed` |
-
-**所以线上那份跟的是后端 remote，不是本机。** 契约改完只提交在本地时，线上仍是旧的；
-只推前端也不行 —— CI 会重建，但它 checkout 的后端 remote 还是旧 HEAD，站点照样是旧的，
-看起来像「我明明改了却没生效」。**要先推后端。**
-
-### 顺序不能反
-
-薄契约服务端的**路由表是从契约生成的**。所以顺序永远是：
-
-1. 先改 `api/openapi.yaml`
-2. 再改服务端实作
-3. 最后改客户端
-
-跳过第 1 步，服务端会回 `501`，而且「漏实作」与「不存在」在外面看起来一模一样。
-
----
-
-## 3. 现状
-
-`miniprogram/` 共 **56 页**，**48 页已接 API**，**8 页仍是写死的字面量**。
-
-这三个数**每次接一页就变**，权威是 `npm run scan:wiring` 第一行的「页面 56（已接 48）」，不是本节（2026-09-12 实测）。
-
-判断某一页属于哪一类：看它**真的调用过** `services/*` 吗 —— **`require` 了不算**。
-`home-school` 就 `require` 了 `co-education` 却一次都没调用（后来才接上），按 `require` 数会把它算成已接。
-两种数法今天恰好一致，但判据要按调用，与扫描器一致。
-
-**`login` 是例外，它不在这三个数里**：它走的是 `utils/auth.js`（不是 `services/*`），
-所以扫描器按上面那条判据把它算成「未接」，**而它确实在调 API**（`POST`／`GET /auth/session`）。
-这一点在 `db/spec/screen-operations.tsv` 里由两行 `source=human` 记着 —— 生成器只追
-pages→services，看不见 utils 这一层。**别因为「未接」就去给它补一个假的 service 调用。**
-在开发者工具里看 Network 面板有没有 `/api/v1/...` 请求，是同一件事的另一种查法。
-
-| 已接 | 页 |
-|---|---|
-| 首页 | `home` |
-| 待办任务 | `teacher-tasks`、`teacher-task-detail` |
-| 资源与案例库 | `resource-library`、`resource-detail`、`case-library`、`case-detail`、`upload-resource` |
-| 党建 | `school-affairs`、`party-study-list/detail`、`party-activity-list/detail`、`party-brand-list/detail` |
-| 在园时光 | `home-school-moments`、`home-school-moment-feed`、`home-school-moment-publish` |
-| 亲子任务 | `parent-tasks`、`parent-task-detail`、`parent-task-publish` |
-| 社区与评价 | `community-coeducation`、`parent-evaluation-detail`、`teacher-monthly-evaluation`、`teacher-monthly-form` |
-| 家长评价开窗 | `parent-evaluation-publish` |
-| 成长册 | `growth-book`、`growth-book-edit`、`growth-book-time-manage`、`growth-book-section-edit`、`growth-book-section-materials`、`growth-book-view` |
-| 教研培训 | `training-list`、`training-detail`、`my-training`、`teacher-profile` |
-| 评估族 | `growth-record`、`teacher-term-evaluation`、`teacher-term-form`、`growth-comprehensive-assessment`、`comprehensive-assessment-form`、`comprehensive-assessment-report`、`comprehensive-assessment-class-report`、`assessment-tool` |
-
-### 提到页面就写它在屏幕上叫什么、怎么走到
-
-**目录名我对不上屏幕。** `teacher-monthly-form` 是哪一页，光看名字认不出来。
-
-**表格里提到页面，加一列写中文标题与到达路径。** 正文里提到，直接在括号里标：
-
-```
-不要：teacher-monthly-form 整页重写，风险最高。
-要　：teacher-monthly-form（「填写月度评价」，家园社共育 → 成长档案 → 教师评价
-      → 月度评价 → 点任一圆点）整页重写，风险最高。
-```
-
-中文标题的权威是各页 `index.json` 的 `navigationBarTitleText`，**不要自己译目录名**。
-
-底部导航五项（`components/hl-tabbar`）：**首页 / 党建管理 / 综合协调 / 教研培训 / 家园社共育**。
-所有路径都从这五个之一起步。**已接 API 的 48 页**，加上路径上必经、
-**本身还没接 API 的 4 个中转页**（`comprehensive-coordination`、`coordination-file-list`、
-`resource-center`、`training-center`，逐个在表里标了），走法如下：
-
-| 目录名 | 屏幕上叫 | 怎么走到 |
-|---|---|---|
-| `home` | 首页 | 底部导航「首页」 |
-| `teacher-tasks` | 待办任务 | 首页 → 待办任务 |
-| `teacher-task-detail` | 任务详情 | 待办任务 → 点某条任务 |
-| `school-affairs` | 党建管理部 | 底部导航「党建管理」 |
-| `party-study-list` / `-detail` | 党建学习 / 文件预览 | 党建管理 → 党建学习 → 点条目 |
-| `party-activity-list` / `-detail` | 党建活动 / 活动介绍 | 党建管理 → 党建活动 → 点条目 |
-| `party-brand-list` / `-detail` | 品牌建设 / 图文介绍 | 党建管理 → 品牌建设 → 点条目 |
-| `resource-library` / `resource-detail` | 资源库 / 资源详情 | 教研培训 → 课程资源 → 资源库 |
-| `case-library` / `case-detail` | 案例库 / 案例详情 | 教研培训 → 课程资源 → 案例库 |
-| `upload-resource` | 上传资料 | 首页 → 上传资源 |
-| `home-school` | 家园社共育 | 底部导航「家园社共育」（**这一页本身还没接 API**，只是路径上的一站） |
-| `home-school-moments` | 在园时光 | 家园社共育 → 在园时光 |
-| `home-school-moment-feed` | 全部活动 | 在园时光 → 全部活动 |
-| `home-school-moment-publish` | 发布活动 | 在园时光 → 发布活动 |
-| `parent-tasks` | 亲子任务 | 家园社共育 → 亲子任务 |
-| `parent-task-detail` | 任务详情 | 亲子任务 → 点某条已发布的任务 |
-| `parent-task-publish` | 发布新任务 | 亲子任务 → 发布新任务（点草稿进来是改草稿） |
-| `community-coeducation` | 社区共育 | 家园社共育 → 社区共育 |
-| `growth-record` | 儿童成长档案 | 家园社共育 → 成长档案（**这一页本身还没接 API**，只是路径上的一站） |
-| `parent-evaluation-detail` | 测评进度 | 发布家长测评 → 点某一期 |
-| `teacher-evaluation` | 教师评价 | 成长档案 → 教师评价（**这一页本身还没接 API**，只是路径上的一站） |
-| `teacher-monthly-evaluation` | 教师月度评价 | 教师评价 → 月度评价 |
-| `teacher-monthly-form` | 填写月度评价 | 教师月度评价 → 点任一圆点；也可从首页「本月评价」直达 |
-| `parent-evaluation-publish` | 发布家长测评 | 成长档案 → 发布家长评价 |
-| `growth-book` | 成长册 | 成长档案 → 成长册（「栏目进度」矩阵只列已勾选的班级栏目；「全班定稿」真的定稿并通知监护人） |
-| `growth-book-edit` | 2026 春季学期编册 | 成长册 → 编辑样板（栏目勾选写 `enabled_sections`；「锁定编册」真的走 e1→e2） |
-| `growth-book-time-manage` | 在园时光管理 | 2026 春季学期编册 → 栏目管理里的「在园时光」 |
-| `growth-book-section-edit` | 新建栏目 / 栏目名 | 2026 春季学期编册 → 「＋ 新建栏目」，或点一个还是草稿的班级栏目 |
-| `growth-book-section-materials` | 栏目名 | 2026 春季学期编册 → 点一个已发布的班级栏目；栏目版面编辑器发布后也跳这里 |
-| `growth-book-view` | 成长册预览 | 抬头三格走契约，翻的那一本仍是版式样张（0/12 版式包已发布） |
-| `training-center` | 教研培训部 | 底部导航「教研培训」（**这一页本身还没接 API**，只是路径上的一站） |
-| `training-list` | 教研培训 | 教研培训部 → 教研培训 |
-| `training-detail` | 研修详情 | 教研培训 → 点某一场研修 |
-| `login` | 登录 | **启动页**（`app.json` 第一项）。已登录就直接跳首页；会话失效时 `guard.endSessionOnAuthFailure` 也 reLaunch 过来。手机号那一步等 G1 |
-| `my-training` | 我的研修 | 教研培训 → 我的研修（「我的档案」那一格） |
-| `teacher-profile` | 个人档案 | 教研培训 → 个人档案（「我的档案」那一格） |
-| `assessment-tool` | 质量评估 | 底部导航「首页」 → 质量评估 |
-| `resource-detail` | 资源详情 | 底部导航「教研培训」 → 资源详情 |
-| `case-detail` | 案例详情 | 底部导航「首页」 → 案例详情 |
-| `party-study-detail` | 文件预览 | 党建管理 → 党建学习 → 点条目 |
-| `party-activity-detail` | 活动介绍 | 党建管理 → 党建活动 → 点条目 |
-| `party-brand-detail` | 图文介绍 | 党建管理 → 品牌建设 → 点条目 |
-| `teacher-term-evaluation` | 教师学期评价 | 底部导航「家园社共育」 → 儿童成长档案 → 教师评价 → 教师学期评价 |
-| `teacher-term-form` | 填写学期评价 | 底部导航「家园社共育」 → 儿童成长档案 → 教师评价 → 教师学期评价 → 填写学期评价 |
-| `teacher-message` | 教师寄语 | 底部导航「家园社共育」 → 儿童成长档案 → 教师评价 → 教师寄语 |
-| `teacher-message-detail` | 寄语详情 | 底部导航「家园社共育」 → 儿童成长档案 → 教师评价 → 教师寄语 → 寄语详情 |
-| `growth-comprehensive-assessment` | 综合评估 | 底部导航「家园社共育」 → 儿童成长档案 → 教师评价 → 综合评估 |
-| `comprehensive-assessment-report` | 综合评估结果 | （从五个底部导航都走不到——只能由别处深链进来，或尚未挂入口） |
-| `comprehensive-assessment-class-report` | 班级评估报告 | 底部导航「家园社共育」 → 儿童成长档案 → 教师评价 → 综合评估 → 班级评估报告 |
-
-**两个「任务详情」重名**：`parent-task-detail`（亲子任务的，家园社共育那条线）与
-`teacher-task-detail`（待办任务的，首页那条线）标题逐字相同。提到时必须写目录名。
-
-**新增页面要同时做三件事**：`app.json` 注册、`index.json` 写
-`navigationBarTitleText`、后端 `db/spec/screens.tsv` 登记一行（§7.3）。
-
----
-
-## 4. service 层的写法
-
-一个模块一个文件，页面 `require` service，**页面里不拼 URL、不译枚举、不格式化日期、
-不判状态机**。service 返回的每个值都可以直接 `setData`。
-
-```
-config.js              环境与 devSubjectId
-utils/request.js       唯一的 HTTP 出口。契约 §1–§5 只在这里实现一次
-utils/errors.js        §2.4 错误码登记表，ApiError
-utils/derived.js       §7.3 derived 键，发出前剥离
-utils/session.js       §6.3 会话状态
-utils/time.js          §1.2 时间戳。偏移量是字面量，不是换算
-utils/auth.js          登录
-utils/guard.js         §7.2 角色闸门
-services/*.js          一个契约模块一个文件
-```
-
-**枚举表只写一份，写在 service 里。** 权威是 `hualong-backend/db/01_schema.sql` 的列
-注释与 `db/DATABASE_SPEC.md` §2。页面再抄一份，就是这次要清掉的那种假数据。
-
-**必填字段以 DDL 的 `NOT NULL` 为准。** 不要照契约的 `required`（好几个写入 schema
-根本没写 `required`），更不要照表单长什么样——原型的上传表单漏了一个 `NOT NULL` 列，
-那张表单在原型里根本提交不成功。
-
----
-
-## 5. 怎么跑起来
-
-```bash
-# 1. PostgreSQL（本地 5432）要在跑
-# 2. 薄契约服务端
-cd ../hualong-backend/db/testdata
-node server/server.mjs          # → http://localhost:3860/api/v1
-```
-
-`project.config.json` 与 `project.private.config.json` 里 `urlCheck` 都是 `false`，
-开发者工具可以直接打 `http://127.0.0.1`。
-
-**换用户看不同的人看到什么**：改 `miniprogram/config.js` 的 `devSubjectId`，重新编译。
-名册写在那个文件的注释里。1–12 在职，**13 罗慧兰已离职，登录会失败**——那是数据集
-刻意造的反例，用来验证凭证撤销，不是坏数据。
-
----
-
-## 6. 怎么验证
-
-| 检查 | 命令 | 查得出什么 |
-|---|---|---|
-| 结构 | `npm test` | 四件套缺文件、类名落空、`wx:for`+`wx:else` 同节点 |
-| 孤儿样式 | `node tools/scan-orphans.mjs` | 本次改动新造成的孤儿（见 §7） |
-| 接口 | `node tools/probe-*.mjs` | 路径、字段、枚举、状态机、范围 |
-| 接线 | `npm run scan:wiring` | 元素→事件→handler→service→契约哪一环断了；契约有而客户端没调的操作。写到 `docs/audit/wiring-<日期>.md/.json/.html`；审核结论落在 `docs/audit/wiring.allowlist.json`，重扫会带上 |
-| 权限 | `cd ../hualong-backend/db/testdata && node authz-tests/run.mjs --base http://localhost:3860/api/v1` | 七组越权探针 |
-| **渲染** | **开发者工具里真点** | **上面全部查不出来** |
-
-探针在 `tools/`，共 **15 支**：`probe-session`、`probe-library`、`probe-library-write`、
-`probe-party`、`probe-moments`、`probe-parent-task`、`probe-coeducation`、`probe-training`、
-`probe-media-fetch`、`probe-task`、`probe-teacher-profile`、`probe-growth-book`、
-`probe-growth-book-compile`、`probe-assessment`、`probe-teacher-message`。
-它们桩掉 `wx.*` 之后**加载未经修改的发布代码**，所以路径写错、字段
-改名、枚举译反都会红。
-
-**记分板有两条通道，不要把它们读成同一件事。** `check()` 是「这里有缺陷」，
-`note()` 是「客户端做对了，对面还没接住」。所以 `probe-assessment` 打印
-「346 项通过，0 项失败，4 条服务端已知缺口」时，那 4 条**不算失败** ——
-它们各自钉着一条已登记的缺口编号，服务端接上那天自己变成 `check()`。
-把已知缺口混进失败数，会让人为了凑绿去放宽断言。
-
-**先写探针再改页面。** 前三条线都靠这个顺序在改页之前就抓到了真问题：
-`resource_access` 是必填、`resource_ids` 不落库、`child_id` 收下即丢。页面改完再测，
-问题会混在渲染问题里。
-
-**会改数据库的探针必须自己收拾**：跑完删掉自己建的行，并核对逐表行数回到 `STATS.md`。
-
----
-
-## 7. 会咬人的地方
-
-### 7.1 `npm test` 的孤儿样式检查有盲点
-
-`tools/verify-miniprogram.js` 第 118–121 行：WXML 里只要出现一处
-`class="a {{cond ? 'x' : ''}}"`，**整个文件跳过孤儿规则检查**。所以它报「未被引用的
-规则 0 条」不代表真的没有。用 `node tools/scan-orphans.mjs` 补这一刀。
-
-### 7.2 会话在服务端进程内存里，token 在 Storage 里
-
-`server/lib/auth.mjs`：`const SESSIONS = new Map()`，重启即失效。而客户端 token 存在
-`wx.setStorageSync`，**跨重启存活**。服务端每重启一次，模拟器里那张票就是死票。
-
-`utils/request.js` 已经处理：401 且 `devSession` 时清票、重签、重放一次。
-**改那一段之前先读它的注释**，那里有两个坑：登录过程内部那次 `GET /auth/session`
-必须带 `skipAuthRetry`（否则它会 await 当前这次登录，等自己）；登录失败必须清票
-（否则 `isLoggedIn()` 从此说谎）。`probe-session.mjs` 是这两条的回归测试，**带超时**——
-死锁会红，不会挂住。
-
-### 7.3 契约只能有一份，不要留第二份当备份
-
-后端是本仓库的**兄弟目录** `../hualong-backend`。`tools/openapi-source.mjs` 与
-`tools/lib/testdata-path.mjs` 都按 `../hualong-backend` 找它，**不复制一份**。
-
-2026-09-01 撞过一次：当时有**两份**后端克隆，D 盘一份、Google Drive 一份，
-候选表把 D 盘排在前面，而 D 盘那份落后两个提交。于是 `npm run spec:inventory`
-报的是 v0.6 的 128/153，`npm run docs:api` 在本机生成的也是 v0.6 的站点，
-**全程没有任何报错**。候选表里那条备用路径已经删掉：一份复制品不是冗余，
-是一次静默过期。**要么只有一份，要么当场失败。**
-
-**线上那份没受影响** —— CI 从 GitHub checkout 后端，碰不到本机这两份克隆。
-受影响的只有在这台机器上跑的命令。
-
-判断读到的是哪一份：`node tools/spec-inventory.mjs` 第一行会打印契约文件的**绝对路径** ——
-那才是判据，认路径，不认计数。**不要在这里写计数**：契约一改它就过期，而且写下来的当天
-就开始误导人（本节从前写过 `131 paths / 156 operations / 140 schemas`，那是 2026-09-09 的值，
-今天对不上是正常的，不是读错了文件）。要规模数字就现场跑那条命令。
-
-`node db/tools/check-all.mjs` 现在会重新生成 `db/spec/ui-binding.tsv` 且**行数正确**
-（833 行，前后端在同一个盘上、生成器找得到前端了）。但它会刷新 70 行标签文案，
-那是生成物的正常更新、不是你的改动 —— **跑完要还原的只有这六个**：
-
-```bash
-git checkout -- db/spec/columns.tsv db/spec/constraints.tsv db/spec/enums.tsv \
-                db/spec/relations.tsv db/spec/tables.tsv db/spec/ui-binding.tsv
-```
-
-**不要写 `git checkout -- db/spec/`。** 那个目录里有**两个产生器**写着两类文件：
-
-| 谁产 | 哪些文件 | 跑完怎么处理 |
-|---|---|---|
-| 后端 `check-all` 的 `schema-to-tsv`（从 DDL 抽） | 上列六份 | **还原**，那是生成物 |
-| **前端** `npm run emit:screens`（扫页面与契约） | `screen-operations.tsv`、`operation-eli10.tsv` | **提交**，那是本次改动 |
-
-2026-09-12 就吃了一次：改完旗标想「按惯例还原 db/spec」，一条 `git checkout -- db/spec/`
-**把刚做出来的 42 行改动静默抹掉**，而两次跑的闸门都全绿 —— 绿的是被抹掉之后的状态。
-判据：`git diff --numstat db/spec/` 里**有数字的那几份**是真改动，没数字的只是行尾。
-
-**同一天还吃了一次更隐蔽的：把「可重现的红」读成「状态残留」。**
-后端 `check-screen-operations.mjs` 有一份**写死的旗标清单**（前后端的接缝）。
-前端换了旗标名、这里没改，42 行报错。第一次跑看到 1/10 红，接着连跑三次 0 红，
-于是判成「状态残留」放过了 —— **而那三次是绿的，因为前一条 `git checkout -- db/spec/`
-已经把带新旗标的文件还原了**。证据被抹掉之后，红当然消失。
-
-**规矩**：**重跑之前，先确认你改的是同一批文件。** 一条红要判「可重现」，必须
-**不动任何东西**地重跑；中间做过还原、重启、重建，那就不是同一次实验。
-判据：重跑前后 `git status --short db/spec/` 必须一致。
-
-`check-all.mjs` 现在 **8 项全过**。它的 `check-consistency` 一步曾经红过一阵：那一步扫
-前端所有 `.html` 与 `.wxml`，问每个文件有没有 `screens.tsv` 的登记行，而登记表只认原型
-文件名（`screens/home.html`），不认识 `miniprogram/pages/home/index.wxml`。
-2026-09-01 已修：`screens.tsv` 加了 `mp_file` 列，一个屏幕一行、两个定位符。
-
-同一步在 2026-09-08 又红过一次，原因同类：接线扫描器写出的报告
-`docs/audit/wiring-<日期>.html` 与它的外壳模板 `tools/lib/wiring-viewer.html` 都是
-`.html`，于是被当成「没登记的屏幕」。2026-09-09 已修：`check-consistency.mjs` 的
-`NOT_A_PAGE` 加上 `audit` 与 `tools` 两个目录名。**排除的数目照旧打印出来**
-（数目随目录增减而变，以那一行输出为准），静默跳过与静默截短是同一种毛病。
-
-**本仓库的目录名因此进了后端的检查逻辑**，改动这三处要留意：
-
-| 目录 | 后端怎么看它 |
-|---|---|
-| `miniprogram/pages/<名>/index.wxml` | `screens.tsv` 的 `mp_file` 逐行指着它。**新增页面要在后端登记一行**，否则 `check-consistency` 报未登记 |
-| `captures/`、`miniprogram/components/`、`miniprogram/templates/` | 按「不是页面」排除，报告里会打印排除的数目 |
-
-`check-all.mjs --with-frontend` 仍有一项红（`check-ui-binding`）：小程序的 wxml 一个
-`data-ui` 都没带，而它要求每个写入控件都带。CLAUDE.md 与后端 §2 让你跑的是**不带**
-`--with-frontend` 的那条命令，补那一条等于给 55 页的写入控件逐个补标注。
-
-### 7.4 范围判定不是 bug
-
-服务端的范围 predicate 是真的。同一份数据，不同教师看到的笔数不同：别人的草稿看不见，
-管理端未发布的党建内容看不见。**探针的断言要两头都钉**——写「看得见 N 条**且**这几个
-id 不在里面」，只写「N 条」的话范围判定改坏了也可能照样是 N 条。
-
-### 7.5 不可逆动作只测状态码等于没测
-
-删除、状态迁移这类动作，**状态码对不算过**，还要回库里核对行数／状态没变。一个回
-409 却真的删了行的实作，只看状态码是看不出来的。
-
-### 7.6 断言形状 ≠ 断言值
-
-`^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+08:00$` 对 `12:00` 和 `20:00` 一样通过。
-
-2026-09-01 撞过一次：服务端的 `fmtAt` 把裸值当本地时间转成 UTC 再缀上 `+08:00`，
-**每个端点的每个 `*_at` 都早 8 小时**（库里 `2026-04-21 16:18:00`，线上
-`2026-04-21T08:18:00+08:00`）。五支探针 212 项断言**一支都没抓到**，因为它们断言的
-是格式。同一个根因还偏了游标的边界。
-
-所以：**时间、计数、枚举这类有确定答案的值，断言要钉到库里的那一行**，
-不是钉到回包的形状。`probe-parent-task.mjs` 的写法是拿
-`to_char(start_at, 'YYYY-MM-DD"T"HH24:MI:SS') || '+08:00'` 与回包逐条比。
-
-这与 §7.4「范围断言两头钉」、上一轮那条「回包不带某一列时，只看回包会把『没落库』
-读成『没这个字段』」是同一条教训的三种形态。
-
----
-
-### 7.7 ELI10 不在契约里，它是渲染时注入的
-
-Swagger UI 上每个操作那段「说人话」，**来源不是 `openapi.yaml`**，而是：
-
-```
-hualong-backend/db/spec/operation-eli10.tsv      一个操作一行，三个固定标签
-  ├─ 「幹嘛」    手工写的
-  ├─ 「怎麼走」  手工写的
-  └─ 「碰到誰」  生成器每次重算（调用: 来自 screen-operations.tsv；影响: 来自 action-registry ∩ screens.tsv）
-```
-
-`tools/swagger/pages.mjs` 的 `injectEli10()` 在**每次渲染时**把它拼到 `description` 前面，
-契约原文一个字不动。所以**翻 `openapi.yaml` 找不到它**，也不必去找。
-
-为什么这样放（理由与代价都写在那里）：契约是手写的共享权威，`hualong-parent`、
-`hualong-admin-pc` 与三端网页原型都读同一份；往里塞 167 行人工中文会让那份文件多一层
-与代码无关的维护面。代价就是上面那句 —— 看契约的人不知道有这一层。
-
-**改那两句人话，改 tsv，不改契约。** 改完 `npm run docs:api` 重生成静态站；
-本机看的话 `npm run swagger` 每次请求现读，刷新即可。
-
-**`operation-eli10.tsv` 也有生成器，但它保留「幹嘛」「怎麼走」。**
-`npm run emit:screens` 会重算 `碰到誰` 与 `derived_from`，手写的那两列原样留着 ——
-所以重跑生成器不会抹掉评审结论。起草的草稿在
-`.scratch/screen-operations/eli10-drafts/*.json`，`apply-eli10-drafts.mjs` 合并。
-
----
-
-### 7.8 起本地库：两份数据集，名字像、差一个数量级
-
-`db/02_seed.sql` 与 `db/testdata/testdata.sql` **不是同一份东西**。
-
-| 文件 | 是什么 | 规模 |
-|---|---|---|
-| `db/02_seed.sql` | **演示**数据集 | 3 教师 / 6 幼儿 / 7 家长 / 1 管理 |
-| `db/testdata/testdata.sql` | **测试服务端要的那一份** | 12 在职 + 1 离职 / 60 幼儿 / 79 家长 / 3 管理 / 6 班 |
-
-灌错那份**不会报错**。它只会让名册看起来变小，于是 `db/testdata/accounts.env`（家长 1 = 杨秀兰 之类）
-和 CLAUDE.md §5 的「13 罗慧兰已离职」读起来**全像错的** —— 2026-09-12 就这么误报过一次，
-**错的是库，不是那些文件**。
-
-正确的顺序（`db/testdata/README.md` 也写着）：
-
-```bash
-docker run -d --name hl-pg -e POSTGRES_HOST_AUTH_METHOD=trust -p 127.0.0.1:5432:5432 postgres:16
-docker exec hl-pg psql -U postgres -c "CREATE DATABASE hualong_test;"
-docker exec -i hl-pg psql -U postgres -d hualong_test -q < db/01_schema.sql
-docker exec -i hl-pg psql -U postgres -d hualong_test -q < db/testdata/testdata.sql
-docker exec -i hl-pg psql -U postgres -d hualong_test -q < db/testdata/verify.sql   # 20 段，每段应 (0 rows)
-cd db/testdata && node server/server.mjs                                           # 3860
-```
-
-**绑 `127.0.0.1`，不要写 `-p 5432:5432`。** Docker 默认把端口绑到 `0.0.0.0`，
-而这份容器跑的是 `trust`（无密码）。不写地址，同一局域网里任何机器都能无密码连成 `postgres`。
-本机开发只要 `127.0.0.1`（2026-09-12 收紧）。
-
-**重建容器不会丢库。** postgres 镜像自己建一个匿名卷挂在 `/var/lib/postgresql/data`，
-所以 `docker stop` / `start` 之后数据还在。`docker rm` **不带 `-v`** 时卷也留着，
-重建时把它挂回去即可：
-
-```bash
-VOL=$(docker inspect hl-pg --format '{{range .Mounts}}{{.Name}}{{end}}')
-docker rm hl-pg && docker run -d --name hl-pg ... -v "$VOL:/var/lib/postgresql/data" postgres:16
-```
-
-**判据**：服务端启动横幅会印幼儿数。**印「6 名幼儿」就是灌错了**，应该是 60。
-
-### 7.9 Google Drive 上装不了 npm 包
-
-`npm install` 落在 Drive 路径上会报 `TAR_ENTRY_ERROR UNKNOWN: unknown error, write`，
-**写出 0 字节的 `package.json`，然后照报「added N packages」**。于是 `node server/server.mjs`
-起不来，报 `ERR_INVALID_PACKAGE_CONFIG` 或 `ERR_MODULE_NOT_FOUND`，看起来像缺包，其实是文件写坏了。
-
-解法：**在 Drive 之外装好，再把 `node_modules` 复制回来**。
-
-```bash
-DEP="$LOCALAPPDATA/Temp/hl-testdata-deps"; mkdir -p "$DEP" && cd "$DEP"
-cp "<仓库>/db/testdata/package.json" pkg-source.json
-node -e "const f=require('fs'),s=JSON.parse(f.readFileSync('pkg-source.json','utf8'));f.writeFileSync('package.json',JSON.stringify({name:'d',private:true,dependencies:s.dependencies},null,2))"
-npm install
-cp -r "$DEP/node_modules/." "<仓库>/db/testdata/node_modules/"
-```
-
-`node_modules` 不进 git，所以这一步是本机的、每台机器各做一次。
-
-### 7.10 提交信息里有反引号或 `{}`，bash 会吃掉那几个字
-
-`git commit -m "…"` 走的是 shell。信息里有反引号、`$(` 或 `{ }`，bash 先做命令替换 ——
-**替换失败它只报一行错，而提交照样成功**，于是信息里少了一个词，谁都不会注意到。
-
-本仓已撞过两次，都在已推的提交里：
-
-| 提交 | 原话 | 落地成了 |
-|---|---|---|
-| `30951df` | ``…was `return true` with no redirect`` | `…was  with no redirect` |
-| `823af45` | ``appending a bare `Page({})` to index.js`` | `appending a bare  to index.js` |
-
-**判据**：信息里出现**「一个词的位置上只有两个空格」**，就是它。
-
-**规矩**：信息里有反引号、`$(` 或 `{}`，**一律走文件**。
-
-```bash
-# 写到 .git/COMMIT.txt，再：
-git commit -F .git/COMMIT.txt
-```
-
-**不改写已推的历史** —— 共享仓库，force push 会打断另一边。发现了就在下一次提交里说清。
-
-### 7.11 钩子按仓库配置，克隆下来默认不跑
-
-`.githooks/pre-commit` 挡「远端 `<script src="http…">` 混进仓库」（小程序加载不了远端脚本，
-这个错只会在打包时才炸）。但 git 只认 `core.hooksPath`，**而它不在仓库里、每台机器各配一次** ——
-2026-09-12 实测这份克隆从头到尾就没配过，**那道闸一次都没跑**。
-
-装它（也是 `package.json` 里那一条）：
-
-```bash
-npm run hooks:install      # git config core.hooksPath .githooks
-```
-
-**判据**：`git config core.hooksPath` 印出 `.githooks` 才算装上。印不出就是没跑。
-
----
-
-## 8. 开工前必读
-
-| 文件 | 为什么 |
-|---|---|
-| `decision.md` | **本仓库改动的第一顺位参考。** 第 19–26 条有 4 条反过来推翻了后端已定规则 |
-| `docs/DO-NOT-BUILD.md` | 每张施工票据开工前逐条核对，核对结论写进票据。清单只增不删 |
-| `docs/handoff/` 最新一份 | 上一轮做到哪、留了什么坑 |
-| `hualong-backend/DECISIONS.md` | 权威顺序第一。多项决议已定但 DDL 未落地，只读 SQL 会做错 |
-| `hualong-backend/db/01_schema.sql` | 唯一的字段级权威，每列带中文 COMMENT |
-| `hualong-backend/db/GAPS.md` | 已登记的缺口。撞到对不上的地方先查这里 |
-
-**权威顺序**：`DECISIONS.md` > `db/01_schema.sql` > `db/DATABASE_SPEC.md` >
-`docs/backend spec files/` > 前端原型。
-
-原型排最后。原型里看着像内容的东西，很多没有数据源——照片占位块、
-「18 位家长已查看」、写死的文件名。**没有数据源就不要渲染它**，更不要编一个出来。
-
-### 8.1 这几份文件各是什么，不要混
-
-名字都长得像「一张表」，管的却是四件不同的事。混过一次：有人把 `screens.tsv`
-读成了「数据库将来的 schema」，于是以为改登记表就能改主键。
-
-| 文件 | 它是什么 | 谁维护 | 它**不是**什么 |
-|---|---|---|---|
-| `hualong-backend/db/spec/screens.tsv` | **屏幕登记表**。一个屏幕一行，84 行。列有：原型文件、小程序文件、模块、主要表、`writes`、`ugc`、`moderation_required` | 手写 | 不是 schema。里面没有列名、没有类型、没有主键、没有外键，将来也不会变成 |
-| `hualong-backend/db/01_schema.sql` | **唯一的字段级权威**。62 张表 / 719 列，每列带中文 COMMENT，主键与外键都在这里 | 手写 | 不是登记表。它不知道哪一页长什么样 |
-| `hualong-backend/db/spec/columns.tsv` 等六份 | **生成物**，由 `schema-to-tsv.mjs` 从 `01_schema.sql` 抽出来 | 机器生成 | 不要手工编辑。改了下次重跑就没了 |
-| `hualong-backend/api/openapi.yaml` | **契约**。端点、请求体、响应体、状态码、角色 | 手写 | 不是 schema。字段名与库列名不保证同名 |
-
-主键在 `01_schema.sql` 里。教师是 `db_teacher.teacher_id`，幼儿是 `db_child.child_id`，
-两者都已经存在，不需要谁把它们「变出来」。
-
-**L6 那一层报的到底是什么。** `npm run scan:wiring` 的第六层拿 `screens.tsv` 的
-`writes` 列跟页面代码对照，报的是这一句：
-
-> 登记表说这一页会写数据，但页面里找不到任何 POST／PUT／PATCH／DELETE。
-
-也就是**写的那一半还没做**。它**不是**在说登记表填错了。真的填错时（`my-training`
-就是一例：登记 `writes=yes`，页面与原型都没有任何写入控件），改的是登记表那一格，
-但那是另一回事，要单独判断。
-
-**L2 那一层报 0 条，不等于没有漏接的按钮。** 它靠词表判断「长得像能点」：
-`buttonish()` 的三张表（`BUTTON_CLASS`／`CONTAINER_CLASS`／`BUTTONISH_TEXT`）
-2026-09-09 按实测校准过 —— 244 个带 `bindtap` 的节点里认得出 202 个。
-**剩下 42 个用的是页面本地一次性类名**（`image-box`、`rub-toggle`、`sheet-mask`、
-`input__send` 之类），任何全局词表都覆盖不到。那不是词表没调好，是命名本身没有共性。
-
-要闭合只有一条路：立「可点元素必须带 `hover-class`」的约定。`hover-class` 是本仓库
-最干净的信号 —— 103 处，100% 落在已带 tap 的节点上。约定成立，L2 的召回就是 244/244。
-代价是给 141 个已带 tap 却没 `hover-class` 的节点补属性，那是一次跨 55 页的改动。
-
-`--selftest` 有 24 项断言，其中 14 项钉 L2（词表互斥、容器不算按钮、同一段文案在
-`.btn` 上报、在 `.kicker` 上不报）。**改词表先跑它。**
-
-**部署长什么样。** 文件放腾讯云 COS，`db_file` 只存元数据与对象键（`API-CONTRACT.md`
-§8）；PostgreSQL 跑在云主机上（`hualong-backend/CONTEXT.md`）。库里从来不存图片本身，
-也不存可直接访问的明文直链（`db/GAPS.md` G16）。
-
----
-
-## 9. 两个题库，各一份，都不要清
-
-**两套不同的量表，不是同一份抄了两遍**：
-
-| 文件 | 内容 | 权威 |
-|---|---|---|
-| `miniprogram/pages/assessment-tool/assessment-data.js` | **办园质量评估** 120 题，评的是幼儿园／班级／教师 | 无外部权威，developer 维护的版本化代码资产（F17） |
-| `miniprogram/data/guide-scale.js` | **《指南》教师评定量表** 124 题，评的是幼儿 | **就是它自己** —— 本仓库唯一的一份 |
-
-两者曾共用一张表，那是个错误，见后端 `db/GAPS.md` 的 G5。
-
-### 124 题那一份现在只有一份（2026-09-09，#20）
-
-**改题库就改 `miniprogram/data/guide-scale.js`。** 别再抄第二份。
-
-它此前是三份：权威在 `data/guide-scale.json`（`miniprogram/` 之外，小程序打不进包），
-页面旁边一份抄本 `comprehensive-assessment-form/questions.js`，
-`utils/assessment-store.js` 里还有第三份（124 个题号与名称）。
-
-三份靠 `npm test` 一道闸门维持，而那道闸门**只盖到前两份、只比两个字段**（提问与
-三档锚点）。剩下七个字段可以静默漂开 —— 包括 `H1-1-1` 参考表那六行数字，而那是这一题
-唯一的计分依据（这题不由教师主观评定，按实测身高体重对表落段）。
-
-现在权威整份搬进包内，两份抄本删掉：
-
-| 谁 | 怎么拿题 |
-|---|---|
-| `comprehensive-assessment-form` | `require('../../data/guide-scale').flatDomains()` |
-| `utils/assessment-store` | 同上（它只用 `domain.name`、`items.length`、`item.id`） |
-
-**扩展名是 `.js` 不是 `.json`**：小程序的模块系统只解析 `.js`（官方文档
-`framework/app-service/module` 只写 `require` 加载 `.js`）。`.json` 虽在上传白名单里，
-那是给图片、配置那类文件用的，`require` 不到。文件内容就是那份 JSON，外面套一个
-`module.exports =`。
-
-`flatDomains()` 把权威的四层（`domains → aspects → goals → items`）摊成页面要的
-「一个领域一行、题项平铺」，并把 `reference_table` 由按年龄段分组的对象转成数组。
-页面与 store 因此一行都没改。
-
-### 闸门现在钉的是「只有一份」，不是「两份一致」
-
-`npm test` 第 7 段三条：
-
-| 条 | 钉什么 |
-|---|---|
-| A | `instrument.counts` 与实际树逐个相符（domains 5 / aspects 11 / goals 32 / items 124 / likert 123 / measurement 1） |
-| B | 摊平后是页面要的形状，每题都有题号、名称、提问与三档锚点 |
-| **C** | **第二份不许再出现** —— `questions.js` 不存在，`assessment-store.js` 不内嵌 `ASSESS_SCALE = [` |
-
-**C 是要害。** A 与 B 只证明这一份是好的，C 才证明它是唯一的一份。
-
-三条都反向验过：改坏 `counts.items` → 报「写 123，实际 124」；把 `questions.js` 放回去
-→ 报「又出现了」且退出码 1；把 `ASSESS_SCALE = [` 写回 store → 报「又内嵌了」。
-
-**`version` 与 `scoring_rules` 在 `instrument` 下，不在顶层**（`decision.md` §12）。
-读它们的路径是 `SCALE.instrument.version` / `SCALE.instrument.scoring_rules`。
-
-**第三份在后端**（`db/rubric/guide-scale-v1.json`，灌数据集用），与包内那份逐字相同
-（md5 `6e79d390…`）。它不在这道闸门里 —— 跨仓库比对要先解决「两个仓库各在什么版本」，
-暂未做。
-
-### 为什么没有改成从接口取
-
-数据集里 `db_scale_item` 正好 124 行，契约也有现成的 `GET /scales/{scale_code}/{scale_version}`，
-服务端实作了、回 200。方向是后端 E2 决议的原话「题库入库而非前端内嵌」。
-
-**但今天做不了**，两条挡着：
-
-1. 契约的 `ScaleItem` 没有 `measurement_note` 与 `reference_table` 两个字段，
-   而 G27 与 DDL 列注释都写「仍须显示给教师」。照现在的契约接，`H1-1-1` 那六行数字
-   会从屏幕上消失。
-2. 客户端要拼 URL 就得知道现役是哪个 `(scale_code, scale_version)`，而这件事今天在
-   三处各自硬编码，没有权威落点。
-
-两条都是后端决策，排在 #30／#31 之后。**在那之前，包内这一份就是权威。**
-
-### 量表的版本维度不要删
-
-审核意见曾问「应该是没有版本，所以这个端点可能不用接，甚至可以删除」。**端点可以不接，
-版本不能删**，三处权威都写反了：
-
-| 出处 | 原话 |
-|---|---|
-| 后端 `DECISIONS.md` E2 | 「歷史評估必須綁定填寫時所用的量表版本，升版不得回頭把舊記錄判成草稿」 |
-| `db/01_schema.sql` 的 `db_scale_item` 表注释 | 「改版=新增一个 scale_version, 旧评估仍指向旧版, 历史分数的可解释性不受影响」 |
-| 本仓库 `decision.md` | 两处独立记着同一件事 |
-
-留着版本，量表改一个字就是**新增一批行标 `v2`**，旧评估仍指 `v1`，看旧报告的人知道
-那是按旧口径打的分。删掉版本，就只能原地改那 124 行 —— 于是历史上万条逐题分，
-`H1-2-3` 这个 3 分是按旧问句打的还是新问句打的，**无处可查，也补不回来**。
-
-数据集里确实只有一版，所以屏幕上看不出版本在做什么。那不是「没有版本」，
-是**还没有第二版**。
+**② 传给 IDE 的工程路径是仓库根，不是 `miniprogram/`。**
+
+`project.config.json` 在仓库根，它里面写 `miniprogramRoot: "miniprogram/"`。
+传 `miniprogram/` 就是给 IDE 一个没有设定的目录。
+
+**判据**：CLI 应该印 `Using AppID: wxbda23b3884ae4d69`。印 `undefined` 就是路径错了。
+
+**这一条最阴险** —— 它的症状与第 ① 条一模一样（都是截不出图），所以容易误诊成套件问题。
+
+**③ 从 bash 起 `cli.bat` 会被空格拆开。**
+
+安装路径 `C:\Program Files (x86)\Tencent\微信web开发者工具` 含空格。从 bash 起那个
+`.bat` 会回 `'C:\Program' is not recognized`。
+
+**解法：不经 shell，用阵列参数直接 spawn `微信开发者工具.exe`**，重现 `cli.bat` 做过的事
+（`ELECTRON_RUN_AS_NODE=1`，`-e <BOOTSTRAP_JS>`，再接 `cli/index.js`）。
+启动器在 `.claude/skills/hualong-api-test/scripts/wxcli.mjs`。
+
+**DevTools 的服务端口要人手开**（工具 → 设置 → 安全设置）。喂 `y` 进管道无效 ——
+CLI 从控制台读，不是从管道。
+
+**`login` 那一屏报错是预期，不是缺陷。** 已登录时登录页自动跳首页（§3），
+所以它不可能在页面栈顶。`render-pages.mjs` 应该断言那个跳转。
+
+**3860 上必须有服务。** `config.js` 的 `baseUrl` 指 `http://127.0.0.1:3860/api/v1`。
+那个埠空着时，渲染会红在登录页（`网络请求失败: request:fail`）——
+**那是真的红，别把它当杂讯。**
+---
+
+## 8. 开工前必读
+
+| 文件 | 为什么 |
+|---|---|
+| `decision.md` | **本仓库改动的第一顺位参考。** 第 19–26 条有 4 条反过来推翻了后端已定规则 |
+| `docs/DO-NOT-BUILD.md` | 每张施工票据开工前逐条核对，核对结论写进票据。清单只增不删 |
+| `docs/handoff/` 最新一份 | 上一轮做到哪、留了什么坑 |
+| `hualong-backend/DECISIONS.md` | 权威顺序第一。多项决议已定但 DDL 未落地，只读 SQL 会做错 |
+| `hualong-backend/db/01_schema.sql` | 唯一的字段级权威，每列带中文 COMMENT |
+| `hualong-backend/db/GAPS.md` | 已登记的缺口。撞到对不上的地方先查这里 |
+
+**权威顺序**：`DECISIONS.md` > `db/01_schema.sql` > `db/DATABASE_SPEC.md` >
+`docs/backend spec files/` > 前端原型。
+
+原型排最后。原型里看着像内容的东西，很多没有数据源——照片占位块、
+「18 位家长已查看」、写死的文件名。**没有数据源就不要渲染它**，更不要编一个出来。
+
+### 8.1 这几份文件各是什么，不要混
+
+名字都长得像「一张表」，管的却是四件不同的事。混过一次：有人把 `screens.tsv`
+读成了「数据库将来的 schema」，于是以为改登记表就能改主键。
+
+| 文件 | 它是什么 | 谁维护 | 它**不是**什么 |
+|---|---|---|---|
+| `hualong-backend/db/spec/screens.tsv` | **屏幕登记表**。一个屏幕一行，84 行。列有：原型文件、小程序文件、模块、主要表、`writes`、`ugc`、`moderation_required` | 手写 | 不是 schema。里面没有列名、没有类型、没有主键、没有外键，将来也不会变成 |
+| `hualong-backend/db/01_schema.sql` | **唯一的字段级权威**。62 张表 / 719 列，每列带中文 COMMENT，主键与外键都在这里 | 手写 | 不是登记表。它不知道哪一页长什么样 |
+| `hualong-backend/db/spec/columns.tsv` 等六份 | **生成物**，由 `schema-to-tsv.mjs` 从 `01_schema.sql` 抽出来 | 机器生成 | 不要手工编辑。改了下次重跑就没了 |
+| `hualong-backend/api/openapi.yaml` | **契约**。端点、请求体、响应体、状态码、角色 | 手写 | 不是 schema。字段名与库列名不保证同名 |
+
+主键在 `01_schema.sql` 里。教师是 `db_teacher.teacher_id`，幼儿是 `db_child.child_id`，
+两者都已经存在，不需要谁把它们「变出来」。
+
+**L6 那一层报的到底是什么。** `npm run scan:wiring` 的第六层拿 `screens.tsv` 的
+`writes` 列跟页面代码对照，报的是这一句：
+
+> 登记表说这一页会写数据，但页面里找不到任何 POST／PUT／PATCH／DELETE。
+
+也就是**写的那一半还没做**。它**不是**在说登记表填错了。真的填错时（`my-training`
+就是一例：登记 `writes=yes`，页面与原型都没有任何写入控件），改的是登记表那一格，
+但那是另一回事，要单独判断。
+
+**L2 那一层报 0 条，不等于没有漏接的按钮。** 它靠词表判断「长得像能点」：
+`buttonish()` 的三张表（`BUTTON_CLASS`／`CONTAINER_CLASS`／`BUTTONISH_TEXT`）
+2026-09-09 按实测校准过 —— 244 个带 `bindtap` 的节点里认得出 202 个。
+**剩下 42 个用的是页面本地一次性类名**（`image-box`、`rub-toggle`、`sheet-mask`、
+`input__send` 之类），任何全局词表都覆盖不到。那不是词表没调好，是命名本身没有共性。
+
+要闭合只有一条路：立「可点元素必须带 `hover-class`」的约定。`hover-class` 是本仓库
+最干净的信号 —— 103 处，100% 落在已带 tap 的节点上。约定成立，L2 的召回就是 244/244。
+代价是给 141 个已带 tap 却没 `hover-class` 的节点补属性，那是一次跨 55 页的改动。
+
+`--selftest` 有 24 项断言，其中 14 项钉 L2（词表互斥、容器不算按钮、同一段文案在
+`.btn` 上报、在 `.kicker` 上不报）。**改词表先跑它。**
+
+**部署长什么样。** 文件放腾讯云 COS，`db_file` 只存元数据与对象键（`API-CONTRACT.md`
+§8）；PostgreSQL 跑在云主机上（`hualong-backend/CONTEXT.md`）。库里从来不存图片本身，
+也不存可直接访问的明文直链（`db/GAPS.md` G16）。
+
+---
+
+## 9. 两个题库，各一份，都不要清
+
+**两套不同的量表，不是同一份抄了两遍**：
+
+| 文件 | 内容 | 权威 |
+|---|---|---|
+| `miniprogram/pages/assessment-tool/assessment-data.js` | **办园质量评估** 120 题，评的是幼儿园／班级／教师 | 无外部权威，developer 维护的版本化代码资产（F17） |
+| `miniprogram/data/guide-scale.js` | **《指南》教师评定量表** 124 题，评的是幼儿 | **就是它自己** —— 本仓库唯一的一份 |
+
+两者曾共用一张表，那是个错误，见后端 `db/GAPS.md` 的 G5。
+
+### 124 题那一份现在只有一份（2026-09-09，#20）
+
+**改题库就改 `miniprogram/data/guide-scale.js`。** 别再抄第二份。
+
+它此前是三份：权威在 `data/guide-scale.json`（`miniprogram/` 之外，小程序打不进包），
+页面旁边一份抄本 `comprehensive-assessment-form/questions.js`，
+`utils/assessment-store.js` 里还有第三份（124 个题号与名称）。
+
+三份靠 `npm test` 一道闸门维持，而那道闸门**只盖到前两份、只比两个字段**（提问与
+三档锚点）。剩下七个字段可以静默漂开 —— 包括 `H1-1-1` 参考表那六行数字，而那是这一题
+唯一的计分依据（这题不由教师主观评定，按实测身高体重对表落段）。
+
+现在权威整份搬进包内，两份抄本删掉：
+
+| 谁 | 怎么拿题 |
+|---|---|
+| `comprehensive-assessment-form` | `require('../../data/guide-scale').flatDomains()` |
+| `utils/assessment-store` | 同上（它只用 `domain.name`、`items.length`、`item.id`） |
+
+**扩展名是 `.js` 不是 `.json`**：小程序的模块系统只解析 `.js`（官方文档
+`framework/app-service/module` 只写 `require` 加载 `.js`）。`.json` 虽在上传白名单里，
+那是给图片、配置那类文件用的，`require` 不到。文件内容就是那份 JSON，外面套一个
+`module.exports =`。
+
+`flatDomains()` 把权威的四层（`domains → aspects → goals → items`）摊成页面要的
+「一个领域一行、题项平铺」，并把 `reference_table` 由按年龄段分组的对象转成数组。
+页面与 store 因此一行都没改。
+
+### 闸门现在钉的是「只有一份」，不是「两份一致」
+
+`npm test` 第 7 段三条：
+
+| 条 | 钉什么 |
+|---|---|
+| A | `instrument.counts` 与实际树逐个相符（domains 5 / aspects 11 / goals 32 / items 124 / likert 123 / measurement 1） |
+| B | 摊平后是页面要的形状，每题都有题号、名称、提问与三档锚点 |
+| **C** | **第二份不许再出现** —— `questions.js` 不存在，`assessment-store.js` 不内嵌 `ASSESS_SCALE = [` |
+
+**C 是要害。** A 与 B 只证明这一份是好的，C 才证明它是唯一的一份。
+
+三条都反向验过：改坏 `counts.items` → 报「写 123，实际 124」；把 `questions.js` 放回去
+→ 报「又出现了」且退出码 1；把 `ASSESS_SCALE = [` 写回 store → 报「又内嵌了」。
+
+**`version` 与 `scoring_rules` 在 `instrument` 下，不在顶层**（`decision.md` §12）。
+读它们的路径是 `SCALE.instrument.version` / `SCALE.instrument.scoring_rules`。
+
+**第三份在后端**（`db/rubric/guide-scale-v1.json`，灌数据集用），与包内那份逐字相同
+（md5 `6e79d390…`）。它不在这道闸门里 —— 跨仓库比对要先解决「两个仓库各在什么版本」，
+暂未做。
+
+### 为什么没有改成从接口取
+
+数据集里 `db_scale_item` 正好 124 行，契约也有现成的 `GET /scales/{scale_code}/{scale_version}`，
+服务端实作了、回 200。方向是后端 E2 决议的原话「题库入库而非前端内嵌」。
+
+**但今天做不了**，两条挡着：
+
+1. 契约的 `ScaleItem` 没有 `measurement_note` 与 `reference_table` 两个字段，
+   而 G27 与 DDL 列注释都写「仍须显示给教师」。照现在的契约接，`H1-1-1` 那六行数字
+   会从屏幕上消失。
+2. 客户端要拼 URL 就得知道现役是哪个 `(scale_code, scale_version)`，而这件事今天在
+   三处各自硬编码，没有权威落点。
+
+两条都是后端决策，排在 #30／#31 之后。**在那之前，包内这一份就是权威。**
+
+### 量表的版本维度不要删
+
+审核意见曾问「应该是没有版本，所以这个端点可能不用接，甚至可以删除」。**端点可以不接，
+版本不能删**，三处权威都写反了：
+
+| 出处 | 原话 |
+|---|---|
+| 后端 `DECISIONS.md` E2 | 「歷史評估必須綁定填寫時所用的量表版本，升版不得回頭把舊記錄判成草稿」 |
+| `db/01_schema.sql` 的 `db_scale_item` 表注释 | 「改版=新增一个 scale_version, 旧评估仍指向旧版, 历史分数的可解释性不受影响」 |
+| 本仓库 `decision.md` | 两处独立记着同一件事 |
+
+留着版本，量表改一个字就是**新增一批行标 `v2`**，旧评估仍指 `v1`，看旧报告的人知道
+那是按旧口径打的分。删掉版本，就只能原地改那 124 行 —— 于是历史上万条逐题分，
+`H1-2-3` 这个 3 分是按旧问句打的还是新问句打的，**无处可查，也补不回来**。
+
+数据集里确实只有一版，所以屏幕上看不出版本在做什么。那不是「没有版本」，
+是**还没有第二版**。
