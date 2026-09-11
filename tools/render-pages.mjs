@@ -269,7 +269,16 @@ for (const route of target) {
       const wxml = await page.wxml();
       pageText = (typeof wxml === 'string' ? wxml : JSON.stringify(wxml)).replace(/<[^>]*>/g, ' ');
     } catch { /* 取不到就跳过这一项检查 */ }
-    const marker = ERROR_MARKERS.find((re) => re.test(pageText));
+
+    // **有的屏本来就需要参数**（某条活动的详情页要 activity_id）。不带参数进不去
+    // 是设计好的，而它会写一句「缺少活动编号，请从党建活动列表进入」。
+    // 那是**正确的守门文案，不是缺陷** —— 不加这条豁免，这道检查就天天狼来了。
+    // 2026-09-12 实测：第一次跑，唯一一条命中就是这种（`/pages/party-activity-detail/index`）。
+    // 教训与 §7.6 同一条：比对了字串，不等于比对了语意。
+    const GUARD = [/请从[^，。]{0,24}进入/, /缺少[^，。]{0,16}(编号|参数)/];
+    const marker = GUARD.some((re) => re.test(pageText))
+      ? null
+      : ERROR_MARKERS.find((re) => re.test(pageText));
     if (marker) errors.push({ route, marker: String(marker) });
 
     console.log(`✓ ${route}（${spec.label}）`);

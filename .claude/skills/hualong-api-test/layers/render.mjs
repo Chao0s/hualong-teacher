@@ -45,7 +45,9 @@ export async function render(r) {
   }
 
   try {
-    const { stdout } = await run('node', [script], { cwd: REPO, maxBuffer: 1 << 26, timeout: 600000 });
+    // **要把 56 屏都跑一遍**，不是只跑 3 个样本。样本能证明「工具通了」，
+    // 证明不了「每一屏都画得出来」—— 而后者才是这一层存在的理由。
+    const { stdout } = await run('node', [script, '--all'], { cwd: REPO, maxBuffer: 1 << 26, timeout: 900000 });
     const line = stdout.split('\n').find((l) => /跑通/.test(l)) ?? stdout.split('\n').filter(Boolean).slice(-1)[0];
     console.log(`   [render] ${line}`);
     // The screenshot paths are the evidence. A run that drew nothing cannot
@@ -61,6 +63,27 @@ export async function render(r) {
     } else {
       console.log(`   [render] ${shots.length} screenshot(s) written`);
     }
+
+    // ── 画出来了，但画的是「失败」 ────────────────────────────────────────
+    //
+    // 这是**只有这一层看得见**的一类缺陷：屏幕渲染成功、元素找得到、data 也有键，
+    // 而屏上写的是「网络请求失败」。契约、接线、库全绿也照样发生 ——
+    // 因为它们读的是源码文本，不是屏幕。
+    //
+    // 与上面那个数**分开报**：那是「没画出来」，这是「画出来了、画错了」。
+    // 合成一个数就分不出是哪一种，而两者的修法完全不同。
+    const drawn = [...stdout.matchAll(/⚠ (\S+) —— 屏上出现 (.+)/g)];
+    for (const m of drawn) {
+      r.add({
+        layer: 'render', severity: 'high', kind: 'draws-failure',
+        subject: m[1],
+        what: `the screen draws, but what it draws is a failure: ${m[2].trim()}`,
+        detail: `这一屏能渲染、元素找得到、data 有键，而屏上写的是失败提示。\n` +
+          `别的层看不见它：契约、接线、库全绿也一样发生。\n` +
+          `先看后端有没有起来（config.js 指的那个位址），那是这类屏最常见的原因。`,
+      });
+    }
+    if (drawn.length) console.log(`   [render] ${drawn.length} screen(s) draw a failure`);
   } catch (err) {
     r.add({
       layer: 'render', severity: 'medium', kind: 'check-failed',
