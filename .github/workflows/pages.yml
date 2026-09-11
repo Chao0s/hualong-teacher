@@ -55,7 +55,13 @@ jobs:
           repository: Chao0s/hualong-backend
           token: ${{ secrets.BACKEND_TOKEN }}
           path: contract
-          sparse-checkout: api/openapi.yaml
+          # db/spec 的两份表也在这里取：api-doc 的「按屏幕看」页与 ELI10 那几句人话
+          # 从它们渲染（tools/lib/screen-ops-data.mjs）。少取一份，那一页就渲染不出来 ——
+          # 而它**会当场失败并弄红本工作流**，不会静默出一份空报告。
+          sparse-checkout: |
+            api/openapi.yaml
+            db/spec/screen-operations.tsv
+            db/spec/operation-eli10.tsv
           sparse-checkout-cone-mode: false
 
       - uses: actions/setup-node@v4

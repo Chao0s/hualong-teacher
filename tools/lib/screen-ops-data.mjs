@@ -9,19 +9,49 @@
  *   ③ 契约有而页面没调     契约里有、没有任何教师屏调用
  *   ④ 页面调了而契约没有   同 ② —— ②④ 在数据上是同一件事，视图里合并成一列
  */
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadSpec, operations } from '../openapi-source.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, '..', '..');
-const BACKEND = resolve(REPO, '..', 'hualong-backend');
+
+/**
+ * 后端仓库在哪 —— 与 `../openapi-source.mjs` 同一套候选，不另立一套。
+ *
+ * **为什么不能只写兄弟目录。** 本地后端在 `../hualong-backend`，但 CI（`.github/workflows/pages.yml`）
+ * 把契约 checkout 到 `$GITHUB_WORKSPACE/contract`，并用 `HUALONG_OPENAPI` 指过去。
+ * 只认兄弟目录的话，CI 上这两份表**找不到**。
+ *
+ * 而找不到时**必须当场失败**（CLAUDE.md §7.3：「要么只有一份，要么当场失败」）。
+ * 第一版这里 `if (!existsSync) return []` —— 静默返回空表，于是线上那份 `/pages` 打出
+ * 「0 屏有记录、105 条无人认领」，长得像一份报告，其实是没读到数据。**空与坏长得一样，
+ * 比报错更贵。**
+ */
+function backendRoot() {
+  const candidates = [
+    process.env.HUALONG_OPENAPI && resolve(dirname(process.env.HUALONG_OPENAPI), '..', '..'),
+    resolve(REPO, '..', 'hualong-backend'),
+  ].filter(Boolean);
+  for (const c of candidates) {
+    if (existsSync(join(c, 'db', 'spec', 'screen-operations.tsv'))) return c;
+  }
+  throw new Error(
+    '找不到 hualong-backend（要 db/spec/screen-operations.tsv 与 operation-eli10.tsv）。已尝试：\n' +
+    candidates.map((c) => `  ${c}`).join('\n') +
+    '\n本地：把 hualong-backend 放在 hualong-teacher 旁边。' +
+    '\nCI：workflow 的 sparse-checkout 必须带上那两份 tsv（见 .github/workflows/pages.yml）。',
+  );
+}
+const BACKEND = backendRoot();
 const SPEC = join(BACKEND, 'db', 'spec');
 
 const read = (p) => readFileSync(p, 'utf8').replace(/\r\n/g, '\n');
+
+/** 读 tsv。**文件不在就抛**，不返回空表 —— 理由见上面 backendRoot() 的注释。 */
 export function readTsv(path) {
-  if (!existsSync(path)) return [];
+  if (!existsSync(path)) throw new Error(`读不到 ${path}（空表与坏表长得一样，所以这里不静默）`);
   const lines = read(path).trimEnd().split('\n');
   const head = lines[0].split('\t');
   return lines.slice(1).filter(Boolean).map((l) => Object.fromEntries(l.split('\t').map((v, i) => [head[i], v ?? ''])));
@@ -84,16 +114,26 @@ export function buildPageView() {
 
   // 无页面认领的那 10 条里，哪些 service 层写了却没有任何页面走得到（scan:wiring 报 6，
   // 差的 4 条就是这个）—— 两者都要报，因为它们要修的东西不一样。
+  //
+  // 报告取 `docs/audit/` 下**最新**的一份 wiring-*.json，不按今天的日期拼文件名：
+  // 拼日期的话，报告不是今天就静默落空，而这一列会从「两条都没写」翻成
+  // 「service 层写了、没有页面走得到」—— **静默降级成一句错的**，比空着更坏。
+  // 读不到就不猜：`serviceReport` 返回 null，视图那一列照实说「没读到裁决报告」。
+  const auditDir = join(REPO, 'docs', 'audit');
+  const wiringFile = existsSync(auditDir)
+    ? readdirSync(auditDir).filter((f) => /^wiring-\d{4}-\d{2}-\d{2}\.json$/.test(f)).sort().pop()
+    : null;
   const unusedNoService = new Set();
-  const wiringJson = join(REPO, 'docs', 'audit', `wiring-${new Date().toISOString().slice(0, 10)}.json`);
-  const wiringFallback = [...(existsSync(wiringJson) ? [wiringJson] : [])];
-  for (const f of wiringFallback) {
-    try {
-      for (const u of JSON.parse(read(f)).contractUnused || []) unusedNoService.add(u.path);
-    } catch { /* 报告不在就跳过，不编 */ }
+  if (wiringFile) {
+    for (const u of JSON.parse(read(join(auditDir, wiringFile))).contractUnused || []) {
+      unusedNoService.add(u.path);
+    }
   }
 
-  return { screenOps, byScreen, eli10, ops, opById, titles, callers, unused, notTeacher, unusedNoService };
+  return {
+    screenOps, byScreen, eli10, ops, opById, titles, callers, unused, notTeacher,
+    unusedNoService, serviceReport: wiringFile,
+  };
 }
 
 /**

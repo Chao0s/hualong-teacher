@@ -1161,6 +1161,32 @@ api/action-registry.tsv（动作登记表）的 target_table / also_writes
 
 `screen-operations.tsv` 的 `state` 现在**每一格都带 `?`**（`list?`／`dialog?`／`form?`），意思是「扫描器按 handler 名猜的，没人核过」。扫描器看不到弹层，所以它分不出「列表页上的一个表单」是 `form` 还是 `overlay`。**要消掉这个问号得人逐屏过一遍**，那是另一批活；在那之前，读的人要知道带问号的是猜的。
 
+### 线上那一份曾经是坏的：CI 上根本没读到那两份表（同日，已修）
+
+第一次推上去之后，线上 `/api-doc/pages.html` 打出的是：
+
+> 教师端 **0** 屏有记录（共 **0** 条）…… 没有任何页面调用的操作：**105** 条
+
+**长得像一份报告，其实是没读到数据。** 两个原因叠在一起：
+
+1. `pages.yml` 的 `sparse-checkout` 只取 `api/openapi.yaml` —— 那两份 tsv 在 runner 上**根本不存在**。
+2. `screen-ops-data.mjs` 第一版写的是 `if (!existsSync) return []`：**读不到就静默返回空表**。
+
+于是「一屏一操作都没有」被渲染成「0 屏有记录」，而 105 个操作全被算成「无人认领」。**空表与坏表长得一模一样，比报错贵得多。**
+
+修法两条，都要：
+
+| 改哪 | 怎么改 |
+|---|---|
+| `tools/lib/screen-ops-data.mjs` | 后端根目录按 `HUALONG_OPENAPI` 推（与 `openapi-source.mjs` 同一套候选），**找不到就抛**，不返回空表。`readTsv` 缺文件也抛 |
+| `.github/workflows/pages.yml` | `sparse-checkout` 加上 `db/spec/screen-operations.tsv` 与 `db/spec/operation-eli10.tsv` |
+
+**与 CLAUDE.md §7.3「要么只有一份，要么当场失败」是同一条教训的另一副面孔**：那一条讲的是「不要留契约副本」，这一条讲的是「读不到就别说」。两者都是**别让静默降级产出一份看着正常的错报告**。
+
+顺带把另一处同样性质的静默也堵了：`unusedNoService` 原来按**今天的日期**拼 `docs/audit/wiring-<日期>.json`，报告不是今天就落空，而那一列会从「service 层也没写」翻成「service 层写了、没有页面走得到」—— **降级成一句反话**。现在取 `docs/audit/` 下最新的一份，一份都没有就在页面上写明「没读到裁决报告，这一列不猜」。
+
+验证方式：把 CI 的目录布局在本地复现一遍（`contract/api/openapi.yaml` + `contract/db/spec/*.tsv`，`HUALONG_OPENAPI` 指过去），构建出来是 **56 卡 / 137 条 / 10 条无人认领 / ELI10 注入 167**，与本地一致。
+
 ### 一条已知的语气/归属限制（不是缺陷，要说清）
 
 `screen-operations.tsv` 的 `trigger_wxml` 是「**第一个**沿 handler 调用链到达这个操作的按钮文案」，不是「唯一一个」。例：`growth-book` 的 `ensureCompilation` 记的触发语是「定稿并开放」—— 因为定稿那个 handler 干完会回头 `refresh()`，而 `refresh()` 里调了它。这句话本身是真的（那个按钮确实会触到它），但读的人容易以为「只有那个按钮碰它」。要更准就得记多个触发语，那是另一批活。

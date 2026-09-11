@@ -61,7 +61,7 @@ export function bucketOf(rows) {
  * @param {{homeUrl: string, rolesUrl: string, rawUrl: string, specUrl: string}} links
  */
 export function pagesPage({ homeUrl, rolesUrl, rawUrl, specUrl }) {
-  const { screenOps, byScreen, eli10, opById, titles, unused, notTeacher, unusedNoService } = buildPageView();
+  const { screenOps, byScreen, eli10, opById, titles, unused, notTeacher, unusedNoService, serviceReport } = buildPageView();
   const rowsOf = (screen) => (byScreen.get(screen) || []).map((r) => opRow(r, opById, eli10)).join('\n');
 
   const cards = [...byScreen.keys()].sort().map((screen) => {
@@ -84,7 +84,7 @@ export function pagesPage({ homeUrl, rolesUrl, rawUrl, specUrl }) {
   const nNotCalled = [...byScreen.values()].filter((rows) => bucketOf(rows).notCalled.length > 0).length;
   const unusedRows = unused.map((o) => `<tr><td class="m m-${o.method}">${o.method}</td><td><code>${esc(o.path)}</code></td>
     <td>${esc(o.operationId)}</td><td class="why">${esc((eli10.get(o.operationId) || {})['幹嘛'] || '')}</td>
-    <td>${unusedNoService.has(o.path) ? '<b>service 层也没写</b>' : 'service 层写了，没有页面走得到'}</td>
+    <td>${!serviceReport ? '<em>没读到裁决报告</em>' : unusedNoService.has(o.path) ? '<b>service 层也没写</b>' : 'service 层写了，没有页面走得到'}</td>
     <td><a href="/#/${esc((o.tags || [])[0] || '')}/${esc(o.operationId)}">Swagger</a></td></tr>`).join('\n');
 
   return `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
@@ -139,7 +139,8 @@ ${cards}
   <header><h2>无人认领的操作</h2><span class="cnt">${unused.length} 条</span></header>
   <table><thead><tr><th>方法</th><th>路径</th><th>operationId</th><th>幹嘛</th><th>service 层</th><th></th></tr></thead>
   <tbody>${unusedRows}</tbody></table>
-  <p class="note">判据分两层：<b>service 层也没写</b> = 客户端一处都没有；<b>service 层写了、没有页面走得到</b> = 有导出函数但没有任何页面调到它。两者要修的东西不一样。</p>
+  <p class="note">判据分两层：<b>service 层也没写</b> = 客户端一处都没有；<b>service 层写了、没有页面走得到</b> = 有导出函数但没有任何页面调到它。两者要修的东西不一样。
+  ${serviceReport ? `这一列取自 <code>docs/audit/${esc(serviceReport)}</code>。` : '<b>没读到 `docs/audit/` 下的接线报告，这一列不猜。</b>'}</p>
 </section>
 </body></html>`;
 }
