@@ -1,27 +1,7 @@
 {
-  "generatedAt": "2026-09-11T17:39:25.347Z",
+  "generatedAt": "2026-09-11T18:54:40.048Z",
   "contract": "G:\\My Drive\\Workplace\\China KG Platform\\hualong-backend\\api\\openapi.yaml",
   "pages": [
-    {
-      "name": "home",
-      "title": "首页",
-      "wired": true,
-      "writes": "no",
-      "context": {
-        "title": "首页",
-        "path": "底部导航「首页」",
-        "module": "首页",
-        "role": "教师看自己的近期任务、常用入口、推荐案例",
-        "flow": "管理端派任务／推荐案例 → 教师只读"
-      },
-      "events": 4,
-      "prototype": {
-        "buttons": 0,
-        "listeners": 0,
-        "links": 9
-      },
-      "findings": []
-    },
     {
       "name": "login",
       "title": "登录",
@@ -29,7 +9,7 @@
       "writes": "no",
       "context": {
         "title": "登录",
-        "path": "（从五个底部导航都走不到——只能由别处深链进来，或尚未挂入口）",
+        "path": "启动页（`app.json` 第一项）。已登录就直接跳首页；会话失效时 `guard.endSessionOnAuthFailure` 也 reLaunch 过来。手机号那一步等 G1",
         "module": "登录",
         "role": "",
         "flow": ""
@@ -49,7 +29,7 @@
           "context": {
             "page": "login",
             "title": "登录",
-            "path": "（从五个底部导航都走不到——只能由别处深链进来，或尚未挂入口）",
+            "path": "启动页（`app.json` 第一项）。已登录就直接跳首页；会话失效时 `guard.endSessionOnAuthFailure` 也 reLaunch 过来。手机号那一步等 G1",
             "module": "登录",
             "role": "",
             "flow": "",
@@ -58,6 +38,26 @@
           }
         }
       ]
+    },
+    {
+      "name": "home",
+      "title": "首页",
+      "wired": true,
+      "writes": "no",
+      "context": {
+        "title": "首页",
+        "path": "底部导航「首页」",
+        "module": "首页",
+        "role": "教师看自己的近期任务、常用入口、推荐案例",
+        "flow": "管理端派任务／推荐案例 → 教师只读"
+      },
+      "events": 4,
+      "prototype": {
+        "buttons": 0,
+        "listeners": 0,
+        "links": 9
+      },
+      "findings": []
     },
     {
       "name": "upload-resource",

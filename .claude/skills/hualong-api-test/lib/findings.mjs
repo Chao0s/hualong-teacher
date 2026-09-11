@@ -14,8 +14,8 @@ import { fileURLToPath } from 'node:url';
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const REPO = resolve(HERE, '..', '..', '..', '..');
 
-/** The only four classes that fail a run. Anything else is `medium` or lower. */
-export const HIGH = new Set(['exposure', 'data-loss', 'hardening-off', 'undeclared-path']);
+/** The classes that fail a run. Anything else is `medium` or lower. */
+export const HIGH = new Set(['exposure', 'data-loss', 'hardening-off', 'undeclared-path', 'stale-expectation']);
 
 export class Run {
   constructor() {

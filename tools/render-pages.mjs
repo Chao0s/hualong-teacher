@@ -5,37 +5,47 @@
  * 十步闸门（`npm test`）、15 支探针、`scan:wiring` **全部查不出渲染问题** —— CLAUDE.md §6
  * 最后一行写着「上面全部查不出来」。这一支补的就是那一格。
  *
- * 先说清楚它做不到什么：**挂不进 CI。** 它要微信开发者工具，而工具要 GUI 与扫码登录，
+ * ── 两条硬约束，都是 2026-09-12 实测出来的 ──────────────────────────────────
+ *
+ * **① `automator.launch()` 在 Node 20+ 的 Windows 上永远起不来。**
+ * 它内部是 `child_process.spawn(cliPath, args, {stdio:'ignore'})`（Launcher.js:40），
+ * 而 Node 20 起**不允许不带 shell 直接起 `.bat`/`.cmd`** → `EINVAL`。
+ * 同一个文件第 27 行还明确拒绝 `.exe`（"cliPath is not correct, it's usually named as
+ * 'cli' or 'cli.bat'"）。所以 0.12.1 这条命令没有一个可用的 cliPath。
+ * 办法：**自己把 IDE 起起来，再用 `automator.connect()` 连上去。**
+ *
+ * **② 开发者工具的「服务端口」必须开着。** 不开时它自己会说：
+ *     [error] 工具的服务端口已关闭。要使用命令行调用工具，请手动打开
+ *             工具 -> 设置 -> 安全设置，将服务端口开启。
+ * 命令行调用就是这个「服务端口」。**实测：这条只能在设置里开一次。**
+ * 它虽然提示「enter y to confirm enabling CLI capability」，但那个 y 是从**控制台**读的 ——
+ * 把 y 写进管道喂不进去（2026-09-12 试过两次：等提示再喂、启动瞬间喂，它都直接退出）。
+ * 所以本脚本不喂 y，也不假装能替你开：连不上时把那句原话打出来，告诉你去哪一格开。
+ *
+ * **③ 命令行不能靠 shell 自己拼。** `spawn(cmd, args, {shell:true})` 不会给含空格的路径
+ * 加引号，而这个工程在 `My Drive` 与 `China KG Platform` 两层空格之下 —— 拼错了
+ * 会报 `operable program or batch file`。所以下面自己拼带引号的整串。
+ *
+ * 做不到什么：**挂不进 CI。** 它要微信开发者工具，而工具要 GUI 与扫码登录，
  * GitHub Actions 上跑不起来。所以「每页截图」只能是本机能力。
- *
- * **不用手工打开 IDE。** `automator.launch()` 不停在旁边等一个已开的窗口 —— 它自己把 IDE
- * 起起来。做法是拼一条 CLI 命令（读 `miniprogram-automator/out/Launcher.js` 得到）：
- *
- *     cli.bat auto --project <工程路径> --auto-port <端口> --trust-project
- *
- * 于是 `auto` 子命令拉起 IDE 并开出自动化端口，人在旁边什么都不用点。
- * 两个仍然只能人做一次的：**扫码登录**，以及安装本身。
- * 源码里另有 `--ticket` 与 `--auto-account` 两个参数 —— 那条路能免扫码，
- * 但 ticket 本身要从一个**已登录的 IDE** 里取，所以第一步还是人。
- *
- * 跑之前的两件事：
- *   1. 装微信开发者工具（官方下载）。`miniprogram-automator` 已在 package.json 的
- *      devDependencies 里，但**没装** —— 先 `npm i`。
- *   2. 后端要活着：`cd ../hualong-backend/db/testdata && node server/server.mjs`（3860）。
  *
  * 用法：
  *   node tools/render-pages.mjs                     # 3 屏样板
- *   node tools/render-pages.mjs --all               # 全部 56 屏（样板通了再铺）
+ *   node tools/render-pages.mjs --all               # 全部
  *   node tools/render-pages.mjs --page=home         # 只跑一屏
- *   WX_DEVTOOLS_CLI=<路径> node tools/render-pages.mjs   # 工具不在默认位置时
+ *   WX_DEVTOOLS_CLI=<路径> node tools/render-pages.mjs
+ *   WX_AUTO_PORT=9420                                # 自动化端口，默认 9420
  */
 import { readFileSync, mkdirSync, existsSync } from 'node:fs';
+import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { setTimeout as sleep } from 'node:timers/promises';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PROJECT = join(HERE, '..', 'miniprogram');
 const OUT = join(HERE, '..', '.scratch', 'render');
+const AUTO_PORT = Number(process.env.WX_AUTO_PORT ?? 9420);
 
 // 工具 CLI 的常见位置。找不到就报清楚，不要静默跳过。
 const CLI_CANDIDATES = [
@@ -74,10 +84,8 @@ const pick = () => {
     if (!hit) { console.error(`没有哪一页路径里含「${only}」。目录名要对上 app.json。`); process.exit(2); }
     return [hit];
   }
-  if (wantAll) return all;
-  return Object.keys(SAMPLE);
+  return wantAll ? all : Object.keys(SAMPLE);
 };
-
 const target = pick();
 
 let automator;
@@ -102,15 +110,52 @@ console.log(`工具: ${cliPath}`);
 console.log(`工程: ${PROJECT}`);
 console.log(`要跑 ${target.length} 屏，截图写到 ${OUT}\n`);
 
-const miniProgram = await automator.launch({ cliPath, projectPath: PROJECT, trustProject: true });
+// ── 自己起 IDE（不吃 automator.launch 那个 EINVAL）─────────────────────────
+// 自己拼带引号的整串：路径里有空格，shell 不会替你加。
+const cmdline = `"${cliPath}" auto --project "${PROJECT}" --auto-port ${AUTO_PORT} --trust-project`;
+console.log('起 IDE ...');
+const ide = spawn(cmdline, { shell: true, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
+let ideOut = '';
+const collect = (d) => { ideOut += String(d); };
+ide.stdout.on('data', collect);
+ide.stderr.on('data', collect);
+ide.on('error', (e) => console.error('  起 IDE 失败:', e.code ?? e.message));
+
+// 等自动化端口开
+let mp = null;
+for (let i = 1; i <= 30; i++) {
+  await sleep(2000);
+  try {
+    mp = await automator.connect({ wsEndpoint: `ws://127.0.0.1:${AUTO_PORT}` });
+    console.log(`  连上（第 ${i} 次，约 ${i * 2}s）\n`);
+    break;
+  } catch { /* 还没开，继续等 */ }
+}
+
+if (!mp) {
+  console.error('连不上自动化端口 —— IDE 没起来，或「服务端口」没开。');
+  if (/服务端口已关闭|service port disabled/i.test(ideOut)) {
+    console.error('  IDE 的原话：');
+    for (const l of ideOut.split('\n').filter((l) => /服务端口|service port|安全设置|Settings/i.test(l)).slice(0, 4)) {
+      console.error('    ' + l.trim());
+    }
+    console.error('  去打开一次：工具 -> 设置 -> 安全设置 -> 服务端口。');
+  } else if (ideOut) {
+    console.error('  IDE 输出：\n' + ideOut.split('\n').slice(-8).join('\n'));
+  } else {
+    console.error('  IDE 一个字都没输出 —— 命令没起来。');
+  }
+  try { ide.kill(); } catch { /* 已经没了 */ }
+  process.exit(1);
+}
 
 let ok = 0;
 const bad = [];
 for (const route of target) {
   const spec = SAMPLE[route] ?? { label: route, selectors: [] };
   try {
-    const page = await miniProgram.reLaunch(route);
-    await page.waitFor(800);
+    const page = await mp.reLaunch(route);
+    await sleep(900);
 
     const found = [];
     for (const sel of spec.selectors) {
@@ -123,7 +168,7 @@ for (const route of target) {
     // 页面自己的 data 也要看 —— 元素找得到不等于数据到了。
     const data = await page.data();
     const shot = join(OUT, route.replace(/[/]/g, '_') + '.png');
-    await miniProgram.screenshot({ path: shot });
+    await mp.screenshot({ path: shot });
 
     console.log(`✓ ${route}（${spec.label}）`);
     console.log(`   元素: ${found.join('  ') || '(这一屏没配选择器)'}`);
@@ -136,7 +181,8 @@ for (const route of target) {
   }
 }
 
-await miniProgram.close();
+try { await mp.close(); } catch { /* 已关 */ }
+try { ide.kill(); } catch { /* 已退 */ }
 
 console.log(`\n跑通 ${ok} 屏，失败 ${bad.length} 屏。`);
 if (bad.length) {

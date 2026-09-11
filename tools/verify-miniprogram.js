@@ -243,16 +243,26 @@ console.log('[7] 《指南》量表只有一份');
 // 两个后端检查器读的是 TSV，本文件此前只查 `miniprogram/` 的语法，**谁都不加载 tools/ 下的模块**，
 // 所以一个 SyntaxError 能穿过全部闸门，只在真起服务渲染时炸。
 // 探针（tools/probe-*.mjs）会加载 services/utils，但它们在 `npm test` 之外，且不覆盖 swagger 这一层。
-console.log('[8] tools/ 下的 JS 语法');
+//
+// 2026-09-12 又咬了一次，咬在**这个检查自己漏掉的地方**：做按屏检测技能时，
+// `.claude/skills/hualong-api-test/layers/proto.mjs` 少了一个收尾花括号，
+// 而这一段的目录清单里没有 `.claude/skills` —— 于是它照样全绿。
+// 所以下面改成**递归**扫：新增目录不用回来改这份清单，也就不会再漏。
+console.log('[8] tools/ 与 .claude/skills 下的 JS 语法');
 {
   const { spawnSync } = require('child_process');
-  const dirs = ['tools', path.join('tools', 'lib'), path.join('tools', 'swagger'), 'scripts'];
+  const roots = ['tools', 'scripts', path.join('.claude', 'skills')];
   const files = [];
-  for (const d of dirs) {
-    const abs = path.join(__dirname, '..', d);
-    if (!fs.existsSync(abs)) continue;
-    for (const f of fs.readdirSync(abs)) if (/\.(mjs|js)$/.test(f)) files.push(path.join(d, f));
-  }
+  const walk = (rel) => {
+    const abs = path.join(__dirname, '..', rel);
+    if (!fs.existsSync(abs)) return;
+    for (const e of fs.readdirSync(abs, { withFileTypes: true })) {
+      const next = path.join(rel, e.name);
+      if (e.isDirectory()) { if (e.name !== 'node_modules') walk(next); }
+      else if (/\.(mjs|js)$/.test(e.name)) files.push(next);
+    }
+  };
+  for (const r of roots) walk(r);
   let ok = 0;
   for (const f of files) {
     const r = spawnSync(process.execPath, ['--check', path.join(__dirname, '..', f)], { encoding: 'utf8' });

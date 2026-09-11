@@ -14,6 +14,7 @@
     "scan:wiring": "node tools/scan-wiring.mjs",
     "emit:screens": "node tools/scan-wiring.mjs --emit",
     "check:login": "node tools/check-login-page.mjs",
+    "check:report": "node tools/check-report-freshness.mjs",
     "render": "node tools/render-pages.mjs",
     "check:remote-scripts": "node scripts/check-remote-scripts.mjs",
     "hooks:install": "git config core.hooksPath .githooks"

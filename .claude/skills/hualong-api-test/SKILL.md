@@ -1,12 +1,24 @@
 ---
 name: hualong-api-test
-description: Test every seam between the Tencent Cloud VM, the three clients, and COS object storage. Checks the live database against the DDL, the bucket against its policy, the VM against its hardening, and each client's service layer against the API contract; arms the live HTTP layer automatically the day a service is deployed. Use when asked to check the backend, audit the cloud environment, look for missing or drifted API calls, verify the published Swagger site, hunt authorization or exposure problems, or confirm the backups are real.
+description: Check the contract, every screen, and the cloud seams.
+version: 2.0.0
+author: herman925, Hermes Agent
+license: MIT
+platforms: [linux, macos, windows]
+metadata:
+  hermes:
+    tags: [hualong, api-contract, wiring, tencent-cloud, verification]
+    related_skills: [hermes-agent-skill-authoring]
 ---
 
 # hualong-api-test
 
-Tests the real Tencent Cloud deployment. GitHub holds the expectations; the
-cloud is the thing under test.
+Tests the real Tencent Cloud deployment, and the seams between the contract,
+the three clients and COS. GitHub holds the expectations; the cloud is the
+thing under test.
+
+**The other development lane is `linem7` (朝湃).** Credit work by handle, not
+by "the colleague".
 
 ## What it is for
 
@@ -37,9 +49,18 @@ bucket that went public looks exactly like a bucket that did not.
 4. **Siblings are read-only.** `hualong-backend`, `hualong-parent` and
    `hualong-admin-pc` are read. The single exception is a schema-migration PR,
    which follows the approve-then-open flow.
-5. **A skipped check says why.** Never report absence as success. Two of the
-   three clients hold no service layer yet and the service on `3001` does not
-   exist; those layers must say so rather than pass silently.
+5. **A skipped check says why, and what it leaves unknown.** Never report
+   absence as success. The format has two fields, both required by
+   `Run.skip(layer, why, unknown)`, and the report prints both:
+
+   ```
+   [render] SKIPPED — WeChat DevTools is not installed (looked in 4 places)
+        leaves unknown: whether every screen draws
+   ```
+
+   A skip with no `unknown` is a silent hole wearing a label. Two of the three
+   clients hold no service layer yet and the service on `3001` does not exist;
+   those layers declare it rather than passing.
 
 ## Access
 
@@ -106,30 +127,155 @@ A checker that only reads should hold neither.
 ## Layers
 
 ```
-node .claude/skills/hualong-api-test/run.mjs            # every layer
-node .claude/skills/hualong-api-test/run.mjs cos db     # named layers
+node .claude/skills/hualong-api-test/run.mjs             # the fast set
+node .claude/skills/hualong-api-test/run.mjs --all       # all ten
+node .claude/skills/hualong-api-test/run.mjs cos db      # named layers
 ```
+
+**Two sets, declared in `run.mjs` so nobody has to remember them.** Run the
+fast set after every change; run `--all` to close a stage or hand over. Both
+names are printed on every run, so a partial run cannot look like a full one.
+
+| Set | Layers | Needs |
+| --- | --- | --- |
+| fast | `contract` `wire` `cover` `proto` `repo` | nothing — no credentials, no cloud, no GUI |
+| full | all ten | the box, the bucket, or DevTools, per layer |
 
 | Layer | Needs | Checks |
 | --- | --- | --- |
-| `contract` | nothing | every client's service layer against the contract; every contract operation against the mock |
+| `contract` | nothing | every client's service layer against the contract; every contract operation against the mock; every registered known-gap still a gap |
+| `wire` | nothing | the wiring scanner's six layers, via `scan:wiring` — element → event → handler → service → contract, plus its own 24 self-tests |
+| `cover` | nothing | one row per screen, both locators resolve, the operations table covers every screen, the ELI10 table covers every operation |
+| `proto` | nothing | what the prototype expresses against what the client wired — intent missing, and prototype behind |
+| `repo` | nothing | `npm test` and the backend's `check-all.mjs`; reports generated-file drift |
 | `db` | `ubuntu` shell | live Postgres against `db/01_schema.sql` — tables, columns, enums |
 | `cos` | `COS_*` env | bucket ACL and policy, SSE, CORS, backup presence and freshness, and one anonymous read attempt |
 | `vm` | `ubuntu` shell | sshd hardening in force, `devtunnel` restrictions, nginx exposure, disk |
 | `api` | tunnel | live HTTP against the contract. Self-skips while `3001` is unanswered |
+| `render` | WeChat DevTools | that each screen actually draws — the question no other layer can answer |
+
+### Where the page-level views come from
+
+**The launcher ships inside this skill**, so the skill is one shareable unit:
+
+```
+.claude/skills/hualong-api-test/scripts/launch-api-doc.bat   ← the real thing
+launch api-doc.bat                                           ← a 6-line forwarder
+```
+
+The repo root keeps a forwarder because that is where people double-click. Do
+not put logic in it; a second copy of the port rotation is exactly the kind of
+duplication this repo has been bitten by before.
+
+The launcher starts the contract mock on 3820, picks a free port from 3830, and
+
+- **orients on the repo root** — it lives four levels down, so it resolves the
+  root from its own location rather than assuming it was started from there;
+- **refreshes the two spec tables**, which is what `/pages` and `/roles` read on
+  every request, and is also what surfaces a client calling an undeclared path;
+- **prints the freshness verdict** for the wiring report (step 3b below);
+- serves `/pages`, `/roles`, `/pages.yaml`, `/openapi.yaml` and Try-it-out, and
+  opens a browser.
+
+Support `HL_DRYRUN=1` (report what it would do, write nothing, spawn nothing)
+and `HL_NO_REFRESH=1` (serve the tables as they are).
+
+**Comments added to that file must be ASCII.** It carries Chinese comments in
+the machine's local encoding, so appending UTF-8 Chinese to it produces garbage
+that can split a `rem` line — which the batch interpreter then executes. That
+happened on 2026-09-12 and the file printed `operable program or batch file`.
+
+**The layers never start it.** A checker that opens windows and binds ports
+hangs in a headless run. The layers read the same two files the launcher
+refreshes — `db/spec/screen-operations.tsv` and `operation-eli10.tsv` — and
+refresh them the same way the launcher does, by calling `npm run emit:screens`.
+
+**One half that the launcher does not refresh.** `--emit` writes the two tables
+and **not** the wiring report (`scan-wiring.mjs` documents them as two separate
+paths). `/pages` reads its service-layer column from the newest
+`docs/audit/wiring-*.json`, so a stale column is the default state — measured 56
+minutes stale on 2026-09-12. `tools/check-report-freshness.mjs` is the one
+implementation of that comparison: the launcher prints its verdict for the
+human, and `cover` runs it `--strict` as a gate. `wire` regenerates the report,
+which is why it runs before `cover`.
 
 ## Severity, and what fails the run
 
-Exit is non-zero only for exposure or data loss:
+Exit is non-zero for exactly five classes. The first four are "something is
+exposed or something is being lost"; the fifth is new and deliberate:
 
-- an object readable by an unauthenticated stranger
-- sshd hardening not actually in force, or `devtunnel` reaching a second port
-- the backup missing, or newer than nothing but older than a day
-- a client calling a path the contract does not declare
+| Class | Means |
+| --- | --- |
+| `exposure` | an object an unauthenticated stranger can read |
+| `data-loss` | the backup missing, or newer than nothing but older than a day |
+| `hardening-off` | sshd hardening not in force, or `devtunnel` reaching a second port |
+| `undeclared-path` | a client calling a path the contract does not declare |
+| `stale-expectation` | a stored expectation that no longer describes anything |
 
 Everything else — schema drift, a missing CORS rule, no TLS on a placeholder
-page — is reported without failing. An exit code that is red for weeks stops
-being read.
+page, a screen the prototype fleshed out and the client did not — is reported
+without failing. An exit code that is red for weeks stops being read.
+
+**Why `stale-expectation` fails instead of warning.** Schema drift can be known
+and lived with; a dead expectation cannot, because nothing else will ever
+notice it. A register that still lists a closed gap, a report older than the
+code it describes, a mapping row whose locator no longer resolves — each one is
+a check that has stopped checking while still reading as coverage. Three
+instances were found on 2026-09-12: `known-gaps.json` listed `/tasks` after the
+contract gained it, the wiring report was 56 minutes older than the pages it
+described, and a `screens.tsv` row named a prototype file that was not on disk.
+
+## Stored expectations are declared, never implicit
+
+Every check reads one of two ways, and says which:
+
+- **read live** — the truth is in a file, a database or a response, and the
+  check compares against that. Nothing to go stale.
+- **stored expectation** — the check holds a value from an earlier reading, and
+  it must be *declared where a human will see it*, so that the day the source
+  moves, the check reports rather than passing.
+
+Counts are never written into prose. Contract size, screen count and operation
+count each live in exactly one place — the command that measures them. Three
+copies of "137 paths / 167 operations" existed on 2026-09-12 and all three were
+wrong; the measured value was 138 / 168. When a number is needed, print it.
+
+## Local stack, for the layers that need a database
+
+`probes`-style layers and the authorization suite need Postgres and the test
+server. Four commands, and the trainee is the trap:
+
+```bash
+docker run -d --name hl-pg -e POSTGRES_HOST_AUTH_METHOD=trust -p 127.0.0.1:5432:5432 postgres:16
+docker exec hl-pg psql -U postgres -c "CREATE DATABASE hualong_test;"
+docker exec -i hl-pg psql -U postgres -d hualong_test -q < db/01_schema.sql
+docker exec -i hl-pg psql -U postgres -d hualong_test -q < db/testdata/testdata.sql   # NOT db/02_seed.sql
+cd db/testdata && node server/server.mjs                                            # 3860
+```
+
+**Two datasets, an order of magnitude apart, and loading the wrong one fails
+silently.** `db/02_seed.sql` is the demo set (3 teachers, 6 children);
+`db/testdata/testdata.sql` is what the test server expects (12 serving + 1
+departed teacher, 60 children, 79 parents). Loading the demo set makes
+`db/testdata/accounts.env` and CLAUDE.md §5 read as *wrong* when they are right.
+The verdict is in the server's own banner: **6 children means wrong, 60 means
+right**.
+
+**Bind `127.0.0.1`, never bare `-p 5432:5432`.** Docker defaults to `0.0.0.0`
+and this container runs with `trust` — no password — so a bare bind puts an
+open database on the local network.
+
+**npm cannot install into the Google Drive path.** It reports success and leaves
+0-byte files behind. Install outside the repo and copy `node_modules` in:
+
+```bash
+DEPS="$USERPROFILE/.hualong-teacher-deps"     # or $LOCALAPPDATA/Temp on Windows bash
+mkdir -p "$DEPS" && cd "$DEPS" && cp "<repo>/package.json" . && npm install
+cp -r "$DEPS/node_modules/." "<repo>/node_modules/"
+```
+
+`launch api-doc.bat` names the same directory in its hint, so the launcher and
+this file agree on one location.
 
 ## Reports
 
