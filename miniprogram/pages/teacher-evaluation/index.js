@@ -1,4 +1,6 @@
-/** 教师评价 —— 原型 screens/teacher-evaluation.html 的小程序版本。 */
+/** 教师评价 —— 当前班级四项真实进度。 */
+const assess=require('../../services/assessment');
+const guard=require('../../utils/guard');
 
 const ROUTES = {
   monthly: '/pages/teacher-monthly-evaluation/index',
@@ -17,15 +19,31 @@ Page({
     ],
 
     // 四列：本月评价 / 学期评估 / 综合评估 / 教师寄语
-    rows: [
-      { name: '陈小明', states: ['done', 'done', 'done', 'done'] },
-      { name: '李雨萱', states: ['done', 'miss', 'miss', 'miss'] },
-      { name: '张力轩', states: ['miss', 'miss', 'miss', 'miss'] },
-      { name: '王子涵', states: ['done', 'done', 'done', 'miss'] },
-      { name: '赵佳怡', states: ['miss', 'miss', 'done', 'miss'] },
-      { name: '刘浩然', states: ['done', 'done', 'done', 'done'] },
-    ],
+    rows: [],
+    loading:true,
+    error:'',
+    termId:null,
   },
+
+  onShow() { this.refresh(); },
+
+  async refresh() {
+    const seq=(this.loadSeq||0)+1;
+    this.loadSeq=seq;
+    this.setData({rows:[],loading:true,error:'',termId:null});
+    try {
+      await guard.requireSession();
+      const board=await assess.teacherEvaluationBoard();
+      if(seq!==this.loadSeq) return;
+      this.setData({rows:board.rows,termId:board.termId,loading:false});
+    } catch(err) {
+      if(seq!==this.loadSeq) return;
+      guard.endSessionOnAuthFailure(err);
+      this.setData({loading:false,error:err.userMessage||err.message||'评价进度加载失败'});
+    }
+  },
+
+  onRetry() { this.refresh(); },
 
   onEntryTap(e) {
     const key = e.currentTarget.dataset.key;

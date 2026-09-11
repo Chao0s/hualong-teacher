@@ -9,6 +9,7 @@
  */
 
 const assess = require('../../services/assessment.js');
+const guard = require('../../utils/guard');
 
 const ROUTES = {
   'parent-eval': '/pages/parent-evaluation-publish/index',
@@ -26,6 +27,8 @@ Page({
 
     columns: [],
     rows: [],
+    loading: true,
+    error: '',
   },
 
   /** 从三个入口页返回时要重新取：那几页会改齐备度。 */
@@ -34,12 +37,23 @@ Page({
   },
 
   async refresh() {
+    const seq = (this.loadSeq || 0) + 1;
+    this.loadSeq = seq;
+    this.setData({ loading: true, error: '', columns: [], rows: [] });
     try {
+      await guard.requireSession();
       const board = await assess.growthRecordBoard();
-      this.setData({ columns: board.columns, rows: board.rows });
+      if (seq !== this.loadSeq) return;
+      this.setData({ columns: board.columns, rows: board.rows, loading: false });
     } catch (err) {
-      wx.showToast({ title: (err && err.userMessage) || '进度加载失败，请下拉重试', icon: 'none' });
+      if (seq !== this.loadSeq) return;
+      guard.endSessionOnAuthFailure(err);
+      this.setData({ loading: false, error: err.userMessage || err.message || '评价进度加载失败' });
     }
+  },
+
+  onRetry() {
+    this.refresh();
   },
 
   onEntryTap(e) {

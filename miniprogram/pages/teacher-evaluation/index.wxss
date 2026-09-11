@@ -33,3 +33,7 @@
 .prog-row {
   grid-template-columns: 124rpx repeat(4, 1fr);
 }
+
+/* 与成长档案一致：同一种绿色，以实心/空心区分完成与否。 */
+.dot-cell--done { background: var(--green); }
+.dot-cell--miss { border-color: var(--green); background: transparent; }
