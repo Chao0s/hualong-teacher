@@ -12,7 +12,10 @@
  *   /            the UI
  *   /roles       one HTML table of every operation with its allowed roles,
  *                its action_key and whatever GAP blocks it
+ *   /pages       one card per screen: what that screen calls
+ *   /review      the findings as a form — one verdict per row, saved
  *   /openapi.yaml  the raw contract
+ *   /pages.yaml    the screen-grouped derived spec
  */
 
 import { createServer } from 'node:http';
@@ -43,11 +46,21 @@ const MIME = {
   '.yaml': 'application/yaml; charset=utf-8',
 };
 
+// 一条顶栏、一组链接。四个路由与四份视图共用这一个对象。
+// 从前四个路由各传一个子集，于是 /roles 到不了 /review —— 少一条链接从画面上看不出来。
+// 链接集合写在一处；缺键由 nav.mjs 当场抛错，不静默少一条。
+const NAV_URLS = {
+  home: '/',
+  roles: '/roles',
+  pages: '/pages',
+  review: '/review',
+  raw: '/openapi.yaml',
+  spec: '/pages.yaml',
+};
+
 const INDEX = indexPage({
   specUrl: '/openapi.local.yaml',
-  rolesUrl: '/roles',
-  pagesUrl: '/pages',
-  rawUrl: '/openapi.yaml',
+  navUrls: NAV_URLS,
   note: 'Try-it-out 默认指向本地测试后端 <code>http://127.0.0.1:3860/api/v1</code>，需有效教师会话；也可在 Servers 中选择 mock',
 });
 
@@ -118,9 +131,9 @@ const server = createServer((req, res) => {
   }
 
   if (path === '/' || path === '/index.html') return send(200, MIME['.html'], INDEX);
-  if (path === '/roles') return send(200, MIME['.html'], rolesPage({ homeUrl: '/', rawUrl: '/openapi.yaml', pagesUrl: '/pages', specUrl: '/pages.yaml' }));
-  if (path === '/pages') return send(200, MIME['.html'], pagesPage({ homeUrl: '/', rolesUrl: '/roles', rawUrl: '/openapi.yaml', specUrl: '/pages.yaml' }));
-  if (path === '/review') return send(200, MIME['.html'], reviewPage({ homeUrl: '/', pagesUrl: '/pages', rolesUrl: '/roles' }));
+  if (path === '/roles') return send(200, MIME['.html'], rolesPage({ navUrls: NAV_URLS }));
+  if (path === '/pages') return send(200, MIME['.html'], pagesPage({ navUrls: NAV_URLS }));
+  if (path === '/review') return send(200, MIME['.html'], reviewPage({ navUrls: NAV_URLS }));
   if (path === '/pages.yaml') return send(200, MIME['.yaml'], pagesSpecForUi());
   if (path === '/openapi.yaml') return send(200, MIME['.yaml'], specText());
   if (path === '/openapi.local.yaml') return send(200, MIME['.yaml'], specForUi());

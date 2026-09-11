@@ -14,6 +14,7 @@
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { navBar } from './nav.mjs';
 
 // 從模組位置推倉根，不用 process.cwd() —— 那要看誰從哪裡起服務，太脆。
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -34,20 +35,24 @@ function latestReport(reportDir) {
   return { file: f, data: JSON.parse(readFileSync(join(reportDir, f), 'utf8')) };
 }
 
-export function reviewPage({ homeUrl = '/', pagesUrl = '/pages', rolesUrl = '/roles' } = {}) {
+/**
+ * `navUrls` 是这一页能到达的全部目的地（键 → 网址），四个路由传的是同一组。
+ *
+ * @param {{navUrls: object, extra?: Array, omit?: string[]}} links
+ */
+export function reviewPage({ navUrls, omit = [], extra = [] }) {
   const reportDir = join(REPO, 'tools', '.report', 'api-test');
   const rep = latestReport(reportDir);
+  const nav = navBar({ current: 'review', urls: navUrls, omit, title: '检测评审', extra });
 
   const head = `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>检测评审 · 可写</title><style>
-:root{--pg:#eef5f3;--card:#fff;--hd:#e4f1ee;--hdi:#12413c;--line:#d5e6e2;--line2:#e7f1ef;
+:root{--pg:#eef5f3;--card:#fff;--line:#d5e6e2;--line2:#e7f1ef;
 --ink:#10302d;--ink2:#35564f;--ink3:#55766f;--link:#0a6472}
 *{box-sizing:border-box}
 body{margin:0;background:var(--pg);color:var(--ink);font:14px/1.6 -apple-system,"Microsoft YaHei",system-ui,sans-serif}
-header{background:var(--hd);color:var(--hdi);padding:12px 18px;border-bottom:1px solid var(--line)}
-header a{color:#0f6b62;text-decoration:none;margin-right:14px}
-header a:hover{text-decoration:underline}
+/* 顶栏的样式跟着顶栏走：唯一一份在 tools/swagger/nav.mjs，四个页面共用。这里不再写第二份。 */
 .wrap{max-width:1100px;margin:0 auto;padding:18px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin:12px 0}
 .mut{color:var(--ink3)}
@@ -65,9 +70,7 @@ th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line2);verti
 th{color:var(--ink3);font-weight:600;background:#f5faf9}
 .note{background:#f5faf9;border-left:3px solid var(--link);padding:8px 12px;margin:12px 0;color:var(--ink2)}
 </style></head><body>
-<header>
-<a href="${esc(homeUrl)}">契约</a><a href="${esc(pagesUrl)}">按屏幕看</a><a href="${esc(rolesUrl)}">角色矩阵</a>
-<b>检测评审</b></header><div class="wrap">`;
+${nav}<div class="wrap">`;
 
   if (!rep) {
     return head + `<div class="card"><h2>还没有检测报告</h2>

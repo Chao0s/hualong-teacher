@@ -28,6 +28,7 @@
  * 列名跟着表走，才不会说错；窄屏把 `<thead>` 隐藏，只留 `td::before` 那一套。
  */
 import { buildPageView } from '../lib/screen-ops-data.mjs';
+import { navBar } from './nav.mjs';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -139,9 +140,11 @@ function countStrip(b) {
 }
 
 /**
- * @param {{homeUrl: string, rolesUrl: string, rawUrl: string, specUrl: string}} links
+ * `navUrls` 是这一页能到达的全部目的地（键 → 网址），四个路由传的是同一组。
+ *
+ * @param {{navUrls: object, extra?: Array, omit?: string[]}} links
  */
-export function pagesPage({ homeUrl, rolesUrl, rawUrl, rawViewerUrl = '', specUrl, specViewerUrl = '' }) {
+export function pagesPage({ navUrls, omit = [], extra = [] }) {
   const { screenOps, byScreen, eli10, opById, titles, titleInfo, unused, notTeacher, unusedNoService, serviceReport, utilsCalled } = buildPageView();
 
   const cards = [...byScreen.keys()].sort().map((screen) => {
@@ -200,14 +203,21 @@ export function pagesPage({ homeUrl, rolesUrl, rawUrl, rawViewerUrl = '', specUr
       + '</tr>';
   }).join('');
 
+  const nav = navBar({
+    current: 'pages',
+    urls: navUrls,
+    omit,
+    title: '按屏幕看',
+    extra,
+    note: '一屏一卡 · 分段计数 · 0 也写出来 · 「说人话」机器交叉核过、无人逐条读过',
+  });
   return `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>化龙 API · 按屏幕看</title>
 <style>
  /* 一份 token：只有一套亮色变量，其余规则只认变量名。 */
  :root{
-  --bg:#eef5f3; --panel:#fff; --panel2:#f5faf9; --bar:#e4f1ee;
-  --bar-ink:#12413c; --bar-link:#0f6b62; --bar-ink2:#4f6f68;
+  --bg:#eef5f3; --panel:#fff; --panel2:#f5faf9;
   --ink:#10302d; --ink2:#35564f; --ink3:#55766f; --ink4:#73908a;
   --line:#d5e6e2; --line2:#e7f1ef;
   --link:#0a6472; --accent:#d9f0eb; --accent-ink:#0d5a53;
@@ -226,13 +236,7 @@ export function pagesPage({ homeUrl, rolesUrl, rawUrl, rawViewerUrl = '', specUr
 
  /* 顶栏 + 图例共用一个 sticky 容器 —— 两截贴顶时不用猜顶栏高度。 */
  .top{position:sticky;top:0;z-index:9}
- .hl-bar{background:var(--bar);color:var(--bar-ink);padding:9px 16px;display:flex;
-         flex-wrap:wrap;align-items:baseline;gap:2px 14px;font-size:13.5px;
-         border-bottom:1px solid var(--line)}
- .hl-bar b{color:var(--ink)}
- .hl-bar a{color:var(--bar-link);text-decoration:none}
- .hl-bar a:hover{text-decoration:underline}
- .hl-bar .now{margin-left:auto;color:var(--bar-ink2);font-size:12px}
+ /* 顶栏的样式跟着顶栏走：唯一一份在 tools/swagger/nav.mjs，四个页面共用。这里不再写第二份。 */
 
  /* 表头：每张表自带一行。上一版是顶部一条 sticky 图例 —— 它只在桌面显示，
     而且「无人认领的操作」与「由 utils 内部调用」两张表的列跟它不同（那两张写的是
@@ -314,7 +318,6 @@ export function pagesPage({ homeUrl, rolesUrl, rawUrl, rawViewerUrl = '', specUr
  @media (max-width: 900px){
   :root{--pad-page:12px;--pad-card:12px}
   .tbl thead{display:none}
-  .hl-bar .now{display:none}
   .tbl,.tbl tbody,.tbl tr,.tbl td{display:block;width:auto}
   /* 定宽那几条是 .tbl td:nth-child(3)（0,2,1），width:auto 压不住它 —— 竖排时必须
      用同级的 :nth-child(n) 覆盖，否则格子还是桌面宽度，标签与值会挤在 56px 里溢出去。 */
@@ -332,15 +335,7 @@ export function pagesPage({ homeUrl, rolesUrl, rawUrl, rawViewerUrl = '', specUr
  @media (prefers-reduced-motion: no-preference){ html{scroll-behavior:smooth} }
 </style></head><body>
 <div class="top">
-<div class="hl-bar">化龙 API · <b>按屏幕看</b>
-  <a href="${homeUrl}">按模块看（Swagger UI）</a>
-  <a href="${rolesUrl}">角色矩阵</a>
-  <a href="${specUrl}">按屏幕看的规格</a>
-  <a href="${rawUrl}">原始 YAML</a>
-  ${rawViewerUrl ? `<a href="${rawViewerUrl}">原文（HTML，中文不乱码）</a>` : ''}
-  ${specViewerUrl ? `<a href="${specViewerUrl}">按屏幕的规格（HTML，中文不乱码）</a>` : ''}
-  <span class="now">一屏一卡 · 分段计数 · 0 也写出来 · 「说人话」机器交叉核过、无人逐条读过</span>
-</div>
+${nav}
 </div>
 <div class="wrap">
 <div class="sum">

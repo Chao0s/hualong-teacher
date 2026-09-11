@@ -11,6 +11,7 @@
 
 import { operations, loadSpec } from '../openapi-source.mjs';
 import { buildPageView, screenGroupedSpec } from '../lib/screen-ops-data.mjs';
+import { navBar } from './nav.mjs';
 import { dump } from 'js-yaml';
 
 /**
@@ -116,10 +117,17 @@ export function escapeHtml(s) {
  * API 给的 `fetch()` 也不受影响（对 `text/*` 默认 UTF-8），所以 Swagger UI 一直正常 ——
  * 只有「人点原始契约那个链接」这一条路会踩到。
  */
-export function rawViewer({ text, title, backUrl, backLabel, downloadUrl, downloadLabel }) {
+export function rawViewer({ text, title, urls, omit = [], downloadUrl, downloadLabel }) {
   const shown = text.length > 400000
-    ? `${text.slice(0, 200000)}\n\n…（中间省略 ${text.length - 400000} 字符，用下面的下载链接取全文）…\n\n${text.slice(-200000)}`
+    ? `${text.slice(0, 200000)}\n\n…（中间省略 ${text.length - 400000} 字符，用顶栏的「${downloadLabel}」取全文）…\n\n${text.slice(-200000)}`
     : text;
+  const nav = navBar({
+    urls,
+    omit,
+    brand: title,
+    note: `${shown.length.toLocaleString('en-US')} 字符 &middot; 本页以 UTF-8 声明，原文与下载件逐字节相同`,
+    extra: [{ href: downloadUrl, label: downloadLabel, download: true }],
+  });
   return `<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -129,21 +137,11 @@ export function rawViewer({ text, title, backUrl, backLabel, downloadUrl, downlo
 <style>
  body { margin: 0; background: #f6fbfa; color: #1f3a37;
         font: 13px/1.55 ui-monospace, SFMono-Regular, Consolas, monospace; }
- .hl-bar { position: sticky; top: 0; z-index: 2; background: #e4f1ee; color: #12413c;
-           padding: 9px 16px; font: 14px/1.5 system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
-           display: flex; gap: 16px; align-items: baseline; flex-wrap: wrap; }
- .hl-bar a { color: #0f6b62; text-decoration: none; }
- .hl-bar a:hover { text-decoration: underline; }
- .hl-bar .meta { margin-left: auto; color: #55766f; font-size: 12px; }
  pre { margin: 0; padding: 14px 16px 40px; white-space: pre; overflow-x: auto; tab-size: 2; }
 </style>
 </head>
 <body>
-<div class="hl-bar">
-  <a href="${backUrl}">${escapeHtml(backLabel)}</a>
-  <a href="${downloadUrl}" download>${escapeHtml(downloadLabel)}</a>
-  <span class="meta">${escapeHtml(title)} &middot; ${shown.length.toLocaleString('en-US')} 字符 &middot; 本页以 UTF-8 声明，原文与下载件逐字节相同</span>
-</div>
+${nav}
 <pre>${escapeHtml(shown)}</pre>
 </body>
 </html>
@@ -151,9 +149,13 @@ export function rawViewer({ text, title, backUrl, backLabel, downloadUrl, downlo
 }
 
 /**
- * @param {{specUrl: string, rolesUrl: string, rawUrl: string, note: string}} links
+ * `navUrls` 是这一页能到达的全部目的地（键 → 网址，见 `nav.mjs` 的 `NAV_ORDER`）。
+ * 四个路由传进来的必须是同一组 —— 见 `server.mjs` 的 `NAV_URLS`。
+ *
+ * @param {{specUrl: string, navUrls: object, note: string, extra?: Array, omit?: string[]}} links
  */
-export function indexPage({ specUrl, rolesUrl, pagesUrl = '', rawUrl, rawViewerUrl = '', note }) {
+export function indexPage({ specUrl, navUrls, omit = [], note, extra = [] }) {
+  const nav = navBar({ current: 'home', urls: navUrls, omit, title: 'Swagger UI', extra });
   return `<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -163,21 +165,18 @@ export function indexPage({ specUrl, rolesUrl, pagesUrl = '', rawUrl, rawViewerU
 <link rel="stylesheet" href="./swagger-ui.css">
 <style>
   body { margin: 0; background: #eef5f3; }
-  .hl-bar { background: #e4f1ee; color: #12413c; padding: 10px 16px;
-            font: 14px/1.6 system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; }
-  .hl-bar a { color: #0a6472; margin-left: 16px; }
-  .hl-bar code { color: #0d5a53; }
+  /* 来源与 Try-it-out 的说明是**一段文字，不是导航**：它立在顶栏下面独立一条，
+     与 /pages 的 .sum 同一套。放进顶栏会把那一行挤成两行（实测 84.8px），
+     四个页面的顶栏就不一样高了。 */
+  .hint { margin: 0; padding: 9px 16px; background: #e7f1ef; color: #35564f;
+          border-bottom: 1px solid #d5e6e2;
+          font: 13px/1.6 system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; }
+  .hint code { font: 12.5px/1.4 ui-monospace, SFMono-Regular, Consolas, monospace; color: #0d5a53; }
 </style>
 </head>
 <body>
-<div class="hl-bar">
-  化龙幼儿园三端共用后端 API 契约 &mdash; 来源 <code>hualong-backend/api/openapi.yaml</code>
-  &middot; ${note}
-  <a href="${rolesUrl}">按角色查看（x-hualong-roles）</a>
-  ${pagesUrl ? `<a href="${pagesUrl}">按屏幕查看（某一页要用哪些 API）</a>` : ''}
-  <a href="${rawUrl}">原始契约</a>
-  ${rawViewerUrl ? `<a href="${rawViewerUrl}">原始契约（HTML，中文不乱码）</a>` : ''}
-</div>
+${nav}
+<p class="hint">化龙幼儿园三端共用后端契约 &middot; 来源 <code>hualong-backend/api/openapi.yaml</code> &middot; ${note}</p>
 <div id="swagger-ui"></div>
 <script src="./swagger-ui-bundle.js"></script>
 <script src="./swagger-ui-standalone-preset.js"></script>
@@ -228,9 +227,11 @@ const escPath = (p) => {
  *      `说人话` 只剩 127px，最高一行 237px。
  *   ③ 表头只有 `position:sticky` 的 `<th>`，滚过一屏就没了；现在是顶栏下那条图例。
  *
- * @param {{homeUrl: string, rawUrl: string, pagesUrl?: string, specUrl?: string}} links
+ * `navUrls` 是这一页能到达的全部目的地（键 → 网址），四个路由传的是同一组。
+ *
+ * @param {{navUrls: object, extra?: Array, omit?: string[]}} links
  */
-export function rolesPage({ homeUrl, rawUrl, rawViewerUrl = '', pagesUrl = '', specUrl = '' }) {
+export function rolesPage({ navUrls, omit = [], extra = [] }) {
   const rows = operations(loadSpec());
   const eli = eli10OneLine();
   const cells = rows.map((r) => `<tr class="r ${r.method}${r.roles.includes('teacher') ? ' t' : ''}">`
@@ -245,13 +246,13 @@ export function rolesPage({ homeUrl, rawUrl, rawViewerUrl = '', pagesUrl = '', s
 
   const teacherCount = rows.filter((r) => r.roles.includes('teacher')).length;
   const eliCount = rows.filter((r) => eli.has(r.operationId)).length;
+  const nav = navBar({ current: 'roles', urls: navUrls, omit, title: '角色矩阵', extra });
   return `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>化龙 API · 角色矩阵</title>
 <style>
  :root{
-  --bg:#eef5f3; --panel:#fff; --panel2:#f5faf9; --bar:#e4f1ee;
-  --bar-ink:#12413c; --bar-link:#0f6b62;
+  --bg:#eef5f3; --panel:#fff; --panel2:#f5faf9;
   --ink:#10302d; --ink2:#35564f; --ink3:#55766f; --ink4:#73908a;
   --line:#d5e6e2; --line2:#e7f1ef; --blue:#e8f4f9; --link:#0a6472;
   --ok:#0b7a4b; --warn:#9a5a06; --bad:#ad2b2b; --violet:#6b4fa8;
@@ -266,11 +267,7 @@ export function rolesPage({ homeUrl, rawUrl, rawViewerUrl = '', pagesUrl = '', s
  a{color:var(--link);text-decoration:none} a:hover{text-decoration:underline}
  code{font:12.5px/1.4 var(--mono)}
  .top{position:sticky;top:0;z-index:9}
- .hl-bar{background:var(--bar);color:var(--bar-ink);padding:9px 16px;display:flex;
-         flex-wrap:wrap;align-items:baseline;gap:2px 14px;font-size:13.5px;
-         border-bottom:1px solid var(--line)}
- .hl-bar a{color:var(--bar-link);margin:0}
- .hl-bar a:hover{text-decoration:underline}
+ /* 顶栏的样式跟着顶栏走：唯一一份在 tools/swagger/nav.mjs，四个页面共用。这里不再写第二份。 */
  /* 汇总条是说明，不是警告：中性底 + 一条细的左侧标尺。与 /pages 同一套。 */
  .sum{padding:11px 16px;background:var(--panel2);color:var(--ink2);
       border-bottom:1px solid var(--line);border-left:3px solid var(--ink4);font-size:13px}
@@ -334,7 +331,7 @@ export function rolesPage({ homeUrl, rawUrl, rawViewerUrl = '', pagesUrl = '', s
  @media (prefers-reduced-motion: no-preference){ html{scroll-behavior:smooth} }
 </style></head><body>
 <div class="top">
-<div class="hl-bar">化龙 API · 角色矩阵<a href="${homeUrl}">回到 Swagger UI</a>${pagesUrl ? `<a href="${pagesUrl}">按屏幕看</a>` : ''}${specUrl ? `<a href="${specUrl}">按屏幕看的规格</a>` : ''}<a href="${rawUrl}">原始 YAML</a>${rawViewerUrl ? `<a href="${rawViewerUrl}">原文（HTML，中文不乱码）</a>` : ''}</div>
+${nav}
 <div class="legend"><table class="tbl"><thead><tr>${ROLE_HEAD.map((h) => `<th>${h}</th>`).join('')}</tr></thead></table></div>
 </div>
 <div class="sum">共 <b>${rows.length}</b> 个操作，其中教师端可达 <b>${teacherCount}</b> 个（浅蓝行）。

@@ -38,28 +38,38 @@ const NOTE = 'Try-it-out 需要本地测试后端（127.0.0.1:3860）与有效�
 const out = resolve(process.argv[2] || 'dist/api-doc');
 mkdirSync(out, { recursive: true });
 
+// 四个页面共用的一组链接，与本地服务（tools/swagger/server.mjs 的 NAV_URLS）同一个集合，
+// 只有两点不同：这里的网址是同一目录下的文件，且这里没有 `/review` 这一页 ——
+// 检测评审读的是本机跑出来的报告、写的是 /feedback，静态站上没有那两条。
+// 少的那一个键要写进 `omit`，否则 nav.mjs 当场抛错 —— 那是故意的，静默少一条链接
+// 正是这次要修掉的毛病。
+const NAV_URLS = {
+  home: './index.html',
+  roles: './roles.html',
+  pages: './pages.html',
+  raw: './openapi.yaml',
+  spec: './pages.yaml',
+};
+const NO_REVIEW = ['review'];
+const RAW_HTML = { href: './openapi.html', label: '原文（HTML，中文不乱码）' };
+const SPEC_HTML = { href: './pages-spec.html', label: '按屏幕的规格（HTML，中文不乱码）' };
+
 writeFileSync(join(out, 'index.html'), indexPage({
   specUrl: './openapi.local.yaml',
-  rolesUrl: './roles.html',
-  pagesUrl: './pages.html',
-  rawUrl: './openapi.yaml',
-  rawViewerUrl: './openapi.html',
+  navUrls: NAV_URLS,
+  omit: NO_REVIEW,
+  extra: [RAW_HTML],
   note: NOTE,
 }));
 writeFileSync(join(out, 'roles.html'), rolesPage({
-  homeUrl: './index.html',
-  rawUrl: './openapi.yaml',
-  rawViewerUrl: './openapi.html',
-  pagesUrl: './pages.html',
-  specUrl: './pages-spec.html',
+  navUrls: NAV_URLS,
+  omit: NO_REVIEW,
+  extra: [RAW_HTML],
 }));
 writeFileSync(join(out, 'pages.html'), pagesPage({
-  homeUrl: './index.html',
-  rolesUrl: './roles.html',
-  rawUrl: './openapi.yaml',
-  rawViewerUrl: './openapi.html',
-  specUrl: './pages.yaml',
-  specViewerUrl: './pages-spec.html',
+  navUrls: NAV_URLS,
+  omit: NO_REVIEW,
+  extra: [RAW_HTML, SPEC_HTML],
 }));
 writeFileSync(join(out, 'pages.yaml'), pagesSpecForUi());
 writeFileSync(join(out, 'openapi.yaml'), specText());
@@ -68,19 +78,21 @@ writeFileSync(join(out, 'openapi.local.yaml'), specForUi());
 // 原文的「人读」视图。**只在 Pages 构建里生成**：本地的 server 已经把 .yaml 发成
 // `charset=utf-8`，只有 Pages 会发无 charset 的 `text/yaml`，中文在那里才会乱码。
 // 理由与完整解释见 pages.mjs 的 rawViewer()。
+// 两页各自省掉自己正在显示的那一份原件（它就在眼前，顶栏不再给第二个入口）；
+// 全文由顶栏的「下载 YAML」取。
 writeFileSync(join(out, 'openapi.html'), rawViewer({
   text: specText(),
   title: 'hualong-backend/api/openapi.yaml（原始契约，未注入 ELI10）',
-  backUrl: './index.html',
-  backLabel: '回到 Swagger UI',
+  urls: NAV_URLS,
+  omit: [...NO_REVIEW, 'raw'],
   downloadUrl: './openapi.yaml',
   downloadLabel: '下载 YAML',
 }));
 writeFileSync(join(out, 'pages-spec.html'), rawViewer({
   text: pagesSpecForUi(),
   title: '按屏幕分组的派生 spec（167 个操作全保留，tag = 屏幕名）',
-  backUrl: './pages.html',
-  backLabel: '回到按屏幕看',
+  urls: NAV_URLS,
+  omit: [...NO_REVIEW, 'spec'],
   downloadUrl: './pages.yaml',
   downloadLabel: '下载 YAML',
 }));
