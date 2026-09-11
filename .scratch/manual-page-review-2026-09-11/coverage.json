@@ -1,0 +1,398 @@
+{
+    "date":  "2026-09-11",
+    "commit":  "81fc7a6",
+    "status":  "draft-awaiting-review",
+    "ticketCount":  21,
+    "pageCount":  55,
+    "pages":  [
+                  {
+                      "page":  "home",
+                      "title":  "首页",
+                      "route":  "pages/home/index",
+                      "directService":  true,
+                      "ticket":  15
+                  },
+                  {
+                      "page":  "upload-resource",
+                      "title":  "上传资料",
+                      "route":  "pages/upload-resource/index",
+                      "directService":  true,
+                      "ticket":  18
+                  },
+                  {
+                      "page":  "teacher-tasks",
+                      "title":  "待办任务",
+                      "route":  "pages/teacher-tasks/index",
+                      "directService":  true,
+                      "ticket":  15
+                  },
+                  {
+                      "page":  "teacher-task-detail",
+                      "title":  "任务详情",
+                      "route":  "pages/teacher-task-detail/index",
+                      "directService":  true,
+                      "ticket":  15
+                  },
+                  {
+                      "page":  "assessment-tool",
+                      "title":  "质量评估",
+                      "route":  "pages/assessment-tool/index",
+                      "directService":  true,
+                      "ticket":  16
+                  },
+                  {
+                      "page":  "school-affairs",
+                      "title":  "党建管理部",
+                      "route":  "pages/school-affairs/index",
+                      "directService":  true,
+                      "ticket":  19
+                  },
+                  {
+                      "page":  "party-study-list",
+                      "title":  "党建学习",
+                      "route":  "pages/party-study-list/index",
+                      "directService":  true,
+                      "ticket":  19
+                  },
+                  {
+                      "page":  "party-study-detail",
+                      "title":  "文件预览",
+                      "route":  "pages/party-study-detail/index",
+                      "directService":  true,
+                      "ticket":  19
+                  },
+                  {
+                      "page":  "party-activity-list",
+                      "title":  "党建活动",
+                      "route":  "pages/party-activity-list/index",
+                      "directService":  true,
+                      "ticket":  19
+                  },
+                  {
+                      "page":  "party-activity-detail",
+                      "title":  "活动介绍",
+                      "route":  "pages/party-activity-detail/index",
+                      "directService":  true,
+                      "ticket":  19
+                  },
+                  {
+                      "page":  "party-brand-list",
+                      "title":  "品牌建设",
+                      "route":  "pages/party-brand-list/index",
+                      "directService":  true,
+                      "ticket":  19
+                  },
+                  {
+                      "page":  "party-brand-detail",
+                      "title":  "图文介绍",
+                      "route":  "pages/party-brand-detail/index",
+                      "directService":  true,
+                      "ticket":  19
+                  },
+                  {
+                      "page":  "comprehensive-coordination",
+                      "title":  "综合协调部",
+                      "route":  "pages/comprehensive-coordination/index",
+                      "directService":  false,
+                      "ticket":  20
+                  },
+                  {
+                      "page":  "coordination-file-list",
+                      "title":  "文件列表",
+                      "route":  "pages/coordination-file-list/index",
+                      "directService":  false,
+                      "ticket":  20
+                  },
+                  {
+                      "page":  "training-center",
+                      "title":  "教研培训部",
+                      "route":  "pages/training-center/index",
+                      "directService":  false,
+                      "ticket":  17
+                  },
+                  {
+                      "page":  "course-building",
+                      "title":  "课程建设",
+                      "route":  "pages/course-building/index",
+                      "directService":  false,
+                      "ticket":  17
+                  },
+                  {
+                      "page":  "resource-center",
+                      "title":  "课程资源",
+                      "route":  "pages/resource-center/index",
+                      "directService":  false,
+                      "ticket":  17
+                  },
+                  {
+                      "page":  "training-list",
+                      "title":  "教研培训",
+                      "route":  "pages/training-list/index",
+                      "directService":  true,
+                      "ticket":  21
+                  },
+                  {
+                      "page":  "training-detail",
+                      "title":  "研修详情",
+                      "route":  "pages/training-detail/index",
+                      "directService":  true,
+                      "ticket":  21
+                  },
+                  {
+                      "page":  "teacher-profile",
+                      "title":  "个人档案",
+                      "route":  "pages/teacher-profile/index",
+                      "directService":  true,
+                      "ticket":  22
+                  },
+                  {
+                      "page":  "my-training",
+                      "title":  "我的研修",
+                      "route":  "pages/my-training/index",
+                      "directService":  true,
+                      "ticket":  21
+                  },
+                  {
+                      "page":  "resource-library",
+                      "title":  "资源库",
+                      "route":  "pages/resource-library/index",
+                      "directService":  true,
+                      "ticket":  17
+                  },
+                  {
+                      "page":  "resource-detail",
+                      "title":  "资源详情",
+                      "route":  "pages/resource-detail/index",
+                      "directService":  true,
+                      "ticket":  17
+                  },
+                  {
+                      "page":  "case-library",
+                      "title":  "案例库",
+                      "route":  "pages/case-library/index",
+                      "directService":  true,
+                      "ticket":  17
+                  },
+                  {
+                      "page":  "case-detail",
+                      "title":  "案例详情",
+                      "route":  "pages/case-detail/index",
+                      "directService":  true,
+                      "ticket":  17
+                  },
+                  {
+                      "page":  "home-school",
+                      "title":  "家园社共育",
+                      "route":  "pages/home-school/index",
+                      "directService":  true,
+                      "ticket":  1
+                  },
+                  {
+                      "page":  "home-school-moments",
+                      "title":  "在园时光",
+                      "route":  "pages/home-school-moments/index",
+                      "directService":  true,
+                      "ticket":  2
+                  },
+                  {
+                      "page":  "home-school-moment-feed",
+                      "title":  "全部活动",
+                      "route":  "pages/home-school-moment-feed/index",
+                      "directService":  true,
+                      "ticket":  2
+                  },
+                  {
+                      "page":  "home-school-moment-publish",
+                      "title":  "发布活动",
+                      "route":  "pages/home-school-moment-publish/index",
+                      "directService":  true,
+                      "ticket":  2
+                  },
+                  {
+                      "page":  "parent-tasks",
+                      "title":  "亲子任务",
+                      "route":  "pages/parent-tasks/index",
+                      "directService":  true,
+                      "ticket":  3
+                  },
+                  {
+                      "page":  "parent-task-detail",
+                      "title":  "任务详情",
+                      "route":  "pages/parent-task-detail/index",
+                      "directService":  true,
+                      "ticket":  3
+                  },
+                  {
+                      "page":  "parent-task-publish",
+                      "title":  "发布新任务",
+                      "route":  "pages/parent-task-publish/index",
+                      "directService":  true,
+                      "ticket":  3
+                  },
+                  {
+                      "page":  "growth-record",
+                      "title":  "儿童成长档案",
+                      "route":  "pages/growth-record/index",
+                      "directService":  true,
+                      "ticket":  1
+                  },
+                  {
+                      "page":  "teacher-evaluation",
+                      "title":  "教师评价",
+                      "route":  "pages/teacher-evaluation/index",
+                      "directService":  false,
+                      "ticket":  1
+                  },
+                  {
+                      "page":  "teacher-monthly-evaluation",
+                      "title":  "教师月度评价",
+                      "route":  "pages/teacher-monthly-evaluation/index",
+                      "directService":  true,
+                      "ticket":  5
+                  },
+                  {
+                      "page":  "teacher-monthly-form",
+                      "title":  "填写月度评价",
+                      "route":  "pages/teacher-monthly-form/index",
+                      "directService":  true,
+                      "ticket":  5
+                  },
+                  {
+                      "page":  "teacher-term-evaluation",
+                      "title":  "教师学期评价",
+                      "route":  "pages/teacher-term-evaluation/index",
+                      "directService":  true,
+                      "ticket":  6
+                  },
+                  {
+                      "page":  "teacher-term-form",
+                      "title":  "填写学期评价",
+                      "route":  "pages/teacher-term-form/index",
+                      "directService":  true,
+                      "ticket":  6
+                  },
+                  {
+                      "page":  "teacher-message",
+                      "title":  "教师寄语",
+                      "route":  "pages/teacher-message/index",
+                      "directService":  true,
+                      "ticket":  7
+                  },
+                  {
+                      "page":  "teacher-message-detail",
+                      "title":  "寄语详情",
+                      "route":  "pages/teacher-message-detail/index",
+                      "directService":  true,
+                      "ticket":  7
+                  },
+                  {
+                      "page":  "parent-evaluation-publish",
+                      "title":  "发布家长测评",
+                      "route":  "pages/parent-evaluation-publish/index",
+                      "directService":  true,
+                      "ticket":  4
+                  },
+                  {
+                      "page":  "parent-evaluation-detail",
+                      "title":  "测评进度",
+                      "route":  "pages/parent-evaluation-detail/index",
+                      "directService":  true,
+                      "ticket":  4
+                  },
+                  {
+                      "page":  "community-coeducation",
+                      "title":  "社区共育",
+                      "route":  "pages/community-coeducation/index",
+                      "directService":  true,
+                      "ticket":  9
+                  },
+                  {
+                      "page":  "growth-comprehensive-assessment",
+                      "title":  "综合评估",
+                      "route":  "pages/growth-comprehensive-assessment/index",
+                      "directService":  true,
+                      "ticket":  8
+                  },
+                  {
+                      "page":  "comprehensive-assessment-form",
+                      "title":  "开始综合评估",
+                      "route":  "pages/comprehensive-assessment-form/index",
+                      "directService":  true,
+                      "ticket":  8
+                  },
+                  {
+                      "page":  "comprehensive-assessment-report",
+                      "title":  "综合评估结果",
+                      "route":  "pages/comprehensive-assessment-report/index",
+                      "directService":  true,
+                      "ticket":  8
+                  },
+                  {
+                      "page":  "comprehensive-assessment-class-report",
+                      "title":  "班级评估报告",
+                      "route":  "pages/comprehensive-assessment-class-report/index",
+                      "directService":  true,
+                      "ticket":  8
+                  },
+                  {
+                      "page":  "growth-book",
+                      "title":  "成长册",
+                      "route":  "pages/growth-book/index",
+                      "directService":  true,
+                      "ticket":  13
+                  },
+                  {
+                      "page":  "growth-book-time-manage",
+                      "title":  "在园时光管理",
+                      "route":  "pages/growth-book-time-manage/index",
+                      "directService":  true,
+                      "ticket":  10
+                  },
+                  {
+                      "page":  "growth-book-task-manage",
+                      "title":  "亲子时光管理",
+                      "route":  "pages/growth-book-task-manage/index",
+                      "directService":  false,
+                      "ticket":  11
+                  },
+                  {
+                      "page":  "growth-book-section-materials",
+                      "title":  "栏目投稿",
+                      "route":  "pages/growth-book-section-materials/index",
+                      "directService":  true,
+                      "ticket":  12
+                  },
+                  {
+                      "page":  "growth-book-edit",
+                      "title":  "2026 春季学期编册",
+                      "route":  "pages/growth-book-edit/index",
+                      "directService":  true,
+                      "ticket":  13
+                  },
+                  {
+                      "page":  "growth-book-sample",
+                      "title":  "成长册样本",
+                      "route":  "pages/growth-book-sample/index",
+                      "directService":  false,
+                      "ticket":  13
+                  },
+                  {
+                      "page":  "growth-book-view",
+                      "title":  "成长册预览",
+                      "route":  "pages/growth-book-view/index",
+                      "directService":  true,
+                      "ticket":  13
+                  },
+                  {
+                      "page":  "growth-book-section-edit",
+                      "title":  "栏目版面",
+                      "route":  "pages/growth-book-section-edit/index",
+                      "directService":  true,
+                      "ticket":  12
+                  }
+              ],
+    "scope":  "teacher-only",
+    "externalBacklogCount":  1,
+    "activeTicket":  1,
+    "implementation":  "ticket 01 overview implemented in working tree; manual recheck pending"
+}
