@@ -440,6 +440,52 @@ hualong-backend/db/spec/operation-eli10.tsv      一个操作一行，三个固�
 
 ---
 
+### 7.8 起本地库：两份数据集，名字像、差一个数量级
+
+`db/02_seed.sql` 与 `db/testdata/testdata.sql` **不是同一份东西**。
+
+| 文件 | 是什么 | 规模 |
+|---|---|---|
+| `db/02_seed.sql` | **演示**数据集 | 3 教师 / 6 幼儿 / 7 家长 / 1 管理 |
+| `db/testdata/testdata.sql` | **测试服务端要的那一份** | 12 在职 + 1 离职 / 60 幼儿 / 79 家长 / 3 管理 / 6 班 |
+
+灌错那份**不会报错**。它只会让名册看起来变小，于是 `db/testdata/accounts.env`（家长 1 = 杨秀兰 之类）
+和 CLAUDE.md §5 的「13 罗慧兰已离职」读起来**全像错的** —— 2026-09-12 就这么误报过一次，
+**错的是库，不是那些文件**。
+
+正确的顺序（`db/testdata/README.md` 也写着）：
+
+```bash
+docker run -d --name hl-pg -e POSTGRES_HOST_AUTH_METHOD=trust -p 5432:5432 postgres:16
+docker exec hl-pg psql -U postgres -c "CREATE DATABASE hualong_test;"
+docker exec -i hl-pg psql -U postgres -d hualong_test -q < db/01_schema.sql
+docker exec -i hl-pg psql -U postgres -d hualong_test -q < db/testdata/testdata.sql
+docker exec -i hl-pg psql -U postgres -d hualong_test -q < db/testdata/verify.sql   # 20 段，每段应 (0 rows)
+cd db/testdata && node server/server.mjs                                           # 3860
+```
+
+**判据**：服务端启动横幅会印幼儿数。**印「6 名幼儿」就是灌错了**，应该是 60。
+
+### 7.9 Google Drive 上装不了 npm 包
+
+`npm install` 落在 Drive 路径上会报 `TAR_ENTRY_ERROR UNKNOWN: unknown error, write`，
+**写出 0 字节的 `package.json`，然后照报「added N packages」**。于是 `node server/server.mjs`
+起不来，报 `ERR_INVALID_PACKAGE_CONFIG` 或 `ERR_MODULE_NOT_FOUND`，看起来像缺包，其实是文件写坏了。
+
+解法：**在 Drive 之外装好，再把 `node_modules` 复制回来**。
+
+```bash
+DEP="$LOCALAPPDATA/Temp/hl-testdata-deps"; mkdir -p "$DEP" && cd "$DEP"
+cp "<仓库>/db/testdata/package.json" pkg-source.json
+node -e "const f=require('fs'),s=JSON.parse(f.readFileSync('pkg-source.json','utf8'));f.writeFileSync('package.json',JSON.stringify({name:'d',private:true,dependencies:s.dependencies},null,2))"
+npm install
+cp -r "$DEP/node_modules/." "<仓库>/db/testdata/node_modules/"
+```
+
+`node_modules` 不进 git，所以这一步是本机的、每台机器各做一次。
+
+---
+
 ## 8. 开工前必读
 
 | 文件 | 为什么 |
