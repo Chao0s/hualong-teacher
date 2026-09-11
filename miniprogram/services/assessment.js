@@ -242,6 +242,27 @@ function decorateDomains(domains) {
   });
 }
 
+/** 教师评价总览：年月与四个二元状态均由后端决定。 */
+async function teacherEvaluationBoard() {
+  const data=await api.get('/teacher-evaluations/progress');
+  if(!data || !Array.isArray(data.items) || !/^\d{4}-\d{2}$/.test(data.eval_month)) {
+    throw new Error('教师评价进度数据不完整，请稍后重试');
+  }
+  const fields=['month_eval_status','term_eval_status','comprehensive_status','message_status'];
+  return {
+    termId:data.term_id,
+    month:data.eval_month,
+    rows:data.items.map(row=>({
+      childId:row.child_id,
+      name:row.child_name,
+      states:fields.map(key=>{
+        if(row[key]!=='h1'&&row[key]!=='h2') throw new Error('暂无法识别评价状态，请稍后重试');
+        return row[key]==='h1'?'done':'miss';
+      }),
+    })),
+  };
+}
+
 /* ══ 成长档案 ══════════════════════════════════════════════════════════════
  *
  *   GET /growth-records                     本班齐备度（只读）
@@ -1017,6 +1038,7 @@ function assessmentFailureText(err) {
 }
 
 module.exports = {
+  teacherEvaluationBoard,
   // 枚举与上限
   COMPLETION_STATUS,
   ASSESSMENT_STATUS,

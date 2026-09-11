@@ -16,7 +16,11 @@
   </view>
 
   <view class="sec">本班幼儿进度</view>
-  <view class="table-wrap">
+  <text class="hint" wx:if="{{loading}}">正在加载本班幼儿进度…</text>
+  <view class="hint" wx:elif="{{error}}" bindtap="onRetry">{{error}}　点此重试</view>
+  <text class="hint" wx:elif="{{!termId}}">当前不在学期内，暂无本学期评价进度。</text>
+  <text class="hint" wx:elif="{{!rows.length}}">本班暂无在园幼儿。</text>
+  <view class="table-wrap" wx:else>
     <view class="prog-row prog-row--head">
       <text class="prog-cell prog-cell--name">幼儿</text>
       <text class="prog-cell">本月评价</text>
@@ -24,14 +28,14 @@
       <text class="prog-cell">综合评估</text>
       <text class="prog-cell">教师寄语</text>
     </view>
-    <view class="prog-row" wx:for="{{rows}}" wx:key="name" wx:for-item="row">
+    <view class="prog-row" wx:for="{{rows}}" wx:key="childId" wx:for-item="row">
       <text class="prog-cell prog-cell--name">{{row.name}}</text>
       <view class="prog-cell" wx:for="{{row.states}}" wx:key="index" wx:for-item="state">
-        <view class="dot-cell dot-cell--{{state}}"></view>
+        <view class="dot-cell dot-cell--{{state}}" aria-label="{{state === 'done' ? '已完成' : '未完成'}}"></view>
       </view>
     </view>
     <view class="dot-legend">
-      <view class="dot-legend__item"><view class="dot-cell dot-cell--done"></view>完成</view>
+      <view class="dot-legend__item"><view class="dot-cell dot-cell--done"></view>已完成</view>
       <view class="dot-legend__item"><view class="dot-cell dot-cell--miss"></view>未完成</view>
     </view>
   </view>

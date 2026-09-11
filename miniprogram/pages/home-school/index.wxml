@@ -52,7 +52,6 @@
     <view class="progress-legend__item"><view class="progress-dot progress-dot--done"></view><text>已完成</text></view>
     <view class="progress-legend__item"><view class="progress-dot progress-dot--miss"></view><text>未完成</text></view>
   </view>
-  <text class="hint">目前班级幼儿的进度：在园时光为本周至少2次，亲子活动为最新一期任务。待提醒按至少一项未完成的幼儿计数。</text>
   </block>
 </view>
 

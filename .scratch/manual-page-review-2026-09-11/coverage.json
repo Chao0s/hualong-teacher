@@ -240,7 +240,7 @@
                       "page":  "teacher-evaluation",
                       "title":  "教师评价",
                       "route":  "pages/teacher-evaluation/index",
-                      "directService":  false,
+                      "directService":  true,
                       "ticket":  1
                   },
                   {
@@ -394,5 +394,5 @@
     "scope":  "teacher-only",
     "externalBacklogCount":  1,
     "activeTicket":  1,
-    "implementation":  "ticket 01 overview implemented in working tree; manual recheck pending"
+    "implementation":  "ticket 01 overview, growth-record and teacher-evaluation implemented; manual recheck and growth-record aggregate refresh verification pending"
 }

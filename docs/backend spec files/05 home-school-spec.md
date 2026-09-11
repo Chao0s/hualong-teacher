@@ -2,7 +2,7 @@ HOME_SCHOOL_BACKEND_OBJECT_SPEC
 
 scope (范围) = screens/home-school.html
 source_page (参考页面) = home-school.html
-source_page_correction (原型纠正规则) = 2026-09-11 教师端总览仅幼儿名称、在园时光、亲子活动三列；已完成空心圆，未完成实心圆。成长档案与成长册不再参与本页状态和汇总；旧HTML固定示例不作为实现依据
+source_page_correction (原型纠正规则) = 2026-09-11 教师端总览仅幼儿名称、在园时光、亲子活动三列；已完成实心圆，未完成空心圆。成长档案与成长册不再参与本页状态和汇总；旧HTML固定示例不作为实现依据
 revision_source (本次改版依据) = DECISIONS.md E1-E7 及其下 W1-W21（来源为 hualong-teacher decision.md 10 条 + commit e524e75 的前端改版回冲，2026-08-01）
 authority_order (权威顺序) = DECISIONS.md > db/01_schema.sql > db/DATABASE_SPEC.md > 本 specification；本文与 DECISIONS.md 冲突处一律以 DECISIONS.md 为准
 ddl_lag_notice (DDL 滞后说明) = 已定新表与新增列均尚未落到 db/01_schema.sql；本 specification 先行记录，已登记项由 db/tools/extract-ui-binding.mjs 标为 PENDING DDL，不算无法解释的缺列
@@ -67,7 +67,7 @@ production_initial_db_growth_material (成长资料初始状态) = EMPTY
 production_initial_db_scale_item (量表题库初始状态) = 非空；按量表版本导入(scale_code=guide, scale_version=1.0, 124 题项)，属参考数据不属业务种子数据，来源 hualong-teacher/data/guide-scale.json
 page_layout_library (页版式库) = 不入库；预设 6 个栏目的页面版式为仓库内的版本化 JSON，地位比照 db/rubric/，随代码部署（W13）
 base_identity_data (基础身份数据) = db_school|db_teacher|db_class|db_teacher_class|db_child 由部署或园所管理员导入，不属于 Mock 业务内容
-initial_progress_rule (初始进度规则) = 有真实幼儿名册但无业务记录时，入口页两项状态统一为h2(未完成，实心圆)，平均完成为0，待提醒为在园幼儿人数；空班三个汇总均为0
+initial_progress_rule (初始进度规则) = 有真实幼儿名册但无业务记录时，入口页两项状态统一为h2(未完成，空心圆)，平均完成为0，待提醒为在园幼儿人数；空班三个汇总均为0
 no_child_rule (无幼儿名册规则) = return [] and child_count=0
 hardcoded_child_or_metric (固定幼儿或统计值) = FORBIDDEN
 environment_isolation (环境隔离) = demo|test 数据不得复制到 production
@@ -147,7 +147,7 @@ moment_weekly_complete_count (本周在园时光完成次数), 1:1, integer(0:k)
 moment_detail_week_status (在园时光详细页周状态), 1:1, d1=complete(已完成)|d2=missing_second(缺第2次)|d3=incomplete(未完成), ui=moment.detail.weekly_status
 moment_status (入口页在园时光状态), 1:1, h1=complete(已完成)|h2=incomplete(未完成), ui=home_school.progress.moment
 latest_parent_task_id (最新一期亲子任务ID), 0:1, integer, ui=home_school.progress.hidden
-parent_task_status (入口页亲子活动状态), 1:1, h1=complete(已完成，空心圆)|h2=incomplete(未完成，实心圆), ui=home_school.progress.parent_task
+parent_task_status (入口页亲子活动状态), 1:1, h1=complete(已完成，实心圆)|h2=incomplete(未完成，空心圆), ui=home_school.progress.parent_task
 required_count (应完成项目数), 1:1, integer, ui=home_school.progress.hidden
 completed_count (已完成项目数), 1:1, integer, ui=home_school.progress.hidden
 row_completion_rate (幼儿完成率), 1:1, percent, ui=home_school.progress.hidden
@@ -175,7 +175,7 @@ reminder_required = 1 IF ANY(moment_status,parent_task_status)=h2 ELSE 0；只�
 endpoint (教师只读接口) = GET /home-school/progress；返回week_key、latest_parent_task_id、child_count、average_completion、reminder_count、children；身份范围从会话派生，整班同一查询快照，不分页
 
 summary_rule (入口页简化规则):
-入口页两项只允许 h1=已完成(空心圆) 或 h2=未完成(实心圆)，表头为幼儿、在园时光、亲子活动；不显示“缺第2次”“进行中”“可生成”“待补图”等详细状态
+入口页两项只允许 h1=已完成(实心圆) 或 h2=未完成(空心圆)，表头为幼儿、在园时光、亲子活动；不显示“缺第2次”“进行中”“可生成”“待补图”等详细状态
 任何一项所需内容未全部完成时，该项入口页状态必须为 h2
 在园时光只完成第1次时，详细页显示 d2=缺第2次，入口页仍显示 h2=未完成
 
@@ -208,6 +208,9 @@ object_type (对象类型) = aggregate
 
 method (方法):
 接口按幼儿返回 4 项（本月评价 / 学期评估 / 综合评估 / 教师寄语）的完成状态
+endpoint (2026-09-12接线) = GET /teacher-evaluations/progress；返回eval_month、term_id、items，当前班在园名册整取。无进行中学期term_id=null且items=[]，页面显示不在学期内
+completion_sources (完成来源) = 本月评价只计当前教师本月e3；学期评估只计当前教师本学期c1；综合评估按本学期required_count>0且completed_count>=required_count；寄语按幼儿+学期存在记录，不限作者。均为读取时派生，不读db_growth_record测试汇总，不保存本页状态
+display_rule (显示规则) = 四项同一种绿色，h1已完成实心圆、h2未完成空心圆，图例一致；无记录与草稿折未完成。失败不能保留旧值或显示为全未完成，支持重试及返回后刷新
 current_month = 由后端依当前日期推定；前端不得写死月份
 current_term_id = SELECT term_id FROM db_school_term WHERE school_id=current_school_id AND CURRENT_DATE BETWEEN start_date AND end_date；无命中时的默认行为见 USER-JOURNEY Q55-d1
 month_options = 当前 db_school_term.start_date/end_date 覆盖的月份；前端不得自行假设 2—7 月或 9—1 月
@@ -516,6 +519,8 @@ teacher-message.html 下半部的完成情况表为 幼儿 × 教师寄语 二�
 
 
 成长档案 (Growth Record / db_growth_record)
+
+display_rule (2026-09-12人工复查) = 教师端板块标题为“评价进度”，去掉“孩子”；家长月度、家长学期、教师月度、教师学期、综合五列均用同一种绿色，实心圆表示完成，空心圆表示未完成；表格与图例一致。沿用GET /growth-records读取数据库汇总记录，加载失败独立显示并可重试，不以旧数据或全未完成冒充读取结果
 
 growth_record_id (成长档案ID), 1:1, integer, ui=growth_record.hidden
 school_id (园所ID), 1:1, integer, ui=growth_record.hidden

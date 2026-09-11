@@ -2,7 +2,7 @@
 
 快照：2026-09-11，教师端提交 `81fc7a6`。注册页55个，全部分配至21张教师端审核草案；原14已移至 external，仅为外部联验参考，不计入用户审核范围。
 
-初次快照直接引用service为46页；01总览接入后，当前工作区为47页直接引用、8页未直接引用。**直接引用service不代表整页数据已真实化，更不代表接口或渲染通过。** 比如成长册页面可同时包含真实抬头与样张正文；固定入口配置也不一定需要接口。
+初次快照直接引用service为46页；01总览接入后，教师评价接入后当前工作区为48页直接引用、7页未直接引用。**直接引用service不代表整页数据已真实化，更不代表接口或渲染通过。** 比如成长册页面可同时包含真实抬头与样张正文；固定入口配置也不一定需要接口。
 
 标题来自当前页面配置；动态页面标题可能被对象名覆盖。此表保留技术定位，具体人手步骤在票内，不要求审核者阅读源码。
 
@@ -41,7 +41,7 @@
 | `parent-task-detail` | 任务详情 | 是 | [03 亲子任务草稿、发布与家长完成情况](drafts/03-parent-tasks.md) |
 | `parent-task-publish` | 发布新任务 | 是 | [03 亲子任务草稿、发布与家长完成情况](drafts/03-parent-tasks.md) |
 | `growth-record` | 儿童成长档案 | 是 | [01 家园共育入口与三处进度表核对](drafts/01-family-overview.md) |
-| `teacher-evaluation` | 教师评价 | 否 | [01 家园共育入口与三处进度表核对](drafts/01-family-overview.md) |
+| `teacher-evaluation` | 教师评价 | 是 | [01 家园共育入口与三处进度表核对](drafts/01-family-overview.md) |
 | `teacher-monthly-evaluation` | 教师月度评价 | 是 | [05 月度评价选片、草稿与发布给家长](drafts/05-monthly-evaluation.md) |
 | `teacher-monthly-form` | 填写月度评价 | 是 | [05 月度评价选片、草稿与发布给家长](drafts/05-monthly-evaluation.md) |
 | `teacher-term-evaluation` | 教师学期评价 | 是 | [06 学期评价保存及发送入口真实性](drafts/06-term-evaluation.md) |

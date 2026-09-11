@@ -44,16 +44,16 @@
 }
 
 .progress-dot--done {
-  background: transparent;
+  background: var(--accent-dark);
 }
 
 .progress-dot--miss {
-  background: var(--accent-dark);
+  background: transparent;
 }
 
 .progress-legend {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 36rpx;
   margin: 24rpx 0;
 }

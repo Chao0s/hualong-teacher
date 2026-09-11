@@ -33,7 +33,7 @@
 
 /* ── 两行表头的进度表 ──────────────────────────────────────────────────── */
 
-/* 七列：幼儿 + 家长月度/学期 + 教师月度/学期 + 综合 + 成长册。
+/* 六列：幼儿 + 家长月度/学期 + 教师月度/学期 + 综合。
  * 表头两行，靠 grid-row / grid-column 跨格还原原型的 rowspan / colspan。 */
 .rec-head {
   display: grid;
@@ -47,7 +47,7 @@
   line-height: 1.3;
 }
 
-/* 「幼儿」「综合」「成长册」占满两行 */
+/* 「幼儿」「综合」占满两行 */
 .rec-head__cell--tall {
   grid-row: span 2;
   align-self: center;
@@ -102,9 +102,9 @@
   word-break: keep-all;
 }
 
-/* 原型的圆点是 #16a34a / #dc2626，和共用样式里的 --green/--danger 不是同一组，照抄 */
-.dot-cell--done { background: #16a34a; }
-.dot-cell--miss { border-color: #dc2626; }
+/* 同一种绿色；完成实心、未完成空心，表格与图例共用。 */
+.dot-cell--done { background: var(--green); }
+.dot-cell--miss { border-color: var(--green); background: transparent; }
 
 .dot-legend {
   margin-top: 16rpx;

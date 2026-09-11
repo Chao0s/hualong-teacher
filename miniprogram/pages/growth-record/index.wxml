@@ -19,7 +19,11 @@
     >{{item.label}}</view>
   </view>
 
-  <view class="sec">孩子评价进度</view>
+  <view class="sec">评价进度</view>
+  <text class="hint" wx:if="{{loading}}">正在加载评价进度…</text>
+  <view class="hint" wx:elif="{{error}}" bindtap="onRetry">{{error}}　点此重试</view>
+  <text class="hint" wx:elif="{{!rows.length}}">本班暂无评价进度记录。</text>
+  <block wx:else>
   <view class="table-wrap">
     <view class="rec-head">
       <text class="rec-head__cell rec-head__cell--tall rec-head__cell--name">幼儿</text>
@@ -35,7 +39,7 @@
     <view class="rec-row" wx:for="{{rows}}" wx:key="childId" wx:for-item="row">
       <text class="rec-cell rec-cell--name">{{row.name}}</text>
       <view class="rec-cell" wx:for="{{row.states}}" wx:key="index" wx:for-item="state">
-        <view class="dot-cell dot-cell--{{state}}"></view>
+        <view class="dot-cell dot-cell--{{state}}" aria-label="{{state === 'done' ? '已完成' : '未完成'}}"></view>
       </view>
     </view>
   </view>
@@ -44,5 +48,6 @@
     <view class="dot-legend__item"><view class="dot-cell dot-cell--done"></view>已完成</view>
     <view class="dot-legend__item"><view class="dot-cell dot-cell--miss"></view>未完成</view>
   </view>
+  </block>
 
 </view>
