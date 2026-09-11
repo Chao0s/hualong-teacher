@@ -43,7 +43,13 @@ import { dirname, join } from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const PROJECT = join(HERE, '..', 'miniprogram');
+// **工程根是仓库根，不是 `miniprogram/`。** `project.config.json` 在仓库根，它里面写
+// `miniprogramRoot: "miniprogram/"`。传 `miniprogram/` 给 IDE 会开出一个没有设定的目录：
+// 没有 AppID（CLI 印 `Using AppID: undefined`）、页面不算载入，于是截图全挂 —— 
+// 而症状跟「automator 协议不符」一模一样，很容易误诊。2026-09-12 实测对比过两种路径。
+const PROJECT = join(HERE, '..');
+/** 程序码所在目录。`app.json` 在这里，而它在 `PROJECT` 下一层。 */
+const MP = join(PROJECT, 'miniprogram');
 const OUT = join(HERE, '..', '.scratch', 'render');
 const AUTO_PORT = Number(process.env.WX_AUTO_PORT ?? 9420);
 
@@ -60,7 +66,7 @@ const findCli = () => CLI_CANDIDATES.find((p) => existsSync(p));
 
 // app.json 是页面清单的权威（CLAUDE.md §3）。不自己拼目录名。
 const allPages = () => {
-  const app = JSON.parse(readFileSync(join(PROJECT, 'app.json'), 'utf8'));
+  const app = JSON.parse(readFileSync(join(MP, 'app.json'), 'utf8'));
   return app.pages.map((p) => '/' + p);
 };
 
@@ -88,14 +94,24 @@ const pick = () => {
 };
 const target = pick();
 
-let automator;
+// 用 `@weapp-vite/miniprogram-automator`，**不是**官方的 `miniprogram-automator`。
+//
+// 官方那一版最后一次发版是 2023-11-07（0.12.1），之后没再动。它与本机这版
+// DevTools（2.02.2608070）协议不符：`connect()` 连得上，但任何要读页面的调用都抛
+//   Cannot destructure property 'rawPath' of 't.getPageMetaByWebviewId(...)' as it is null
+// 于是一屏都截不出来。2026-09-12 实测：换成这个替代实现后，同一组调用立刻正常
+// （currentPage 回 pages/login/index，screenshot 回一张 28 KB 的合法 PNG）。
+//
+// 它的 API 是类别，不是顶层函式：new Automator().connect({ wsEndpoint })。
+let Automator;
 try {
-  automator = (await import('miniprogram-automator')).default;
+  ({ Automator } = await import('@weapp-vite/miniprogram-automator'));
 } catch {
-  console.error('缺少 miniprogram-automator。它声明在 package.json 的 devDependencies 里但没装：\n  npm i');
-  console.error('（在 Google Drive 路径上 npm 写文件会坏，见 CLAUDE.md §7.9。）');
+  console.error('缺少 @weapp-vite/miniprogram-automator。装法见 CLAUDE.md §7.9');
+  console.error('（Google Drive 路径上 npm 写文件会坏：装在 %LOCALAPPDATA%/Temp 再复制回来）。');
   process.exit(2);
 }
+const automator = new Automator();
 
 const cliPath = findCli();
 if (!cliPath) {
