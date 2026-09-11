@@ -1,5 +1,5 @@
 {
-  "note": "Paths a client calls that the contract does not declare, and that are already known and deliberate. mock/server.mjs hand-writes each one and explains why in prose; this file is the machine-readable half, so a NEW drift stands out instead of drowning in old ones. Removing an entry when the contract gains the path is how this file stays honest — and the contract layer now ENFORCES that: an entry that no longer describes a gap is a stale expectation, which fails the run. Three entries were removed on 2026-09-12 for exactly that reason: /tasks and /home-school/parent-evaluations/{} had gained contract operations, and /growth-book/books was fixed on the client side (services/growth-book.js:466 now calls the /teacher-prefixed path the contract always declared). A register that keeps a closed gap listed is a check that has silently stopped checking.",
+  "note": "Paths a client calls that the contract does not declare, and that are already known and deliberate. mock/server.mjs hand-writes each one and explains why in prose; this file is the machine-readable half, so a NEW drift stands out instead of drowning in old ones. Removing an entry when the contract gains the path is how this file stays honest — and the contract layer now ENFORCES that: an entry that no longer describes a gap is a stale expectation, which fails the run. Three entries were removed on 2026-09-12 for exactly that reason: /tasks and /home-school/parent-evaluations/{} had gained contract operations, and /growth-book/books was fixed on the client side (services/growth-book.js:466 now calls the /teacher-prefixed path the contract always declared). A fourth, /training/home, was removed the same day when the contract gained GET /training/home (v0.31, G111) — the client had been calling it all along. A register that keeps a closed gap listed is a check that has silently stopped checking.",
   "register": {
     "/notices": "db_notification exists; no operation registered. mock/server.mjs:1870",
     "/notices/{}": "same gap as /notices",
@@ -10,7 +10,6 @@
     "/home-school/teacher-messages": "no operation registered",
     "/home-school/teacher-messages/{}": "no operation registered",
     "/home-school/teacher-eval": "no operation registered",
-    "/training/home": "module landing read; no operation registered",
     "/training/course-intro": "no table at all — mock/server.mjs:750 records that neither openapi.yaml nor 01_schema.sql has course/curriculum anything"
   }
 }
