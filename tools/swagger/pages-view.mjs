@@ -317,7 +317,7 @@ export function pagesPage({ homeUrl, rolesUrl, rawUrl, rawViewerUrl = '', specUr
   <a href="${rawUrl}">原始 YAML</a>
   ${rawViewerUrl ? `<a href="${rawViewerUrl}">原文（HTML，中文不乱码）</a>` : ''}
   ${specViewerUrl ? `<a href="${specViewerUrl}">按屏幕的规格（HTML，中文不乱码）</a>` : ''}
-  <span class="now">一屏一卡 · 分段计数 · 0 也写出来 · 「说人话」未经人工逐条核对</span>
+  <span class="now">一屏一卡 · 分段计数 · 0 也写出来 · 「说人话」机器交叉核过、无人逐条读过</span>
 </div>
 <div class="legend"><table class="tbl"><thead><tr>${HEAD.map((h) => `<th>${h}</th>`).join('')}</tr></thead></table></div>
 </div>

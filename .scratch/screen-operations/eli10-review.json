@@ -1,0 +1,93 @@
+{
+  "reviewed": 167,
+  "issues": [
+    {
+      "key": "getSession",
+      "verdict": "imprecise",
+      "claim": "服务端看这次带的票，把角色、园所、班级和当前学期一起回来。客户端只拿来显示，改不了它。",
+      "problem": "「只拿来显示」说得太窄。事实：scope 确实是 derived、回填无效，但 current_term 可为 null（假期），客户端要拿它「提前禁用写入」——退回来的这一坨不是只用于显示。同一句还把「这学期叫什么」说成确定有的东西，事实说它可以是空的。",
+      "fact": "`scope` 是 derived 值，客户端只用于展示，\n**回填进请求体无效**（服务端忽略，§7.3）。`current_term` 可为 null（假期）；\n客户端据此提前禁用写入，但服务端仍独立判 409 `no_active_term`。",
+      "fix": "改成「scope 由服务端算，回填无效；current_term 可能为空（假期），客户端据此先禁用写入，能不能写仍由服务端判 409 no_active_term」。"
+    },
+    {
+      "key": "getFileUrl",
+      "verdict": "imprecise",
+      "claim": "每次调用都重新查一次权限（教师看本班，家长看自家孩子），不复用上次的结果。",
+      "problem": "只列了教师与家长两条重验口径，漏掉事实里的第三条：合作园按「内容 s3 + 规则版本未撤销」重验（roles 里就有 partner-account）。另一处漏项：owner_object 与 owner_id 是这条查询必带的两个参数，文案一字未提。",
+      "fact": "roles: ['teacher', 'parent', 'admin-pc', 'partner-account']；scope：逐请求内联重验 —— teacher 按 class_id，parent 按 db_child.caretakers，partner 按内容 s3 + 规则版本未撤销；query: ['owner_object*', 'owner_id*']",
+      "fix": "补「合作园按内容已通过且规则版本未撤销重验」，并写明调用要带 owner_object 与 owner_id。"
+    },
+    {
+      "key": "listResources",
+      "verdict": "imprecise",
+      "claim": "合作园只看已通过的。",
+      "problem": "把合作园的范围说大了。事实的合作园 predicate 是 `resource_status = 's3' AND 规则版本未撤销`：规则一撤销就立刻挡住，即使内容还是 s3 也读不到。文案只写「已通过的」，读者会以为 s3 就一定看得见。",
+      "fact": "partner-account `school_id = $hualong_school AND resource_status = 's3' AND 规则版本未撤销`\n                —— partner_school_id **不进**这条 predicate（scope-rules.json）\n……合作园那条里的「规则版本未撤销」是「规则撤销立刻生效、不等 fan-out」（§4 规则 18）的\n直接落点：即使批次还没把内容转成 s2，读取 predicate 已经把它挡住了。",
+      "fix": "改成「合作园只看已通过、且审核规则版本未被撤销的」。"
+    },
+    {
+      "key": "createReviewAction",
+      "verdict": "imprecise",
+      "claim": "批准要带 preview_receipt，且审核者不能是作者。驳回、下架各改一个状态，都在同一笔事务里。",
+      "problem": "批谁的前置漏了一条：事实要求「必须有已启用且未撤销的 review_policy（否则 409）」。下架那条也漏了必填项：d3 的 `notify_downloaders` 必填且无默认值——客户端照这句话写会撞 422。",
+      "fact": "  d1 approved      s2→s3；必须有已启用且未撤销的 review_policy（否则 409），\n                   必须带 preview_receipt，且审核者不得是作者（F6）\n  d2 rejected      s2→s4；资源／案例的 s4 **不是终局**，作者可撤回改稿重交\n  d3 taken_down    s3→s5；`notify_downloaders` 必填且无默认值（F6）",
+      "fix": "批准半句补「且当前要有有效审核规则版本」，下架半句补「notify_downloaders 必填」。"
+    },
+    {
+      "key": "listOrgChildren",
+      "verdict": "imprecise",
+      "claim": "默认只列在园幼儿。",
+      "problem": "把一条必带参数说成了默认行为。事实写的是这条查询**必须**带 `enrollment_status='e1'`，不是「不传就等于 e1」。后半句（离园要显式传、不给「全部」）是对的。",
+      "fact": "在园名册查询**必须**带 `enrollment_status='e1'`（B9／G23）。要看离园幼儿须显式传\n`enrollment_status=e2`，不提供「全部」。",
+      "fix": "改成「查询必须带 enrollment_status=e1；要看离园的必须显式传 e2，不给「全部」」。"
+    },
+    {
+      "key": "updateSchoolBookSection",
+      "verdict": "imprecise",
+      "claim": "d2 之后不可改。",
+      "problem": "说成永久了。F20 之后 d2 可撤回成 d1，「永久」在今天只意味着「d2 期间一律拒绝」；同一张表里 deleteSchoolBookSection 与 saveSchoolBookSettingDraft 用的都是「d2 期间」的口径，只有这一条说死了。",
+      "fact": "规则 79 原文写「d2 后删除永久拒绝」，那是 F16 的语境。**F20 之后 d2 可撤回成 d1**，\n撤回后删除自然重新可用；「永久」在今天只意味着「d2 期间一律拒绝」。\n（同族口径：saveSchoolBookSettingDraft「d2 期间本端点一律 409 —— 要改必须先撤回（F20-1）」，且 F20 明文推翻了 F16 的「首次 d2 后永久唯读」）",
+      "fix": "改成「d2 期间一律 409，撤回成 d1 后又能改」。"
+    },
+    {
+      "key": "precheckClassBooks",
+      "verdict": "imprecise",
+      "claim": "服务端按 child_id 升序逐名幼儿算缺失内容与超限原因，并回内容 fingerprint。",
+      "problem": "把阻断说成了可用。blockedOn 非空（G93）：total_pages／section_pages／publishable 今天产不出来（12 个版式包全是 draft、每包 0 layouts 0 assets），服务端只回 content_fingerprint 与 children[].child_id／book_status／problems，缺的三个字段不编。文案说得像页数超限原因今天就算得出来，也没提这一条与 manifest 阻在同一件事上。",
+      "fact": "**`total_pages`／`section_pages`／`publishable` 现在产不出来**（`db/GAPS.md`\n**G93**）：三者都要 composer，而 §4 规则 93 禁止近似页数公式，composer 又要一份\nreleased 版式包 —— `node db/tools/check-layout.mjs` 实测 12 个包全是 `draft`、\n每个 0 layouts 0 assets。服务端因此只回 `content_fingerprint` 与\n`children[].child_id`／`book_status`／`problems`，缺的三个字段**不编**。",
+      "fix": "补一句「页数类字段与超限原因现在产不出来（G93）；本端点只回 fingerprint、book_status 与 problems」。"
+    },
+    {
+      "key": "getResolvedBookManifest",
+      "verdict": "imprecise",
+      "claim": "把一本成长册解析成一份完整的页序与目录清单。……服务端用同一个 composer 生成页序、TOC 与 fingerprint，页序从 cover、school_intro 到 back_cover 固定。",
+      "problem": "blockedOn 非空，文案说得像今天就能解析出 page plan／TOC：事实写的是当下 0/12 版式包已发布、没有任何 pack 可解析。读契约的人不会知道这一条现在拿不到东西。",
+      "fact": "blockedOn: 0/12 released layout pack —— 端点可实作，但没有 pack 可解析（ADR-0015 Follow-ups）",
+      "fix": "补一句「当前 0/12 版式包已发布，暂无 pack 可解析」。"
+    },
+    {
+      "key": "getBookPage",
+      "verdict": "imprecise",
+      "claim": "服务端按 ordinal 回这一页的内容，每个图片 widget 给按它自己像素框裁切的派生图，不是原图。",
+      "problem": "blockedOn 非空，派生的那半句今天做不到：0/12 released layout pack，且派生尺寸的 CI 步骤还等第一份 pack 到件。文案把「给派生图」说成现成能力。",
+      "fact": "blockedOn: 0/12 released layout pack；派生尺寸的 CI 步骤亦待第一份 pack 到件\n……派生尺寸由 CI 从版式包几何算出，因此**不能由客户端指定**",
+      "fix": "补一句「派生尺寸待 CI 步骤与第一份 released pack 到件」。"
+    },
+    {
+      "key": "autosaveBookMaterial",
+      "verdict": "imprecise",
+      "claim": "服务端逐槽存草稿，图片只存裁切好的成品，文字约 1 秒 debounce。这是家庭共用草稿：不计齐备、不给教师看，同槽多监护人整份后写覆盖前写。审核中拒绝编辑。",
+      "problem": "漏了 scope 里的前置：只有该栏目已 d2、征集已 c2 时才存得进去（widget 还必须属于本栏目）。文案只说了「审核中拒绝编辑」，读的人会以为栏目一建就能随时存。",
+      "fact": "scope: caretakers @> [{id:$ctx_parent}] 内联；widget 必须属于本 section；section d2 且 collection c2",
+      "fix": "补一句「前提是栏目已 d2、征集已 c2，且 widget 属于本栏目」。"
+    },
+    {
+      "key": "submitTeacherMessage",
+      "verdict": "imprecise",
+      "claim": "一名幼儿一学期只交一次，服务端一次写成。已有行回 409，不覆盖。正文 1—300 字，只收文字，不收附件。",
+      "problem": "漏了幂等键必填。事实明写重放要回原来的 201，而不是撞上「已有行」的 409——不写这一条，客户端不会带 Idempotency-Key，同一次提交被送两次就变成 409。",
+      "fact": "`Idempotency-Key` 必填：重放要回原来的 `201`，而不是撞上「已有行」的 409。",
+      "fix": "补一句「幂等键必填；重放回原来的 201」。"
+    }
+  ]
+}

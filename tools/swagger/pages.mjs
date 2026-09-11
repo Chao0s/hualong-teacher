@@ -26,8 +26,9 @@ import { dump } from 'js-yaml';
 function eli10Markdown() {
   const { eli10 } = buildPageView();
   const out = new Map();
-  // 未经人工核对这件事要跟着文字一起走 —— 只在 /pages 上写一次，读 Swagger 的人就看不到。
-  const CAVEAT = '*⋯⋯段「说人话」由机器起草、**未经人工逐条核对**：机器只验了非空、长度与形状。*';
+  // 「核到什么程度」要跟着文字一起走 —— 只在 /pages 上写一次，读 Swagger 的人就看不到。
+  // 措辞随事实走：机器交叉核过一遍（167 条里 11 条说不准、已改），但**没有人逐条读过**。
+  const CAVEAT = '*⋯⋯段「说人话」由机器起草。机器已交叉核过一遍（167 条里发现 11 条说不准、已修正），**但仍无人逐条读过** —— 引用前请自己核一遍。*';
   for (const [key, r] of eli10) {
     if (!r['幹嘛']) continue;
     const lines = [`**⋯⋯说人话：${r['幹嘛']}**`];
@@ -344,7 +345,7 @@ export function rolesPage({ homeUrl, rawUrl, rawViewerUrl = '', pagesUrl = '', s
 </div>
 <div class="sum">共 <b>${rows.length}</b> 个操作，其中教师端可达 <b>${teacherCount}</b> 个（浅蓝行）。
 已写「说人话」的 <b>${eliCount}/${rows.length}</b>（来源：<code>db/spec/operation-eli10.tsv</code>，不在契约里）。
-<b>这 ${eliCount} 条未经人工逐条核对</b> —— 机器只验过非空、长度与形状，验不出哪句写错了。
+机器已交叉核过一遍（167 条里发现 <b>11 条说不准</b>，已修正），<b>但仍无人逐条读过</b>。
 越权回 <b>404</b> 不回 403（契约 §7.2）；401 只用于无会话与会话失效。</div>
 <div class="card"><table class="tbl"><tbody>${cells}</tbody></table></div>
 </body></html>`;
