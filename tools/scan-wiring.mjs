@@ -499,10 +499,35 @@ function scanService(file) {
 
 /* ── L5：原型 HTML 的交互描述 ─────────────────────────────────────────────── */
 
+/**
+ * 原型的交互意圖。
+ *
+ * **第一信號是 `data-intent`**（2026-09-12 起）：709 個標記，55 份原型，
+ * 由 `.scratch/mark-intents.mjs` 寫入（票 #86）。為什麼需要它：
+ * 56 份原型裡只有 **158 個 `<button>`、3 個 `onclick`**，而 `home.html` 連一個 `<button>`
+ * 都沒有 —— 它的意圖寫在 `class="quick-item"` 這種類名上。舊讀取器只認 `<button>`，
+ * 於是 `trigger_prototype` 只有 29／142 行有值，而那不是原型沉默，是**讀取器看不見**。
+ *
+ * **舊信號保留為兜底**（`buttons`／`links`／`listeners`／`onclicks`／`dataActions`）：
+ * 沒標到的原型仍然讀得出東西，而兩邊不一致時正好看得出來。
+ *
+ * 同一 id 出現 N 次 = **一個意圖套在 N 筆資料上**（`dot-link ×24` 是點圓點，不是 24 個意圖），
+ * 所以回 `repeats` 而不是只回一個集合。
+ */
 function prototypeInteractions(name) {
   const file = join(REPO, 'screens', `${name}.html`);
   if (!existsSync(file)) return null;
   const html = read(file);
+
+  // ── 第一信號：data-intent ──────────────────────────────────────────────
+  const intentCounts = new Map();
+  for (const m of html.matchAll(/data-intent="([^"]+)"/g)) {
+    intentCounts.set(m[1], (intentCounts.get(m[1]) ?? 0) + 1);
+  }
+  const intents = [...intentCounts.entries()].map(([id, n]) => ({ id, n }));
+  const repeats = intents.filter((i) => i.n > 1);
+
+  // ── 舊信號（兜底，也當交叉核對）────────────────────────────────────────
   const buttons = [...html.matchAll(/<button\b([^>]*)>([^<]*)/g)]
     .map((m) => ({ text: m[2].replace(/\s+/g, ' ').trim(), attrs: m[1].trim() }))
     .filter((b) => b.text && !/^[×✕‹›]$/.test(b.text) && !/['"+$]/.test(b.text));
@@ -516,7 +541,14 @@ function prototypeInteractions(name) {
   const onclicks = (html.match(/\bonclick=/g) || []).length;
   const dataActions = [...html.matchAll(/data-(action|send|preview|picker|filter|type)="([^"{}$+']*)"/g)]
     .map((m) => `${m[1]}=${m[2]}`);
-  return { buttons, links: [...new Set(links)], listeners, onclicks, dataActions: [...new Set(dataActions)] };
+
+  return {
+    intents,
+    repeats,
+    // 標了幾個 DOM 節點 —— 與 intents.length 的差就是「重複」
+    intentNodes: [...intentCounts.values()].reduce((a, b) => a + b, 0),
+    buttons, links: [...new Set(links)], listeners, onclicks, dataActions: [...new Set(dataActions)],
+  };
 }
 
 /* ── 自测（PRD §6）───────────────────────────────────────────────────────── */

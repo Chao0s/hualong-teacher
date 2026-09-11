@@ -171,7 +171,16 @@ const normText = (s) => String(s || '')
  *
  * 「原型无按钮」与「只wxml」不是一回事：前者是**没有可比的东西**，后者是**有个不一样的东西**。
  */
-function matchPrototype(protoTexts, trigger, protoExists) {
+/**
+ * 把 wxml 的觸發文案對到原型那一句。
+ *
+ * **2026-09-12 起多一個輸入：`intentCount`（原型標了幾個 `data-intent`）。**
+ * 為什麼要它：這個函式從前只比對**按鈕文案**，所以「文案不匹配」與「原型根本沒有這個控件」
+ * 會落到同一個旗標（`原型无按钮`／`只wxml`）—— 前者是比對失敗，後者是**缺意圖**，
+ * 兩件不同的事。現在原型有機讀意圖標記（709 個，票 #86），分得開了：
+ * 原型標了意圖而文案對不上時，說「有意圖未對上」，**不再斷言原型沒有**。
+ */
+function matchPrototype(protoTexts, trigger, protoExists, intentCount = 0) {
   if (!trigger) return { text: '', flag: '' };
   if (protoTexts.includes(trigger)) return { text: trigger, flag: '' };
   const nTrigger = normText(trigger);
@@ -186,6 +195,10 @@ function matchPrototype(protoTexts, trigger, protoExists) {
     }
   }
   if (!protoExists) return { text: '', flag: '原型无文件' };
+  // 原型標了意圖、只是文案沒對上 —— 這是**比對失敗**，不是原型沒有。
+  // 旗標只放**類別**：早先寫成「原型有意圖未對上（7）」，於是一列分成 28 種值，
+  // 那一欄就不能當分類數了。數字屬於資料，不屬於旗標。
+  if (intentCount > 0) return { text: '', flag: '原型有意圖未對上' };
   if (!protoTexts.length) return { text: '', flag: '原型无按钮' };
   return { text: '', flag: '只wxml' };
 }
@@ -325,7 +338,7 @@ export function emitScreenOperations(ctx) {
 
     for (const [opId, hit] of hits) {
       const trigger = [...hit.triggers][0] || '';
-      const proto1 = matchPrototype(protoTexts, trigger, proto !== null);
+      const proto1 = matchPrototype(protoTexts, trigger, proto !== null, proto ? proto.intents.length : 0);
       const fn = [...hit.handlers][0];
       genRows.push({
         screen: p.name,

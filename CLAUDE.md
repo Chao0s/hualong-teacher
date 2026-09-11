@@ -359,7 +359,23 @@ node server/server.mjs          # → http://localhost:3860/api/v1
 
 `node db/tools/check-all.mjs` 现在会重新生成 `db/spec/ui-binding.tsv` 且**行数正确**
 （833 行，前后端在同一个盘上、生成器找得到前端了）。但它会刷新 70 行标签文案，
-那是生成物的正常更新、不是你的改动，**跑完 `git checkout -- db/spec/`**。
+那是生成物的正常更新、不是你的改动 —— **跑完要还原的只有这六个**：
+
+```bash
+git checkout -- db/spec/columns.tsv db/spec/constraints.tsv db/spec/enums.tsv \
+                db/spec/relations.tsv db/spec/tables.tsv db/spec/ui-binding.tsv
+```
+
+**不要写 `git checkout -- db/spec/`。** 那个目录里有**两个产生器**写着两类文件：
+
+| 谁产 | 哪些文件 | 跑完怎么处理 |
+|---|---|---|
+| 后端 `check-all` 的 `schema-to-tsv`（从 DDL 抽） | 上列六份 | **还原**，那是生成物 |
+| **前端** `npm run emit:screens`（扫页面与契约） | `screen-operations.tsv`、`operation-eli10.tsv` | **提交**，那是本次改动 |
+
+2026-09-12 就吃了一次：改完旗标想「按惯例还原 db/spec」，一条 `git checkout -- db/spec/`
+**把刚做出来的 42 行改动静默抹掉**，而两次跑的闸门都全绿 —— 绿的是被抹掉之后的状态。
+判据：`git diff --numstat db/spec/` 里**有数字的那几份**是真改动，没数字的只是行尾。
 
 `check-all.mjs` 现在 **8 项全过**。它的 `check-consistency` 一步曾经红过一阵：那一步扫
 前端所有 `.html` 与 `.wxml`，问每个文件有没有 `screens.tsv` 的登记行，而登记表只认原型

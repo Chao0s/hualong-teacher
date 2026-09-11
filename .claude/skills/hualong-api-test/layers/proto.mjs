@@ -78,32 +78,40 @@ export async function proto(r) {
   const flag = (o) => (o.trigger_flag ?? '').trim();
 
   const both = ops.filter((o) => (o.trigger_prototype ?? '').trim() && (o.trigger_wxml ?? '').trim());
+  // **2026-09-12 旗標換名**：舊的 `只wxml`(22) 與 `原型无按钮`(20) 併成 `原型有意圖未對上`(42)。
+  // 為什麼併：原型的意圖現在有機讀標記（data-intent，709 個／55 份），而比對函式從前
+  // 只比對**按鈕文案** —— 所以「文案不匹配」與「原型沒有這個控件」落到同一個旗標。
+  // 現在分得開：標了意圖而對不上，是**比對失敗**，不是原型沒有。
+  // 舊名仍要認，否則這一層會靜默報 0 —— 那與「掃描器悄悄停止掃描」是同一個毛病。
+  const intentUnmatched = ops.filter((o) => /原型有意圖未對上/.test(flag(o)));
   const wxmlOnly = ops.filter((o) => flag(o) === '只wxml');
   const protoNoButton = ops.filter((o) => flag(o) === '原型无按钮');
   const silent = ops.filter((o) => !flag(o) && !(o.trigger_prototype ?? '').trim() && !(o.trigger_wxml ?? '').trim());
 
-  console.log(`   [proto/triggers] ${both.length} compared and matched, ${wxmlOnly.length} wxml-only, ` +
-    `${protoNoButton.length} prototype-has-no-button, ${silent.length} with no trigger at all (pure reads)`);
+  console.log(`   [proto/triggers] ${both.length} compared and matched, ` +
+    `${intentUnmatched.length} prototype-has-intents-but-text-unmatched, ` +
+    `${silent.length} with no trigger at all (pure reads)`);
 
-  // ── the client wires it, the prototype shows no such control ────────────
-  // Either the prototype is behind, or the client invented something. One
-  // finding for the class, with the list — a decision is owed per row, but the
-  // list is what a human reads.
-  if (wxmlOnly.length) {
+  // ── 原型標了意圖、文案沒對上 ───────────────────────────────────────────
+  // 這一批是**下一步要做的活**：把意圖 id 對到操作。一個類別、一個發現、帶清單 ——
+  // 不是 42 條各說同一句話的發現。
+  if (intentUnmatched.length) {
     r.add({
-      layer: 'proto', severity: 'low', kind: 'prototype-behind',
-      what: `${wxmlOnly.length} operation(s) the mini-program reaches with no matching prototype control`,
-      detail: `${wxmlOnly.map((o) => `${describe(o)}  (wxml: ${o.trigger_wxml})`).join('\n')}\n` +
-        '每一行要么是原型该补这个控件，要么是客户端做了原型没表达的事 —— 逐条要一个结论，但不能靠沉默代替。',
+      layer: 'proto', severity: 'medium', kind: 'coverage',
+      what: `${intentUnmatched.length} operation(s) whose prototype intent is not yet paired with the client call`,
+      detail: `${intentUnmatched.map((o) => `${describe(o)}  (wxml: ${o.trigger_wxml || '(無)'})`).join('\n')}\n` +
+        '原型的意圖已有機讀標記（data-intent，709 個／55 份），而這一格只做到「文案沒對上」。\n' +
+        '缺的是**把意圖 id 對到操作**那一步 —— 那正是對稱表的本體。',
     });
   }
 
-  // ── the prototype has no button for this operation ──────────────────────
-  if (protoNoButton.length) {
+  // 舊旗標若又出現，報出來：它們已不該再產生，而這一層從前正是靠那兩個名字過濾的。
+  if (wxmlOnly.length || protoNoButton.length) {
     r.add({
-      layer: 'proto', severity: 'low', kind: 'prototype-behind',
-      what: `${protoNoButton.length} operation(s) the prototype gives no button for`,
-      detail: protoNoButton.map(describe).join('\n'),
+      layer: 'proto', severity: 'medium', kind: 'check-failed',
+      what: 'the old trigger flags came back — this layer would have silently stopped reporting them',
+      detail: `只wxml ${wxmlOnly.length}, 原型无按钮 ${protoNoButton.length}\n` +
+        '這兩個旗標 2026-09-12 已併入 `原型有意圖未對上`；又出現說明產生器被改回去了。',
     });
   }
 
