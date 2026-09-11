@@ -24,16 +24,24 @@ const HEAD = ['screen', 'mp_file', 'screen_title', 'state', 'operation_id', 'met
 
 // 每行固定 9 格：[screen, title, state, op, method, path, source, flag, 说明]
 // 说明的去向由 source 决定：no-api → notes；human／planned → gap（见下面的组装）。
+//
+// **一份被撤掉的判定，留在这里说明为什么。**
+// `teacher-evaluation` 原本在下面这份 no-api 清单里，凭据是「只有一个 onEntryTap，1 次导航」。
+// 2026-09-12 修掉 `bodyOf` 的一个 bug 之后（签名里带解构参数时函数体取不到，间接调用链因此断掉），
+// 生成器报出这一屏其实**经由 `services/assessment.js:247` 调了 `GET /teacher-evaluations/progress`**
+// —— 一条契约里没有的路径。所以它从来不是中转页，**当初那条 no-api 是判错的**：
+// 我当时只 grep 了两格缩进的方法名，`onShow` 没被看见。
+// 教训与 `bodyOf` 那一条同源：**用浅的办法（正则扫方法名）去判「这页不调任何东西」，不可靠。**
+const RETIRED = ['teacher-evaluation'];
+
 const rows = [
-  // ── 6 屏中转页：handler 全是导航 ───────────────────────────────────────
+  // ── 5 屏中转页：handler 全是导航（已用修好的生成器复核过，各自仍只有 no-api 一行）──
   ['comprehensive-coordination', '综合协调部', 'empty', '', '', '', 'no-api', '',
     '只有一个 onEntryTap，1 次导航。这一屏是分类入口，内容在别的页。'],
   ['training-center', '教研培训部', 'empty', '', '', '', 'no-api', '',
     '6 个 handler 全是轮播与导航（onBannerChange／onEntryTap／onResourceTap／onResourceMore／onCaseTap／onCaseMore），5 次导航。'],
   ['resource-center', '课程资源', 'empty', '', '', '', 'no-api', '',
     '7 个 handler 全是搜索与导航（onQueryInput／onSearch／onHubTap 等），6 次导航。这一屏是入口，内容在资源库与案例库。'],
-  ['teacher-evaluation', '教师评价', 'empty', '', '', '', 'no-api', '',
-    '只有一个 onEntryTap，1 次导航。这一屏是入口，内容在月度评价与学期评价。'],
   ['course-building', '课程建设', 'empty', '', '', '', 'no-api', '',
     '全静态文案（衣／食／住／行／艺 写死在 index.js）。唯一的 onDownload 只弹提示 —— 原型那个附件是 data: URI，小程序下不了，没有数据源。'],
   ['growth-book-sample', '成长册样本', 'empty', '', '', '', 'no-api', '',
@@ -56,9 +64,10 @@ const head = lines[0].split('\t');
 if (head.join('\t') !== HEAD.join('\t')) { console.error('表头与预期不符，放弃'); process.exit(1); }
 let body = lines.slice(1).filter(Boolean).map((l) => Object.fromEntries(l.split('\t').map((v, i) => [head[i], v ?? ''])));
 
-const TOUCH = new Set(rows.map((r) => r[0]));
+const TOUCH = new Set([...rows.map((r) => r[0]), ...RETIRED]);
 const before = body.length;
 body = body.filter((r) => !(TOUCH.has(r.screen) && r.source !== 'gen'));
+for (const s of RETIRED) console.log(`  撤掉 ${s} 的人工行（判定错了 —— 它确实调东西）`);
 
 const mp = (screen) => `miniprogram/pages/${screen}/index.wxml`;
 for (const [screen, title, state, op, method, path, source, flag, text] of rows) {

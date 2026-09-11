@@ -46,21 +46,43 @@ function unionBody(page, name) {
   return union;
 }
 
-/** 取 `function NAME(...) { ... }` 的整段函数体（花括号配平）。取不到返回空串。 */
+/**
+ * 取 `function NAME(...) { ... }` 的整段函数体（花括号配平）。取不到返回空串。
+ *
+ * **必须先跳过参数表，再找函数体的 `{`。** 第一版直接 `indexOf('{', 定义处)`，
+ * 于是参数里的解构花括号被当成了函数体开头 —— `parentEvalPeriods({ limit } = {})`
+ * 取到的是 `{ limit }`（9 字节），而真正的函数体 977 字节。
+ *
+ * 后果不是「少几行」，是**间接调用这一条链断在那里**：直接调 `listParentEvaluations()`
+ * 的页面照样登记得到（名字对得上），而绕着 `parentEvalPeriods()` 调的
+ * `parent-evaluation-publish`（「发布家长测评」）就漏了 —— 实测它确实漏了。
+ * 这个代码库里 `({ x } = {})` 这种签名很常见，所以影响面不小。
+ */
 function bodyOf(src, name) {
   const re = new RegExp(`(?:^|\\n)(?:async\\s+)?function\\s+${name}\\s*\\(`);
   const m = re.exec(src);
   if (!m) return '';
-  const open = src.indexOf('{', m.index);
-  if (open < 0) return '';
-  let depth = 0;
-  for (let i = open; i < src.length; i++) {
+  // 先配平跳过参数表（跳过字符串与模板字面量里的括号）
+  let i = src.indexOf('(', m.index);
+  if (i < 0) return '';
+  let pdepth = 0;
+  for (; i < src.length; i++) {
     const ch = src[i];
-    if (ch === '{') depth++;
-    else if (ch === '}') { depth--; if (depth === 0) return src.slice(open, i + 1); }
+    if (ch === '(') pdepth++;
+    else if (ch === ')') { pdepth--; if (pdepth === 0) { i++; break; } }
     else if (ch === '`') { const j = src.indexOf('`', i + 1); i = j < 0 ? src.length : j; }
     else if (ch === "'" || ch === '"') { const j = src.indexOf(ch, i + 1); i = j < 0 ? src.length : j; }
-    else if (ch === '/' && src[i + 1] === '/') { const j = src.indexOf('\n', i); i = j < 0 ? src.length : j; }
+  }
+  const open = src.indexOf('{', i);
+  if (open < 0) return '';
+  let depth = 0;
+  for (let k = open; k < src.length; k++) {
+    const ch = src[k];
+    if (ch === '{') depth++;
+    else if (ch === '}') { depth--; if (depth === 0) return src.slice(open, k + 1); }
+    else if (ch === '`') { const j = src.indexOf('`', k + 1); k = j < 0 ? src.length : j; }
+    else if (ch === "'" || ch === '"') { const j = src.indexOf(ch, k + 1); k = j < 0 ? src.length : j; }
+    else if (ch === '/' && src[k + 1] === '/') { const j = src.indexOf('\n', k); k = j < 0 ? src.length : j; }
   }
   return '';
 }
