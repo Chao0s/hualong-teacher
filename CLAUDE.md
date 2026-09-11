@@ -143,6 +143,11 @@ node db/tools/check-all.mjs
 判断某一页属于哪一类：看它**真的调用过** `services/*` 吗 —— **`require` 了不算**。
 `home-school` 就 `require` 了 `co-education` 却一次都没调用（后来才接上），按 `require` 数会把它算成已接。
 两种数法今天恰好一致，但判据要按调用，与扫描器一致。
+
+**`login` 是例外，它不在这三个数里**：它走的是 `utils/auth.js`（不是 `services/*`），
+所以扫描器按上面那条判据把它算成「未接」，**而它确实在调 API**（`POST`／`GET /auth/session`）。
+这一点在 `db/spec/screen-operations.tsv` 里由两行 `source=human` 记着 —— 生成器只追
+pages→services，看不见 utils 这一层。**别因为「未接」就去给它补一个假的 service 调用。**
 在开发者工具里看 Network 面板有没有 `/api/v1/...` 请求，是同一件事的另一种查法。
 
 | 已接 | 页 |
@@ -213,6 +218,7 @@ node db/tools/check-all.mjs
 | `training-center` | 教研培训部 | 底部导航「教研培训」（**这一页本身还没接 API**，只是路径上的一站） |
 | `training-list` | 教研培训 | 教研培训部 → 教研培训 |
 | `training-detail` | 研修详情 | 教研培训 → 点某一场研修 |
+| `login` | 登录 | **启动页**（`app.json` 第一项）。已登录就直接跳首页；会话失效时 `guard.endSessionOnAuthFailure` 也 reLaunch 过来。手机号那一步等 G1 |
 | `my-training` | 我的研修 | 教研培训 → 我的研修（「我的档案」那一格） |
 | `teacher-profile` | 个人档案 | 教研培训 → 个人档案（「我的档案」那一格） |
 | `assessment-tool` | 质量评估 | 底部导航「首页」 → 质量评估 |

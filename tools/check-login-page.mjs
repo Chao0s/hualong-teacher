@@ -151,5 +151,27 @@ const tick = () => new Promise((r) => setTimeout(r, 0));
   ok('G 代码里没有 wx.switchTab（非 tab 页会静默失败）', !/wx\.switchTab/.test(readFileSync(PAGE, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '')));
 }
 
+// ── H. guard 的接线（2026-09-12 用户裁定：接上，并把 login 改成启动页）──────────
+// 这一组钉的是「会话失效真的会把教师送到登录页」，以及**不会自己跳自己**。
+{
+  const guardSrc = readFileSync(join(ROOT, 'miniprogram', 'utils', 'guard.js'), 'utf8');
+  const code = readFileSync(PAGE, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  // G 那个块里的 `app` 是块级声明，这里看不见 —— 自己读一次，别去动上游。
+  const appJson = JSON.parse(readFileSync(APP, 'utf8'));
+
+  ok('H app.json 的第一项是登录页（启动页）', appJson.pages[0] === 'pages/login/index', appJson.pages[0]);
+  ok('H app.json 仍注册着首页（登录后要跳它）', appJson.pages.includes('pages/home/index'));
+  ok('H guard 的 endSessionOnAuthFailure 里有 wx.reLaunch',
+    /endSessionOnAuthFailure[\s\S]{0,400}wx\.reLaunch/.test(guardSrc));
+  ok('H guard 跳的是登录页',
+    /wx\.reLaunch\(\{\s*url:\s*'\/pages\/login\/index'\s*\}\)/.test(guardSrc));
+  // 返回 true 才叫「已经处理掉了、别再渲染」。恒 false 的那一版会让每个页面 401 后留白页。
+  ok('H guard 跳转之后 return true（否则页面会继续渲染一张空页）',
+    /wx\.reLaunch\([^)]*\)[\s\S]{0,120}return true/.test(guardSrc));
+  // 防循环：登录页自己不调 guard，否则登录失败 → reLaunch 到登录页 → 再失败…
+  ok('H 登录页不调 guard.endSessionOnAuthFailure（不会自己跳自己）',
+    !/endSessionOnAuthFailure|require\(['"][^'"]*guard['"]\)/.test(code));
+}
+
 console.log(`\n${pass} 项通过，${fail} 项失败。`);
 process.exit(fail ? 1 : 0);
