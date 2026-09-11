@@ -497,6 +497,43 @@ cp -r "$DEP/node_modules/." "<仓库>/db/testdata/node_modules/"
 
 `node_modules` 不进 git，所以这一步是本机的、每台机器各做一次。
 
+### 7.10 提交信息里有反引号或 `{}`，bash 会吃掉那几个字
+
+`git commit -m "…"` 走的是 shell。信息里有反引号、`$(` 或 `{ }`，bash 先做命令替换 ——
+**替换失败它只报一行错，而提交照样成功**，于是信息里少了一个词，谁都不会注意到。
+
+本仓已撞过两次，都在已推的提交里：
+
+| 提交 | 原话 | 落地成了 |
+|---|---|---|
+| `30951df` | ``…was `return true` with no redirect`` | `…was  with no redirect` |
+| `823af45` | ``appending a bare `Page({})` to index.js`` | `appending a bare  to index.js` |
+
+**判据**：信息里出现**「一个词的位置上只有两个空格」**，就是它。
+
+**规矩**：信息里有反引号、`$(` 或 `{}`，**一律走文件**。
+
+```bash
+# 写到 .git/COMMIT.txt，再：
+git commit -F .git/COMMIT.txt
+```
+
+**不改写已推的历史** —— 共享仓库，force push 会打断另一边。发现了就在下一次提交里说清。
+
+### 7.11 钩子按仓库配置，克隆下来默认不跑
+
+`.githooks/pre-commit` 挡「远端 `<script src="http…">` 混进仓库」（小程序加载不了远端脚本，
+这个错只会在打包时才炸）。但 git 只认 `core.hooksPath`，**而它不在仓库里、每台机器各配一次** ——
+2026-09-12 实测这份克隆从头到尾就没配过，**那道闸一次都没跑**。
+
+装它（也是 `package.json` 里那一条）：
+
+```bash
+npm run hooks:install      # git config core.hooksPath .githooks
+```
+
+**判据**：`git config core.hooksPath` 印出 `.githooks` 才算装上。印不出就是没跑。
+
 ---
 
 ## 8. 开工前必读
