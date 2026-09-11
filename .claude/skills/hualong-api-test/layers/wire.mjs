@@ -38,6 +38,7 @@ export async function wire(r) {
   if (self.code !== 0) {
     r.add({
       layer: 'wire', severity: 'high', kind: 'stale-expectation',
+      subject: 'selftest',
       what: "the wiring scanner's own self-tests are red — its findings cannot be trusted",
       detail: self.out.split('\n').filter(Boolean).slice(-12).join('\n'),
     });
@@ -50,6 +51,7 @@ export async function wire(r) {
   if (scan.code !== 0) {
     r.add({
       layer: 'wire', severity: 'medium', kind: 'check-failed',
+      subject: 'scan-failed',
       what: 'the wiring scan exited non-zero, so its buckets are not a full picture',
       detail: scan.out.split('\n').filter(Boolean).slice(-10).join('\n'),
     });

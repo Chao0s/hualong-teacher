@@ -98,6 +98,7 @@ export async function proto(r) {
   if (intentUnmatched.length) {
     r.add({
       layer: 'proto', severity: 'medium', kind: 'coverage',
+      subject: 'intent-unmatched',
       what: `${intentUnmatched.length} operation(s) whose prototype intent is not yet paired with the client call`,
       detail: `${intentUnmatched.map((o) => `${describe(o)}  (wxml: ${o.trigger_wxml || '(無)'})`).join('\n')}\n` +
         '原型的意圖已有機讀標記（data-intent，709 個／55 份），而這一格只做到「文案沒對上」。\n' +
@@ -109,6 +110,7 @@ export async function proto(r) {
   if (wxmlOnly.length || protoNoButton.length) {
     r.add({
       layer: 'proto', severity: 'medium', kind: 'check-failed',
+      subject: 'old-flags-returned',
       what: 'the old trigger flags came back — this layer would have silently stopped reporting them',
       detail: `只wxml ${wxmlOnly.length}, 原型无按钮 ${protoNoButton.length}\n` +
         '這兩個旗標 2026-09-12 已併入 `原型有意圖未對上`；又出現說明產生器被改回去了。',
@@ -133,6 +135,7 @@ export async function proto(r) {
   if (explained.length) {
     r.add({
       layer: 'proto', severity: 'low', kind: 'prototype-behind',
+      subject: 'decided-not-in-prototype',
       what: `${explained.length} operation(s) the prototype does not show, each traced to a decision — the prototype is behind, not the client`,
       detail: explained.map(({ o, why }) => `${describe(o)}\n    ${why}`).join('\n'),
     });
@@ -141,6 +144,7 @@ export async function proto(r) {
   if (writes.length) {
     r.add({
       layer: 'proto', severity: 'low', kind: 'coverage',
+      subject: 'writes-without-prototype-control',
       what: `${writes.length} write operation(s) with no prototype control — an intent is unrecorded`,
       detail: `${writes.map(describe).join('\n')}\n` +
         '写入而原型没有对应控件：要么原型该补，要么这个写入由一次点按隐式触发而扫描器看不见。\n' +

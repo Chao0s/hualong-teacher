@@ -58,6 +58,7 @@ export async function cover(r) {
   } catch (err) {
     r.add({
       layer: 'cover', severity: 'high', kind: 'stale-expectation',
+      subject: 'wiring-report',
       what: 'the wiring report is older than the code it describes, so /pages shows a stale column',
       detail: String(err.stdout ?? err.message).split('\n').filter(Boolean).slice(0, 8).join('\n'),
     });
@@ -82,7 +83,11 @@ export async function cover(r) {
   const exempted = [];
   const waiting = new Map();
   for (const s of screens) {
-    const id = s.surface ?? s.screen_file ?? '(unnamed)';
+    // 身分要**唯一**。`s.surface` 對 miniprogram 行永遠是 `'miniprogram'`，
+    // 用它當 id 會讓 19 行的身分全變成同一個字（detail 因此看不出是哪一行），
+    // 而且給它們加穩定 key 時會全部撞在一起。用原型檔名當身分。
+    const id = s.screen_file || s.mp_file || '(unnamed)';
+    const label = `${s.surface ?? '?'} ${id}`;
     const isMini = s.surface === 'miniprogram';
     const pOk = exists(s.repo, s.screen_file);
     const mOk = exists(s.repo, s.mp_file);
@@ -90,26 +95,28 @@ export async function cover(r) {
     // that have a mini-program.
     if (!pOk && (s.screen_file ?? '').includes('#')) exempted.push(`${id} → ${s.screen_file} (in-page anchor)`);
     else if (!pOk && !hasMiniprogram(s.repo)) waiting.set(s.repo, (waiting.get(s.repo) ?? 0) + 1);
-    else if (!pOk) lostPrototype.push(`${id} → ${s.screen_file}`);
+    else if (!pOk) lostPrototype.push({ id, label, file: s.screen_file });
 
     if (!isMini) continue;
     if (!hasMiniprogram(s.repo)) continue;
-    if (!s.mp_file) selfContradictory.push(`${id} (says miniprogram, names no file)`);
-    else if (!mOk) selfContradictory.push(`${id} (mp_file does not resolve: ${s.mp_file})`);
+    if (!s.mp_file) selfContradictory.push({ id, label, why: 'says miniprogram, names no file' });
+    else if (!mOk) selfContradictory.push({ id, label, why: `mp_file does not resolve: ${s.mp_file}` });
   }
 
   for (const x of selfContradictory) {
     r.add({
       layer: 'cover', severity: 'high', kind: 'stale-expectation',
-      what: 'a row says this is a mini-program screen and names no file that exists',
-      detail: `${x}\nthe register contradicts itself; either the screen is gone or the locator is wrong`,
+      subject: x.id,
+      what: `a row says this is a mini-program screen and names no file that exists: ${x.label}`,
+      detail: `${x.why}\nthe register contradicts itself; either the screen is gone or the locator is wrong`,
     });
   }
   for (const x of lostPrototype) {
     r.add({
       layer: 'cover', severity: 'high', kind: 'stale-expectation',
-      what: 'a registered prototype file is not on disk — the intent anchor is lost',
-      detail: `${x}\nCLAUDE.md §7.3: a copy is not redundancy, it is a silent expiry. Either find the file or drop the row.`,
+      subject: x.id,
+      what: `a registered prototype file is not on disk — the intent anchor is lost: ${x.label}`,
+      detail: `${x.file}\nCLAUDE.md §7.3: a copy is not redundancy, it is a silent expiry. Either find the file or drop the row.`,
     });
   }
   console.log(`   [cover/locators] ${screens.length} rows: ${screens.length - selfContradictory.length - lostPrototype.length - exempted.length} whole, ` +
@@ -129,6 +136,7 @@ export async function cover(r) {
   if (missing.length) {
     r.add({
       layer: 'cover', severity: 'high', kind: 'stale-expectation',
+      subject: missing.join(','),
       what: 'a mini-program screen has no row in the operations table at all',
       detail: `${missing.join(', ')}\n未登记与「按设计不调任何操作」是两件事；这里要的是前者。`,
     });
@@ -145,6 +153,7 @@ export async function cover(r) {
   if (missingEli.length) {
     r.add({
       layer: 'cover', severity: 'medium', kind: 'coverage',
+      subject: 'eli10-missing',
       what: 'mapped operations with no plain-language entry',
       detail: [...new Set(missingEli)].slice(0, 12).join(', '),
     });

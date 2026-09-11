@@ -128,6 +128,7 @@ export async function contract(runReport) {
         layer: 'contract',
         severity: known ? 'medium' : 'high',
         kind: known ? 'known-gap' : 'undeclared-path',
+        subject: `${client.name} ${normalise(p)}`,
         what: known
           ? `${client.name} calls ${p} — registered gap: ${known}`
           : `${client.name} calls ${p}, which the contract does not declare`,
@@ -138,6 +139,7 @@ export async function contract(runReport) {
       layer: 'contract',
       severity: 'low',
       kind: 'coverage',
+      subject: `coverage-${client.name}`,
       what: `${client.name}: ${seen.size} distinct path(s) called across ${files.length} service file(s)`,
     });
   }
@@ -146,7 +148,7 @@ export async function contract(runReport) {
   // exercised without a service to exercise them against.
   try {
     await run('node', ['--test', 'tests/api-coverage.test.mjs'], { cwd: REPO, timeout: 120000 });
-    runReport.add({ layer: 'contract', severity: 'low', kind: 'coverage', what: 'every declared operation answers its declared success code against the mock' });
+    runReport.add({ layer: 'contract', severity: 'low', kind: 'coverage', subject: 'mock-alignment', what: 'every declared operation answers its declared success code against the mock' });
   } catch (err) {
     const out = String(err.stdout || err.message);
     const fail = out.split('\n').find((l) => l.includes('not ok') || l.includes('AssertionError')) || 'see the report';
@@ -154,6 +156,7 @@ export async function contract(runReport) {
       layer: 'contract',
       severity: 'medium',
       kind: 'mock-regression',
+      subject: 'mock-alignment',
       what: 'the contract no longer agrees with the mock',
       detail: fail.trim(),
     });

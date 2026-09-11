@@ -54,6 +54,7 @@ export async function repo(r) {
     const red = fe.out.split('\n').filter((l) => /^\[\d+\]/.test(l.trim())).join(' | ').slice(0, 400);
     r.add({
       layer: 'repo', severity: 'medium', kind: 'gate-red',
+      subject: 'npm-test',
       what: 'npm test is red, so every layer above assumes something false',
       detail: red || fe.out.slice(-400),
     });
@@ -73,6 +74,7 @@ export async function repo(r) {
     const red = be.out.split('\n').filter((l) => /PASS|FAIL/.test(l) && /FAIL/.test(l)).join(' | ').slice(0, 400);
     r.add({
       layer: 'repo', severity: 'medium', kind: 'gate-red',
+      subject: 'backend-harness',
       what: 'the backend harness is red',
       detail: red || be.out.slice(-400),
     });
@@ -87,6 +89,7 @@ export async function repo(r) {
   if (dirty.out.trim()) {
     r.add({
       layer: 'repo', severity: 'low', kind: 'generated-drift',
+      subject: 'generated-tsv',
       what: 'the harness rewrote db/spec/*.tsv; those are generated rows, restore them',
       detail: `cd ../hualong-backend && git checkout -- db/spec/\n${dirty.out.trim().split('\n').slice(0, 6).join('\n')}`,
     });

@@ -54,6 +54,7 @@ export async function render(r) {
     if (!shots.length) {
       r.add({
         layer: 'render', severity: 'medium', kind: 'check-failed',
+        subject: 'no-evidence',
         what: 'the render run produced no screenshot paths, so nothing is evidenced as drawn',
         detail: stdout.split('\n').filter(Boolean).slice(-8).join('\n'),
       });
@@ -63,6 +64,7 @@ export async function render(r) {
   } catch (err) {
     r.add({
       layer: 'render', severity: 'medium', kind: 'check-failed',
+      subject: 'run-failed',
       what: 'the render run failed — some screen did not draw',
       detail: String(err.stdout ?? err.message).split('\n').filter(Boolean).slice(-10).join('\n'),
     });

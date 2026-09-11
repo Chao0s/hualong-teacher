@@ -23,6 +23,7 @@ import { specPath, specText } from '../openapi-source.mjs';
 import { usedFrom } from '../lib/screen-ops-data.mjs';
 import { indexPage, rolesPage, specForUi, pagesSpecForUi } from './pages.mjs';
 import { pagesPage } from './pages-view.mjs';
+import { readFeedback, upsertFeedback, STATUS, STATUS_VALUES } from '../lib/feedback.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, '..', '..');   // tools/swagger → 仓库根（服务 screens/ 要用）
@@ -67,6 +68,52 @@ const server = createServer((req, res) => {
     const root = join(REPO, 'screens');
     if (!file.startsWith(root) || !existsSync(file)) return send(404, MIME['.html'], '<h1>404</h1>');
     return send(200, MIME[extname(file)] || 'application/octet-stream', readFileSync(file));
+  }
+
+  // ── 檢測結論：讀與寫（2026-09-12）──────────────────────────────────────
+  //
+  // 這是「可寫表」的另一半。上面那些路徑只服務唯讀頁面；這一條讓人的判斷回流，
+  // 於是檢測從「一份報告」變成「一場對話」：發現 → 人判 → 判決落地 → 下次跑帶著它。
+  //
+  // 儲存只有一份：`docs/audit/checker-feedback.tsv`（`tools/lib/feedback.mjs` 是唯一讀寫它的人）。
+  //
+  // **守衛三層，缺一不可** —— 服務綁在 127.0.0.1 不等於安全：你機器上的瀏覽器
+  // 可以被任意網站叫去發出請求。所以：
+  //   1. 只收 loopback（綁定已是第一道，這一層是第二道）
+  //   2. 帶 `Origin` 且不是自己 → 403（別的同源網頁不能代你寫）
+  //   3. POST 必須 `application/json` → 這個 content-type 逼瀏覽器先送 preflight，
+  //      而本服務**不回 OPTIONS、不發任何 CORS 標頭**，所以跨源寫入過不來。
+  if (path === '/feedback') {
+    const origin = req.headers.origin;
+    const SELF = [`http://127.0.0.1:${PORT}`, `http://localhost:${PORT}`];
+    if (origin && !SELF.includes(origin)) {
+      return send(403, 'application/json', JSON.stringify({ error: 'cross-origin refused' }));
+    }
+
+    if (req.method === 'GET') {
+      const rows = [...readFeedback().values()];
+      return send(200, 'application/json', JSON.stringify({ rows, status: STATUS, values: STATUS_VALUES }));
+    }
+
+    if (req.method === 'POST') {
+      if (!/^application\/json/.test(req.headers['content-type'] ?? '')) {
+        return send(415, 'application/json', JSON.stringify({ error: 'content-type must be application/json' }));
+      }
+      let body = '';
+      req.on('data', (c) => { body += c; if (body.length > 1 << 16) req.destroy(); });
+      req.on('end', () => {
+        try {
+          const { row, created } = upsertFeedback(JSON.parse(body));
+          send(created ? 201 : 200, 'application/json', JSON.stringify({ ok: true, created, row }));
+        } catch (err) {
+          // 壞掉的輸入當場說出來（詞表外、缺 reviewer、少一個 tab…），不靜默吞掉。
+          send(422, 'application/json', JSON.stringify({ error: String(err.message) }));
+        }
+      });
+      return;
+    }
+
+    return send(405, 'application/json', JSON.stringify({ error: `method ${req.method} not allowed` }));
   }
 
   if (path === '/' || path === '/index.html') return send(200, MIME['.html'], INDEX);
