@@ -1,8 +1,0 @@
-{
-  "navigationBarTitleText": "首页",
-  "enablePullDownRefresh": true,
-  "backgroundTextStyle": "dark",
-  "usingComponents": {
-    "hl-icon": "/components/hl-icon/index"
-  }
-}

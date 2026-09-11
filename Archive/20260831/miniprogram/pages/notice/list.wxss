@@ -1,3 +1,0 @@
-.hl-card + .hl-card {
-  margin-top: var(--space-2);
-}

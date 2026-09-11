@@ -1,7 +1,0 @@
-{
-  "navigationBarTitleText": "发布家长评价",
-  "enablePullDownRefresh": true,
-  "usingComponents": {
-    "hl-picker-row": "/components/hl-picker-row/index"
-  }
-}
