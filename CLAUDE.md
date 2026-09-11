@@ -136,11 +136,13 @@ node db/tools/check-all.mjs
 
 ## 3. 现状
 
-`miniprogram/` 共 **55 页**，**46 页已接 API**，**9 页仍是写死的字面量**。
+`miniprogram/` 共 **56 页**，**48 页已接 API**，**8 页仍是写死的字面量**。
 
-这三个数**每次接一页就变**，权威是 `npm run scan:wiring` 第一行的「页面 55（已接 46）」，不是本节（2026-09-10 实测）。
+这三个数**每次接一页就变**，权威是 `npm run scan:wiring` 第一行的「页面 56（已接 48）」，不是本节（2026-09-12 实测）。
 
-判断某一页属于哪一类：看 `index.js` 里有没有 `require('../../services/`。
+判断某一页属于哪一类：看它**真的调用过** `services/*` 吗 —— **`require` 了不算**。
+`home-school` 就 `require` 了 `co-education` 却一次都没调用（后来才接上），按 `require` 数会把它算成已接。
+两种数法今天恰好一致，但判据要按调用，与扫描器一致。
 在开发者工具里看 Network 面板有没有 `/api/v1/...` 请求，是同一件事的另一种查法。
 
 | 已接 | 页 |
@@ -172,9 +174,9 @@ node db/tools/check-all.mjs
 中文标题的权威是各页 `index.json` 的 `navigationBarTitleText`，**不要自己译目录名**。
 
 底部导航五项（`components/hl-tabbar`）：**首页 / 党建管理 / 综合协调 / 教研培训 / 家园社共育**。
-所有路径都从这五个之一起步。**已接 API 的 36 页**，加上路径上必经、
-**本身还没接 API 的 4 个中转页**（`home-school`、`growth-record`、`teacher-evaluation`、
-`training-center`，逐个在表里标了），走法如下：
+所有路径都从这五个之一起步。**已接 API 的 48 页**，加上路径上必经、
+**本身还没接 API 的 4 个中转页**（`comprehensive-coordination`、`coordination-file-list`、
+`resource-center`、`training-center`，逐个在表里标了），走法如下：
 
 | 目录名 | 屏幕上叫 | 怎么走到 |
 |---|---|---|
@@ -213,6 +215,19 @@ node db/tools/check-all.mjs
 | `training-detail` | 研修详情 | 教研培训 → 点某一场研修 |
 | `my-training` | 我的研修 | 教研培训 → 我的研修（「我的档案」那一格） |
 | `teacher-profile` | 个人档案 | 教研培训 → 个人档案（「我的档案」那一格） |
+| `assessment-tool` | 质量评估 | 底部导航「首页」 → 质量评估 |
+| `resource-detail` | 资源详情 | 底部导航「教研培训」 → 资源详情 |
+| `case-detail` | 案例详情 | 底部导航「首页」 → 案例详情 |
+| `party-study-detail` | 文件预览 | 党建管理 → 党建学习 → 点条目 |
+| `party-activity-detail` | 活动介绍 | 党建管理 → 党建活动 → 点条目 |
+| `party-brand-detail` | 图文介绍 | 党建管理 → 品牌建设 → 点条目 |
+| `teacher-term-evaluation` | 教师学期评价 | 底部导航「家园社共育」 → 儿童成长档案 → 教师评价 → 教师学期评价 |
+| `teacher-term-form` | 填写学期评价 | 底部导航「家园社共育」 → 儿童成长档案 → 教师评价 → 教师学期评价 → 填写学期评价 |
+| `teacher-message` | 教师寄语 | 底部导航「家园社共育」 → 儿童成长档案 → 教师评价 → 教师寄语 |
+| `teacher-message-detail` | 寄语详情 | 底部导航「家园社共育」 → 儿童成长档案 → 教师评价 → 教师寄语 → 寄语详情 |
+| `growth-comprehensive-assessment` | 综合评估 | 底部导航「家园社共育」 → 儿童成长档案 → 教师评价 → 综合评估 |
+| `comprehensive-assessment-report` | 综合评估结果 | （从五个底部导航都走不到——只能由别处深链进来，或尚未挂入口） |
+| `comprehensive-assessment-class-report` | 班级评估报告 | 底部导航「家园社共育」 → 儿童成长档案 → 教师评价 → 综合评估 → 班级评估报告 |
 
 **两个「任务详情」重名**：`parent-task-detail`（亲子任务的，家园社共育那条线）与
 `teacher-task-detail`（待办任务的，首页那条线）标题逐字相同。提到时必须写目录名。
