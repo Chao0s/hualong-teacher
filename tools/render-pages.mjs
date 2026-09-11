@@ -190,6 +190,11 @@ const bad = [];
  * 因为 config.js 指的 3860 上没有服务。**那是真的红，不是杂讯。**
  */
 const errors = [];
+/**
+ * 读不到页面文字的屏。**与 `errors` 分开** —— 那是「读到内容、内容是失败」，
+ * 这是「根本没读到」。合成一个数就分不出「0 个错误」与「0 次成功读取」。
+ */
+const readFail = [];
 const ERROR_MARKERS = [/网络请求失败/, /请求失败/, /加载失败/, /request:fail/, /服务器错误/, /系统繁忙/];
 
 /**
@@ -263,12 +268,19 @@ for (const route of target) {
     await mp.screenshot({ path: shot });
 
     // 画出来了，但画的是不是「失败」？取整页文字再扫标记。
-    // 取不到就当没线索 —— **不把「取不到」判成有错**（那会造出假红）。
+    //
+    // **「读不到」与「读到是空的」必须分开。** 从前两者都走同一个 catch，
+    // 于是 `wxml()` 一旦失败，这一屏就静默地算作「没有错误提示」——
+    // 报出来的 0 可能是「0 个错误」，也可能是「0 次成功读取」，而两者意思相反。
+    // 静默跳过的检查与静默截短的检查是同一种毛病。
     let pageText = '';
+    let readOk = false;
     try {
       const wxml = await page.wxml();
       pageText = (typeof wxml === 'string' ? wxml : JSON.stringify(wxml)).replace(/<[^>]*>/g, ' ');
-    } catch { /* 取不到就跳过这一项检查 */ }
+      readOk = pageText.trim().length > 0;
+    } catch { /* 读不到 —— 记下来，不当作「没有错误」 */ }
+    if (!readOk) readFail.push(route);
 
     // **有的屏本来就需要参数**（某条活动的详情页要 activity_id）。不带参数进不去
     // 是设计好的，而它会写一句「缺少活动编号，请从党建活动列表进入」。
@@ -293,10 +305,11 @@ for (const route of target) {
   }
 }
 
-try { await mp.close(); } catch { /* 已关 */ }
-// **不杀 IDE。** 留着它，下一次跑直接接上 —— 上一条命令杀掉它就是 56 屏全红的来源
-// （下一条会连上一个正在死的 IDE）。它会一直占着 AUTO_PORT，那是有意的：
-// `auto --auto-port` 在埠已占用时会以「already started」退出，不会叠加出第二个会话。
+try { mp.disconnect(); } catch { /* 新版 disconnect 是同步的，返回 void */
+}
+// **只断开连接，不关会话。** `mp.close()` 会把自动化会话关掉 —— 那是共享资源，
+// 关掉它下一次跑就得重建（要等工程重载），而并行的工具（逐页对照）也接不上。
+// IDE 同样留着不关，理由一致。
 if (ide) console.log('  IDE 留着不关 —— 下一次跑直接接上。要关它：node .claude/skills/hualong-api-test/scripts/wxcli.mjs quit');
 
 console.log(`\n跑通 ${ok} 屏，失败 ${bad.length} 屏。`);
@@ -306,6 +319,13 @@ console.log(`\n跑通 ${ok} 屏，失败 ${bad.length} 屏。`);
 if (errors.length) {
   console.log(`\n渲染态有错误的屏 ${errors.length} 屏（画出来了，但画的是失败提示）：`);
   for (const e of errors) console.log(`  ⚠ ${e.route}  —— 屏上出现 ${e.marker}`);
+}
+
+// 读不到就必须说出来。**不说，那个 0 就会被读成「没有错误」。**
+if (readFail.length) {
+  console.log(`\n读不到页面文字的屏 ${readFail.length} 屏（**这几屏没被检查过**，不是「没有错误」）：`);
+  for (const r of readFail.slice(0, 10)) console.log(`  ? ${r}`);
+  if (readFail.length > 10) console.log(`  …还有 ${readFail.length - 10} 屏`);
 }
 
 if (bad.length) {
