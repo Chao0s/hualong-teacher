@@ -38,11 +38,15 @@ const NOTE = 'Try-it-out 需要本地测试后端（127.0.0.1:3860）与有效�
 const out = resolve(process.argv[2] || 'dist/api-doc');
 mkdirSync(out, { recursive: true });
 
-// 四个页面共用的一组链接，与本地服务（tools/swagger/server.mjs 的 NAV_URLS）同一个集合，
-// 只有两点不同：这里的网址是同一目录下的文件，且这里没有 `/review` 这一页 ——
-// 检测评审读的是本机跑出来的报告、写的是 /feedback，静态站上没有那两条。
-// 少的那一个键要写进 `omit`，否则 nav.mjs 当场抛错 —— 那是故意的，静默少一条链接
-// 正是这次要修掉的毛病。
+// 顶栏那一组链接，与本地服务（tools/swagger/server.mjs 的 NAV_URLS）同一个集合，
+// 只有网址形式不同：这里是同一目录下的文件。
+//
+// `/review` 两边都没有了 —— 2026-09-12 用户拍板把「检测评审」并进「按屏幕看」，
+// 本地回 302，这里就是同一份 `pages.html`。`NO_REVIEW` 留着：`omit` 是「这个键故意不给」
+// 的那句声明 —— 少一个键 nav.mjs 当场抛错（那是故意的），写下来才看得出是故意、不是漏了。
+//
+// 静态站没有 `/feedback` 路由，所以 `/pages` 那一份**不画可写的控件**（`canWrite:false`）。
+// 画一个按了会静默失败的按钮，比说清楚「回本机留结论」更坏。
 const NAV_URLS = {
   home: './index.html',
   roles: './roles.html',
@@ -70,6 +74,7 @@ writeFileSync(join(out, 'pages.html'), pagesPage({
   navUrls: NAV_URLS,
   omit: NO_REVIEW,
   extra: [RAW_HTML, SPEC_HTML],
+  canWrite: false,   // 静态站没有 /feedback 路由：不画按了会静默失败的按钮
 }));
 writeFileSync(join(out, 'pages.yaml'), pagesSpecForUi());
 writeFileSync(join(out, 'openapi.yaml'), specText());

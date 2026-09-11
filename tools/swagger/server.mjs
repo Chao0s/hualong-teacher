@@ -12,8 +12,11 @@
  *   /            the UI
  *   /roles       one HTML table of every operation with its allowed roles,
  *                its action_key and whatever GAP blocks it
- *   /pages       one card per screen: what that screen calls
- *   /review      the findings as a form — one verdict per row, saved
+ *   /pages       one card per screen: what that screen calls, the prototype
+ *                intents it marks, and the findings — every row of every
+ *                kind takes a verdict (dropdown + note + save)
+ *   /review      302 -> /pages. Merged into one page on 2026-09-12: two
+ *                pages for one question is why nobody could find either.
  *   /openapi.yaml  the raw contract
  *   /pages.yaml    the screen-grouped derived spec
  */
@@ -26,7 +29,6 @@ import { specPath, specText } from '../openapi-source.mjs';
 import { usedFrom } from '../lib/screen-ops-data.mjs';
 import { indexPage, rolesPage, specForUi, pagesSpecForUi } from './pages.mjs';
 import { pagesPage } from './pages-view.mjs';
-import { reviewPage } from './review-view.mjs';
 import { readFeedback, upsertFeedback, STATUS, STATUS_VALUES } from '../lib/feedback.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -46,21 +48,26 @@ const MIME = {
   '.yaml': 'application/yaml; charset=utf-8',
 };
 
-// 一条顶栏、一组链接。四个路由与四份视图共用这一个对象。
-// 从前四个路由各传一个子集，于是 /roles 到不了 /review —— 少一条链接从画面上看不出来。
-// 链接集合写在一处；缺键由 nav.mjs 当场抛错，不静默少一条。
+// 一条顶栏、一组链接。三个路由与三份视图共用这一个对象。
+// 链接集合写在一处；缺键由 nav.mjs 当场抛错，不静默少一条 ——
+// 每个路由各传一个子集的走法，会让某条链接少掉而从画面上看不出来。
+//
+// **没有 review 这一键**：2026-09-12 用户拍板把「检测评审」并进「按屏幕看」，
+// /review 只回 302。少了这一键就要在每一处写 omit（下面 NO_REVIEW），
+// 否则 navBar() 当场抛 —— 那是故意的：静默少一条链接正是这一轮要修掉的毛病。
 const NAV_URLS = {
   home: '/',
   roles: '/roles',
   pages: '/pages',
-  review: '/review',
   raw: '/openapi.yaml',
   spec: '/pages.yaml',
 };
+const NO_REVIEW = ['review'];
 
 const INDEX = indexPage({
   specUrl: '/openapi.local.yaml',
   navUrls: NAV_URLS,
+  omit: NO_REVIEW,
   note: 'Try-it-out 默认指向本地测试后端 <code>http://127.0.0.1:3860/api/v1</code>，需有效教师会话；也可在 Servers 中选择 mock',
 });
 
@@ -131,9 +138,14 @@ const server = createServer((req, res) => {
   }
 
   if (path === '/' || path === '/index.html') return send(200, MIME['.html'], INDEX);
-  if (path === '/roles') return send(200, MIME['.html'], rolesPage({ navUrls: NAV_URLS }));
-  if (path === '/pages') return send(200, MIME['.html'], pagesPage({ navUrls: NAV_URLS }));
-  if (path === '/review') return send(200, MIME['.html'], reviewPage({ navUrls: NAV_URLS }));
+  if (path === '/roles') return send(200, MIME['.html'], rolesPage({ navUrls: NAV_URLS, omit: NO_REVIEW }));
+  if (path === '/pages') return send(200, MIME['.html'], pagesPage({ navUrls: NAV_URLS, omit: NO_REVIEW }));
+  // 「检测评审」已并入「按屏幕看」（用户 2026-09-12 拍板：合成一页）。
+  // 旧链接 302 转过去，不留一个 404 —— 人手里那条链接还在书签里。
+  if (path === '/review' || path === '/review.html') {
+    res.writeHead(302, { location: '/pages', 'cache-control': 'no-store', 'content-type': MIME['.html'] });
+    return res.end('<p>这一页已并入 <a href="/pages">按屏幕看</a>。</p>');
+  }
   if (path === '/pages.yaml') return send(200, MIME['.yaml'], pagesSpecForUi());
   if (path === '/openapi.yaml') return send(200, MIME['.yaml'], specText());
   if (path === '/openapi.local.yaml') return send(200, MIME['.yaml'], specForUi());
@@ -152,7 +164,7 @@ server.listen(PORT, '127.0.0.1', () => {
   console.log(`Swagger UI      ->  http://localhost:${PORT}/`);
   console.log(`角色矩阵         ->  http://localhost:${PORT}/roles`);
   console.log(`按屏幕看         ->  http://localhost:${PORT}/pages`);
-  console.log(`检测评审（可写） ->  http://localhost:${PORT}/review`);
+  console.log(`检测评审         ->  /review 302 转 http://localhost:${PORT}/pages`);
   console.log(`按屏幕看的规格   ->  http://localhost:${PORT}/pages.yaml`);
   console.log(`契约文件         ->  ${specPath()}`);
 {

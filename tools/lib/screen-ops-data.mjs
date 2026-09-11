@@ -48,6 +48,9 @@ function backendRoot() {
   );
 }
 const BACKEND = backendRoot();
+/** 這一支是「後端在哪」的**唯一**決定處（候選表、當場失敗的理由都寫在上面的 backendRoot）。
+ *  `tools/lib/intent-join.mjs` 從這裡取，不再自己抄一份候選表。 */
+export const BACKEND_DIR = BACKEND;
 const SPEC = join(BACKEND, 'db', 'spec');
 
 /**
