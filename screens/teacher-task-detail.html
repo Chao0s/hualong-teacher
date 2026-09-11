@@ -19,44 +19,44 @@
 </style>
 </head>
 <body>
-<div class="phone">
+<div class="phone" data-intent="teacher-task-detail.phone">
   <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
-  <div class="nav-bar"><a class="back" href="teacher-tasks.html">‹</a><div class="nav-title">任务详情</div><span></span></div>
+  <div class="nav-bar"><a class="back" href="teacher-tasks.html" data-intent="teacher-task-detail.back">‹</a><div class="nav-title">任务详情</div><span></span></div>
   <div class="scroll">
-    <section class="chunk">
+    <section class="chunk" data-intent="teacher-task-detail.chunk">
       <div class="task-head">
-        <div class="kicker" id="source">教研组发起</div>
+        <div class="kicker" id="source" data-intent="teacher-task-detail.kicker">教研组发起</div>
         <h1 id="title">衣食住行艺课程资源包共建</h1>
         <p id="summary">收集班级实践材料，形成可共享的课程资源与案例素材。</p>
       </div>
-      <div class="chunk-title"><h2>任务说明</h2></div>
-      <div class="block"><div class="label">背景信息</div><div class="text" id="background"></div></div>
-      <div class="block"><div class="label">分工要求</div><div class="roles" id="roles"></div></div>
-      <div class="block"><div class="label">时间节点</div><div class="timeline" id="timeline"></div></div>
+      <div class="chunk-title" data-intent="teacher-task-detail.chunk-title"><h2>任务说明</h2></div>
+      <div class="block" data-intent="teacher-task-detail.block"><div class="label" data-intent="teacher-task-detail.label">背景信息</div><div class="text" id="background" data-intent="teacher-task-detail.text"></div></div>
+      <div class="block"><div class="label">分工要求</div><div class="roles" id="roles" data-intent="teacher-task-detail.roles"></div></div>
+      <div class="block"><div class="label">时间节点</div><div class="timeline" id="timeline" data-intent="teacher-task-detail.timeline"></div></div>
     </section>
 
     <section class="chunk">
       <div class="chunk-title"><h2>任务附件</h2></div>
-      <div class="attach" id="files"></div>
+      <div class="attach" id="files" data-intent="teacher-task-detail.attach"></div>
     </section>
 
     <section class="chunk" id="operationSection">
-      <div class="chunk-title"><h2>任务操作</h2><span class="status-pill" id="statusPill">待接收</span></div>
+      <div class="chunk-title"><h2>任务操作</h2><span class="status-pill" id="statusPill" data-intent="teacher-task-detail.status-pill">待接收</span></div>
       <div class="status-grid">
-        <button class="state-btn" type="button" data-state="已接受">接受</button>
+        <button class="state-btn" type="button" data-state="已接受" data-intent="teacher-task-detail.state-btn">接受</button>
         <button class="state-btn" type="button" data-state="完成">完成</button>
       </div>
     </section>
 
     <section class="chunk" id="submitSection">
-      <div class="submit-card">
+      <div class="submit-card" data-intent="teacher-task-detail.submit-card">
         <h3>提交材料 / 反馈</h3>
         <p>教师只需按分工上传照片、记录、说明或反馈。提交后进入管理端审核与汇总。</p>
-        <button class="primary" type="button" data-action="已进入材料提交">提交材料</button>
+        <button class="primary" type="button" data-action="已进入材料提交" data-intent="teacher-task-detail.primary">提交材料</button>
       </div>
     </section>
   </div>
-  <div class="toast" id="toast"></div>
+  <div class="toast" id="toast" data-intent="teacher-task-detail.toast"></div>
 </div>
 <script>
 (function(){
@@ -101,9 +101,9 @@
   document.getElementById("summary").textContent = task.summary;
   document.getElementById("background").textContent = task.background;
   statusPill.textContent = task.status;
-  document.getElementById("roles").innerHTML = task.roles.map(function(row){ return '<div class="role"><div class="role-name">'+row[0]+'</div><div class="role-work">'+row[1]+'</div></div>'; }).join("");
-  document.getElementById("timeline").innerHTML = task.timeline.map(function(row){ return '<div class="date">'+row[0]+'</div><div class="event">'+row[1]+'</div>'; }).join("");
-  document.getElementById("files").innerHTML = task.files.map(function(file){ return '<div class="attach-row"><div><div class="file-name">'+file[0]+'</div><div class="file-meta">'+file[1]+'</div></div><div class="file-actions"><button type="button" data-action="预览：'+file[0]+'">预览</button><button type="button" data-action="下载：'+file[0]+'">下载</button></div></div>'; }).join("");
+  document.getElementById("roles").innerHTML = task.roles.map(function(row){ return '<div class="role" data-intent="teacher-task-detail.role"><div class="role-name" data-intent="teacher-task-detail.role-name">'+row[0]+'</div><div class="role-work" data-intent="teacher-task-detail.role-work">'+row[1]+'</div></div>'; }).join("");
+  document.getElementById("timeline").innerHTML = task.timeline.map(function(row){ return '<div class="date" data-intent="teacher-task-detail.date">'+row[0]+'</div><div class="event" data-intent="teacher-task-detail.event">'+row[1]+'</div>'; }).join("");
+  document.getElementById("files").innerHTML = task.files.map(function(file){ return '<div class="attach-row"><div><div class="file-name" data-intent="teacher-task-detail.file-name">'+file[0]+'</div><div class="file-meta" data-intent="teacher-task-detail.file-meta">'+file[1]+'</div></div><div class="file-actions" data-intent="teacher-task-detail.file-actions"><button type="button" data-action="预览：'+file[0]+'">预览</button><button type="button" data-action="下载：'+file[0]+'">下载</button></div></div>'; }).join("");
   if(task.status === "完成"){
     document.getElementById("operationSection").hidden = true;
     document.getElementById("submitSection").hidden = true;

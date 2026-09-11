@@ -118,10 +118,10 @@
 </style>
 </head>
 <body>
-<div class="phone">
+<div class="phone" data-intent="home.phone">
   <div class="status-bar">
-    <span class="time">9:41</span>
-    <span class="status-icons">
+    <span class="time" data-intent="home.time">9:41</span>
+    <span class="status-icons" data-intent="home.status-icons">
       <svg width="16" height="11" viewBox="0 0 16 11"><rect x="0" y="6" width="2" height="5" rx="0.5" fill="currentColor"></rect><rect x="3" y="5" width="2" height="6" rx="0.5" fill="currentColor"></rect><rect x="6" y="3" width="2" height="8" rx="0.5" fill="currentColor"></rect><rect x="9" y="1" width="2" height="10" rx="0.5" fill="currentColor"></rect></svg>
       <span style="font-size:11px">WiFi</span>
       <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0" y="0" width="21" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="1.2"></rect><rect x="2.5" y="2.5" width="16" height="7" rx="1.5" fill="currentColor"></rect><rect x="22.5" y="4" width="2" height="4" rx="0.8" fill="currentColor"></rect></svg>
@@ -131,15 +131,15 @@
 
   <div class="scroll">
     <div class="banner-wrap">
-      <div class="banner-img b1">教师工作台<span class="banner-sub">上传资源、处理待办任务</span></div>
+      <div class="banner-img b1" data-intent="home.banner-img">教师工作台<span class="banner-sub" data-intent="home.banner-sub">上传资源、处理待办任务</span></div>
     </div>
 
     <div class="sec">近期任务</div>
-    <div class="todo-cards">
-      <a class="todo-card" href="upload-resource.html" data-od-id="todo-card-upload">
-        <span class="dot-icon upload">传</span>
-        <span class="todo-title">上传资源</span>
-        <span class="todo-badge">提交审核</span>
+    <div class="todo-cards" data-intent="home.todo-cards">
+      <a class="todo-card" href="upload-resource.html" data-od-id="todo-card-upload" data-intent="home.todo-card">
+        <span class="dot-icon upload" data-intent="home.dot-icon">传</span>
+        <span class="todo-title" data-intent="home.todo-title">上传资源</span>
+        <span class="todo-badge" data-intent="home.todo-badge">提交审核</span>
       </a>
       <a class="todo-card" href="teacher-tasks.html" data-od-id="todo-card-tasks">
         <span class="dot-icon task">办</span>
@@ -155,8 +155,8 @@
 
     <div class="sec">常用入口</div>
     <div class="quick-grid">
-      <a class="quick-item" href="training-list.html">
-        <div class="quick-icon g1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5.5A2.5 2.5 0 016.5 3H20v16H6.5A2.5 2.5 0 014 16.5v-11z"></path><path d="M8 7h8M8 11h8M8 15h5"></path></svg></div><span class="quick-label">教研培训</span>
+      <a class="quick-item" href="training-list.html" data-intent="home.quick-item">
+        <div class="quick-icon g1" data-intent="home.quick-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5.5A2.5 2.5 0 016.5 3H20v16H6.5A2.5 2.5 0 014 16.5v-11z"></path><path d="M8 7h8M8 11h8M8 15h5"></path></svg></div><span class="quick-label" data-intent="home.quick-label">教研培训</span>
       </a>
       <a class="quick-item" href="home-school-moments.html">
         <div class="quick-icon g2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M4 12h16M4 18h10"></path><circle cx="18" cy="18" r="2"></circle></svg></div><span class="quick-label">在园时光</span>
@@ -171,10 +171,10 @@
 
     <div class="sec">推荐课程案例 <a class="section-more" href="case-library.html">全部案例 ›</a></div>
     <div class="resource-grid">
-      <a class="resource-card" href="case-detail.html">
-        <span class="resource-thumb">社</span>
-        <span class="resource-name">祠堂里的故事</span>
-        <span class="resource-tag">社会 · 住</span>
+      <a class="resource-card" href="case-detail.html" data-intent="home.resource-card">
+        <span class="resource-thumb" data-intent="home.resource-thumb">社</span>
+        <span class="resource-name" data-intent="home.resource-name">祠堂里的故事</span>
+        <span class="resource-tag" data-intent="home.resource-tag">社会 · 住</span>
       </a>
       <a class="resource-card" href="case-detail.html">
         <span class="resource-thumb">健</span>
@@ -191,7 +191,7 @@
   </div>
 
   <div class="tabs" aria-label="底部导航">
-    <a class="on" href="home.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span>首页</span></a>
+    <a class="on" href="home.html" data-intent="home.on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span>首页</span></a>
     <a href="school-affairs.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 15.4 7.2 18l.9-5.4-3.9-3.8 5.4-.8L12 3z"/></svg><span>党建管理</span></a>
     <a href="comprehensive-coordination.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M4 12h16M4 17h16"/><circle cx="8" cy="7" r="1.5" fill="currentColor"/><circle cx="16" cy="12" r="1.5" fill="currentColor"/><circle cx="11" cy="17" r="1.5" fill="currentColor"/></svg><span>综合协调</span></a>
     <a href="training-center.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5.5A2.5 2.5 0 016.5 3H20v16H6.5A2.5 2.5 0 014 16.5v-11z"/><path d="M8 7h8M8 11h8M8 15h5"/></svg><span>教研培训</span></a>

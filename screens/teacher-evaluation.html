@@ -46,13 +46,13 @@
 </style>
 </head>
 <body>
-<div class="phone">
+<div class="phone" data-intent="teacher-evaluation.phone">
   <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
-  <div class="nav-bar"><a class="back" href="growth-record.html">‹</a><div class="nav-title">教师评价</div><span></span></div>
+  <div class="nav-bar"><a class="back" href="growth-record.html" data-intent="teacher-evaluation.back">‹</a><div class="nav-title">教师评价</div><span></span></div>
   <div class="scroll">
     <div class="sec">评价入口</div>
     <div class="eval-entry-grid">
-      <a class="eval-entry primary" href="teacher-monthly-evaluation.html">
+      <a class="eval-entry primary" href="teacher-monthly-evaluation.html" data-intent="teacher-evaluation.eval-entry">
         <strong>月度评价</strong>
       </a>
       <a class="eval-entry" href="teacher-term-evaluation.html">
@@ -73,7 +73,7 @@
           <tr><th>幼儿</th><th>本月评价</th><th>学期评估</th><th>综合评估</th><th>教师寄语</th></tr>
         </thead>
         <tbody>
-          <tr><td class="name">陈小明</td><td><span class="dot-cell done" title="完成" aria-label="完成"></span></td><td><span class="dot-cell done" title="完成" aria-label="完成"></span></td><td><span class="dot-cell done" title="完成" aria-label="完成"></span></td><td><span class="dot-cell done" title="完成" aria-label="完成"></span></td></tr>
+          <tr><td class="name" data-intent="teacher-evaluation.name">陈小明</td><td><span class="dot-cell done" title="完成" aria-label="完成" data-intent="teacher-evaluation.dot-cell"></span></td><td><span class="dot-cell done" title="完成" aria-label="完成"></span></td><td><span class="dot-cell done" title="完成" aria-label="完成"></span></td><td><span class="dot-cell done" title="完成" aria-label="完成"></span></td></tr>
           <tr><td class="name">李雨萱</td><td><span class="dot-cell done" title="完成" aria-label="完成"></span></td><td><span class="dot-cell miss" title="未完成" aria-label="未完成"></span></td><td><span class="dot-cell miss" title="未完成" aria-label="未完成"></span></td><td><span class="dot-cell miss" title="未完成" aria-label="未完成"></span></td></tr>
           <tr><td class="name">张力轩</td><td><span class="dot-cell miss" title="未完成" aria-label="未完成"></span></td><td><span class="dot-cell miss" title="未完成" aria-label="未完成"></span></td><td><span class="dot-cell miss" title="未完成" aria-label="未完成"></span></td><td><span class="dot-cell miss" title="未完成" aria-label="未完成"></span></td></tr>
           <tr><td class="name">王子涵</td><td><span class="dot-cell done" title="完成" aria-label="完成"></span></td><td><span class="dot-cell done" title="完成" aria-label="完成"></span></td><td><span class="dot-cell done" title="完成" aria-label="完成"></span></td><td><span class="dot-cell miss" title="未完成" aria-label="未完成"></span></td></tr>
@@ -81,8 +81,8 @@
           <tr><td class="name">刘浩然</td><td><span class="dot-cell done" title="完成" aria-label="完成"></span></td><td><span class="dot-cell done" title="完成" aria-label="完成"></span></td><td><span class="dot-cell done" title="完成" aria-label="完成"></span></td><td><span class="dot-cell done" title="完成" aria-label="完成"></span></td></tr>
         </tbody>
       </table>
-      <div class="dot-legend" aria-label="进度状态说明">
-        <span class="item"><i class="dot-cell done"></i>完成</span>
+      <div class="dot-legend" aria-label="进度状态说明" data-intent="teacher-evaluation.dot-legend">
+        <span class="item" data-intent="teacher-evaluation.item"><i class="dot-cell done"></i>完成</span>
         <span class="item"><i class="dot-cell miss"></i>未完成</span>
       </div>
     </div>

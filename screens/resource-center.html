@@ -63,8 +63,8 @@
 </style>
 </head>
 <body>
-<div class="phone">
-  <div class="status-bar"><span class="time">9:41</span><span class="status-icons" style="font-size:12px">WiFi · ▮▮▮▮</span></div>
+<div class="phone" data-intent="resource-center.phone">
+  <div class="status-bar"><span class="time" data-intent="resource-center.time">9:41</span><span class="status-icons" style="font-size:12px" data-intent="resource-center.status-icons">WiFi · ▮▮▮▮</span></div>
   <div class="nav-bar">
     <a href="training-center.html" aria-label="返回教研培训部"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"></path></svg></a>
     <div class="nav-title">课程资源</div>
@@ -74,16 +74,16 @@
     <form class="search-bar" id="searchForm">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
       <input id="searchInput" type="search" placeholder="搜索资源、案例、活动主题">
-      <button class="search-action" type="submit">搜索</button>
+      <button class="search-action" type="submit" data-intent="resource-center.search-action">搜索</button>
     </form>
 
     <div class="hub-row">
-      <a class="hub-card resource" href="resource-library.html">
+      <a class="hub-card resource" href="resource-library.html" data-intent="resource-center.hub-card">
         <div class="hub-top">
-          <div class="hub-icon">
+          <div class="hub-icon" data-intent="resource-center.hub-icon">
             <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"></path><path d="M4 4.5A2.5 2.5 0 016.5 2H20v20H6.5A2.5 2.5 0 014 19.5z"></path></svg>
           </div>
-          <span class="arrow">›</span>
+          <span class="arrow" data-intent="resource-center.arrow">›</span>
         </div>
         <div><h3>课程资源库</h3><p>按衣食住行艺进入主题资源</p></div>
       </a>
@@ -99,14 +99,14 @@
     </div>
 
     <section>
-      <div class="sec">推荐资源 <a class="more" href="resource-library.html">全部</a></div>
+      <div class="sec">推荐资源 <a class="more" href="resource-library.html" data-intent="resource-center.more">全部</a></div>
       <div class="resource-list">
-        <a class="resource-card" href="resource-detail.html">
-          <div class="thumb"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21h18"></path><path d="M5 21V9l7-5 7 5v12"></path><path d="M9 21v-6h6v6"></path></svg></div>
+        <a class="resource-card" href="resource-detail.html" data-intent="resource-center.resource-card">
+          <div class="thumb" data-intent="resource-center.thumb"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21h18"></path><path d="M5 21V9l7-5 7 5v12"></path><path d="M9 21v-6h6v6"></path></svg></div>
           <div class="card-body">
-            <div class="card-top"><div class="name">沙湾留耕堂 · 何氏宗祠</div><span class="badge">住</span></div>
-            <div class="meta">传统建筑 · 大班可转化 · 关联 2 个案例</div>
-            <div class="summary">从祠堂空间、宗族故事与家庭团聚经验进入，帮助幼儿理解家庭与社区的情感纽带。</div>
+            <div class="card-top"><div class="name" data-intent="resource-center.name">沙湾留耕堂 · 何氏宗祠</div><span class="badge" data-intent="resource-center.badge">住</span></div>
+            <div class="meta" data-intent="resource-center.meta">传统建筑 · 大班可转化 · 关联 2 个案例</div>
+            <div class="summary" data-intent="resource-center.summary">从祠堂空间、宗族故事与家庭团聚经验进入，帮助幼儿理解家庭与社区的情感纽带。</div>
           </div>
         </a>
         <a class="resource-card" href="resource-detail.html">
@@ -123,7 +123,7 @@
     <section>
       <div class="sec">推荐案例 <a class="more" href="case-library.html">全部</a></div>
       <div class="case-list">
-        <a class="case-card" href="case-detail.html">
+        <a class="case-card" href="case-detail.html" data-intent="resource-center.case-card">
           <div class="thumb"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V5a2 2 0 012-2h12a2 2 0 012 2v14"></path><path d="M8 7h8"></path><path d="M8 11h8"></path><path d="M8 15h5"></path></svg></div>
           <div class="card-body">
             <div class="card-top"><div class="name">祠堂里的故事</div><span class="badge">大班</span></div>
@@ -147,7 +147,7 @@
     <a href="home.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span>首页</span></a>
     <a href="school-affairs.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 15.4 7.2 18l.9-5.4-3.9-3.8 5.4-.8L12 3z"/></svg><span>党建管理</span></a>
     <a href="comprehensive-coordination.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M4 12h16M4 17h16"/><circle cx="8" cy="7" r="1.5" fill="currentColor"/><circle cx="16" cy="12" r="1.5" fill="currentColor"/><circle cx="11" cy="17" r="1.5" fill="currentColor"/></svg><span>综合协调</span></a>
-    <a class="on" href="training-center.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5.5A2.5 2.5 0 016.5 3H20v16H6.5A2.5 2.5 0 014 16.5v-11z"/><path d="M8 7h8M8 11h8M8 15h5"/></svg><span>教研培训</span></a>
+    <a class="on" href="training-center.html" data-intent="resource-center.on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5.5A2.5 2.5 0 016.5 3H20v16H6.5A2.5 2.5 0 014 16.5v-11z"/><path d="M8 7h8M8 11h8M8 15h5"/></svg><span>教研培训</span></a>
     <a href="home-school.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg><span>家园社共育</span></a>
   </div>
 </div>

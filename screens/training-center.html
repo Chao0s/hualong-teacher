@@ -70,15 +70,15 @@
 </style>
 </head>
 <body>
-<div class="phone">
-  <div class="status-bar"><span class="time">9:41</span><span class="status-icons" style="font-size:12px">WiFi · ▮▮▮▮</span></div>
-  <div class="mini-menu"><span>•••</span><span>○</span></div>
+<div class="phone" data-intent="training-center.phone">
+  <div class="status-bar"><span class="time" data-intent="training-center.time">9:41</span><span class="status-icons" style="font-size:12px" data-intent="training-center.status-icons">WiFi · ▮▮▮▮</span></div>
+  <div class="mini-menu" data-intent="training-center.mini-menu"><span>•••</span><span>○</span></div>
   <div class="nav-bar">教研培训部</div>
   <div class="scroll">
     <section class="banner-wrap" id="featuredRecommendation" aria-label="最新推荐内容">
-      <div class="banner-slide on">
-        <div class="banner b1">
-          <div class="banner-kicker">推荐资源 · 社会</div>
+      <div class="banner-slide on" data-intent="training-center.banner-slide">
+        <div class="banner b1" data-intent="training-center.banner">
+          <div class="banner-kicker" data-intent="training-center.banner-kicker">推荐资源 · 社会</div>
           <h2>沙湾留耕堂 · 祠堂空间</h2>
           <p>以祠堂空间、家族故事和家乡记忆为线索，支持社会领域主题活动转化。</p>
         </div>
@@ -98,12 +98,12 @@
         </div>
       </div>
     </section>
-    <div class="banner-dots"><span class="banner-dot on"></span><span class="banner-dot"></span><span class="banner-dot"></span></div>
+    <div class="banner-dots" data-intent="training-center.banner-dots"><span class="banner-dot on" data-intent="training-center.banner-dot"></span><span class="banner-dot"></span><span class="banner-dot"></span></div>
 
     <div class="sec">快捷入口</div>
     <div class="entry-grid" aria-label="教研培训入口">
-      <a class="entry-card" href="course-building.html">
-        <div class="ec-icon">建</div>
+      <a class="entry-card" href="course-building.html" data-intent="training-center.entry-card">
+        <div class="ec-icon" data-intent="training-center.ec-icon">建</div>
         <h3>课程建设</h3>
         <p>课程体系沉淀</p>
       </a>
@@ -120,14 +120,14 @@
     </div>
 
     <section>
-      <div class="sec">推荐资源 <a class="more" href="resource-library.html">全部</a></div>
+      <div class="sec">推荐资源 <a class="more" href="resource-library.html" data-intent="training-center.more">全部</a></div>
       <div class="resource-list">
-        <a class="resource-card" href="resource-detail.html">
-          <div class="thumb">乡</div>
+        <a class="resource-card" href="resource-detail.html" data-intent="training-center.resource-card">
+          <div class="thumb" data-intent="training-center.thumb">乡</div>
           <div class="card-body">
-            <div class="card-top"><div class="name">沙湾留耕堂 · 祠堂空间</div><span class="badge">社会</span></div>
-            <div class="meta">传统建筑 · 大班 · 关联 2 个案例</div>
-            <div class="summary">以祠堂空间、家族故事和家乡记忆为线索，支持社会领域主题活动转化。</div>
+            <div class="card-top"><div class="name" data-intent="training-center.name">沙湾留耕堂 · 祠堂空间</div><span class="badge" data-intent="training-center.badge">社会</span></div>
+            <div class="meta" data-intent="training-center.meta">传统建筑 · 大班 · 关联 2 个案例</div>
+            <div class="summary" data-intent="training-center.summary">以祠堂空间、家族故事和家乡记忆为线索，支持社会领域主题活动转化。</div>
           </div>
         </a>
         <a class="resource-card" href="resource-detail.html">
@@ -152,7 +152,7 @@
     <section>
       <div class="sec">推荐案例 <a class="more" href="case-library.html">全部</a></div>
       <div class="case-list">
-        <a class="case-card" href="case-detail.html">
+        <a class="case-card" href="case-detail.html" data-intent="training-center.case-card">
           <div class="thumb">社</div>
           <div class="card-body">
             <div class="card-top"><div class="name">祠堂里的故事</div><span class="badge">大班</span></div>
@@ -185,7 +185,7 @@
     <a href="home.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span>首页</span></a>
     <a href="school-affairs.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 15.4 7.2 18l.9-5.4-3.9-3.8 5.4-.8L12 3z"/></svg><span>党建管理</span></a>
     <a href="comprehensive-coordination.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M4 12h16M4 17h16"/><circle cx="8" cy="7" r="1.5" fill="currentColor"/><circle cx="16" cy="12" r="1.5" fill="currentColor"/><circle cx="11" cy="17" r="1.5" fill="currentColor"/></svg><span>综合协调</span></a>
-    <a class="on" href="training-center.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5.5A2.5 2.5 0 016.5 3H20v16H6.5A2.5 2.5 0 014 16.5v-11z"/><path d="M8 7h8M8 11h8M8 15h5"/></svg><span>教研培训</span></a>
+    <a class="on" href="training-center.html" data-intent="training-center.on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5.5A2.5 2.5 0 016.5 3H20v16H6.5A2.5 2.5 0 014 16.5v-11z"/><path d="M8 7h8M8 11h8M8 15h5"/></svg><span>教研培训</span></a>
     <a href="home-school.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg><span>家园社共育</span></a>
   </div>
 </div>

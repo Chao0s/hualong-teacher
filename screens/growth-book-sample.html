@@ -20,28 +20,28 @@
 </style>
 </head>
 <body>
-<div class="phone">
+<div class="phone" data-intent="growth-book-sample.phone">
   <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
-  <div class="nav-bar"><a class="back" href="growth-book.html">‹</a><div class="nav-title">成长册样本</div><span></span></div>
+  <div class="nav-bar"><a class="back" href="growth-book.html" data-intent="growth-book-sample.back">‹</a><div class="nav-title">成长册样本</div><span></span></div>
   <div class="scroll" style="padding-bottom:20px">
-    <div class="sample-note">
-      <span class="sample-tag">样本</span>
+    <div class="sample-note" data-intent="growth-book-sample.sample-note">
+      <span class="sample-tag" data-intent="growth-book-sample.sample-tag">样本</span>
       <span>版式示意，内容为示例数据；实际成长册按每名幼儿的真实内容排版并在 App 内定稿开放。</span>
     </div>
 
-    <div class="book" id="book"></div>
+    <div class="book" id="book" data-intent="growth-book-sample.book"></div>
 
-    <div class="controls">
+    <div class="controls" data-intent="growth-book-sample.controls">
       <button class="nav-btn" id="prev" aria-label="上一页">‹</button>
       <div class="page-indicator" id="indicator">1 / 1</div>
       <button class="nav-btn" id="next" aria-label="下一页">›</button>
     </div>
 
     <div class="action-row" style="margin-top:12px">
-      <button class="btn" id="reset">回到封面</button>
+      <button class="btn" id="reset" data-intent="growth-book-sample.btn">回到封面</button>
       <a class="btn primary" href="growth-book-edit.html">编辑样板</a>
     </div>
-    <div class="hint" style="margin-top:10px">点击书页或使用左右按钮翻页。固定书脊不可关闭或换序；目录从实际正文反填页码，封面与美术边框由园所统一设置。</div>
+    <div class="hint" style="margin-top:10px" data-intent="growth-book-sample.hint">点击书页或使用左右按钮翻页。固定书脊不可关闭或换序；目录从实际正文反填页码，封面与美术边框由园所统一设置。</div>
   </div>
 </div>
 <script src="growth-book-render.js"></script>

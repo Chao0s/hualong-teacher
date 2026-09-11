@@ -35,20 +35,20 @@
 </style>
 </head>
 <body>
-<div class="phone">
+<div class="phone" data-intent="teacher-profile.phone">
   <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
   <div class="nav-bar">
     <a href="training-list.html" aria-label="返回教研培训"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></a>
     <div class="nav-title">个人档案</div>
-    <button class="edit-btn" type="button" id="editProfile">编辑</button>
+    <button class="edit-btn" type="button" id="editProfile" data-intent="teacher-profile.edit-btn">编辑</button>
   </div>
   <div class="scroll">
-    <section class="chunk">
+    <section class="chunk" data-intent="teacher-profile.chunk">
       <div class="sec">基本履历</div>
       <div class="hard-layout">
-        <div class="photo">教师<br>照片</div>
+        <div class="photo" data-intent="teacher-profile.photo">教师<br>照片</div>
         <div class="field-list">
-          <div class="field"><div class="label">姓名</div><div class="value">林晓敏</div></div>
+          <div class="field" data-intent="teacher-profile.field"><div class="label" data-intent="teacher-profile.label">姓名</div><div class="value" data-intent="teacher-profile.value">林晓敏</div></div>
           <div class="field"><div class="label">任教班级</div><div class="value">中一班</div></div>
           <div class="field"><div class="label">岗位</div><div class="value">主班</div></div>
           <div class="field"><div class="label">职称</div><div class="value">一级</div></div>
@@ -61,10 +61,10 @@
 
     <section class="chunk">
       <div class="sec">资质与荣誉</div>
-      <div class="soft-block">
-        <div class="subhead">资格证书</div>
+      <div class="soft-block" data-intent="teacher-profile.soft-block">
+        <div class="subhead" data-intent="teacher-profile.subhead">资格证书</div>
         <div class="item-list">
-          <div class="item"><div><div class="item-title">本科学历证书 · 心理学.pdf</div><div class="badge-row"><span class="badge">学历证书</span></div></div><div class="file-actions"><button type="button" data-preview="本科学历证书 · 心理学.pdf">预览</button><a download="本科学历证书 · 心理学.txt" href="data:text/plain;charset=utf-8,%E6%9C%AC%E7%A7%91%E5%AD%A6%E5%8E%86%E8%AF%81%E4%B9%A6%C2%B7%E5%BF%83%E7%90%86%E5%AD%A6">下载</a></div></div>
+          <div class="item" data-intent="teacher-profile.item"><div><div class="item-title" data-intent="teacher-profile.item-title">本科学历证书 · 心理学.pdf</div><div class="badge-row"><span class="badge" data-intent="teacher-profile.badge">学历证书</span></div></div><div class="file-actions" data-intent="teacher-profile.file-actions"><button type="button" data-preview="本科学历证书 · 心理学.pdf">预览</button><a download="本科学历证书 · 心理学.txt" href="data:text/plain;charset=utf-8,%E6%9C%AC%E7%A7%91%E5%AD%A6%E5%8E%86%E8%AF%81%E4%B9%A6%C2%B7%E5%BF%83%E7%90%86%E5%AD%A6">下载</a></div></div>
           <div class="item"><div><div class="item-title">硕士学历证书 · 学前教育学.pdf</div><div class="badge-row"><span class="badge">学历证书</span></div></div><div class="file-actions"><button type="button" data-preview="硕士学历证书 · 学前教育学.pdf">预览</button><a download="硕士学历证书 · 学前教育学.txt" href="data:text/plain;charset=utf-8,%E7%A1%95%E5%A3%AB%E5%AD%A6%E5%8E%86%E8%AF%81%E4%B9%A6%C2%B7%E5%AD%A6%E5%89%8D%E6%95%99%E8%82%B2%E5%AD%A6">下载</a></div></div>
           <div class="item"><div><div class="item-title">幼儿园教师资格证.pdf</div><div class="badge-row"><span class="badge">能力证书</span></div></div><div class="file-actions"><button type="button" data-preview="幼儿园教师资格证.pdf">预览</button><a download="幼儿园教师资格证.txt" href="data:text/plain;charset=utf-8,%E5%B9%BC%E5%84%BF%E5%9B%AD%E6%95%99%E5%B8%88%E8%B5%84%E6%A0%BC%E8%AF%81">下载</a></div></div>
           <div class="item"><div><div class="item-title">普通话水平测试二级甲等证书.pdf</div><div class="badge-row"><span class="badge">能力证书</span></div></div><div class="file-actions"><button type="button" data-preview="普通话水平测试二级甲等证书.pdf">预览</button><a download="普通话水平测试二级甲等证书.txt" href="data:text/plain;charset=utf-8,%E6%99%AE%E9%80%9A%E8%AF%9D%E6%B0%B4%E5%B9%B3%E6%B5%8B%E8%AF%95%E4%BA%8C%E7%BA%A7%E7%94%B2%E7%AD%89%E8%AF%81%E4%B9%A6">下载</a></div></div>
@@ -83,7 +83,7 @@
     <div class="sheet" role="dialog" aria-label="提交个人档案修改">
       <div class="sheet-head">
         <div class="sheet-title">提交个人档案修改</div>
-        <button class="close-btn" type="button" id="closeSheet" aria-label="关闭">×</button>
+        <button class="close-btn" type="button" id="closeSheet" aria-label="关闭" data-intent="teacher-profile.close-btn">×</button>
       </div>
       <!-- 姓名与任教班级不在这份表单里。两者都是名冊权威持有的身份字段：姓名改动走管理端
            组织管理，班级由园方编班（DECISIONS.md B5 之后一位教师只属一个班，db_teacher.class_id
@@ -91,38 +91,38 @@
            db_teacher_credential，且经 db_teacher_profile_change 待审（screens.tsv 第 56 行）。
            留着这两个控件等于让教师给自己改授权边界 —— 安全红线 1 的 derived 层。改为只读回显。 -->
       <div class="form-grid">
-        <div class="form-row"><label>姓名</label><div class="readback" id="teacherName">林晓敏</div></div>
+        <div class="form-row"><label>姓名</label><div class="readback" id="teacherName" data-intent="teacher-profile.readback">林晓敏</div></div>
         <div class="form-row"><label>任教班级</label><div class="readback" id="teacherClass">中一班</div></div>
         <div class="form-row"><label for="teacherRole">岗位</label><select id="teacherRole" data-ui="teacher_profile.job_role"><option value="j1">主班</option><option value="j2">配班</option><option value="j3">保育员</option><option value="j4">教研组长</option><option value="j5">其他</option></select></div>
         <div class="form-row"><label for="teacherTitle">职称</label><select id="teacherTitle" data-ui="teacher_profile.professional_title"><option>正高</option><option>副高</option><option>一级</option><option>二级</option><option>三级</option></select></div>
         <div class="form-row"><label for="education">最高学历</label><select id="education" data-ui="teacher_profile.education"><option value="e1">中专</option><option value="e2">大专</option><option value="e3" selected>本科</option><option value="e4">硕士</option><option value="e5">博士</option><option value="e6">其他</option></select></div>
       </div>
-      <div class="upload-note">姓名与任教班级由园方名冊维护，如需更正请联系园所管理员。</div>
+      <div class="upload-note" data-intent="teacher-profile.upload-note">姓名与任教班级由园方名冊维护，如需更正请联系园所管理员。</div>
 
       <div class="edit-group">
         <div class="edit-group-head">
           <div class="edit-group-title">证书与奖项文件</div>
-          <button class="add-file" type="button" id="addMaterial">＋ 新增证书</button>
+          <button class="add-file" type="button" id="addMaterial" data-intent="teacher-profile.add-file">＋ 新增证书</button>
         </div>
         <div class="material-list" id="materialList">
           <div class="material-row">
             <div class="material-row-head">
-              <button class="remove-file" type="button">删除</button>
+              <button class="remove-file" type="button" data-intent="teacher-profile.remove-file">删除</button>
             </div>
             <div class="form-row">
               <label>文件类型</label>
-              <select class="material-type" data-ui="teacher_credential.type">
+              <select class="material-type" data-ui="teacher_credential.type" data-intent="teacher-profile.material-type">
                 <option>学历证书</option>
                 <option>能力证书</option>
                 <option>专业奖项</option>
               </select>
             </div>
             <div class="form-row material-category-row">
-              <label class="material-category-label">学历类别</label>
-              <select class="material-category" data-ui="teacher_credential.level"></select>
+              <label class="material-category-label" data-intent="teacher-profile.material-category-label">学历类别</label>
+              <select class="material-category" data-ui="teacher_credential.level" data-intent="teacher-profile.material-category"></select>
             </div>
-            <div class="form-row"><label>文件名称</label><input class="material-name" maxlength="150" data-ui="teacher_credential.name" value="学士学位证" placeholder="如：学士学位证"></div>
-            <div class="form-row"><label>上传原文件</label><input class="material-file" type="file" data-ui="teacher_credential.file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"></div>
+            <div class="form-row"><label>文件名称</label><input class="material-name" maxlength="150" data-ui="teacher_credential.name" value="学士学位证" placeholder="如：学士学位证" data-intent="teacher-profile.material-name"></div>
+            <div class="form-row"><label>上传原文件</label><input class="material-file" type="file" data-ui="teacher_credential.file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" data-intent="teacher-profile.material-file"></div>
           </div>
           <div class="material-row">
             <div class="material-row-head">
@@ -152,12 +152,12 @@
       </div>
 
       <div class="sheet-actions">
-        <button class="ghost" type="button" id="cancelEdit">取消</button>
-        <button class="primary" type="button" id="submitEdit">提交审核</button>
+        <button class="ghost" type="button" id="cancelEdit" data-intent="teacher-profile.ghost">取消</button>
+        <button class="primary" type="button" id="submitEdit" data-intent="teacher-profile.primary">提交审核</button>
       </div>
     </div>
   </div>
-  <div class="toast" id="toast">已提交审核</div>
+  <div class="toast" id="toast" data-intent="teacher-profile.toast">已提交审核</div>
 </div>
 <script>
   document.querySelectorAll('[data-preview]').forEach(function(button){

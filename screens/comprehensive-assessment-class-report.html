@@ -35,20 +35,20 @@
 </style>
 </head>
 <body>
-<div class="phone">
+<div class="phone" data-intent="comprehensive-assessment-class-report.phone">
   <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
-  <div class="mini-menu"><span>•••</span><span>○</span></div>
+  <div class="mini-menu" data-intent="comprehensive-assessment-class-report.mini-menu"><span>•••</span><span>○</span></div>
   <div class="nav-bar">
     <a href="growth-comprehensive-assessment.html" aria-label="返回综合评估"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></a>
     <div class="nav-title">班级评估报告</div>
     <span></span>
   </div>
   <div class="scroll">
-    <section class="chunk hero">
+    <section class="chunk hero" data-intent="comprehensive-assessment-class-report.chunk">
       <h1>中二班综合评估</h1>
       <p id="heroNote">汇总班级已完成的五大领域李克特量表。</p>
       <div class="summary-grid">
-        <div class="stat"><div class="num" id="doneRatio">0/0</div><div class="label">已完成</div></div>
+        <div class="stat" data-intent="comprehensive-assessment-class-report.stat"><div class="num" id="doneRatio" data-intent="comprehensive-assessment-class-report.num">0/0</div><div class="label" data-intent="comprehensive-assessment-class-report.label">已完成</div></div>
         <div class="stat"><div class="num" id="classAvg">—</div><div class="label">班级均分</div></div>
         <div class="stat"><div class="num">5</div><div class="label">评估领域</div></div>
       </div>
@@ -56,16 +56,16 @@
 
     <div class="sec">五大领域雷达图</div>
     <section class="chunk radar-wrap">
-      <svg class="radar" viewBox="0 0 200 200" aria-label="班级五大领域雷达图">
+      <svg class="radar" viewBox="0 0 200 200" aria-label="班级五大领域雷达图" data-intent="comprehensive-assessment-class-report.radar">
         <g id="grid"></g>
-        <polygon id="radarShape" class="shape" points=""></polygon>
+        <polygon id="radarShape" class="shape" points="" data-intent="comprehensive-assessment-class-report.shape"></polygon>
         <g id="dots"></g>
       </svg>
-      <div class="legend" id="legend"></div>
+      <div class="legend" id="legend" data-intent="comprehensive-assessment-class-report.legend"></div>
     </section>
 
     <div class="btn-row">
-      <a class="btn" href="comprehensive-assessment-form.html">继续评估</a>
+      <a class="btn" href="comprehensive-assessment-form.html" data-intent="comprehensive-assessment-class-report.btn">继续评估</a>
       <a class="btn primary" href="growth-comprehensive-assessment.html">返回进度</a>
     </div>
   </div>
@@ -115,7 +115,7 @@ function drawGrid() {
   labels.forEach((label, index) => {
     const edge = point(index, 5);
     const text = point(index, 5.78);
-    html += `<line class="axis" x1="${center.x}" y1="${center.y}" x2="${edge[0]}" y2="${edge[1]}"></line>`;
+    html += `<line class="axis" x1="${center.x}" y1="${center.y}" x2="${edge[0]}" y2="${edge[1]}" data-intent="comprehensive-assessment-class-report.axis"></line>`;
     html += `<text x="${text[0]}" y="${text[1]}" text-anchor="middle" dominant-baseline="middle" font-size="12" fill="#555">${label}</text>`;
   });
   document.getElementById('grid').innerHTML = html;
@@ -125,10 +125,10 @@ function render() {
   const points = averages.map((avg, index) => point(index, avg || 0));
   document.getElementById('radarShape').setAttribute('points', points.map(p => p.join(',')).join(' '));
   document.getElementById('dots').innerHTML = rated.length
-    ? points.map(p => `<circle class="dot" cx="${p[0]}" cy="${p[1]}" r="3.6"></circle>`).join('')
+    ? points.map(p => `<circle class="dot" cx="${p[0]}" cy="${p[1]}" r="3.6" data-intent="comprehensive-assessment-class-report.dot"></circle>`).join('')
     : '';
   document.getElementById('legend').innerHTML = labels.map((label, index) => `
-    <div class="metric"><strong>${label}</strong><span>${averages[index] ? averages[index].toFixed(1) : '未评'}</span></div>
+    <div class="metric" data-intent="comprehensive-assessment-class-report.metric"><strong>${label}</strong><span>${averages[index] ? averages[index].toFixed(1) : '未评'}</span></div>
   `).join('');
 }
 render();

@@ -11,16 +11,16 @@
 </style>
 </head>
 <body>
-<div class="phone">
+<div class="phone" data-intent="growth-book-view.phone">
   <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
-  <div class="nav-bar"><a class="back" href="growth-book.html">‹</a><div class="nav-title">成长册预览</div><span></span></div>
+  <div class="nav-bar"><a class="back" href="growth-book.html" data-intent="growth-book-view.back">‹</a><div class="nav-title">成长册预览</div><span></span></div>
   <div class="scroll" style="padding-bottom:20px">
     <div class="child-bar">
-      <div><strong id="childName" data-ui="growth_book.child">—</strong><div class="meta" data-ui="growth_book.period">中二班 · 2026 春季学期</div></div>
-      <span class="ready-tag" id="bookStatus" data-ui="growth_book.status">可预览</span>
+      <div><strong id="childName" data-ui="growth_book.child">—</strong><div class="meta" data-ui="growth_book.period" data-intent="growth-book-view.meta">中二班 · 2026 春季学期</div></div>
+      <span class="ready-tag" id="bookStatus" data-ui="growth_book.status" data-intent="growth-book-view.ready-tag">可预览</span>
     </div>
-    <div class="book" id="book"></div>
-    <div class="controls">
+    <div class="book" id="book" data-intent="growth-book-view.book"></div>
+    <div class="controls" data-intent="growth-book-view.controls">
       <button class="nav-btn" id="prev" aria-label="上一页">‹</button>
       <div class="page-indicator" id="indicator">1 / 1</div>
       <button class="nav-btn" id="next" aria-label="下一页">›</button>

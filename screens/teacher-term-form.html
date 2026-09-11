@@ -124,23 +124,23 @@
 </style>
 </head>
 <body>
-<div class="phone">
+<div class="phone" data-intent="teacher-term-form.phone">
   <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
-  <div class="nav-bar"><a class="back" href="teacher-term-evaluation.html">‹</a><div class="nav-title">填写学期评价</div><span></span></div>
+  <div class="nav-bar"><a class="back" href="teacher-term-evaluation.html" data-intent="teacher-term-form.back">‹</a><div class="nav-title">填写学期评价</div><span></span></div>
   <div class="scroll">
-    <div class="chunk form-card">
+    <div class="chunk form-card" data-intent="teacher-term-form.chunk">
       <label>评价对象</label>
-      <select class="select" id="childSelect" data-ui="term_eval.child_select"><option>陈小明</option><option>李雨萱</option><option>张力轩</option></select>
+      <select class="select" id="childSelect" data-ui="term_eval.child_select" data-intent="teacher-term-form.select"><option>陈小明</option><option>李雨萱</option><option>张力轩</option></select>
       <!-- 「五大领域评价」textarea 已删除。DECISIONS.md E6／F17 与 05 home-school-spec.md 的
            content_rule 说得很直白：E2 之后五大领域由 124 题量表逐题打分、领域分即时聚合，
            再用文字写一遍是重复劳动，而且两份说法可能互相矛盾（文字写「语言发展良好」而量表语言
            领域均分 2.3）。db_term_eval 只有 eval_text 一个内容列。量表给分数，寄语给温度。 -->
       <label>学期综合评语（最多 500 字）</label>
-      <textarea class="textarea" maxlength="500" data-ui="term_eval.textarea">本学期能稳定参与班级活动，规则意识和表达意愿持续提升，建议继续鼓励其在家庭场景中承担小任务。</textarea>
+      <textarea class="textarea" maxlength="500" data-ui="term_eval.textarea" data-intent="teacher-term-form.textarea">本学期能稳定参与班级活动，规则意识和表达意愿持续提升，建议继续鼓励其在家庭场景中承担小任务。</textarea>
       <label>关联月度评价照片</label>
       <div class="photo-row" id="importedRow"></div>
-      <div class="empty-hint" id="emptyHint">尚未导入照片，点击下方按钮从该幼儿的相册中选择。</div>
-      <button class="btn blue" style="width:100%" id="openAlbum">选择照片</button>
+      <div class="empty-hint" id="emptyHint" data-intent="teacher-term-form.empty-hint">尚未导入照片，点击下方按钮从该幼儿的相册中选择。</div>
+      <button class="btn blue" style="width:100%" id="openAlbum" data-intent="teacher-term-form.btn">选择照片</button>
       <div style="margin-top:14px"><button class="btn primary" style="width:100%">保存学期评价</button></div>
     </div>
   </div>
@@ -149,13 +149,13 @@
   <div class="sheet" id="albumSheet" aria-hidden="true">
     <div class="sheet-head">
       <h2 id="albumTitle">陈小明的月度评价相册</h2>
-      <button class="close" id="closeAlbum" aria-label="关闭">×</button>
+      <button class="close" id="closeAlbum" aria-label="关闭" data-intent="teacher-term-form.close">×</button>
     </div>
     <div class="album-scroll">
       <div class="album-group">
         <div class="group-title">3月</div>
         <div class="album-grid">
-          <div class="album-photo" data-label="3月建构">建构游戏</div>
+          <div class="album-photo" data-label="3月建构" data-intent="teacher-term-form.album-photo">建构游戏</div>
           <div class="album-photo" data-label="3月值日">值日生体验</div>
         </div>
       </div>

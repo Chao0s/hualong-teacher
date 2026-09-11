@@ -32,22 +32,22 @@
 </style>
 </head>
 <body>
-<div class="phone">
+<div class="phone" data-intent="teacher-message-detail.phone">
   <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
-  <div class="nav-bar"><a class="back" href="teacher-message.html">‹</a><div class="nav-title">寄语详情</div><span></span></div>
+  <div class="nav-bar"><a class="back" href="teacher-message.html" data-intent="teacher-message-detail.back">‹</a><div class="nav-title">寄语详情</div><span></span></div>
   <div class="scroll">
-    <div class="chunk">
+    <div class="chunk" data-intent="teacher-message-detail.chunk">
       <div class="msg-head">
-        <div class="avatar" id="childAvatar">明</div>
+        <div class="avatar" id="childAvatar" data-intent="teacher-message-detail.avatar">明</div>
         <div>
-          <div class="who" id="childName">陈小明</div>
-          <div class="meta" id="msgMeta">提交于 6月20日</div>
+          <div class="who" id="childName" data-intent="teacher-message-detail.who">陈小明</div>
+          <div class="meta" id="msgMeta" data-intent="teacher-message-detail.meta">提交于 6月20日</div>
         </div>
       </div>
-      <div class="msg-text" id="msgText"></div>
-      <div class="hint" style="margin-top:10px">寄语提交后永久只读。如本学期尚未提交，请返回寄语列表填写。</div>
-      <div class="edit-actions" id="viewActions">
-        <a class="btn ghost" href="teacher-message.html">返回</a>
+      <div class="msg-text" id="msgText" data-intent="teacher-message-detail.msg-text"></div>
+      <div class="hint" style="margin-top:10px" data-intent="teacher-message-detail.hint">寄语提交后永久只读。如本学期尚未提交，请返回寄语列表填写。</div>
+      <div class="edit-actions" id="viewActions" data-intent="teacher-message-detail.edit-actions">
+        <a class="btn ghost" href="teacher-message.html" data-intent="teacher-message-detail.btn">返回</a>
       </div>
     </div>
   </div>

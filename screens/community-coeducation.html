@@ -155,12 +155,12 @@
 </style>
 </head>
 <body>
-<div class="phone">
+<div class="phone" data-intent="community-coeducation.phone">
   <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
-  <div class="nav-bar"><a class="back" href="home-school.html">‹</a><div class="nav-title">社区共育</div><span></span></div>
+  <div class="nav-bar"><a class="back" href="home-school.html" data-intent="community-coeducation.back">‹</a><div class="nav-title">社区共育</div><span></span></div>
   <div class="scroll">
     <div class="filter-panel" aria-label="社区共育筛选">
-      <div class="field">
+      <div class="field" data-intent="community-coeducation.field">
         <label for="timeFilter">时间</label>
         <!-- 两个筛选都是查询参数，不是列；「全部」表示不加该条 predicate，不是列值。窗口边界由
              服务端按园所时区算（05 home-school-spec.md 社区共育 Feed 的 filter_binding）。
@@ -184,17 +184,17 @@
     </div>
 
     <div class="feed-list" id="feedList">
-      <article class="moment-card" data-id="c1" data-time="week" data-type="community" data-task="社区建筑里的纹样">
-        <div class="avatar">陈</div>
+      <article class="moment-card" data-id="c1" data-time="week" data-type="community" data-task="社区建筑里的纹样" data-intent="community-coeducation.moment-card">
+        <div class="avatar" data-intent="community-coeducation.avatar">陈</div>
         <div class="moment-body">
           <div class="moment-head"><strong>陈小明家长</strong><span>今天 09:18</span></div>
           <p>小明在祠堂门口找到木雕花纹，说“像衣服上的花边”。我们一起数了屋檐上的图案，并拍下他最喜欢的一处。</p>
           <div class="photo-grid">
-            <div class="feed-photo">门楼</div><div class="feed-photo">木雕</div><div class="feed-photo">记录</div>
+            <div class="feed-photo" data-intent="community-coeducation.feed-photo">门楼</div><div class="feed-photo">木雕</div><div class="feed-photo">记录</div>
           </div>
           <div class="moment-foot">
-            <span class="pill">社区任务</span>
-            <button class="add-material" data-add title="加入成长册" aria-label="加入成长册">+ 加入成长册</button>
+            <span class="pill" data-intent="community-coeducation.pill">社区任务</span>
+            <button class="add-material" data-add title="加入成长册" aria-label="加入成长册" data-intent="community-coeducation.add-material">+ 加入成长册</button>
           </div>
         </div>
       </article>
@@ -245,9 +245,9 @@
       </article>
     </div>
 
-    <div class="empty" id="emptyState">当前筛选下暂无家长提交内容</div>
+    <div class="empty" id="emptyState" data-intent="community-coeducation.empty">当前筛选下暂无家长提交内容</div>
   </div>
-  <div class="toast" id="toast">已加入成长册</div>
+  <div class="toast" id="toast" data-intent="community-coeducation.toast">已加入成长册</div>
 </div>
 
 <script src="growth-book-render.js"></script>

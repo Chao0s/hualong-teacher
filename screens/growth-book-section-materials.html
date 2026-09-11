@@ -16,22 +16,22 @@
 </style>
 </head>
 <body>
-<div class="phone">
+<div class="phone" data-intent="growth-book-section-materials.phone">
   <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
-  <div class="nav-bar"><a class="back" id="back" href="growth-book-edit.html">‹</a><div class="nav-title" id="pageTitle" data-ui="growth_book_section.name_input">栏目投稿</div><span></span></div>
+  <div class="nav-bar"><a class="back" id="back" href="growth-book-edit.html" data-intent="growth-book-section-materials.back">‹</a><div class="nav-title" id="pageTitle" data-ui="growth_book_section.name_input">栏目投稿</div><span></span></div>
   <div class="scroll">
-    <div class="summary"><span>已收齐</span><b id="completeCount">0 / 0</b></div>
+    <div class="summary" data-intent="growth-book-section-materials.summary"><span>已收齐</span><b id="completeCount">0 / 0</b></div>
     <div class="tabs" id="tabs">
-      <button class="on" data-filter="all">全部</button>
+      <button class="on" data-filter="all" data-intent="growth-book-section-materials.on">全部</button>
       <button data-filter="done">已完成</button>
       <button data-filter="missing">未提交</button>
     </div>
     <div id="list"></div>
     <div class="section-actions">
-      <button class="btn danger" id="deleteSection">删除栏目</button>
+      <button class="btn danger" id="deleteSection" data-intent="growth-book-section-materials.btn">删除栏目</button>
     </div>
   </div>
-  <div class="toast" id="toast"></div>
+  <div class="toast" id="toast" data-intent="growth-book-section-materials.toast"></div>
 </div>
 <script src="growth-book-render.js"></script>
 <script>
@@ -57,9 +57,9 @@ function render() {
   document.getElementById('list').innerHTML = visible.length ? visible.map(({ child, submission, state }) => {
     const images = submission && submission.images ? submission.images : [];
     const text = submission && submission.text ? submission.text : '';
-    const detail = state === 'done' ? `<div class="detail"><div class="photos">${images.slice(0, 2).map(label => `<div class="photo">${escapeText(label)}</div>`).join('')}</div><p class="parent-text">${escapeText(text)}</p></div>` : '';
-    return `<article class="submission" data-child="${child.id}"><div class="row"><span class="avatar">${child.name.slice(-1)}</span><div class="grow"><b>${child.name}</b><div class="meta">${state === 'done' ? '2 张照片 · 1 段文字' : '未提交'}</div></div>${state === 'done' ? '<button data-view>查看</button>' : '<button class="primary-action" data-remind>提醒家长</button>'}</div>${detail}</article>`;
-  }).join('') : '<div class="empty">暂无记录</div>';
+    const detail = state === 'done' ? `<div class="detail" data-intent="growth-book-section-materials.detail"><div class="photos" data-intent="growth-book-section-materials.photos">${images.slice(0, 2).map(label => `<div class="photo" data-intent="growth-book-section-materials.photo">${escapeText(label)}</div>`).join('')}</div><p class="parent-text" data-intent="growth-book-section-materials.parent-text">${escapeText(text)}</p></div>` : '';
+    return `<article class="submission" data-child="${child.id}" data-intent="growth-book-section-materials.submission"><div class="row"><span class="avatar" data-intent="growth-book-section-materials.avatar">${child.name.slice(-1)}</span><div class="grow" data-intent="growth-book-section-materials.grow"><b>${child.name}</b><div class="meta" data-intent="growth-book-section-materials.meta">${state === 'done' ? '2 张照片 · 1 段文字' : '未提交'}</div></div>${state === 'done' ? '<button data-view>查看</button>' : '<button class="primary-action" data-remind data-intent="growth-book-section-materials.primary-action">提醒家长</button>'}</div>${detail}</article>`;
+  }).join('') : '<div class="empty" data-intent="growth-book-section-materials.empty">暂无记录</div>';
 }
 
 document.getElementById('tabs').addEventListener('click', event => {

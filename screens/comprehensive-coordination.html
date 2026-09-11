@@ -61,21 +61,21 @@
 </style>
 </head>
 <body>
-<div class="phone">
-  <div class="status-bar"><span class="time">9:41</span><span class="status-icons" style="font-size:12px">WiFi · ▮▮▮▮</span></div>
+<div class="phone" data-intent="comprehensive-coordination.phone">
+  <div class="status-bar"><span class="time" data-intent="comprehensive-coordination.time">9:41</span><span class="status-icons" style="font-size:12px" data-intent="comprehensive-coordination.status-icons">WiFi · ▮▮▮▮</span></div>
   <div class="nav-bar">综合协调部</div>
   <main class="scroll">
-    <section class="banner">
-      <div class="banner-kicker">园务协同支持</div>
+    <section class="banner" data-intent="comprehensive-coordination.banner">
+      <div class="banner-kicker" data-intent="comprehensive-coordination.banner-kicker">园务协同支持</div>
       <h2>统筹行政、人事与后勤保障</h2>
       <p>集中查看园内制度、通知、安全卫生与教师发展支持事项。</p>
-      <div class="banner-mark">协</div>
+      <div class="banner-mark" data-intent="comprehensive-coordination.banner-mark">协</div>
     </section>
 
     <div class="sec">行政统筹</div>
     <section class="section-grid three" aria-label="行政统筹">
-      <a class="entry-card" href="coordination-file-list.html?type=policy" aria-label="政策法规文件列表">
-        <div class="ec-icon">政</div>
+      <a class="entry-card" href="coordination-file-list.html?type=policy" aria-label="政策法规文件列表" data-intent="comprehensive-coordination.entry-card">
+        <div class="ec-icon" data-intent="comprehensive-coordination.ec-icon">政</div>
         <h3>政策法规</h3>
         <p>政策文件与制度依据</p>
       </a>
@@ -123,11 +123,11 @@
   <div class="tabs" aria-label="底部导航">
     <a href="home.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span>首页</span></a>
     <a href="school-affairs.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 15.4 7.2 18l.9-5.4-3.9-3.8 5.4-.8L12 3z"/></svg><span>党建管理</span></a>
-    <a class="on" href="comprehensive-coordination.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M4 12h16M4 17h16"/><circle cx="8" cy="7" r="1.5" fill="currentColor"/><circle cx="16" cy="12" r="1.5" fill="currentColor"/><circle cx="11" cy="17" r="1.5" fill="currentColor"/></svg><span>综合协调</span></a>
+    <a class="on" href="comprehensive-coordination.html" data-intent="comprehensive-coordination.on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M4 12h16M4 17h16"/><circle cx="8" cy="7" r="1.5" fill="currentColor"/><circle cx="16" cy="12" r="1.5" fill="currentColor"/><circle cx="11" cy="17" r="1.5" fill="currentColor"/></svg><span>综合协调</span></a>
     <a href="training-center.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5.5A2.5 2.5 0 016.5 3H20v16H6.5A2.5 2.5 0 014 16.5v-11z"/><path d="M8 7h8M8 11h8M8 15h5"/></svg><span>教研培训</span></a>
     <a href="home-school.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg><span>家园社共育</span></a>
   </div>
-  <div class="toast" id="toast">入口链接后续导入</div>
+  <div class="toast" id="toast" data-intent="comprehensive-coordination.toast">入口链接后续导入</div>
 </div>
 <script>
 (function(){

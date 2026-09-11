@@ -34,20 +34,20 @@
 </style>
 </head>
 <body>
-<div class="phone">
+<div class="phone" data-intent="upload-resource.phone">
   <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
-  <div class="nav-bar"><a class="back" href="home.html">‹</a><div class="nav-title">上传资料</div><span></span></div>
+  <div class="nav-bar"><a class="back" href="home.html" data-intent="upload-resource.back">‹</a><div class="nav-title">上传资料</div><span></span></div>
   <div class="scroll">
-    <section class="banner">
-      <div class="kicker">提交审核</div>
+    <section class="banner" data-intent="upload-resource.banner">
+      <div class="kicker" data-intent="upload-resource.kicker">提交审核</div>
       <h1>上传资源与案例</h1>
       <p>选择提交到资源库或案例库，系统会按对应资料标准生成表单，提交后进入审核流程。</p>
     </section>
 
-    <section class="chunk">
-      <div class="section-head"><div class="sec">上传目标</div><div class="hint">二选一</div></div>
+    <section class="chunk" data-intent="upload-resource.chunk">
+      <div class="section-head"><div class="sec">上传目标</div><div class="hint" data-intent="upload-resource.hint">二选一</div></div>
       <div class="target-grid" id="targets">
-        <button class="target on" type="button" data-type="resource"><span>资</span><strong>课程资源库</strong><small>本土材料、解读、获取与转化</small></button>
+        <button class="target on" type="button" data-type="resource" data-intent="upload-resource.target"><span>资</span><strong>课程资源库</strong><small>本土材料、解读、获取与转化</small></button>
         <button class="target" type="button" data-type="case"><span>案</span><strong>课程案例库</strong><small>活动案例、年级领域与关联资源</small></button>
       </div>
     </section>
@@ -58,10 +58,10 @@
          留着 select 等于让客户端供一个服务器必须自己拥有的值 —— 安全红线 1 的 derived 层。改为只读回显。 -->
     <section class="chunk">
       <div class="sec" style="margin-bottom:12px">上传人信息</div>
-      <div class="profile">
-        <div class="field">
+      <div class="profile" data-intent="upload-resource.profile">
+        <div class="field" data-intent="upload-resource.field">
           <label>姓名</label>
-          <div class="readback" id="teacherName">陈老师</div>
+          <div class="readback" id="teacherName" data-intent="upload-resource.readback">陈老师</div>
         </div>
         <div class="field">
           <label>班级</label>
@@ -73,11 +73,11 @@
 
     <section class="chunk">
       <div class="section-head"><div class="sec" id="formTitle">资源库材料</div><div class="hint" id="formHint">资源标准表单</div></div>
-      <div class="form" id="dynamicForm"></div>
+      <div class="form" id="dynamicForm" data-intent="upload-resource.form"></div>
     </section>
 
-    <div class="actions">
-      <button class="btn ghost" type="button" data-action="已保存草稿">保存草稿</button>
+    <div class="actions" data-intent="upload-resource.actions">
+      <button class="btn ghost" type="button" data-action="已保存草稿" data-intent="upload-resource.btn">保存草稿</button>
       <button class="btn primary" type="button" data-action="已提交审核">提交审核</button>
     </div>
   </div>
@@ -86,14 +86,14 @@
     <div class="panel">
       <div class="panel-head">
         <div class="panel-title" id="pickerTitle">选择内容</div>
-        <button class="close" type="button" id="closePicker">×</button>
+        <button class="close" type="button" id="closePicker" data-intent="upload-resource.close">×</button>
       </div>
-      <div class="filters" id="filterA"></div>
+      <div class="filters" id="filterA" data-intent="upload-resource.filters"></div>
       <div class="filters" id="filterB"></div>
       <div class="option-list" id="optionList"></div>
     </div>
   </div>
-  <div class="toast" id="toast"></div>
+  <div class="toast" id="toast" data-intent="upload-resource.toast"></div>
 </div>
 
 <script>
@@ -136,14 +136,14 @@
     timer = setTimeout(function(){ toast.classList.remove("show"); }, 1300);
   }
   function field(label, html, limit){
-    return '<div class="field"><label>'+label+(limit ? '<span class="limit">'+limit+'</span>' : '')+'</label>'+html+'</div>';
+    return '<div class="field"><label>'+label+(limit ? '<span class="limit" data-intent="upload-resource.limit">'+limit+'</span>' : '')+'</label>'+html+'</div>';
   }
   function selectedMeta(list, name){
     var item = list.find(function(row){ return row.name === name; });
     return item ? item.meta : "";
   }
   function imageUpload(){
-    return '<div class="image-upload"><div class="image-title">封面图片</div><label class="image-box file-input"><span class="upload-note">未选择文件</span><strong>上传封面</strong><input type="file" accept="image/*" data-upload-label="封面图片" data-ui="upload.cover"></label></div>';
+    return '<div class="image-upload" data-intent="upload-resource.image-upload"><div class="image-title" data-intent="upload-resource.image-title">封面图片</div><label class="image-box file-input"><span class="upload-note" data-intent="upload-resource.upload-note">未选择文件</span><strong>上传封面</strong><input type="file" accept="image/*" data-upload-label="封面图片" data-ui="upload.cover"></label></div>';
   }
   function render(){
     if(state.type === "resource"){
@@ -152,12 +152,12 @@
       form.innerHTML =
         field("资源名称", '<input class="input" maxlength="20" data-ui="upload.resource_name" value="沙湾留耕堂 · 何氏宗祠" />', "≤20字")+
         imageUpload()+
-        field("资源标签", '<select class="select" data-ui="upload.resource_tag"><option>衣</option><option>食</option><option selected>住</option><option>行</option><option>艺</option></select>')+
-        field("资源解读", '<textarea class="textarea" maxlength="200" data-ui="upload.resource_explain">从宗祠空间、木构梁架、砖雕纹样和族群记忆切入，帮助幼儿理解社区建筑承载的生活经验与公共文化。</textarea>', "≤200字")+
+        field("资源标签", '<select class="select" data-ui="upload.resource_tag" data-intent="upload-resource.select"><option>衣</option><option>食</option><option selected>住</option><option>行</option><option>艺</option></select>')+
+        field("资源解读", '<textarea class="textarea" maxlength="200" data-ui="upload.resource_explain" data-intent="upload-resource.textarea">从宗祠空间、木构梁架、砖雕纹样和族群记忆切入，帮助幼儿理解社区建筑承载的生活经验与公共文化。</textarea>', "≤200字")+
         field("资源获取", '<textarea class="textarea" maxlength="300" data-ui="upload.resource_access">教师可组织家长周末拍摄门楼、天井、厅堂和周边街巷照片，也可由园所统一整理安全可用的参观照片、讲解词和观察记录表。</textarea>', "≤300字")+
         field("资源转化", '<textarea class="textarea" maxlength="200" data-ui="upload.resource_trans">可转化为建筑观察、纹样拓印、社区地图和口述故事活动，引导幼儿从看见建筑到表达生活经验。</textarea>', "≤200字")+
-        '<div class="field"><label>课程应用</label><div class="pick-row"><div><div class="pick-name" id="selectedCase">'+state.selectedCase+'</div><div class="pick-meta">'+selectedMeta(cases, state.selectedCase)+'</div></div><button class="mini-btn" type="button" data-picker="case">选择</button></div></div>'+
-        '<div class="upload-row"><div><div class="upload-name">Word附件</div><div class="upload-note">资源说明、授权材料或整理文档</div></div><button class="mini-btn" type="button" data-action="已选择Word附件">上传</button></div>';
+        '<div class="field"><label>课程应用</label><div class="pick-row"><div><div class="pick-name" id="selectedCase" data-intent="upload-resource.pick-name">'+state.selectedCase+'</div><div class="pick-meta" data-intent="upload-resource.pick-meta">'+selectedMeta(cases, state.selectedCase)+'</div></div><button class="mini-btn" type="button" data-picker="case" data-intent="upload-resource.mini-btn">选择</button></div></div>'+
+        '<div class="upload-row"><div><div class="upload-name" data-intent="upload-resource.upload-name">Word附件</div><div class="upload-note">资源说明、授权材料或整理文档</div></div><button class="mini-btn" type="button" data-action="已选择Word附件">上传</button></div>';
     } else {
       formTitle.textContent = "案例库材料";
       formHint.textContent = "案例标准表单";
@@ -178,7 +178,7 @@
   }
   function chips(items, active, key){
     return items.map(function(item){
-      return '<button class="chip '+(item === active ? 'on' : '')+'" type="button" data-filter="'+key+'" data-value="'+item+'">'+item+'</button>';
+      return '<button class="chip '+(item === active ? 'on' : '')+'" type="button" data-filter="'+key+'" data-value="'+item+'" data-intent="upload-resource.chip">'+item+'</button>';
     }).join("");
   }
   function openPicker(type){
@@ -209,7 +209,7 @@
     optionList.innerHTML = filtered.map(function(item){
       var meta = state.picker === "case" ? item.grade + " · " + item.field + " · " + item.meta : item.tag + " · " + item.meta;
       if(item.name === "暂无") meta = item.meta;
-      return '<button class="option '+(item.name === selected ? 'on' : '')+'" type="button" data-option="'+item.name+'"><strong>'+item.name+'</strong><span>'+meta+'</span></button>';
+      return '<button class="option '+(item.name === selected ? 'on' : '')+'" type="button" data-option="'+item.name+'" data-intent="upload-resource.option"><strong>'+item.name+'</strong><span>'+meta+'</span></button>';
     }).join("");
   }
   targets.forEach(function(btn){
