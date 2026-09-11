@@ -456,12 +456,25 @@ hualong-backend/db/spec/operation-eli10.tsv      一个操作一行，三个固�
 正确的顺序（`db/testdata/README.md` 也写着）：
 
 ```bash
-docker run -d --name hl-pg -e POSTGRES_HOST_AUTH_METHOD=trust -p 5432:5432 postgres:16
+docker run -d --name hl-pg -e POSTGRES_HOST_AUTH_METHOD=trust -p 127.0.0.1:5432:5432 postgres:16
 docker exec hl-pg psql -U postgres -c "CREATE DATABASE hualong_test;"
 docker exec -i hl-pg psql -U postgres -d hualong_test -q < db/01_schema.sql
 docker exec -i hl-pg psql -U postgres -d hualong_test -q < db/testdata/testdata.sql
 docker exec -i hl-pg psql -U postgres -d hualong_test -q < db/testdata/verify.sql   # 20 段，每段应 (0 rows)
 cd db/testdata && node server/server.mjs                                           # 3860
+```
+
+**绑 `127.0.0.1`，不要写 `-p 5432:5432`。** Docker 默认把端口绑到 `0.0.0.0`，
+而这份容器跑的是 `trust`（无密码）。不写地址，同一局域网里任何机器都能无密码连成 `postgres`。
+本机开发只要 `127.0.0.1`（2026-09-12 收紧）。
+
+**重建容器不会丢库。** postgres 镜像自己建一个匿名卷挂在 `/var/lib/postgresql/data`，
+所以 `docker stop` / `start` 之后数据还在。`docker rm` **不带 `-v`** 时卷也留着，
+重建时把它挂回去即可：
+
+```bash
+VOL=$(docker inspect hl-pg --format '{{range .Mounts}}{{.Name}}{{end}}')
+docker rm hl-pg && docker run -d --name hl-pg ... -v "$VOL:/var/lib/postgresql/data" postgres:16
 ```
 
 **判据**：服务端启动横幅会印幼儿数。**印「6 名幼儿」就是灌错了**，应该是 60。
