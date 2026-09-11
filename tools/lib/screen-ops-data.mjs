@@ -31,7 +31,10 @@ const REPO = resolve(HERE, '..', '..');
  */
 function backendRoot() {
   const candidates = [
-    process.env.HUALONG_OPENAPI && resolve(dirname(process.env.HUALONG_OPENAPI), '..', '..'),
+    // HUALONG_OPENAPI 是 `…/hualong-backend/api/openapi.yaml`，往上**一层**就是后端根
+    // （`api` 的父目录）。写过两层，于是 CI 上推出的是工作区根，白试一个候选；
+    // 而本地那次「CI 模拟」因为兄弟目录兜住了，**假通过** —— 见下面 usedFrom()。
+    process.env.HUALONG_OPENAPI && resolve(dirname(process.env.HUALONG_OPENAPI), '..'),
     resolve(REPO, '..', 'hualong-backend'),
   ].filter(Boolean);
   for (const c of candidates) {
@@ -46,6 +49,19 @@ function backendRoot() {
 }
 const BACKEND = backendRoot();
 const SPEC = join(BACKEND, 'db', 'spec');
+
+/**
+ * 读的是哪一份后端，以及怎么找到的。
+ *
+ * **为什么要打出来**：本机永远有兄弟目录兜着，所以「CI 上到底读没读到」在本机测不出来 ——
+ * 我第一版就是这么假通过一次。把来源印出来，本机就能对着它断言「这次走的是
+ * HUALONG_OPENAPI 那条路，不是兜底」。与 `spec-inventory.mjs` 第一行印契约绝对路径同一个用意。
+ */
+export function usedFrom() {
+  return process.env.HUALONG_OPENAPI && BACKEND === resolve(dirname(process.env.HUALONG_OPENAPI), '..')
+    ? { root: BACKEND, how: 'HUALONG_OPENAPI' }
+    : { root: BACKEND, how: '兄弟目录 ../hualong-backend' };
+}
 
 const read = (p) => readFileSync(p, 'utf8').replace(/\r\n/g, '\n');
 

@@ -22,6 +22,7 @@ import { mkdirSync, writeFileSync, copyFileSync, existsSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { specPath, specText } from './openapi-source.mjs';
+import { usedFrom } from './lib/screen-ops-data.mjs';
 import { indexPage, rolesPage, specForUi, pagesSpecForUi } from './swagger/pages.mjs';
 import { pagesPage } from './swagger/pages-view.mjs';
 
@@ -67,5 +68,7 @@ for (const a of ASSETS) {
 }
 
 console.log(`契约   ${specPath()}`);
+const u = usedFrom();
+console.log(`两份表 ${u.root}  （来源：${u.how}）`);
 console.log(`站点   ${out}`);
 console.log(`文件   ${['index.html', 'roles.html', 'pages.html', 'openapi.yaml', 'openapi.local.yaml', 'pages.yaml', ...ASSETS].join(', ')}`);

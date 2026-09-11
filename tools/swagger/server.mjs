@@ -20,6 +20,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { extname, join, normalize, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { specPath, specText } from '../openapi-source.mjs';
+import { usedFrom } from '../lib/screen-ops-data.mjs';
 import { indexPage, rolesPage, specForUi, pagesSpecForUi } from './pages.mjs';
 import { pagesPage } from './pages-view.mjs';
 
@@ -79,4 +80,8 @@ server.listen(PORT, '127.0.0.1', () => {
   console.log(`按屏幕看         ->  http://localhost:${PORT}/pages`);
   console.log(`按屏幕看的规格   ->  http://localhost:${PORT}/pages.yaml`);
   console.log(`契约文件         ->  ${specPath()}`);
+{
+  const u = usedFrom();
+  console.log(`两份表           ->  ${u.root}  （来源：${u.how}）`);
+}
 });
