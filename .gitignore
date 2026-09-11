@@ -38,3 +38,8 @@ captures/_extracted/
 
 # 子代理的临时 worktree
 .claude/worktrees/
+
+# 中间派生物：eli10-facts.mjs 随时重生成，167 个操作的事实快照（204KB）。
+# 进库的是那一批批起草的草稿（eli10-drafts/）—— 那才是那 167 句人话的出处。
+.scratch/screen-operations/eli10-facts.jsonl
+.scratch/screen-operations/out/

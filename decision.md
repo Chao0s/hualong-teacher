@@ -969,3 +969,221 @@ CLAUDE.md §6「先写探针再改页面」。本轮到服务层与探针为止�
 新增GET /home-school/progress及其真实SQL实现，前端只读该结果。删除本页固定名单、固定状态和28／84%／6的示例；进入或从子页返回重读，失败不保留旧值，提供重试与空班提示。后端F30、DATABASE_SPEC、API-MODULES及API-CONTRACT v0.28同步。现有业务表足够，无DDL迁移。
 
 已完成数据库回滚测试与实际HTTP／客户端接线验证，圆点渲染仍待用户在微信开发者工具人工复查。此前四项平均与成长档案／册子参与总览统计的文字只保留为历史。
+
+## 2026-09-11：Swagger 加一层「按屏幕查看」——两份新表、ELI10、闸门与视图
+
+本轮只定决议，不写代码。未落的部分列在文末。
+
+### 一、要做的事
+
+Swagger UI 现在按 15 个模块 tag 分组（`auth`、`library`、`party`、`growth-book` 等）。这个分组看不出「某一页要用哪些 API」，于是看不出「某一页要用的 API 还不存在」。
+
+要加一层按屏幕看的视图。教师端 55 屏先做；家长端 18 屏与管理端 9 屏以后加行，机制不改。
+
+### 二、为什么现有产物不够
+
+| 现有产物 | 为什么不够 |
+|---|---|
+| `miniprogram/pages/` 的 55 页 | 是**静态页面**，不是 JS 生成的。JS 生成的是页面里的内容（`setData`） |
+| `npm run scan:wiring`（接线扫描） | 能算出「已接的页面调了哪些操作」，算不出「该有却没有」——后者是意图，不是现状 |
+| `api/openapi.yaml`（契约） | 七种 `x-hualong-*` 扩展里**没有屏幕维度**。15 个 tag 是模块名 |
+| `screens/*.html`（网页原型） | 没有可机读的按钮表。唯一词表 `data-ui` 只标表单字段；主页原型 `<button>` 0 个、`fetch` 0 处 |
+| `summary` | 标题式片段，中位 19 字（例：「当前主体、范围与学期上下文」） |
+| `description` | 工程口吻，中位 320 字、最长 987 字。`listResources` 的正文就是三条角色的 SQL predicate |
+
+「这个 API 做什么」这句人话，契约里**一句都没有**。本轮补上，并且补的那一层叫 **ELI10**（Explain Like I Am 10，解释给十岁小孩听），不是 ELI5。
+
+### 三、两份新表
+
+两份都住 `hualong-backend/db/spec/`。
+
+**`screen-operations.tsv`** —— 一个屏幕的一个操作一行。列：`screen`（目录名）、`mp_file`（与 `screens.tsv` 同键）、`screen_title`（中文标题，取自各页 `index.json` 的 `navigationBarTitleText`）、`state`、`operation_id`、`method`、`path`、`source`、`trigger_wxml`、`trigger_prototype`、`trigger_flag`、`gap`、`notes`。
+
+- `state` 是**屏幕状态**，不是业务状态机。受控词表六个：`list`／`detail`／`form`／`overlay`／`dialog`／`empty`。机器猜的带问号（`list?`），人核过的不带。理由：同一列里两种把握混在一起，事后没人分得清，而这一列正是拿来看缺口的。`growth-book`（「成长册」）就是需要拆状态的例子——列表、预检弹层、定稿对话框三处操作不同。
+- `operation_id` 是契约现成的唯一名（167 个操作每个都有），不拼 `method+path`。
+- 契约还没有的操作：`operation_id` 留空、`path` 写目标形态并标未存在。**不编假外键。**
+- `source` 取 `gen`／`human`／`planned`／`stale`。生成器只重写 `gen` 行。
+- `trigger_wxml` 与 `trigger_prototype` 两列都存，`trigger_flag` 记「只wxml／只原型／文案不同」。**以 wxml 为准；不一致要 flag；wxml 没有就提示原型有。** 存下原型那句是留证据，不是留权威。
+
+**`operation-eli10.tsv`** —— 一个操作一段人话。列：`key`、`幹嘛`、`怎麼走`、`碰到誰`、`derived_from`。
+
+- 三个固定标签，每个 1–2 短句。中文，说给不懂代码的人听（园长、教师、客户），照本仓库 CLAUDE.md §1 的 ASD-STE100 写法。例：`幹嘛` 写「教师把本班的栏目列出来」，不写「本班本学期栏目清单（SCOPED: class_id）」。
+- `碰到誰` 一格两行：`调用:` 与 `影响:`。
+- `key` 是 `operationId`。planned 行没有 `operationId`，用 `planned:<屏幕>:<短名>`。**闸门数 167 只数 key 是真 `operationId` 的行。**
+
+**`影响:` 那一行怎么算得出来**（不是猜的）：
+
+```
+api/action-registry.tsv（动作登记表）的 target_table / also_writes
+   ∩  db/spec/screens.tsv（屏幕登记表）的 primary_tables
+```
+
+两者用同一套 `db_*` 表名。教师端只读屏 36 个、写屏 20 个，所以影响关系只在那 20 屏一侧有内容。读操作只有 `调用:` 一行。
+
+### 四、生成器住本仓库
+
+`tools/scan-wiring.mjs` 加一个子命令，直接写 `../hualong-backend/db/spec/` 的两份表。
+
+**理由：**「页面 → service → 操作」这段遍历已经在 `scan-wiring` 手里，它也已经读过契约。搬到后端就是第二份实现，两份一定会漂开——与契约副本同一个毛病（本仓库 CLAUDE.md §7.3）。
+
+**一条硬规则：** `gen` 行下次跑不再出现时，标 `stale` 并让闸门变红。页面不再调某个操作是个信号，不是垃圾。静默删除会把信号吞掉。
+
+**子代理不写最终表。** 它们只交「批次稿」（一屏一组），生成器合并后写唯一那份 tsv。同一条 `调用:` 若两屏各算一份而不一致，报冲突，不静默取一份。
+
+### 五、视图
+
+| 路由 | 是什么 |
+|---|---|
+| `/` | **不动。** 传统 tag 分组继续可用——家长端与管理端的人在看 |
+| `/pages` | 新。一屏一卡，卡内四段，每行深链进 Swagger UI（`#/growth-book/listBookSections`，`deepLinking` 已开） |
+| `/pages.yaml` | 新。派生 spec：167 个操作全部保留，按屏幕分组（tag = 屏幕名），保留 try-it-out。无认领的单独一组 |
+| `/roles` | 加一列 ELI10 |
+
+卡内四段：已实作／页面要用契约没有／契约有页面没调／页面调了契约没有。
+
+**ELI10 不写进契约。** 它由本仓库 `tools/swagger/pages.mjs` 的 `specForUi()` 注入——那个函数已经在改 spec（往 `servers` 前面插本地后端），不新造机制。三条理由：①不往 478KB 的共享契约里塞 167 行人工文本；②`specForUi()` 已有先例；③**下一个人翻契约找不到它，所以本仓库 CLAUDE.md §7 要记一条。** 不同意的理由：不写进契约，家长端／管理端就看不到。
+
+### 六、无认领的两类，不要混
+
+167 个操作里约 63 个的角色里没有教师。本轮不映射它们的屏。**写成「无人认领」就是假发现**——它们有人用，只是不在这次范围。
+
+| 类别 | 怎么判 | 算不算发现 |
+|---|---|---|
+| 教师可达但无教师屏调用 | `x-hualong-roles` 含 `teacher`，且两份表里都没有行 | **算。** 这就是要找的缺口 |
+| 非教师角色 | `x-hualong-roles` 不含 `teacher` | 不算。标「本轮未覆盖（家长端／管理端）」 |
+
+这个分法机器能验，不是人拍的。ELI10 的 `碰到誰` 对第一类显式写「无（没有页面调用它）」，不留空——**留空与还没填长得一模一样。**
+
+### 七、闸门
+
+两个新检查文件（`db/tools/check-*.mjs`），`check-all.mjs` 由八步变十步。三个计数：
+
+1. 55 屏每屏至少一行
+2. 167 个操作逐个有 ELI10
+3. 无认领操作显式列出
+
+后两条只数计数，不需要新逻辑。**不设 `reviewed` 列**——起草完直接上。
+
+**代价：** 后端的「八步」字样要改（`hualong-backend/CLAUDE.md` 六处：第 62、65、78、80、82、84 行）。查过了：**「八步」没有被任何机器验。** `check-consistency.mjs` 的 `steps` 数的是 `DECISIONS.md` 的表数链（45 → 62），不是 `check-all` 的步数。所以改字样是纯文档改动，不会弄红任何一步。
+
+### 八、批次
+
+**按屏幕分批。** 一个子代理读一屏的 `index.js` 与 `index.wxml`，一趟同时交两样：这一屏的映射行、它认领的每个操作的 ELI10 三标签。
+
+**子代理串行跑**（用户偏好一次一个内置子代理，也顺带消掉并行撞车）。一批跑完把行给用户过目，同时追加进表。**进度存盘，不靠对话记。**
+
+**最后加一趟「契约直读」扫尾**，专收无人认领的操作——那批没有屏可派，按屏幕分批永远盖不到。
+
+### 九、不做的事
+
+- **不做「操作 × 屏幕」矩阵。** 167 × 55 太长，而且矩阵看不出状态。
+- **不做控件级**（每个可点元素一行）。那是接线报告的活，不塞进契约视图。
+- **不把 ELI10 写进 `openapi.yaml`。** 理由见 §五。
+- **不改 `/` 的默认分组。** 那是三端共享入口。
+
+### 十、计数（2026-09-11 实测）
+
+| 计数 | 值 | 出处 |
+|---|---|---|
+| 契约 | 137 paths／167 operations／153 schemas | `npm run spec:inventory` |
+| 教师端可达操作 | 104 | 同上 |
+| 教师端屏幕 | 55（46 已接 service，9 未接） | `docs/audit/wiring-2026-09-10.md` |
+| 教师端写屏 | 20（只读 36） | `hualong-backend/db/spec/screens.tsv` 的 `writes` 列 |
+| 动作登记表 | 135 行 | `hualong-backend/api/action-registry.tsv` |
+| 屏幕登记表 | 84 行（教师 57／家长 18／管理端 9） | 同上 `screens.tsv` |
+
+**一条容易搞错的判据：** `require('../../services/…')` **不等于已接**。`home-school`（「家园社共育」，底部导航那一项）`require` 了 `co-education`，却**一次都没调用**，扫描器判它未接——**扫描器是对的**。按「有没有 require」数得 47，按「有没有真调用」数才得 46。
+
+### 已落（同日）
+
+| 落了什么 | 在哪 |
+|---|---|
+| `screen-operations.tsv`（47 屏 128 行） | `hualong-backend/db/spec/` |
+| `operation-eli10.tsv`（167 行骨架，14 条已起草） | 同上 |
+| 生成器子命令 | `tools/scan-wiring.mjs --emit`，`npm run emit:screens` |
+| 两个检查器 | `hualong-backend/db/tools/check-screen-operations.mjs`、`check-eli10.mjs` |
+| 后端文档 | `hualong-backend/CLAUDE.md`（含「八个 TSV」那句改真）、`AGENTS.md` 同步、`db/spec/README.md` |
+| 起草流水线 | `.scratch/screen-operations/`：`eli10-facts.mjs` 导事实、`eli10-drafts/*.json` 存草稿、`apply-eli10-drafts.mjs` 合并 |
+
+**两个检查器先写好、没进 `check-all.mjs`，等两份表填满、全绿之后才进的列。** 判准照 `check-action-registry.mjs` 的先例：全绿才准入。
+
+### 55 屏全部有行（同日）
+
+`screen-operations.tsv` 现在 **137 行 / 55 屏**（gen 128、human 2、planned 1、no-api 6）。最后 8 屏的 handler 全是导航或本地状态，机器列不出调用，由人判：
+
+| 屏（屏幕上的名字） | 实情（实测） | 写成 |
+|---|---|---|
+| `comprehensive-coordination`（综合协调部）、`teacher-evaluation`（教师评价） | 只有一个 `onEntryTap` + 1 次导航 | `no-api` |
+| `training-center`（教研培训部） | 6 个 handler 全是轮播与导航，5 次导航 | `no-api` |
+| `resource-center`（课程资源） | 7 个 handler 全是搜索与导航，6 次导航 | `no-api` |
+| `course-building`（课程建设） | 衣食住行艺全写死；`onDownload` 只弹提示（原型那附件是 data: URI，小程序下不了） | `no-api` |
+| `growth-book-sample`（成长册样本） | 版式样张预览，翻的不是真实数据；0/12 版式包已发布 | `no-api` |
+| `coordination-file-list`（文件列表） | 用写死的 `CATALOG` 数组、本地 `showUpTo` 分页——**而契约里 `listCoordDocuments` 与 `getCoordDocument` 两条闲置** | `human` + `gap` |
+| `growth-book-task-manage`（亲子时光管理） | 写 `wx.setStorageSync` 本机存储，候选项 `BOOK_TASKS` 写死在 `utils/growth-book.js`；契约里没有对应端点 | `planned`（`path` 写目标形态 `/teacher/growth-book/task-items`） |
+
+**`coordination-file-list` 就是这一整套东西要找的那类问题**：一屏在用假数据，而契约里两条真端点没有任何客户端调用。它现在是 `human` 行 + `gap`，不再是一条只出现在文末「无人认领」清单里的死账。
+
+**新增 `source=no-api`**：一行明说「这一屏按设计不调任何操作」并带一句为什么。没有它，「缺行」与「本来就没有」就分不开，而验收第一条（55 屏每屏 ≥1 行）会逼人给中转页硬凑一行假数据。`check-screen-operations` 对新源的要求是：不许带任何操作，且必须有一句说明。
+
+**两份表都填满了，两个检查器都在 2026-09-11 当天进了列。** `check-all.mjs` 由八步变十步（第 9 步 `check-screen-operations`：137 行 / 55 屏 / 无悬空外键 / 无 stale；第 10 步 `check-eli10`：167/167 已起草），**十步全绿、exit 0**。后端 `CLAUDE.md` 与 `AGENTS.md` 的步数字样同批改完（两份逐字相同，「八步」只剩历史沿革那一句）。
+
+### 视图（同日）
+
+| 路由 | 是什么 |
+|---|---|
+| `/` | **没动。** 传统 tag 分组继续可用 |
+| `/pages` | 新。一屏一卡，卡内分段（已实作／页面要用契约没有／按设计不调任何操作／上一轮调过这轮不调了），每行深链进 Swagger UI |
+| `/pages.yaml` | 新。派生 spec：167 个操作全保留，按屏幕打 tag，保留 try-it-out |
+| `/roles` | 加一列「说人话」，并显示已起草计数 |
+
+**`/pages` 数据层的三处判据**（都写在 `tools/lib/screen-ops-data.mjs`）：①「无人认领」要排除**由 utils 内部调**的那两条（`GET`／`POST /auth/session` 由 `utils/auth.js` 打，不在这份表里，只按表里有没有会错报 10→12 条假发现）；②`POST /auth/session` 的角色是空的（登录前公开），所以 utils 那一支**不能要求 `isTeacher`**；③派生 spec 的 tag 用**屏幕名**，不是 operationId。
+
+**`/pages` 里「无人认领」分两层**：`service 层也没写` = 客户端一处都没有；`service 层写了、没有页面走得到` = 有导出函数但没有页面调到它。**两者要修的东西不一样。** 前者 6 条（与 `scan:wiring` 的 `contractUnused` 一致），后者 4 条（`getMoment`、`getPartyHome`、`withdrawCollection`、`revokeSession`）。
+
+**一条会咬人的规则：带 `gap` 的行不算「调用」。** 一条 `human` + `gap` 的行说的是「这一屏该调 X 而没调」，那是**缺陷记录**，不是调用记录。`buildPageView()` 的 `callers` 必须把它们排掉，否则 X 会从「无人认领」里消失 —— 正好把要修的问题藏起来。撞过一次：`coordination-file-list` 的 `listCoordDocuments`／`getCoordDocument` 一落行，无人认领就从 10 条掉到 8 条，少掉的两条恰恰是契约里闲置、页面该调的那两条。判据是 `gap` 非空，不是 `source=human`（不带 gap 的 human 行是「它调了」的正常断言）。
+
+**第三桶（客户端调了、契约没有）现在是 0 条，来源是实测**：`docs/audit/wiring-2026-09-11.json` 的 L3 层 0 条发现。这一桶要等 `planned` 行开始写才会有数。
+
+### 新表纠正了两处旧审计的归属（同日实测）
+
+`docs/audit/growth-book-endpoints.md`（2026-09-08 那份）把 `deleteBookSection`（删除草稿栏目）与 `startCollection`（发起征集）记在 `growth-book-section-materials`（栏目投稿）名下。**新表记在 `growth-book-section-edit`（栏目版面），而新表是对的** —— 代码里：
+
+| 页面 | `onDeleteSection()` 真做什么 |
+|---|---|
+| `growth-book-section-edit` | `bookApi.deleteSection(this.section.id)` —— 真的调了 |
+| `growth-book-section-materials` | 只 `wx.showToast(this.data.deleteNote)` —— **按钮置灰**，不调 |
+
+`startCollection` 同理：`growth-book-section-edit.onPublish()` 的注释写着「三发：存栏目、存版面、`publishSection()`（发布 + 开始征集两条端点）」。
+
+**差在哪**：那份文档读的是**原型**（原型里删除按钮是活的），新表读的是**代码**；而代码在 decision.md 记的那条「已发布栏目的『删除栏目』按钮置灰 —— 契约赢」之后就变了。这不是谁写错了，是**同一件事的两个时点**。要核归属一律看 `screen-operations.tsv`，它是从代码扫出来的。
+
+### 状态列现在全是机器猜的
+
+`screen-operations.tsv` 的 `state` 现在**每一格都带 `?`**（`list?`／`dialog?`／`form?`），意思是「扫描器按 handler 名猜的，没人核过」。扫描器看不到弹层，所以它分不出「列表页上的一个表单」是 `form` 还是 `overlay`。**要消掉这个问号得人逐屏过一遍**，那是另一批活；在那之前，读的人要知道带问号的是猜的。
+
+### 一条已知的语气/归属限制（不是缺陷，要说清）
+
+`screen-operations.tsv` 的 `trigger_wxml` 是「**第一个**沿 handler 调用链到达这个操作的按钮文案」，不是「唯一一个」。例：`growth-book` 的 `ensureCompilation` 记的触发语是「定稿并开放」—— 因为定稿那个 handler 干完会回头 `refresh()`，而 `refresh()` 里调了它。这句话本身是真的（那个按钮确实会触到它），但读的人容易以为「只有那个按钮碰它」。要更准就得记多个触发语，那是另一批活。
+
+### 未落
+
+- **ELI10 起草：167/167，已毕。** 六批草稿加一个修正批次，合并表查过：分页 0 缺口、次序 0 缺口、长度 0 超长。
+- **两个检查器已挂进 `check-all`**（八步 → 十步），十步全绿。
+
+### 起草的流水线（四个脚本，都在 `.scratch/screen-operations/`）
+
+| 脚本 | 干什么 |
+|---|---|
+| `eli10-facts.mjs` | 从契约导出每个操作的事实成 `eli10-facts.jsonl`（起草**只准看这份**） |
+| `eli10-drafts/bNN.json` | 一批一个文件。子代理只写这个，**不碰最终 tsv** |
+| `apply-eli10-drafts.mjs` | 合并进 `operation-eli10.tsv`。普通批次之间撞 key 直接报错退出；`overrides: true` 的修正批次排最后、允许覆盖 |
+| `verify-drafts.mjs` | `--merged` 查合并结果（真状态），传文件名查那一批 |
+
+**两个坑，都是撞出来的，写在这里免得下次再撞：**
+
+1. **事实文件漏了 `$ref` 引的参数。** 第一版只认 `p.in`，而 `$ref: '#/components/parameters/Limit'` 那个对象上没有 `in`，于是 `Limit`／`Cursor` 整个消失、起草的人不知道能翻页。修法是先把参数 `$ref` 解引用再按 `in` 分类。**已起草的 7 条因此漏了翻页／次序，用 `b99` 修正批次补的。**
+2. **拿草稿当靶子会把已修好的又报一遍。** `b02` 的 10 处提醒里 7 处早被 `b99` 改掉。判断「现在还有没有漏」要查**合并后的 tsv**（`--merged`），不是各份草稿。
+
+### 一条实测修正
+
+`docs/audit/wiring-2026-09-10.md` 说「已接 46」。实测是 **47**，扫描器的 `wired` 判据是「真的调用过 service」，不是「有没有 `require`」：`home-school` 页 `require` 了 `co-education` 却一次都没调用，扫描器因此判它未接 —— **扫描器是对的**。按「有没有 require」数得 47，按「有没有真调用」数得 46。本轮两份表与扫描器一致在 **47**。

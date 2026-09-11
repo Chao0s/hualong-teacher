@@ -1,0 +1,146 @@
+{
+  "batch": "b06-growth-book",
+  "tags": ["growth-book"],
+  "entries": {
+    "getSchoolBookSetting": {
+      "幹嘛": "一次看全本园成长册的可改设置：封面、Logo、园所介绍、版式与园所栏目。",
+      "怎麼走": "服务端从 db_school 取当前可改的工作区，带上六槽 assignment、book_setting_status 与两个 revision。历史发布版本不在这一份里，它们逐列存在 db_school_book_release。"
+    },
+    "saveSchoolBookSettingDraft": {
+      "幹嘛": "把园所成长册设置存成草稿。只有 d1 能改。",
+      "怎麼走": "请求要带上读到的 revision，服务端对不上就回 409 revision_stale 并回当前值，不自动合并。d2 期间一律 409，要改必须先撤回。"
+    },
+    "selectBookTemplateAssignment": {
+      "幹嘛": "给某个年级季节槽位选定版式包，一共六个槽位。",
+      "怎麼走": "服务端只收已 released 的 pack_code，六槽是 3 年级 × 2 季节 × 2 variant。它与封面、园所介绍、园所栏目同一个发布包，只在 d1 可用，共用 revision。"
+    },
+    "createSchoolBookSection": {
+      "幹嘛": "给全园每一本册子加一个相同的园所栏目。",
+      "怎麼走": "服务端新增一条园所级栏目，全园内容相同、教师端只读，不向家长征集。它与班级级的 db_growth_book_section 是两个对象。anchor_type 不得为 a4。"
+    },
+    "updateSchoolBookSection": {
+      "幹嘛": "改一个园所栏目的名字、版式或锚点。只有 d1 能改。",
+      "怎麼走": "服务端按 school_book_section_id 更新这条园所栏目，name、layout_code、anchor_after、anchor_type 必填。d2 之后不可改。"
+    },
+    "deleteSchoolBookSection": {
+      "幹嘛": "删掉一个园所栏目。只有 d1 能删。",
+      "怎麼走": "服务端只修受影响的 anchor，不扫班级编册、幼儿或已定稿册。d2 期间一律拒绝，撤回成 d1 后又能删。已复制进 db_school_book_release 的副本不动。"
+    },
+    "publishSchoolBookSetting": {
+      "幹嘛": "发布园所成长册设置，d1 变 d2，整包冻结。",
+      "怎麼走": "服务端一次事务做 CAS、写 d2 与发布时间，并生成一列不可变的 db_school_book_release。要带幂等键，发布前须完成覆盖 default／k1／k2／k3 的完整预览。无进行中学期回 409。"
+    },
+    "withdrawSchoolBookSetting": {
+      "幹嘛": "把已发布的园所设置撤回成 d1，要改先撤回。",
+      "怎麼走": "服务端先看本学期有没有任何 db_growth_book_compilation 处于 e2，有就回 409。撤回不删任何 db_school_book_release，历史版本不可变，book_setting_revision 照常递增。"
+    },
+    "saveTermGrowthBookMessage": {
+      "幹嘛": "保存本学期全园共用的学期寄语。",
+      "怎麼走": "服务端写 db_school_term.growth_book_message，逐学期一行。它与 book_setting_status 无关，d2 期间也能保存；唯一约束是本学期尚无 e2。册末寄语读的就是这一列。"
+    },
+    "ensureCompilation": {
+      "幹嘛": "建立或取回本班本学期的编册。",
+      "怎麼走": "服务端按 class_id 加 term_id 唯一键找，没有就建、有就取回，重发结果一样。前置是园所设置已 d2。class_id 与 school_id 由服务端派生。"
+    },
+    "updateCompilation": {
+      "幹嘛": "改本班编册的栏目勾选。只有 e1 能改。",
+      "怎麼走": "enabled_sections 只存 time、task 与班级自订 section_id，term、comp、message 固定启用。请求要带 revision，对不上回 409；e2 之后一律 409。未勾选栏目不进 TOC。"
+    },
+    "lockCompilation": {
+      "幹嘛": "锁定本班编册，e1 变 e2，不能回头。",
+      "怎麼走": "服务端一次重验：勾了 time 时所有在园活动须且只须归属一个主题，全部已勾选栏目齐备、寄语已填、逐册不超 200 页。锁上后普通编册写入一律 409，它是逐册 b1→b2 的前置。"
+    },
+    "listGrowthMaterials": {
+      "幹嘛": "列出本班本学期已入册的成长素材（在园时光与社区投稿）。",
+      "怎麼走": "服务端只取本班本学期编册里的素材，按 source_date 降序排。带 source_type 可只取一支；主题只属 m1，m2 的 time_topic_id 恒为 null。"
+    },
+    "createGrowthMaterial": {
+      "幹嘛": "把一则在园时光收进本学期编册。",
+      "怎麼走": "请求体只有 moment_id，服务端从这则活动抄一份标题与正文存进登记行，display_order 接在现有最大值之后。前置是编册 e1、活动已发布且属本班学期内、尚未登记过。收进来默认未归类。"
+    },
+    "assignGrowthMaterialsToTopic": {
+      "幹嘛": "把素材批量归入一个主题，或撤销归类。",
+      "怎麼走": "服务端只改 time_topic_id 这一列。传非空主题就是归入；传 null 并只带一个 id 就是撤销，素材回未归类清单但仍在册。m2 不接受主题，回 422。"
+    },
+    "deleteGrowthMaterial": {
+      "幹嘛": "把一条素材移出本学期编册，登记行真删。",
+      "怎麼走": "服务端删 db_growth_material 这一行，同时清掉它的教师选片引用。源 db_moment、源投稿与附件都不动。这一格不可恢复，重新收录同一则活动只回到未选片。"
+    },
+    "listTimeTopics": {
+      "幹嘛": "列出本学期的在园时光主题。",
+      "怎麼走": "服务端按每个主题全部活动的最早来源日期升序排名，空主题排在后面，最早日期相同才用 created_seq 再 time_topic_id 打破平手。客户端不重排。"
+    },
+    "createTimeTopic": {
+      "幹嘛": "新建一个在园时光主题。",
+      "怎麼走": "服务端建一条新行，compilation_id 与 created_by 自己派生，created_seq 接在现有最大值之后。它只给同日活动打破平手，不是显示顺序。同一 compilation 内主题名不重复。"
+    },
+    "renameTimeTopic": {
+      "幹嘛": "给一个在园时光主题改名。",
+      "怎麼走": "服务端只动 title 这一列，按 time_topic_id 定位并核对属本班本学期的 e1 编册。落在别的学期的主题回 404。created_seq 不能改。"
+    },
+    "deleteTimeTopic": {
+      "幹嘛": "删掉一个在园时光主题，素材留在册里。",
+      "怎麼走": "服务端同事务删主题这一行，并把该主题下全部素材的 time_topic_id 清空，它们回未归类清单、可重新归类。入册关系不解，重建同名主题再归一次即可恢复。"
+    },
+    "listBookSections": {
+      "幹嘛": "列出本班本学期新增的栏目。",
+      "怎麼走": "服务端只取本班本学期编册里的栏目，按 section_id 升序。预设页与固定前置页的 widget 在 layout pack JSON 里，不进 DB，也不从这里回。"
+    },
+    "createBookSection": {
+      "幹嘛": "给本班新增一个班级栏目。",
+      "怎麼走": "服务端在 db_growth_book_section 建一条新行，只存班级自己加的栏目，预设页的 widget 在 layout pack JSON 里。栏目与投稿属学期级，不跨学期复用。"
+    },
+    "updateBookSection": {
+      "幹嘛": "改一个班级栏目的名字、锚点或类型。只有 d1 能改。",
+      "怎麼走": "服务端按 section_id 更新这条班级栏目，name、anchor_after、anchor_type 必填。d2 之后版面已冻结，不能再改。"
+    },
+    "deleteBookSection": {
+      "幹嘛": "删掉一个还是草稿的班级栏目。",
+      "怎麼走": "服务端按 section_id 删除这条栏目。只有 d1 能删；d2 之后不可删，因为版面已冻结，且可能已有家庭提交。"
+    },
+    "saveBookWidgets": {
+      "幹嘛": "把整个栏目的 widget 版面一次存下来。只有 d1 能存。",
+      "怎麼走": "服务端对整栏目一次校验、一次存档，自己重跑同页重叠检测，任一重叠就拒整份。widget 最小 2×2、不得跨页或进边距，bound 框不够大就挡住，不默默截断。"
+    },
+    "publishBookSection": {
+      "幹嘛": "发布一个班级栏目，d1 变 d2，版面永久冻结。",
+      "怎麼走": "服务端把栏目推到 d2，版面就永久冻结、不能改，只能撤回征集。零 collected 槽的栏目发布回 422。教师在发布前有责任先预览。"
+    },
+    "startCollection": {
+      "幹嘛": "向家长发起栏目素材征集，c1 变 c2。",
+      "怎麼走": "服务端把 collection_status 写为 c2，并写 collection_started_at。只有 c2 才向家长开放：一个栏目在家长端就是一则待办，点进去列出全部 collected 槽位，一次交完。"
+    },
+    "withdrawCollection": {
+      "幹嘛": "撤回栏目征集，并删掉已收的家庭素材。",
+      "怎麼走": "服务端同事务删除这一轮已收的全部家庭草稿与终局提交、检查列、成品引用和对象存储上的文件。重新发布时家长要重交。任一相关幼儿已 b2 时永久禁止撤回。"
+    },
+    "remindSectionCollection": {
+      "幹嘛": "提醒还没交齐的家长补交栏目素材。",
+      "怎麼走": "服务端只对本班 d2 栏目中尚未交齐的幼儿发提醒，按当下 db_child.caretakers 每人建一笔 n4。要带幂等键防重放，但教师再点一次可以发新一轮。教师不得代传素材。"
+    },
+    "ensureGrowthBook": {
+      "幹嘛": "给一名幼儿建本学期的一本成长册。",
+      "怎麼走": "服务端按 child_id 加 term_id 唯一键建或取回一本册，并写死三项引用：pack_code、layout_seed、book_release_id。这三项永不回写，日后模板与园所内容变动不动既有册。"
+    },
+    "precheckClassBooks": {
+      "幹嘛": "定稿前先看全班每名幼儿的册子有没有问题，零写入。",
+      "怎麼走": "服务端按 child_id 升序逐名幼儿算缺失内容与超限原因，并回内容 fingerprint。教师可明确跳过问题幼儿，共享内容超限则不得跳过。"
+    },
+    "publishGrowthBook": {
+      "幹嘛": "把一本成长册定稿，b1 变 b2，之后永久唯读。",
+      "怎麼走": "服务端一次事务重验园所设置 d2、编册 e2、内容齐备与页数不超过 200，成功时向当时每名监护人各建一笔 n5。要带幂等键，fingerprint 与预检不符回 409 且零写入。"
+    },
+    "getResolvedBookManifest": {
+      "幹嘛": "把一本成长册解析成一份完整的页序与目录清单。",
+      "怎麼走": "服务端用同一个 composer 生成页序、TOC 与 fingerprint，页序从 cover、school_intro 到 back_cover 固定。它不落业务表、不带长期图片直链，每次请求重新授权。"
+    },
+    "getBookPage": {
+      "幹嘛": "按页码取成长册一页的内容和图。",
+      "怎麼走": "服务端按 ordinal 回这一页的内容，每个图片 widget 给按它自己像素框裁切的派生图，不是原图。客户端只报设备像素比，服务端钳到 ≤ 2。fingerprint 与 manifest 不一致回 409。"
+    },
+    "autosaveBookMaterial": {
+      "幹嘛": "家长逐槽自动保存栏目素材草稿。",
+      "怎麼走": "服务端逐槽存草稿，图片只存裁切好的成品，文字约 1 秒 debounce。这是家庭共用草稿：不计齐备、不给教师看，同槽多监护人整份后写覆盖前写。审核中拒绝编辑。"
+    }
+  }
+}

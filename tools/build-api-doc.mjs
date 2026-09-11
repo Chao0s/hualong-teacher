@@ -22,7 +22,8 @@ import { mkdirSync, writeFileSync, copyFileSync, existsSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { specPath, specText } from './openapi-source.mjs';
-import { indexPage, rolesPage, specForUi } from './swagger/pages.mjs';
+import { indexPage, rolesPage, specForUi, pagesSpecForUi } from './swagger/pages.mjs';
+import { pagesPage } from './swagger/pages-view.mjs';
 
 const UI_DIST = dirname(fileURLToPath(import.meta.resolve('swagger-ui-dist/swagger-ui.css')));
 
@@ -39,13 +40,23 @@ mkdirSync(out, { recursive: true });
 writeFileSync(join(out, 'index.html'), indexPage({
   specUrl: './openapi.local.yaml',
   rolesUrl: './roles.html',
+  pagesUrl: './pages.html',
   rawUrl: './openapi.yaml',
   note: NOTE,
 }));
 writeFileSync(join(out, 'roles.html'), rolesPage({
   homeUrl: './index.html',
   rawUrl: './openapi.yaml',
+  pagesUrl: './pages.html',
+  specUrl: './pages.yaml',
 }));
+writeFileSync(join(out, 'pages.html'), pagesPage({
+  homeUrl: './index.html',
+  rolesUrl: './roles.html',
+  rawUrl: './openapi.yaml',
+  specUrl: './pages.yaml',
+}));
+writeFileSync(join(out, 'pages.yaml'), pagesSpecForUi());
 writeFileSync(join(out, 'openapi.yaml'), specText());
 writeFileSync(join(out, 'openapi.local.yaml'), specForUi());
 
@@ -57,4 +68,4 @@ for (const a of ASSETS) {
 
 console.log(`契约   ${specPath()}`);
 console.log(`站点   ${out}`);
-console.log(`文件   ${['index.html', 'roles.html', 'openapi.yaml', 'openapi.local.yaml', ...ASSETS].join(', ')}`);
+console.log(`文件   ${['index.html', 'roles.html', 'pages.html', 'openapi.yaml', 'openapi.local.yaml', 'pages.yaml', ...ASSETS].join(', ')}`);

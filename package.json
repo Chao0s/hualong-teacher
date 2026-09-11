@@ -12,6 +12,7 @@
     "docs:api": "node tools/build-api-doc.mjs",
     "spec:inventory": "node tools/spec-inventory.mjs",
     "scan:wiring": "node tools/scan-wiring.mjs",
+    "emit:screens": "node tools/scan-wiring.mjs --emit",
     "check:remote-scripts": "node scripts/check-remote-scripts.mjs",
     "hooks:install": "git config core.hooksPath .githooks"
   },

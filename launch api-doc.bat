@@ -3,7 +3,7 @@ setlocal enabledelayedexpansion
 cd /d "%~dp0"
 
 echo ============================================
-echo   Hualong API contract - Swagger UI launcher
+echo   Hualong API contract - Swagger UI launcher (by module / by screen)
 echo ============================================
 
 where node >nul 2>nul
@@ -62,7 +62,9 @@ rem ---- 4) swagger UI in the foreground with the chosen port ----
 set "PORT=!PICKED!"
 echo.
 echo   Swagger UI    http://127.0.0.1:!PICKED!/
+echo   By screen     http://127.0.0.1:!PICKED!/pages
 echo   Role matrix   http://127.0.0.1:!PICKED!/roles
+echo   Screen spec   http://127.0.0.1:!PICKED!/pages.yaml
 echo   Raw contract  http://127.0.0.1:!PICKED!/openapi.yaml
 echo   Ctrl+C to stop
 echo.

@@ -5,6 +5,9 @@
  *   node tools/scan-wiring.mjs            # 写 docs/audit/wiring-<日期>.md / .json / .html
  *   node tools/scan-wiring.mjs --stdout   # 只打印 markdown
  *   node tools/scan-wiring.mjs --selftest # 跑 PRD §6 的三条自测，不扫仓库
+ *   node tools/scan-wiring.mjs --emit     # 写 hualong-backend/db/spec 的
+ *                                         # screen-operations.tsv 与 operation-eli10.tsv，
+ *                                         # 不写审计报告（--emit 与报告是两条路）
  *
  * 审核结论写在 docs/audit/wiring.allowlist.json（PRD 决策 5）。每条发现有一个稳定的 key
  * （`页:层:元素`），命中的规则会填进「结论」列；标 误报 的折叠到报告末尾。
@@ -40,6 +43,7 @@ import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import vm from 'node:vm';
 import { loadSpec, operations, specPath } from './openapi-source.mjs';
+import { emitScreenOperations } from './lib/emit-screen-operations.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, '..');
@@ -47,6 +51,7 @@ const MP = join(REPO, 'miniprogram');
 const BACKEND = resolve(REPO, '..', 'hualong-backend');
 const STDOUT = process.argv.includes('--stdout');
 const SELFTEST = process.argv.includes('--selftest');
+const EMIT = process.argv.includes('--emit');
 const require_ = createRequire(import.meta.url);
 
 const read = (p) => readFileSync(p, 'utf8').replace(/\r\n/g, '\n');
@@ -396,6 +401,24 @@ function balanced(text, open, close) {
   }
   return text;
 }
+/** 按顶层逗号把实参表切成一段段（引号与括号里的逗号不算）。 */
+function splitTop(text) {
+  const out = [];
+  let depth = 0, start = 0, quote = null;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (quote) { if (ch === quote && text[i - 1] !== '\\') quote = null; continue; }
+    if (ch === '\'' || ch === '"' || ch === '`') { quote = ch; continue; }
+    if ('{[('.includes(ch)) depth++;
+    else if ('}])'.includes(ch)) depth--;
+    else if (ch === ',' && depth === 0) { out.push(text.slice(start, i)); start = i + 1; }
+  }
+  out.push(text.slice(start));
+  return out.map((s) => s.trim()).filter(Boolean);
+}
+/** 调用点所在的函数名。抓不到就 '?'。 */
+const fnNameBefore = (s, idx) =>
+  ((s.slice(0, idx).match(/function\s+(\w+)\s*\([^)]*\)\s*\{(?![\s\S]*function\s+\w+\s*\([^)]*\)\s*\{)/) || [])[1] || '?');
 /** 对象字面量第一层的键。`a: expr, b, ...rest` → [a, b]；值里的标识符不算。 */
 function literalKeys(objText) {
   const out = [];
@@ -444,13 +467,30 @@ function scanService(file) {
     }
     const pathExpr = argsText.slice(0, cut);
     const optsText = argsText.slice(cut + 1);
-    const fnName = (src.slice(0, m.index).match(/function\s+(\w+)\s*\([^)]*\)\s*\{(?![\s\S]*function\s+\w+\s*\([^)]*\)\s*\{)/) || [])[1] || '?';
+    const fnName = fnNameBefore(src, m.index);
     const actionRef = /\baction\s*:\s*([\w.]+|'[\w.]+')/.exec(optsText);
     const action = actionRef ? (actionRef[1].startsWith("'") ? actionRef[1].slice(1, -1) : actionKeys.get(actionRef[1]) || actionRef[1]) : null;
     calls.push({
       line: lineOf(src, m.index), fn: fnName, verb: VERB[m[1]],
       pathExpr: pathExpr.trim(), path: resolvePathExpr(pathExpr, consts),
       action, bodyKeys: /^(post|put|patch)$/.test(m[1]) ? bodyKeys(optsText, src) : null,
+    });
+  }
+  // `api.request('POST', path, opts)` —— 低层出口，登录那一发走的就是它
+  // （`utils/auth.js` 的 `POST /auth/session`）。漏掉它，`createSession` 会被判成
+  // 「没有任何客户端调用」，交付物里就多一条假发现。
+  const RAW = /\bapi\.request\s*\(/g;
+  while ((m = RAW.exec(src))) {
+    const args = splitTop(balanced(src.slice(m.index + m[0].length - 1), '(', ')'));
+    const verb = args.length >= 2 ? /\s*['"]([A-Z]+)['"]\s*/.exec(args[0]) : null;
+    if (!verb) continue;
+    const optsText = args[2] || '';
+    const actionRef = /\baction\s*:\s*([\w.]+|'[\w.]+')/.exec(optsText);
+    const action = actionRef ? (actionRef[1].startsWith("'") ? actionRef[1].slice(1, -1) : actionKeys.get(actionRef[1]) || actionRef[1]) : null;
+    calls.push({
+      line: lineOf(src, m.index), fn: fnNameBefore(src, m.index), verb: verb[1],
+      pathExpr: args[1], path: resolvePathExpr(args[1], consts),
+      action, bodyKeys: null,
     });
   }
   const exported = [...(src.match(/module\.exports\s*=\s*\{([\s\S]*?)\};/) || ['', ''])[1].matchAll(/^\s*(\w+)\s*[,:]?/gm)].map((x) => x[1]);
@@ -612,6 +652,20 @@ const isFalsePositive = (v) => v && /^(误报|誤報|FALSE_POSITIVE)$/i.test(v.s
 const services = readdirSync(join(MP, 'services')).filter((f) => f.endsWith('.js'))
   .map((f) => scanService(join(MP, 'services', f)));
 const allWxml = pages.map((p) => readWxml(p.dir)).join('\n');
+
+/* ── --emit：写后端 db/spec 的两份表 ──────────────────────────────────────
+ * 决定与取舍见 hualong-teacher/decision.md 的 2026-09-11 一条。
+ * 走到这里才调：`pages`（55 页）、`services`（已扫的 service）、`ops`（契约）
+ * 都已就位，而审计报告一个字都还没写。
+ */
+if (EMIT) {
+  emitScreenOperations({
+    pages, loadPage, services, opIndex, normalize, ops, actionRegistry, screensTsv,
+    readWxml, parseWxml, eventsOf, prototypeInteractions, BACKEND, scanService,
+    utilsDir: join(MP, 'utils'),
+  });
+  process.exit(0);
+}
 
 const report = { generatedAt: new Date().toISOString(), contract: specPath(), pages: [], services: [], contractUnused: [], summary: {} };
 const LEVEL = { sure: '确定', likely: '高疑', review: '待审' };

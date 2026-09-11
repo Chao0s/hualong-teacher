@@ -20,7 +20,8 @@ import { readFileSync, existsSync } from 'node:fs';
 import { extname, join, normalize, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { specPath, specText } from '../openapi-source.mjs';
-import { indexPage, rolesPage, specForUi } from './pages.mjs';
+import { indexPage, rolesPage, specForUi, pagesSpecForUi } from './pages.mjs';
+import { pagesPage } from './pages-view.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 3830);
@@ -41,6 +42,7 @@ const MIME = {
 const INDEX = indexPage({
   specUrl: '/openapi.local.yaml',
   rolesUrl: '/roles',
+  pagesUrl: '/pages',
   rawUrl: '/openapi.yaml',
   note: 'Try-it-out 默认指向本地测试后端 <code>http://127.0.0.1:3860/api/v1</code>，需有效教师会话；也可在 Servers 中选择 mock',
 });
@@ -55,7 +57,9 @@ const server = createServer((req, res) => {
   };
 
   if (path === '/' || path === '/index.html') return send(200, MIME['.html'], INDEX);
-  if (path === '/roles') return send(200, MIME['.html'], rolesPage({ homeUrl: '/', rawUrl: '/openapi.yaml' }));
+  if (path === '/roles') return send(200, MIME['.html'], rolesPage({ homeUrl: '/', rawUrl: '/openapi.yaml', pagesUrl: '/pages', specUrl: '/pages.yaml' }));
+  if (path === '/pages') return send(200, MIME['.html'], pagesPage({ homeUrl: '/', rolesUrl: '/roles', rawUrl: '/openapi.yaml', specUrl: '/pages.yaml' }));
+  if (path === '/pages.yaml') return send(200, MIME['.yaml'], pagesSpecForUi());
   if (path === '/openapi.yaml') return send(200, MIME['.yaml'], specText());
   if (path === '/openapi.local.yaml') return send(200, MIME['.yaml'], specForUi());
 
@@ -72,5 +76,7 @@ const server = createServer((req, res) => {
 server.listen(PORT, '127.0.0.1', () => {
   console.log(`Swagger UI      ->  http://localhost:${PORT}/`);
   console.log(`角色矩阵         ->  http://localhost:${PORT}/roles`);
+  console.log(`按屏幕看         ->  http://localhost:${PORT}/pages`);
+  console.log(`按屏幕看的规格   ->  http://localhost:${PORT}/pages.yaml`);
   console.log(`契约文件         ->  ${specPath()}`);
 });
