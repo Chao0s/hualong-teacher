@@ -126,26 +126,41 @@ console.log(`工具: ${cliPath}`);
 console.log(`工程: ${PROJECT}`);
 console.log(`要跑 ${target.length} 屏，截图写到 ${OUT}\n`);
 
-// ── 自己起 IDE（不吃 automator.launch 那个 EINVAL）─────────────────────────
-// 自己拼带引号的整串：路径里有空格，shell 不会替你加。
-const cmdline = `"${cliPath}" auto --project "${PROJECT}" --auto-port ${AUTO_PORT} --trust-project`;
-console.log('起 IDE ...');
-const ide = spawn(cmdline, { shell: true, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
-let ideOut = '';
-const collect = (d) => { ideOut += String(d); };
-ide.stdout.on('data', collect);
-ide.stderr.on('data', collect);
-ide.on('error', (e) => console.error('  起 IDE 失败:', e.code ?? e.message));
-
-// 等自动化端口开
+// ── 接上 IDE：**埠上有活的就接，没有才起** ────────────────────────────────
+//
+// 从前每次都 spawn 一个新 IDE，跑完再 `ide.kill()`。于是「跑第二次」会连上
+// 上一个**还在关**的 IDE —— 连接建立成功，但此后每一次调用都抛
+// `Uncaught [object Object]`，56 屏全红。
+//
+// 2026-09-12 实测：同一条命令连跑三次，通 1 次、红 2 次，**就因为连上的是正在死的那一个**。
+// 这与本仓记过四次的「埠上坐着旧进程」是同一物种：连接成功不等于对象活着。
 let mp = null;
-for (let i = 1; i <= 30; i++) {
-  await sleep(2000);
-  try {
-    mp = await automator.connect({ wsEndpoint: `ws://127.0.0.1:${AUTO_PORT}` });
-    console.log(`  连上（第 ${i} 次，约 ${i * 2}s）\n`);
-    break;
-  } catch { /* 还没开，继续等 */ }
+
+try {
+  mp = await automator.connect({ wsEndpoint: `ws://127.0.0.1:${AUTO_PORT}` });
+  console.log(`  接上了（IDE 已经开着，没另起）\n`);
+} catch { /* 埠上没有活会话，自己起一个 */ }
+
+let ide = null;
+let ideOut = '';
+if (!mp) {
+  // 自己拼带引号的整串：路径里有空格，shell 不会替你加。
+  const cmdline = `"${cliPath}" auto --project "${PROJECT}" --auto-port ${AUTO_PORT} --trust-project`;
+  console.log('起 IDE ...');
+  ide = spawn(cmdline, { shell: true, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
+  const collect = (d) => { ideOut += String(d); };
+  ide.stdout.on('data', collect);
+  ide.stderr.on('data', collect);
+  ide.on('error', (e) => console.error('  起 IDE 失败:', e.code ?? e.message));
+
+  for (let i = 1; i <= 30; i++) {
+    await sleep(2000);
+    try {
+      mp = await automator.connect({ wsEndpoint: `ws://127.0.0.1:${AUTO_PORT}` });
+      console.log(`  连上（第 ${i} 次，约 ${i * 2}s）\n`);
+      break;
+    } catch { /* 还没开，继续等 */ }
+  }
 }
 
 if (!mp) {
@@ -167,11 +182,72 @@ if (!mp) {
 
 let ok = 0;
 const bad = [];
+/**
+ * 渲染态错误：屏幕画出来了，但画的是「失败」而不是内容。
+ *
+ * 其他十层都看不见这个 —— 它们查契约、查接线、查库，查不到「屏幕上写着请求失败」。
+ * 2026-09-12 第一次跑渲染就撞上：登录页画的是 `网络请求失败: request:fail`，
+ * 因为 config.js 指的 3860 上没有服务。**那是真的红，不是杂讯。**
+ */
+const errors = [];
+const ERROR_MARKERS = [/网络请求失败/, /请求失败/, /加载失败/, /request:fail/, /服务器错误/, /系统繁忙/];
+
+/**
+ * 已知会自己跳走的屏。
+ *
+ * 已登录时登录页跳首页（§3），所以它不可能停在页面栈顶 —— `reLaunch` 会抛
+ * `page is not on top of page stack`。**那是正确行为，不是缺陷**：
+ * 把「跳对了目标」判成通过，别让渲染层永远挂一条假红。
+ */
+const REDIRECTS = {
+  '/pages/login/index': 'pages/home/index',
+};
+
+/**
+ * 就绪闸门：**连上不等于工程载入完。**
+ *
+ * 冷启动时 DevTools 自己还在起，此时 `connect` 已经成功，但每一次导航都失败 ——
+ * 56 屏全红，而错误只是一个 `Uncaught [object Object]`，看不出是「还没好」。
+ * 2026-09-12 实测：`quit` 之后冷跑 = 0/56；IDE 暖着再跑 = 56/56，同一份代码。
+ *
+ * 判据不是「连上了」，而是「问得出当前是哪一页」。
+ */
+let ready = false;
+for (let i = 1; i <= 30; i++) {
+  try {
+    const p = await mp.currentPage();
+    if (p?.path) { ready = true; console.log(`  工程就绪（第 ${i} 次探测，约 ${i * 2}s）\n`); break; }
+  } catch { /* 还没载入完，继续等 */ }
+  await sleep(2000);
+}
+if (!ready) {
+  console.error('连上了自动化埠，但工程一直没载入出页面 —— 30 次探测都没拿到 currentPage。');
+  console.error('  常见原因：AppID 不对（看 CLI 印的是 Using AppID: 什么），或工程有编译错误。');
+  try { await mp.close(); } catch { /* 已关 */ }
+  process.exit(1);
+}
+
 for (const route of target) {
   const spec = SAMPLE[route] ?? { label: route, selectors: [] };
   try {
     const page = await mp.reLaunch(route);
     await sleep(900);
+
+    // `reLaunch` 之后**回看实际停在哪一页**：有的屏会立刻把自己换掉（已登录时登录页
+    // 跳首页，§3），此时 `reLaunch` 回的那个 page 物件已经作废，在它上面 `$()`／`data()`
+    // 会抛 `page is not on top of page stack`。判据是「跳对了目标」，不是「停在原地」。
+    const want = REDIRECTS[route];
+    if (want) {
+      const actual = await mp.currentPage().catch(() => null);
+      if (actual?.path === want) {
+        console.log(`✓ ${route}（${spec.label}）—— 自行跳到 ${actual.path}，符合预期`);
+        ok++;
+        continue;
+      }
+      bad.push({ route, err: `应跳到 ${want}，实际停在 ${actual?.path ?? '(取不到)'}` });
+      console.log(`✗ ${route} —— 应跳到 ${want}，实际停在 ${actual?.path ?? '(取不到)'}`);
+      continue;
+    }
 
     const found = [];
     for (const sel of spec.selectors) {
@@ -186,10 +262,21 @@ for (const route of target) {
     const shot = join(OUT, route.replace(/[/]/g, '_') + '.png');
     await mp.screenshot({ path: shot });
 
+    // 画出来了，但画的是不是「失败」？取整页文字再扫标记。
+    // 取不到就当没线索 —— **不把「取不到」判成有错**（那会造出假红）。
+    let pageText = '';
+    try {
+      const wxml = await page.wxml();
+      pageText = (typeof wxml === 'string' ? wxml : JSON.stringify(wxml)).replace(/<[^>]*>/g, ' ');
+    } catch { /* 取不到就跳过这一项检查 */ }
+    const marker = ERROR_MARKERS.find((re) => re.test(pageText));
+    if (marker) errors.push({ route, marker: String(marker) });
+
     console.log(`✓ ${route}（${spec.label}）`);
     console.log(`   元素: ${found.join('  ') || '(这一屏没配选择器)'}`);
     console.log(`   data 键: ${Object.keys(data).slice(0, 12).join(', ')}`);
     console.log(`   截图: ${shot}`);
+    if (marker) console.log(`   ⚠ 渲染态: 屏上出现错误提示 ${marker}`);
     ok++;
   } catch (err) {
     bad.push({ route, err: String(err.message ?? err).slice(0, 160) });
@@ -198,9 +285,20 @@ for (const route of target) {
 }
 
 try { await mp.close(); } catch { /* 已关 */ }
-try { ide.kill(); } catch { /* 已退 */ }
+// **不杀 IDE。** 留着它，下一次跑直接接上 —— 上一条命令杀掉它就是 56 屏全红的来源
+// （下一条会连上一个正在死的 IDE）。它会一直占着 AUTO_PORT，那是有意的：
+// `auto --auto-port` 在埠已占用时会以「already started」退出，不会叠加出第二个会话。
+if (ide) console.log('  IDE 留着不关 —— 下一次跑直接接上。要关它：node .claude/skills/hualong-api-test/scripts/wxcli.mjs quit');
 
 console.log(`\n跑通 ${ok} 屏，失败 ${bad.length} 屏。`);
+
+// 画出来了但画错内容的屏。**不并入 bad** —— 前者是「没画出来」，后者是
+// 「画出来了、画的是失败」。两层要分开报，合成一个数就分不出是哪一种。
+if (errors.length) {
+  console.log(`\n渲染态有错误的屏 ${errors.length} 屏（画出来了，但画的是失败提示）：`);
+  for (const e of errors) console.log(`  ⚠ ${e.route}  —— 屏上出现 ${e.marker}`);
+}
+
 if (bad.length) {
   console.log('\n失败的屏：');
   for (const b of bad) console.log(`  ${b.route}\n    ${b.err}`);
