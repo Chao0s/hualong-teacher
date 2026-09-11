@@ -262,5 +262,26 @@ console.log('[8] tools/ 下的 JS 语法');
   console.log(`  ${files.length} 个文件，${ok} 个通过语法检查`);
 }
 
+// 9) 登录页的行为
+//
+// 为什么加这一段：`tools/check-login-page.mjs` 起先是一份写在 %TEMP% 的一次性夹具 ——
+// **团队重跑不到的东西不算验证**。它把未经修改的 page 装进 vm、只桩 wx 与两支 utils，
+// 验三条出口（已登录不重发登录／409 才亮手机号／503 走安全阻断文案）。
+// 它不联网，所以与 tools/probe-*.mjs 那一族分开命名。
+console.log('[9] 登录页行为');
+{
+  const { spawnSync } = require('child_process');
+  const r = spawnSync(process.execPath, [path.join(__dirname, 'check-login-page.mjs')], { encoding: 'utf8' });
+  const tail = (s) => (s || '').trim().split('\n').filter(Boolean).pop() || '';
+  const out = tail(r.stdout);
+  if (r.status !== 0) {
+    // 页面加载就崩时最后一句话在 stderr（栈顶那一行）——只读 stdout 会得到一条空消息，
+    // 而「✗ ... 失败：（空）」比没有更坏：看不出坏在哪。
+    const err = (r.stderr || '').trim().split('\n').find((l) => /Error|error|✗|x /.test(l)) || tail(r.stderr);
+    bad(`check-login-page 失败：${out || err || `退出码 ${r.status}`}`);
+  }
+  console.log(`  ${out || tail(r.stderr) || '(无输出)'}`);
+}
+
 console.log(fail === 0 ? '\n=== 全部通过 ===' : `\n=== 失败 ${fail} 项 ===`);
 process.exit(fail ? 1 : 0);
