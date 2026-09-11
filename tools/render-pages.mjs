@@ -36,7 +36,7 @@
  *   WX_DEVTOOLS_CLI=<路径> node tools/render-pages.mjs
  *   WX_AUTO_PORT=9420                                # 自动化端口，默认 9420
  */
-import { readFileSync, mkdirSync, existsSync } from 'node:fs';
+import { readFileSync, mkdirSync, existsSync, cpSync, rmSync } from 'node:fs';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -52,6 +52,30 @@ const PROJECT = join(HERE, '..');
 const MP = join(PROJECT, 'miniprogram');
 const OUT = join(HERE, '..', '.scratch', 'render');
 const AUTO_PORT = Number(process.env.WX_AUTO_PORT ?? 9420);
+
+/**
+ * **把工程复制到 Drive 之外，再让 IDE 开那一份。**
+ *
+ * DevTools 从 Google Drive 的挂载点读到的是旧内容。2026-09-12 实测：同一份原始码
+ * （逐字复制），开在 Drive 上编译出**上一个修订版**，开在 `%LOCALAPPDATA%/Temp` 下
+ * 就正确。而**没有任何一处报错** —— 编译快取照更新、AppID 照解析、跑完照印
+ * 「跑通 56 屏」。查它花了一个多小时，先后排除了「忘了重启」「快取没清」
+ * 「Drive 还没刷新」「工程没被编译」四种解释。
+ *
+ * 所以这一步不是优化，是**让渲染结果可信的前提**。不复制，这一层量到的
+ * 可能是旧码，而它是唯一看得见屏幕的一层。
+ *
+ * 每次跑都重新复制（先删干净），才不会把已删除的页面留在副本里。
+ */
+function projectForDevtools() {
+  const base = process.env.LOCALAPPDATA || process.env.TMPDIR || '/tmp';
+  const off = join(base, 'hl-render-project');
+  rmSync(off, { recursive: true, force: true });
+  mkdirSync(off, { recursive: true });
+  cpSync(join(PROJECT, 'project.config.json'), join(off, 'project.config.json'));
+  cpSync(MP, join(off, 'miniprogram'), { recursive: true });
+  return off;
+}
 
 // 工具 CLI 的常见位置。找不到就报清楚，不要静默跳过。
 const CLI_CANDIDATES = [
@@ -144,8 +168,12 @@ try {
 let ide = null;
 let ideOut = '';
 if (!mp) {
+  // **副本，不是 Drive 上那一份。** 见 projectForDevtools() 的注释 —— 直接开 Drive
+  // 上那一份，IDE 会编译出上一个修订版，而且不报任何错。
+  const devtoolsProject = projectForDevtools();
+  console.log(`  工程复制到 Drive 之外：${devtoolsProject}`);
   // 自己拼带引号的整串：路径里有空格，shell 不会替你加。
-  const cmdline = `"${cliPath}" auto --project "${PROJECT}" --auto-port ${AUTO_PORT} --trust-project`;
+  const cmdline = `"${cliPath}" auto --project "${devtoolsProject}" --auto-port ${AUTO_PORT} --trust-project`;
   console.log('起 IDE ...');
   ide = spawn(cmdline, { shell: true, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
   const collect = (d) => { ideOut += String(d); };
