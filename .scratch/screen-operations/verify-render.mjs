@@ -24,7 +24,7 @@ for (const r of rows) {
   const need = [r.screen, r.title, r.state, r.path].filter(Boolean);
   if (r.op) need.push(r.op);
   if (r.method) need.push(r.method);
-  for (const n of need) if (!pagesHtml.includes(n)) miss.push(`${r.screen}: 缺 ${JSON.stringify(n)}`);
+  for (const n of need) { const want = n === "(utils)" ? "utils（不经页面）" : n; if (!pagesHtml.includes(want)) miss.push(`${r.screen}: 缺 ${JSON.stringify(n)}`); }
   // 带 gap 的行要把 gap 文本显示出来
   if (r.gap && !pagesHtml.includes(r.gap)) miss.push(`${r.screen}: 缺 gap「${r.gap}」`);
   // human/planned 行的 notes 里那句判据来源也应露出

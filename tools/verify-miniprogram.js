@@ -236,5 +236,31 @@ console.log('[7] 《指南》量表只有一份');
   }
 }
 
+// 8) tools/ 自己的语法
+//
+// 为什么加这一段：2026-09-11 改了 tools/swagger/pages-view.mjs 之后，`check-all` 十步全绿、
+// 这一段之前的七段也全过 —— **而页面根本渲染不出来**，因为那个文件里 `const label` 声明了两次。
+// 两个后端检查器读的是 TSV，本文件此前只查 `miniprogram/` 的语法，**谁都不加载 tools/ 下的模块**，
+// 所以一个 SyntaxError 能穿过全部闸门，只在真起服务渲染时炸。
+// 探针（tools/probe-*.mjs）会加载 services/utils，但它们在 `npm test` 之外，且不覆盖 swagger 这一层。
+console.log('[8] tools/ 下的 JS 语法');
+{
+  const { spawnSync } = require('child_process');
+  const dirs = ['tools', path.join('tools', 'lib'), path.join('tools', 'swagger'), 'scripts'];
+  const files = [];
+  for (const d of dirs) {
+    const abs = path.join(__dirname, '..', d);
+    if (!fs.existsSync(abs)) continue;
+    for (const f of fs.readdirSync(abs)) if (/\.(mjs|js)$/.test(f)) files.push(path.join(d, f));
+  }
+  let ok = 0;
+  for (const f of files) {
+    const r = spawnSync(process.execPath, ['--check', path.join(__dirname, '..', f)], { encoding: 'utf8' });
+    if (r.status !== 0) bad(`${f}: ${(r.stderr || '').split('\n').find((l) => /Error|error/.test(l)) || '语法不通过'}`);
+    else ok++;
+  }
+  console.log(`  ${files.length} 个文件，${ok} 个通过语法检查`);
+}
+
 console.log(fail === 0 ? '\n=== 全部通过 ===' : `\n=== 失败 ${fail} 项 ===`);
 process.exit(fail ? 1 : 0);

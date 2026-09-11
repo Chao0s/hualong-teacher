@@ -55,14 +55,14 @@ const HEAD = ['状态', '方法', '路径', '操作', '说人话', '触发', '�
 function opRow(r, opById, eli10) {
   const op = r.operation_id ? opById.get(r.operation_id) : null;
   const href = op ? `/#/${esc((op.tags || [])[0] || '')}/${esc(op.operationId)}` : '';
-  const name = r.operation_id || '（契约还没有）';
+  const name = r.source === 'off-contract' ? '（契约里没有）' : r.operation_id || '（契约还没有）';
   const why = (eli10.get(r.operation_id) || eli10.get(r.key) || {})['幹嘛'] || '';
   const trig = r.trigger_wxml ? esc(r.trigger_wxml) : '<i class="mut">随页面加载</i>';
   const flag = r.trigger_flag ? `<b class="chip">${esc(r.trigger_flag)}</b>` : '';
   const gap = r.gap ? `<b class="chip bad">${esc(r.gap)}</b>` : '';
   const cls = `r${r.method ? ` ${r.method}` : ''}${r.source === 'stale' ? ' stale' : r.source === 'no-api' ? ' noapi' : ''}`;
   return `<tr class="${cls}">`
-    + `<td>${esc(r.state)}</td>`
+    + `<td>${r.state ? esc(r.state) : '<i class="mut" title="信号不明确，故留空 —— 不是漏填">—</i>'}</td>`
     + `<td>${esc(r.method || '')}</td>`
     + `<td>${escPath(r.path)}</td>`
     + `<td>${href ? `<a href="${href}">${esc(name)}</a>` : esc(name)}</td>`
@@ -88,6 +88,9 @@ export function bucketOf(rows) {
     impl: rows.filter((r) => (r.source === 'gen' || r.source === 'human') && !has(r)),
     notCalled: rows.filter((r) => r.operation_id && has(r)),
     needsApi: rows.filter((r) => r.source === 'planned'),
+    // 客户端调了、契约里没有。生成器原先把这批静默丢掉，于是这一桶恒为 0 而看不出是空还是坏；
+    // 实测有一条真的（`utils/auth.js` 的 `POST /dev/session`）。
+    offContract: rows.filter((r) => r.source === 'off-contract'),
     noApi: rows.filter((r) => r.source === 'no-api'),
     stale: rows.filter((r) => r.source === 'stale'),
   };
@@ -98,6 +101,7 @@ const SEGMENTS = [
   ['impl', '已实作', 'ok'],
   ['notCalled', '契约有、这一屏没调', 'warn'],
   ['needsApi', '页面要用而契约没有', 'warn'],
+  ['offContract', '契约里没有这条路径', 'bad'],
   ['noApi', '按设计不调任何操作', 'dim'],
   ['stale', '上一轮调过、这一轮不调了', 'dim'],
 ];
@@ -127,7 +131,8 @@ export function pagesPage({ homeUrl, rolesUrl, rawUrl, rawViewerUrl = '', specUr
   const cards = [...byScreen.keys()].sort().map((screen) => {
     const rows = byScreen.get(screen);
     const b = bucketOf(rows);
-    const label = titles.get(screen) || screen;
+    const label = screen === '(utils)' ? 'utils（不经页面）' : titles.get(screen) || screen;
+    const dir = screen === '(utils)' ? 'miniprogram/utils/' : `miniprogram/pages/${screen}/`;
     const body = SEGMENTS.map(([k, title, tone]) => {
       const list = b[k];
       if (!list.length) return '';
@@ -135,11 +140,16 @@ export function pagesPage({ homeUrl, rolesUrl, rawUrl, rawViewerUrl = '', specUr
         return `<div class="sec"><h3 class="${tone}">${title}</h3>`
           + `<p class="note">${esc(list.map((r) => r.notes).join('；'))}</p></div>`;
       }
+      if (k === 'offContract') {
+        return `<div class="sec"><h3 class="${tone}">${title}</h3>`
+          + `<table class="tbl"><tbody>${list.map((r) => opRow(r, opById, eli10)).join('')}</tbody></table>`
+          + '<p class="note">客户端真的在调，契约里没有这条路径。生成器原先把它静默丢掉 —— 于是这一桶永远是 0，而看不出是空还是坏。</p></div>';
+      }
       return `<div class="sec"><h3 class="${tone}">${title}</h3>`
         + `<table class="tbl"><tbody>${list.map((r) => opRow(r, opById, eli10)).join('')}</tbody></table></div>`;
     }).join('');
     return `<section class="card" id="s-${esc(screen)}">`
-      + `<header><h2>${esc(label)}</h2><code class="dir">miniprogram/pages/${esc(screen)}/</code>`
+      + `<header><h2>${esc(label)}</h2><code class="dir">${esc(dir)}</code>`
       + `<span class="cnt">${rows.length} 条</span></header>`
       + countStrip(b)
       + (body || '<p class="note">这一屏没有任何记录，且不是 no-api —— 是一个缺口（缺行与「本来就没有」必须分得开）。</p>')
@@ -307,7 +317,7 @@ export function pagesPage({ homeUrl, rolesUrl, rawUrl, rawViewerUrl = '', specUr
   <a href="${rawUrl}">原始 YAML</a>
   ${rawViewerUrl ? `<a href="${rawViewerUrl}">原文（HTML，中文不乱码）</a>` : ''}
   ${specViewerUrl ? `<a href="${specViewerUrl}">按屏幕的规格（HTML，中文不乱码）</a>` : ''}
-  <span class="now">一屏一卡 · 分段计数 · 0 也写出来</span>
+  <span class="now">一屏一卡 · 分段计数 · 0 也写出来 · 「说人话」未经人工逐条核对</span>
 </div>
 <div class="legend"><table class="tbl"><thead><tr>${HEAD.map((h) => `<th>${h}</th>`).join('')}</tr></thead></table></div>
 </div>

@@ -86,14 +86,34 @@ function reachableFns(svc, startFn) {
   return out;
 }
 
-/** 机器猜的屏幕状态。**一律带问号** —— 猜的和看出来的必须分得开。 */
-function guessState(fn, handler, text) {
-  const s = `${fn} ${handler} ${text}`;
-  if (/delete|remove|delete|lock|withdraw|finalize|revoke|撤回|删除|锁定|定稿/.test(s)) return 'dialog?';
-  if (/save|publish|create|submit|update|patch|release|remind|collect|upload|发布|提交|保存|新建|上传|提醒|征集/.test(s)) return 'form?';
-  if (/detail|Detail|get[A-Z]|详情|预览/.test(s)) return 'detail?';
-  if (/list|List|roster|Roster|search|filter|列表|搜索|筛选/.test(s)) return 'list?';
-  return 'list?';
+/**
+ * 屏幕状态（`state` 列）。**只在信号明确时写，否则留空** —— 空本身是信息。
+ *
+ * 第一版一律写一个带 `?` 的猜测，结果是 128 个 gen 行全带问号、其中 68 个都是同一个
+ * `list?`（53%）。那一列因此没做它设计要做的事：一个覆盖一半的假分类，比空更坏，
+ * 因为它看起来像信息。现在：
+ *
+ *   恰好命中一类 → 写那一类（不带问号，值在即信号明确）
+ *   命中 0 类或 ≥2 类 → 留空
+ *
+ * **扫不到的**：弹层与对话框。静态扫描看不见运行时开的 `wx.showModal`／自定义层，
+ * 所以「删除要不要二次确认」它答不了。这也正是第一版一直在猜的原因。
+ */
+function stateOf({ handler, trigger, op }) {
+  const text = `${handler} ${trigger}`;
+  const hits = new Set();
+  if (/删除|删页|移除|撤回|锁定|定稿|下架|离园|取消/.test(text)) hits.add('dialog');
+  if (/发布|提交|保存|新建|新增|上传|提醒|征集|归入|重命名|报名|修改|编辑|更正/.test(text)) hits.add('form');
+  if (/详情|预览|查看/.test(text)) hits.add('detail');
+  if (/列表|搜索|筛选|全部|历史/.test(text)) hits.add('list');
+  if (hits.size === 1) return [...hits][0];
+  if (hits.size > 1) return '';
+  // 文案没给出信号时，退到**契约自己**的形状 —— 那不是猜屏幕，是说端点读一条还是读一批。
+  if (op && op.method === 'GET') {
+    if (op.path.includes('{')) return 'detail';
+    return 'list';
+  }
+  return '';
 }
 
 const tableTokens = (s) => [...String(s || '').matchAll(/db_[a-z0-9_]+/g)].map((m) => m[0]);
@@ -107,15 +127,43 @@ function readTsv(path) {
   return lines.slice(1).filter(Boolean).map((l) => Object.fromEntries(l.split('\t').map((v, i) => [head[i], v ?? ''])));
 }
 
-/** 原型按钮文案里找触发语的对应句。返回 {text, flag}。 */
-function matchPrototype(protoTexts, trigger) {
+/** 比文案用：去掉空白、全角加号、常见标点与包裹符号，让「＋ 新建栏目」与「新建栏目」算同一句。 */
+const normText = (s) => String(s || '')
+  .replace(/[\s\u3000]+/g, '')
+  .replace(/[＋+]/g, '')
+  .replace(/[「」『』“”"'’‘]/g, '')
+  .replace(/[，。、；：！？,.;:!?]/g, '');
+
+/**
+ * 原型文案里找触发语的对应句。返回 `{ text, flag }`。
+ *
+ * `flag` 的五个值各说一件**不同**的事 —— 加宽枚举不是为了让某个分支能触发，
+ * 是因为原来把三件事挤成了一个 `只wxml`（实测 40 行）：
+ *
+ *   （空）        逐字相同
+ *   文案不同      归一化后相同（差在加号／空格／标点），原型那句记进 text
+ *   只wxml        原型**有**按钮，但没有一句相近 —— 客户端这一句原型里没有
+ *   原型无按钮    原型页一个 `<button>` 都没有，无从比较（实测 18 行）
+ *   原型无文件    连原型文件都不在
+ *
+ * 「原型无按钮」与「只wxml」不是一回事：前者是**没有可比的东西**，后者是**有个不一样的东西**。
+ */
+function matchPrototype(protoTexts, trigger, protoExists) {
   if (!trigger) return { text: '', flag: '' };
   if (protoTexts.includes(trigger)) return { text: trigger, flag: '' };
+  const nTrigger = normText(trigger);
   for (const t of protoTexts) {
-    for (let i = 0; i + 3 <= trigger.length; i++) {
-      if (t.includes(trigger.slice(i, i + 3))) return { text: t, flag: '文案不同' };
+    if (normText(t) === nTrigger) return { text: t, flag: '文案不同' };
+  }
+  // 一句里包含另一句（归一化后），也算「文案不同」并把原型那句留下来
+  for (const t of protoTexts) {
+    const n = normText(t);
+    if (n.length >= 3 && nTrigger.length >= 3 && (n.includes(nTrigger) || nTrigger.includes(n))) {
+      return { text: t, flag: '文案不同' };
     }
   }
+  if (!protoExists) return { text: '', flag: '原型无文件' };
+  if (!protoTexts.length) return { text: '', flag: '原型无按钮' };
   return { text: '', flag: '只wxml' };
 }
 
@@ -130,13 +178,22 @@ export function emitScreenOperations(ctx) {
 
   // 不经过 service 层的调用点：utils/*.js 里直接打 api.*（现为 utils/auth.js 的
   // `GET /auth/session`）。这些不能算「无人认领」，否则交付物里会多出一条假发现。
+  // 客户端调了、契约里没有的调用。**不是垃圾** —— 它是「页面要用而契约没有」那一桶的事实来源。
+  // 声明要排在 utils 那一段之前：utils 也会往这里投，`const` 之后用会 TDZ。
+  const offContract = [];
+  const titles = new Map(pages.map((p) => [p.name, p.title]));
   const utilsCallers = new Map();
   if (utilsDir && existsSync(utilsDir)) {
     for (const f of readdirSync(utilsDir).filter((x) => x.endsWith('.js'))) {
       const u = scanService(join(utilsDir, f));
       for (const c of u.calls) {
         const op = opIndex.get(`${c.verb} ${normalize(c.path)}`);
-        if (!op || !op.operationId) continue;
+        if (!op || !op.operationId) {
+          // utils 这一侧也要收。`utils/auth.js` 调的 `POST /dev/session` 是测试后端专用、
+          // 契约里没有 —— 第一版在这里静默丢，于是第四桶恒为 0。它是那个桶的唯一真实样本。
+          offContract.push({ screen: '(utils)', verb: c.verb, path: c.path, line: c.line, fn: c.fn, file: `utils/${f}` });
+          continue;
+        }
         if (!utilsCallers.has(op.operationId)) utilsCallers.set(op.operationId, new Set());
         utilsCallers.get(op.operationId).add(`utils/${f}`);
       }
@@ -194,7 +251,14 @@ export function emitScreenOperations(ctx) {
       };
       const takeOp = (c) => {
         const op = opIndex.get(`${c.verb} ${normalize(c.path)}`);
-        if (op && op.operationId) record(op, c);
+        if (op && op.operationId) { record(op, c); return; }
+        // **路径不在契约里。**
+        //
+        // 第一版在这里 `continue` —— 静默丢掉。后果不是「少一行」，是 /pages 的
+        // 「页面调了而契约没有」那一桶**恒为 0，且没人能看出它是空的还是坏的**。
+        // 实测有一条真的：`utils/auth.js` 调 `POST /dev/session`（测试后端专用），
+        // 契约里没有它。所以现在记下来，让它自己显形。
+        offContract.push({ screen: p.name, verb: c.verb, path: c.path, line: c.line, fn: c.fn });
       };
       for (const m of union.matchAll(/([A-Za-z_$][\w$]*)\.([A-Za-z_$][\w$]*)\s*\(/g)) {
         const svc = byAlias.get(m[1]);
@@ -233,13 +297,13 @@ export function emitScreenOperations(ctx) {
 
     for (const [opId, hit] of hits) {
       const trigger = [...hit.triggers][0] || '';
-      const proto1 = matchPrototype(protoTexts, trigger);
+      const proto1 = matchPrototype(protoTexts, trigger, proto !== null);
       const fn = [...hit.handlers][0];
       genRows.push({
         screen: p.name,
         mp_file: (screensTsv.get(p.name) || {}).mp_file || `miniprogram/pages/${p.name}/index.wxml`,
         screen_title: p.title,
-        state: guessState(hit.fn, fn, trigger),
+        state: stateOf({ handler: fn, trigger, op: hit.op }),
         operation_id: opId,
         method: hit.op.method,
         path: hit.op.path,
@@ -255,17 +319,46 @@ export function emitScreenOperations(ctx) {
     }
   }
 
+  // ── 离契约的调用也写成行，让「页面调了而契约没有」那一桶有事实来源 ────────
+  // 去重：同一屏、同一 verb+path 只留一行；把来源行号收集到 notes 里。
+  const offRows = (() => {
+    const byKey = new Map();
+    for (const o of offContract) {
+      const k = `${o.screen}\t${o.verb}\t${o.path}`;
+      if (!byKey.has(k)) byKey.set(k, { ...o, where: [] });
+      byKey.get(k).where.push(`${o.fn}():${o.line}`);
+    }
+    return [...byKey.values()].map((o) => ({
+      screen: o.screen,
+      mp_file: o.screen === '(utils)' ? `miniprogram/${o.file}` : (screensTsv.get(o.screen) || {}).mp_file || `miniprogram/pages/${o.screen}/index.wxml`,
+      screen_title: o.screen === '(utils)' ? 'utils（不经页面）' : titles.get(o.screen) || o.screen,
+      state: '',
+      operation_id: '',
+      method: o.verb,
+      path: o.path,
+      source: 'off-contract',
+      trigger_wxml: '', trigger_prototype: '', trigger_flag: '',
+      gap: '契约里没有这条路径',
+      notes: `${[...new Set(o.where)].join(', ')}`,
+    }));
+  })();
+
   // ── 写 screen-operations.tsv ─────────────────────────────────────────────
   const screenOpsPath = join(SPEC, 'screen-operations.tsv');
   const old = readTsv(screenOpsPath);
-  const keepRow = (r) => r.source && r.source !== 'gen' && r.source !== 'stale';
+  const keepRow = (r) => r.source && r.source !== 'gen' && r.source !== 'stale' && r.source !== 'off-contract';
   const humanRows = old.filter(keepRow);
-  const oldGen = new Map(old.filter((r) => !keepRow(r)).map((r) => [`${r.screen}\t${r.operation_id}\t${r.state}`, r]));
-  const newKeys = new Set(genRows.map((r) => `${r.screen}\t${r.operation_id}\t${r.state}`));
+  // **键是 `screen + operation_id`，不含 state。**
+  // 第一版把 state 写进键，于是在调了 state 的判据之后、128 个 gen 行全部匹配不上，
+  // 一次全被标成 stale —— 一个「改了 A 就把 B 报成坏」的假警报。
+  // 行身份是「哪一屏调哪个操作」；state 是它的一个属性，不是身份的一部分。
+  const rowKey = (r) => `${r.screen}\t${r.operation_id}`;
+  const oldGen = new Map(old.filter((r) => !keepRow(r) && r.source !== 'off-contract').map((r) => [rowKey(r), r]));
+  const newKeys = new Set(genRows.map(rowKey));
   const staleRows = [...oldGen.entries()]
     .filter(([k]) => !newKeys.has(k))
     .map(([, r]) => ({ ...r, source: 'stale', notes: `${r.notes || ''} 本轮不再出现`.trim() }));
-  const screenRows = [...humanRows, ...genRows, ...staleRows];
+  const screenRows = [...humanRows, ...genRows, ...staleRows, ...offRows];
 
   // 排序：屏幕目录名 → 状态 → 操作
   screenRows.sort((a, b) => a.screen.localeCompare(b.screen) || a.state.localeCompare(b.state) || a.operation_id.localeCompare(b.operation_id));
@@ -308,7 +401,8 @@ export function emitScreenOperations(ctx) {
   const viaUtils = teacherOps.filter((o) => !(callsOfOp.get(o.operationId) || new Map()).size && utilsCallers.has(o.operationId));
   const needEli = eliRows.filter((r) => !r['幹嘛']).length;
 
-  console.log(`screen-operations.tsv  ${screenRows.length} 行（gen ${genRows.length}／人工 ${humanRows.length}／stale ${staleRows.length}）→ ${screenOpsPath}`);
+  console.log(`screen-operations.tsv  ${screenRows.length} 行（gen ${genRows.length}／人工 ${humanRows.length}／stale ${staleRows.length}／off-contract ${offRows.length}）→ ${screenOpsPath}`);
+  console.log(`  state 留空 ${genRows.filter((r) => !r.state).length}/${genRows.length}（留空 = 信号不明确，不是漏填）`);
   console.log(`operation-eli10.tsv     ${eliRows.length} 行，其中待起草 ${needEli}`);
   console.log('');
   console.log(`① 55 屏有行的：${pages.length - noRow.length}/${pages.length}${noRow.length ? ` —— 缺：${noRow.join(', ')}` : ''}`);
@@ -316,6 +410,9 @@ export function emitScreenOperations(ctx) {
   console.log(`③ 无人认领（教师可达、没有屏幕调用、也不由 utils 调）：${unclaimed.length}`);
   for (const o of unclaimed) console.log(`     ${o.method} ${o.path}  ${o.operationId}`);
   for (const o of viaUtils) console.log(`   经 utils（不算缺）: ${o.method} ${o.path}  ${o.operationId}  ← ${[...utilsCallers.get(o.operationId)].join(', ')}`);
+  // 第四桶。**必须打印条数** —— 第一版把它静默丢掉，于是那一桶恒为 0 而没人看得出来。
+  console.log(`④ 客户端调了、契约里没有的路径：${offRows.length}${offRows.length ? '' : '（真的没有；这个数不是假的，因为丢掉的调用现在会记行）'}`);
+  for (const r of offRows) console.log(`     ${r.screen}  ${r.method} ${r.path}  ← ${r.notes}`);
   for (const r of staleRows) console.log(`   stale: ${r.screen} ${r.operation_id} ${r.state}`);
-  return { screenRows, eliRows, staleRows, noRow, unclaimed, needEli };
+  return { screenRows, eliRows, staleRows, noRow, unclaimed, needEli, offRows, stateBlank: genRows.filter((r) => !r.state).length, genCount: genRows.length };
 }
