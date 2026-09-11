@@ -14,8 +14,8 @@ import { dump } from 'js-yaml';
 
 /**
  * The contract's `servers` point at production/dev URIs. Both viewers prepend
- * the local contract mock so Try-it-out hits the running mock (npm run mock,
- * port 3820) instead of a not-yet-real production host. The source file is
+ * the local testdata API (port 3860) and the contract mock (port 3820),
+ * so Try-it-out can exercise real database calculations. The source file is
  * untouched; the raw contract stays on offer separately.
  *
  * This works from the https:// Pages site too: browsers treat `127.0.0.1` as a
@@ -27,9 +27,14 @@ const LOCAL_MOCK_SERVER = {
   description: '本地契约 mock（npm run mock → node mock/server.mjs）',
 };
 
+const LOCAL_TESTDATA_SERVER = {
+  url: 'http://127.0.0.1:3860/api/v1',
+  description: '本地测试后端（真实测试数据库，与教师小程序共用）',
+};
+
 export function specForUi() {
   const spec = loadSpec();
-  spec.servers = [LOCAL_MOCK_SERVER, ...(spec.servers || [])];
+  spec.servers = [LOCAL_TESTDATA_SERVER, LOCAL_MOCK_SERVER, ...(spec.servers || [])];
   return dump(spec, { lineWidth: -1 });
 }
 

@@ -31,7 +31,7 @@ const UI_DIST = dirname(fileURLToPath(import.meta.resolve('swagger-ui-dist/swagg
 // nothing.
 const ASSETS = ['swagger-ui.css', 'swagger-ui-bundle.js', 'swagger-ui-standalone-preset.js'];
 
-const NOTE = 'Try-it-out 需要本地跑 <code>npm run mock</code>（127.0.0.1:3820），本站没有后端';
+const NOTE = 'Try-it-out 需要本地测试后端（127.0.0.1:3860）与有效会话；Servers 也可选 mock（3820），本站没有后端';
 
 const out = resolve(process.argv[2] || 'dist/api-doc');
 mkdirSync(out, { recursive: true });

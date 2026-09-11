@@ -56,6 +56,31 @@ const MOMENT_STATUS = { s1: '草稿', s3: '已发布', s5: '已撤回' };
 // 周覆盖的完成线：§4 规则 1／Q59-c3。**>=2 才算完成**，0 与 1 都是未完成。
 const COVERED_DONE_AT = 2;
 
+/** 教师端总览：两项状态和三个汇总均由同一次后端查询计算。 */
+async function homeSchoolProgress() {
+  const result = await api.get('/home-school/progress');
+  if (!result || !Array.isArray(result.children)
+      || !['child_count', 'average_completion', 'reminder_count'].every((k) => Number.isFinite(result[k]))) {
+    throw new Error('进度数据不完整，请稍后重试');
+  }
+  const statusCell = (status) => {
+    if (status !== 'h1' && status !== 'h2') throw new Error('暂无法识别进度状态，请稍后重试');
+    return { state: status === 'h1' ? 'done' : 'miss', label: status === 'h1' ? '已完成' : '未完成' };
+  };
+  return {
+    metrics: [
+      { label: '班级幼儿', value: String(result.child_count) },
+      { label: '平均完成', value: `${result.average_completion}%` },
+      { label: '待提醒', value: String(result.reminder_count), amber: true },
+    ],
+    rows: result.children.map((child) => ({
+      childId: child.child_id,
+      name: child.child_name,
+      cells: [statusCell(child.moment_status), statusCell(child.parent_task_status)],
+    })),
+  };
+}
+
 /** 契约的 file_id 上限，超限服务端回 422 `moment_image_limit`。 */
 const MAX_PHOTOS = 9;
 
@@ -1274,6 +1299,7 @@ function whyCannotSaveMonthEval({ childId, month, text }) {
 }
 
 module.exports = {
+  homeSchoolProgress,
   MOMENT_STATUS,
   MAX_PHOTOS,
   COVERED_DONE_AT,

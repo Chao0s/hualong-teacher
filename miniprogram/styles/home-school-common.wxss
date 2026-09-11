@@ -64,12 +64,6 @@
     linear-gradient(135deg, var(--accent-dark), var(--accent), #47bcb3);
 }
 
-.banner__eyebrow {
-  margin-bottom: 16rpx;
-  font-size: 24rpx;
-  opacity: 0.86;
-}
-
 .banner__title {
   font-size: 46rpx;
   line-height: 1.2;
@@ -548,4 +542,3 @@
   font-size: 20rpx;
   font-weight: 600;
 }
-

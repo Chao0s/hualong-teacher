@@ -42,7 +42,7 @@ const INDEX = indexPage({
   specUrl: '/openapi.local.yaml',
   rolesUrl: '/roles',
   rawUrl: '/openapi.yaml',
-  note: 'Try-it-out 默认指向本地 mock <code>http://127.0.0.1:3820/api/v1</code>',
+  note: 'Try-it-out 默认指向本地测试后端 <code>http://127.0.0.1:3860/api/v1</code>，需有效教师会话；也可在 Servers 中选择 mock',
 });
 
 const server = createServer((req, res) => {

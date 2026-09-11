@@ -10,30 +10,58 @@
   margin-bottom: 16rpx;
 }
 
-/* 原型给这张表加了 `.home-progress-table`：不横向滚动，五列定宽，字号压小，
- * 状态文字允许折行。5 列 = 幼儿 112rpx + 四列等分。 */
+/* 三列：姓名与两项状态。空心/实心含义仅作用于本页。 */
 .prog-row {
-  grid-template-columns: 112rpx repeat(4, 1fr);
+  grid-template-columns: minmax(0, 1.2fr) repeat(2, minmax(0, 1fr));
 }
 
 .prog-cell {
-  padding: 18rpx 4rpx;
-  font-size: 22rpx;
+  padding: 22rpx 12rpx;
+  font-size: 26rpx;
 }
 
 .prog-row--head .prog-cell {
-  font-size: 20rpx;
+  font-size: 24rpx;
 }
 
 .prog-cell--name {
   padding-left: 16rpx;
-  font-size: 22rpx;
+  font-size: 26rpx;
+  word-break: break-all;
+  white-space: normal;
 }
 
-.status {
-  display: inline-block;
-  max-width: 116rpx;
-  font-size: 20rpx;
-  line-height: 1.25;
-  white-space: normal;
+.prog-cell .progress-dot {
+  margin: 0 auto;
+}
+
+.progress-dot {
+  width: 22rpx;
+  height: 22rpx;
+  flex-shrink: 0;
+  border: 3rpx solid var(--accent-dark);
+  border-radius: 50%;
+}
+
+.progress-dot--done {
+  background: transparent;
+}
+
+.progress-dot--miss {
+  background: var(--accent-dark);
+}
+
+.progress-legend {
+  display: flex;
+  justify-content: center;
+  gap: 36rpx;
+  margin: 24rpx 0;
+}
+
+.progress-legend__item {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  font-size: 24rpx;
+  color: var(--muted);
 }

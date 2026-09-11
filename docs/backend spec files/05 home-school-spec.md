@@ -2,7 +2,7 @@ HOME_SCHOOL_BACKEND_OBJECT_SPEC
 
 scope (范围) = screens/home-school.html
 source_page (参考页面) = home-school.html
-source_page_correction (原型纠正规则) = home-school.html 当前示例中的“缺第2次|进行中|可生成|缺评语|待补图|不可生成”等入口页状态标注已失效；后台与后续前端实现以本 specification 的入口页二元状态为准
+source_page_correction (原型纠正规则) = 2026-09-11 教师端总览仅幼儿名称、在园时光、亲子活动三列；已完成空心圆，未完成实心圆。成长档案与成长册不再参与本页状态和汇总；旧HTML固定示例不作为实现依据
 revision_source (本次改版依据) = DECISIONS.md E1-E7 及其下 W1-W21（来源为 hualong-teacher decision.md 10 条 + commit e524e75 的前端改版回冲，2026-08-01）
 authority_order (权威顺序) = DECISIONS.md > db/01_schema.sql > db/DATABASE_SPEC.md > 本 specification；本文与 DECISIONS.md 冲突处一律以 DECISIONS.md 为准
 ddl_lag_notice (DDL 滞后说明) = 已定新表与新增列均尚未落到 db/01_schema.sql；本 specification 先行记录，已登记项由 db/tools/extract-ui-binding.mjs 标为 PENDING DDL，不算无法解释的缺列
@@ -67,7 +67,7 @@ production_initial_db_growth_material (成长资料初始状态) = EMPTY
 production_initial_db_scale_item (量表题库初始状态) = 非空；按量表版本导入(scale_code=guide, scale_version=1.0, 124 题项)，属参考数据不属业务种子数据，来源 hualong-teacher/data/guide-scale.json
 page_layout_library (页版式库) = 不入库；预设 6 个栏目的页面版式为仓库内的版本化 JSON，地位比照 db/rubric/，随代码部署（W13）
 base_identity_data (基础身份数据) = db_school|db_teacher|db_class|db_teacher_class|db_child 由部署或园所管理员导入，不属于 Mock 业务内容
-initial_progress_rule (初始进度规则) = 有真实幼儿名册但无业务记录时，入口页四项状态统一为 incomplete(未完成)，不得显示已完成或虚构百分比
+initial_progress_rule (初始进度规则) = 有真实幼儿名册但无业务记录时，入口页两项状态统一为h2(未完成，实心圆)，平均完成为0，待提醒为在园幼儿人数；空班三个汇总均为0
 no_child_rule (无幼儿名册规则) = return [] and child_count=0
 hardcoded_child_or_metric (固定幼儿或统计值) = FORBIDDEN
 environment_isolation (环境隔离) = demo|test 数据不得复制到 production
@@ -101,21 +101,20 @@ home_school_progress_id (进度汇总ID), 0:k, integer, ui=home_school.progress.
 moment_id (在园时光ID), 0:k, integer, ui=home_school.quick.moment
 parent_task_id (亲子任务ID), 0:k, integer, ui=home_school.quick.parent_task
 growth_record_id (成长档案ID), 0:k, integer, ui=home_school.quick.growth_record
-growth_book_id (成长册ID), 0:k, integer, ui=home_school.progress.growth_book
 child_count (班级幼儿数), 1:1, integer, derived(db_child), ui=home_school.metric.child_count
 average_completion (平均完成率), 1:1, percent, derived(db_home_school_progress), ui=home_school.metric.average_completion
 reminder_count (待提醒幼儿数), 1:1, integer, derived(db_home_school_progress), ui=home_school.metric.reminder_count
 
-rel_count (关系数量) = 9
-rel_db (关联表) = db_teacher, db_school, db_class, db_child, db_home_school_progress, db_moment, db_parent_task, db_growth_record, db_growth_book
-rel_map (关系字段) = db_home_school{teacher_id}<->db_teacher{teacher_id}; db_home_school{school_id}<->db_school{school_id}; db_home_school{class_id}<->db_class{class_id}; db_home_school{child_id}<->db_child{child_id}; db_home_school{home_school_progress_id}<->db_home_school_progress{home_school_progress_id}; db_home_school{moment_id}<->db_moment{moment_id}; db_home_school{parent_task_id}<->db_parent_task{parent_task_id}; db_home_school{growth_record_id}<->db_growth_record{growth_record_id}; db_home_school{growth_book_id}<->db_growth_book{growth_book_id}
+rel_count (关系数量) = 8
+rel_db (关联表) = db_teacher, db_school, db_class, db_child, db_home_school_progress, db_moment, db_parent_task, db_growth_record
+rel_map (关系字段) = db_home_school{teacher_id}<->db_teacher{teacher_id}; db_home_school{school_id}<->db_school{school_id}; db_home_school{class_id}<->db_class{class_id}; db_home_school{child_id}<->db_child{child_id}; db_home_school{home_school_progress_id}<->db_home_school_progress{home_school_progress_id}; db_home_school{moment_id}<->db_moment{moment_id}; db_home_school{parent_task_id}<->db_parent_task{parent_task_id}; db_home_school{growth_record_id}<->db_growth_record{growth_record_id}
 persist (是否持久化) = 0
 object_type (对象类型) = aggregate
 
 method (方法):
 child_count = COUNT(db_child WHERE class_id=current_class_id AND enrollment_status=e1)
-average_completion = AVG(db_home_school_progress.row_completion_rate)
-IF required_count=0, average_completion=0
+average_completion = ROUND(SUM(db_home_school_progress.completed_count)/(child_count*2)*100,2)
+IF child_count=0, average_completion=0
 reminder_count = COUNT(DISTINCT child_id WHERE reminder_required=1)
 IF child_count=0, progress_rows=[]
 
@@ -144,45 +143,39 @@ home_school_progress_id (进度汇总ID), 1:1, integer, ui=home_school.progress.
 class_id (班级ID), 1:1, integer, ui=home_school.progress.hidden
 child_id (幼儿ID), 1:1, integer, ui=home_school.progress.child_name
 week_key (当前统计周), 1:1, ISO-YYYY-Www, ui=home_school.progress.hidden
-month_key (当前统计月), 1:1, YYYY-MM, ui=home_school.progress.hidden
-term_id (当前学期ID), 1:1, school_term, ui=home_school.progress.hidden
-moment_weekly_complete_count (本周在园时光完成次数), 1:1, integer(0:2), ui=moment.detail.weekly_count
+moment_weekly_complete_count (本周在园时光完成次数), 1:1, integer(0:k), ui=moment.detail.weekly_count
 moment_detail_week_status (在园时光详细页周状态), 1:1, d1=complete(已完成)|d2=missing_second(缺第2次)|d3=incomplete(未完成), ui=moment.detail.weekly_status
 moment_status (入口页在园时光状态), 1:1, h1=complete(已完成)|h2=incomplete(未完成), ui=home_school.progress.moment
 latest_parent_task_id (最新一期亲子任务ID), 0:1, integer, ui=home_school.progress.hidden
-parent_task_status (入口页亲子任务状态), 1:1, h1=complete(已完成)|h2=incomplete(未完成), ui=home_school.progress.parent_task
-growth_record_status (入口页成长档案状态), 1:1, h1=complete(已完成)|h2=incomplete(未完成), ui=home_school.progress.growth_record
-growth_book_status (入口页成长册状态), 1:1, h1=complete(已完成)|h2=incomplete(未完成), ui=home_school.progress.growth_book
+parent_task_status (入口页亲子活动状态), 1:1, h1=complete(已完成，空心圆)|h2=incomplete(未完成，实心圆), ui=home_school.progress.parent_task
 required_count (应完成项目数), 1:1, integer, ui=home_school.progress.hidden
 completed_count (已完成项目数), 1:1, integer, ui=home_school.progress.hidden
 row_completion_rate (幼儿完成率), 1:1, percent, ui=home_school.progress.hidden
 reminder_required (是否需要提醒), 1:1, boolean, ui=home_school.progress.reminder
 
-rel_count (关系数量) = 8
-rel_db (关联表) = db_school_term, db_class, db_child, db_moment, db_moment_upload, db_parent_task_submission, db_growth_record, db_growth_book
-rel_map (关系字段) = db_home_school_progress{term_id}<->db_school_term{term_id}; db_home_school_progress{class_id}<->db_class{class_id}; db_home_school_progress{child_id}<->db_child{child_id}; db_home_school_progress{week_key}<->db_moment{week_key}; db_home_school_progress{child_id}<->db_moment_upload{child_id}; db_home_school_progress{child_id}<->db_parent_task_submission{child_id}; db_home_school_progress{child_id}<->db_growth_record{child_id}; db_home_school_progress{child_id}<->db_growth_book{child_id}
+rel_count (关系数量) = 6
+rel_db (关联表) = db_class, db_child, db_moment, db_moment_upload, db_parent_task, db_parent_task_submission
+rel_map (关系字段) = db_home_school_progress{class_id}<->db_class{class_id}; db_home_school_progress{child_id}<->db_child{child_id}; db_home_school_progress{week_key}<->db_moment{week_key}; db_home_school_progress{child_id}<->db_moment_upload{child_id}; db_home_school_progress{latest_parent_task_id}<->db_parent_task{parent_task_id}; db_home_school_progress{child_id}<->db_parent_task_submission{child_id}
 persist (是否持久化) = 0
 object_type (对象类型) = aggregate_view
-unique (唯一键) = class_id + child_id + week_key + month_key + term_id
+unique (唯一键) = class_id + child_id + week_key；只读实时聚合，不落表
 
 method (方法):
-moment_weekly_complete_count = COUNT(DISTINCT db_moment.moment_seq FROM db_moment_upload JOIN db_moment ON moment_id WHERE db_moment_upload.child_id=current_child_id AND db_moment.week_key=current_week_key AND db_moment.publish_status=s2 AND evaluation_status=c1)
+moment_weekly_complete_count = COUNT(DISTINCT db_moment.moment_id FROM db_moment_upload JOIN db_moment ON moment_id WHERE db_moment_upload.child_id=current_child_id AND db_moment.class_id=current_class_id AND db_moment.week_key=current_week_key AND db_moment.publish_status=s3)；按不同活动计数，不截断超过2次的计数
 IF moment_weekly_complete_count>=2, moment_detail_week_status=d1, moment_status=h1
 IF moment_weekly_complete_count=1, moment_detail_week_status=d2, moment_status=h2
 IF moment_weekly_complete_count=0, moment_detail_week_status=d3, moment_status=h2
-latest_parent_task_id = SELECT parent_task_id FROM db_parent_task WHERE class_id=current_class_id AND publish_status IN(s2,s3) AND published_at<=NOW ORDER BY published_at DESC LIMIT 1
+latest_parent_task_id = SELECT parent_task_id FROM db_parent_task WHERE school_id=current_school_id AND class_id=current_class_id AND publish_status IN(s2,s3) AND published_at<=NOW ORDER BY published_at DESC,parent_task_id DESC LIMIT 1；不新增任务类型、学期或start_at过滤
 IF latest_parent_task_id EXISTS AND db_parent_task_submission{latest_parent_task_id,current_child_id}.submission_status=c1, parent_task_status=h1
 ELSE parent_task_status=h2
-growth_record_status = MAP(db_growth_record.record_status: c1->h1, c2|NULL->h2)
-growth_book_status = MAP(db_growth_book.book_status: b2->h1, b1|NULL->h2)
-book_eval_status 已由 DECISIONS.md F17 拔掉不落列；能否定稿由 can_finalize_rule 实时派生
-required_count = 4
-completed_count = COUNT(moment_status=h1, parent_task_status=h1, growth_record_status=h1, growth_book_status=h1)
-row_completion_rate = completed_count/4*100
-reminder_required = 1 IF ANY(moment_status,parent_task_status,growth_record_status,growth_book_status)=h2 ELSE 0
+required_count = 2
+completed_count = COUNT(moment_status=h1, parent_task_status=h1)
+row_completion_rate = completed_count/2*100
+reminder_required = 1 IF ANY(moment_status,parent_task_status)=h2 ELSE 0；只计幼儿一次，不发通知
+endpoint (教师只读接口) = GET /home-school/progress；返回week_key、latest_parent_task_id、child_count、average_completion、reminder_count、children；身份范围从会话派生，整班同一查询快照，不分页
 
 summary_rule (入口页简化规则):
-入口页四项只允许 h1=已完成 或 h2=未完成，不显示“缺第2次”“进行中”“可生成”“待补图”等详细状态
+入口页两项只允许 h1=已完成(空心圆) 或 h2=未完成(实心圆)，表头为幼儿、在园时光、亲子活动；不显示“缺第2次”“进行中”“可生成”“待补图”等详细状态
 任何一项所需内容未全部完成时，该项入口页状态必须为 h2
 在园时光只完成第1次时，详细页显示 d2=缺第2次，入口页仍显示 h2=未完成
 

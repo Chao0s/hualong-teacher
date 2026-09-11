@@ -1,4 +1,7 @@
-/** 家园社共育 —— 原型 screens/home-school.html 的小程序版本。 */
+/** 家园社共育 —— 本班两项进度，状态与汇总由后端实时派生。 */
+
+const co = require('../../services/co-education');
+const guard = require('../../utils/guard');
 
 const ROUTES = {
   moments: '/pages/home-school-moments/index',
@@ -16,20 +19,35 @@ Page({
       { key: 'community', glyph: '社区', label: '社区共育' },
     ],
 
-    metrics: [
-      { value: '28', label: '班级幼儿' },
-      { value: '84%', label: '平均完成' },
-      { value: '6', label: '待提醒', amber: true },
-    ],
+    metrics: [],
+    rows: [],
+    loading: true,
+    error: '',
+  },
 
-    rows: [
-      { name: '陈小明', cells: [{ state: 'done', text: '已完成' }, { state: 'done', text: '已完成' }, { state: 'done', text: '已完成' }, { state: 'done', text: '已定稿' }] },
-      { name: '李雨萱', cells: [{ state: 'done', text: '已完成' }, { state: 'done', text: '已完成' }, { state: 'wait', text: '进行中' }, { state: 'miss', text: '未定稿' }] },
-      { name: '张力轩', cells: [{ state: 'done', text: '已完成' }, { state: 'miss', text: '未提交' }, { state: 'wait', text: '进行中' }, { state: 'miss', text: '未定稿' }] },
-      { name: '王子涵', cells: [{ state: 'done', text: '已完成' }, { state: 'done', text: '已完成' }, { state: 'done', text: '已完成' }, { state: 'done', text: '已定稿' }] },
-      { name: '赵佳怡', cells: [{ state: 'miss', text: '缺第2次' }, { state: 'miss', text: '未提交' }, { state: 'done', text: '已完成' }, { state: 'miss', text: '未定稿' }] },
-      { name: '刘浩然', cells: [{ state: 'done', text: '已完成' }, { state: 'done', text: '已完成' }, { state: 'wait', text: '进行中' }, { state: 'miss', text: '未定稿' }] },
-    ],
+  onShow() {
+    this.load();
+  },
+
+  async load() {
+    const seq = (this.loadSeq || 0) + 1;
+    this.loadSeq = seq;
+    // 失败时不保留旧班级的数字，也不把读取失败画成全班未完成。
+    this.setData({ loading: true, error: '', metrics: [], rows: [] });
+    try {
+      await guard.requireSession();
+      const board = await co.homeSchoolProgress();
+      if (seq !== this.loadSeq) return;
+      this.setData({ ...board, loading: false });
+    } catch (err) {
+      if (seq !== this.loadSeq) return;
+      guard.endSessionOnAuthFailure(err);
+      this.setData({ loading: false, error: err.userMessage || err.message || '进度加载失败，请重试' });
+    }
+  },
+
+  onRetry() {
+    this.load();
   },
 
   onEntryTap(e) {
