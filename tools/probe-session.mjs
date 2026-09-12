@@ -8,9 +8,15 @@
  *             于是本地有票、对面不认。期望：request 层就地重签并重放，页面无感。
  *
  *   B 离职    teacher_id 13（罗慧兰，`teacher_status='s2'`，claim 已释放）。
- *             `/dev/session` **照发 token**，下一发请求才回 session_revoked。
+ *             `/dev/session` 直接回 401 `session_revoked`（2026-09-12 之前它照发
+ *             token，把 401 推到下一发请求）。
  *             期望：干脆利落地抛错，**不得死锁**——登录中途的 401 若去 await
  *             `ensureSession()`，等的就是它自己。
+ *
+ *             这条期望**真的被踩过**：`postDevSession` 与 `postSession` 只带
+ *             `anonymous`、没带 `skipAuthRetry`，于是这发 401 走进了重登分支，
+ *             而重登要等的正是当前这次登录 —— 15 秒超时。修在 `utils/auth.js`。
+ *             当时探针自己也瞎：超时计时器是 `.unref()` 的，进程静默 exit 0。
  *
  * B 组带超时：死锁的表现是「永远不返回」，没有超时的话探针会一起挂住，看起来
  * 像跑得慢，而不是像失败。
