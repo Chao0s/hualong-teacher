@@ -652,6 +652,35 @@ cmd 用**主控台编码**读 `.bat`，而本仓的文件是 UTF-8。
 2026-09-12 实测：改前 6 行、改后 0 行，`is not recognized` 由 2 次降为 0 次。
 
 ---
+### 7.15 同一个设定在两处各有一份，改一处不报错
+
+今天这一类撞了四次。每一次的症状都是「我明明改了，却没生效」，而**没有任何一处报警**。
+
+| 同一个东西 | 两份设定在哪 | 漏改的代价 |
+|---|---|---|
+| CI 的触发分支 | `.github/workflows/pages.yml` 的 `branches:` / GitHub repo 设定的**默认分支** | 2026-09-12 删 `master` 时只改了前者；Pages 站点的来源分支还是 `master`，`deploy` 失败（`build` 全绿，所以看不出是设定问题） |
+| `db/spec/` 的两类文件 | 后端 `check-all` 的 `schema-to-tsv`（六份，**还原**） / 前端 `emit:screens`（两份，**提交**） | `git checkout -- db/spec/` 会静默抹掉真改动，而闸门全绿 —— 绿的是被抹掉之后的状态 |
+| `.scratch/` 的同名脚本 | `.claude/skills/.../scripts/`（活的那份） / `.scratch/`（旧副本） | 改错那份，改动永远不落地 |
+| 服务端口 | `.bat` 挑「第一个空闲的」 / 实际在听的那个 | 旧服务继续吐旧码，而两份页面长得一模一样 |
+
+**判据只有一条：改一个东西之前，先问「还有哪儿写着它」。** 找法不是回忆，是搜：
+
+```bash
+# 改分支名之前，把所有写着旧名字的地方列出来（含 CI 与文档）
+grep -rn 'master' .github/ CLAUDE.md package.json 2>/dev/null
+
+# 改端口 / 路径之前，问「谁在听、谁在读」
+netstat -ano | grep LISTENING | grep -E ':38[0-3][0-9] '
+```
+
+**而 GitHub 那类设定 grep 不到** —— 它在仓库外面，只能问 API：
+
+```bash
+gh api repos/Chao0s/hualong-teacher --jq .default_branch     # 默认分支
+gh api repos/Chao0s/hualong-teacher/pages --jq .source       # Pages 的来源分支
+```
+
+**这就是这一节存在的理由**：本仓能 grep 的东西，出问题时会红；仓库外面的设定，出问题时不红。
 ## 8. 开工前必读
 
 | 文件 | 为什么 |
