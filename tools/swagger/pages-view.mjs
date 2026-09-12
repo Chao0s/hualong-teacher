@@ -357,27 +357,42 @@ export function pagesPage({ navUrls, omit = [], extra = [], canWrite = true }) {
       + '</div>';
 
     // 2) 意圖行：原型标记的意圖与客户端实际操作并排。
+    //
+    // **三列，不是两列。** 2026-09-12 用户看这一屏的原话是「解釋的那些東西全部都沒了」
+    // 与「意圖猜測或者功能猜測部分趕快給我補回去」。两列的版本只有裸 id 与裸 operation 名：
+    // 看不懂的人（朝湃）对不上那是螢幕上的哪一块，也无从判「这条意图配得对不对」。
+    //
+    // 第二列是**那个元素自己的字**（原型上的可见中文，`intentsOf` 抽的，不是猜的）。
+    // 第三列在 operation 名下面接**那一條操作的说人话**（`operation-eli10.tsv` 的「幹嘛」），
+    // 与下面 API 表第五列同源 —— 同一条操作在两处说的是同一句话。
     const intentTable = j.pairs.length
-      ? `<div class="sec"><h3 class="dim">意圖 ↔ 操作（原型标记 · 客户端实际调的）</h3>`
+      ? `<div class="sec"><h3 class="dim">① 元素（原型上的東西 · 每個元素對到哪條 API）</h3>`
         + `<p class="note">意圖 <b>${j.intents.length}</b> 个 · 操作 <b>${j.ops.length}</b> 条`
         + ` · 对得上 <b>${j.matched}</b> · 待配 <b>${j.unpaired}</b> · 纯读（无触发）<b>${j.pureRead}</b>`
         + (j.tables ? ` · 主表 <code>${esc(j.tables)}</code>` : '')
-        + `。意圖取自 <code>${esc(j.protoFile)}</code> 的 <code>data-intent</code>，操作取自 <code>screen-operations.tsv</code>；`
+        + `。第一栏是原型的 <code>data-intent</code>，第二栏是那个元素在原型上的字，第三栏是对到的操作与它干嘛。`
         + '两边按**位置**配对，不猜 —— 两边 id 不同源，硬配会造出看着对、其实错的对子。</p>'
-        + '<table class="itbl"><thead><tr><th>意圖（原型有标记的）</th><th>操作（客户端实际调的）</th></tr></thead><tbody>'
+        + '<table class="itbl"><thead><tr><th>意圖（原型標記的）</th><th>元素上的字（原型的原文）</th><th>對到的操作 · 它幹嘛</th></tr></thead><tbody>'
         + j.pairs.map(({ intent, op, offContract }, i) => {
           const left = intent ? `<code>${esc(intent.id)}</code> <span class="mut">×${intent.n}</span>` : '';
+          const mid = intent
+            ? (intent.text
+              ? esc(intent.text)
+              : '<i class="mut" title="这一块的文字在子元素里，或只有图标 —— 故留空，不是漏填">—</i>')
+            : '';
+          const why = op && op.operation_id ? ((eli10.get(op.operation_id) || {})['幹嘛'] || '') : '';
           const right = op
             ? (op.operation_id
               ? `<a href="${swaggerHref(opById.get(op.operation_id) || { operationId: op.operation_id })}">${esc(op.operation_id)}</a>`
                 + (offContract ? ' <b class="chip bad">契约外</b>' : '')
               : '<i class="mut">（这条操作没有 operation_id）</i>')
-            : '';
-          return `<tr class="r${offContract ? ' off' : ''}"><td>${left}</td><td>${right}</td></tr>`
-            + vRow(canWrite, keyOfIntent(screen, { intent }, i), pick(keyOfIntent(screen, { intent }, i)), evidence, 2);
+              + (why ? `<br><span class="why">${esc(why)}</span>` : '')
+            : '<i class="mut">待配 —— 这条意圖还没有對到操作</i>';
+          return `<tr class="r${offContract ? ' off' : ''}"><td>${left}</td><td>${mid}</td><td>${right}</td></tr>`
+            + vRow(canWrite, keyOfIntent(screen, { intent }, i), pick(keyOfIntent(screen, { intent }, i)), evidence, 3);
         }).join('')
         + '</tbody></table></div>'
-      : `<div class="sec"><h3 class="dim">意圖 ↔ 操作</h3>`
+      : `<div class="sec"><h3 class="dim">① 元素（原型上的東西）</h3>`
         + `<p class="note">${j.hasPrototype ? '这一屏的原型一个 <code>data-intent</code> 都没标记。' : `这一屏没有原型档（<code>${esc(j.protoFile)}</code>），所以没有意圖可看。`}`
         + `操作 <b>${j.ops.length}</b> 条。</p></div>`;
 
@@ -416,8 +431,15 @@ export function pagesPage({ navUrls, omit = [], extra = [], canWrite = true }) {
       + `<span class="cnt">${rows.length} 条</span></header>`
       + countStrip(b)
       + screenRow
+      // **两张表，两个类別。** 用户 2026-09-12：「每個頁面 element 跟 api 要分類放，
+      // 一個頁面裏面再分兩個類別，清晰一點」。① 是原型上的東西（意圖），② 是客户端調的（操作）。
+      // 从前这两半没有编号、混在一串同级 h3 里，看不出它们是一件事的两面。
       + intentTable
-      + (body || '<p class="note">这一屏没有任何记录，且不是 no-api —— 是一个缺口（缺行与「本来就没有」必须分得开）。</p>')
+      + (body
+        ? `<div class="sec grp"><h3 class="dim">② API（客戶端調的 · 每條帶一句它幹嘛）</h3>`
+          + `<p class="note">操作 <b>${rows.length}</b> 条，按下面五段分。每条点开是 Swagger 上的那一頁；`
+          + `第五列「说人话」与上面 ① 第三列同源（<code>operation-eli10.tsv</code>）。</p></div>` + body
+        : '<p class="note">这一屏没有任何记录，且不是 no-api —— 是一个缺口（缺行与「本来就没有」必须分得开）。</p>')
       + findings
       + '</section>';
   }).join('\n');
@@ -531,10 +553,15 @@ export function pagesPage({ navUrls, omit = [], extra = [], canWrite = true }) {
                    border-bottom:1px solid var(--line2);overflow-wrap:break-word}
  .itbl th{font:600 11px/1.5 var(--sans);letter-spacing:.06em;color:var(--ink3);
           white-space:nowrap;border-bottom:1px solid var(--line)}
- .itbl th:nth-child(1),.itbl td:nth-child(1){width:44%}
+ .itbl th:nth-child(1),.itbl td:nth-child(1){width:32%}
+ .itbl th:nth-child(2),.itbl td:nth-child(2){width:29%}
  .itbl td:nth-child(1){font:12.5px/1.5 var(--mono);color:var(--ink2)}
- .itbl td:nth-child(2){font:12.5px/1.5 var(--mono)}
- .itbl tr.off td:nth-child(2){color:var(--warn)}
+ /* 第二欄是原型上的原文，用正文体 —— 它不是机器标识符，是给人读的中文。 */
+ .itbl td:nth-child(2){font:13px/1.5 var(--sans);color:var(--ink2)}
+ .itbl td:nth-child(3){font:12.5px/1.5 var(--mono)}
+ /* 操作名下面那行「它幹嘛」，与 ② 的第五列同一句话，所以同一套字。 */
+ .itbl .why{display:block;margin-top:2px;font:12.5px/1.5 var(--sans);color:var(--ink3)}
+ .itbl tr.off td:nth-child(3){color:var(--warn)}
 
  .chip{display:inline-block;font:600 11px/1.6 var(--sans);border-radius:5px;
        padding:1px 6px;background:var(--accent);color:var(--accent-ink)}
@@ -644,7 +671,8 @@ export function pagesPage({ navUrls, omit = [], extra = [], canWrite = true }) {
   .tbl td:nth-child(3)::before{content:"路径"} .tbl td:nth-child(4)::before{content:"操作"}
   .tbl td:nth-child(5)::before{content:"说人话"} .tbl td:nth-child(6)::before{content:"触发"}
   .tbl td:nth-child(7)::before{content:"缺口"}
-  .itbl td:nth-child(1)::before{content:"意圖"} .itbl td:nth-child(2)::before{content:"操作"}
+  .itbl td:nth-child(1)::before{content:"意圖"} .itbl td:nth-child(2)::before{content:"元素上的字"}
+  .itbl td:nth-child(3)::before{content:"操作 · 幹嘛"}
   /* 留结论那一行不分列，所以不要给它生成列名。 */
   .tbl tr.vtr>td::before,.itbl tr.vtr>td::before{content:none}
   .tbl tr.vtr,.itbl tr.vtr{border-bottom:0;padding:0 0 9px}

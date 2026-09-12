@@ -70,14 +70,47 @@ export const declaredOperationIds = () => once('declared', () => {
 /**
  * 一屏的意圖 —— 從原型的 `data-intent` 讀，同一 id 出現幾次算幾次。
  * 讀不到原型就回空陣列：**不是**「這一屏沒有意圖」，呼叫方要把空講出來。
+ *
+ * 同時把**那個元素自己的字**抽出來（`text`）。這不是猜：標記掛在真實元素上，
+ * 元素上有原型的可見中文。沒有它，畫面只印 `assessment-tool.sum-lvl` 這種 id ——
+ * 看不懂的人（朝湃）對不上那是螢幕上的哪一塊，也就無從判「這條意圖配得對不對」。
+ *
+ * 取字的規矩：**先取這個元素自己的那一段**（到第一個子元素為止）。
+ * 沒有自己的字（字在子元素裡，例如 `topfix` 那條置頂欄）時，退回**子孫裡的第一段字**，
+ * 因為人站在螢幕前看到的就是那一塊的字。兩者都取不到才留空 —— 不填 `?`：
+ * 空看得出來，假的分類看不出來。
  */
 export function intentsOf(protoFile) {
   const file = join(REPO, protoFile);
   if (!existsSync(file)) return [];
   const html = readFileSync(file, 'utf8');
+  const clean = (s) => s.replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
   const m = new Map();
-  for (const x of html.matchAll(/data-intent="([^"]+)"/g)) m.set(x[1], (m.get(x[1]) ?? 0) + 1);
-  return [...m.entries()].map(([id, n]) => ({ id, n }));
+  const re = /<([a-z0-9]+)([^>]*\bdata-intent="([^"]+)"[^>]*)>/gi;
+  let x;
+  while ((x = re.exec(html))) {
+    const [, tag, , id] = x;
+    if (!m.has(id)) m.set(id, { id, n: 0, text: '', tag });
+    m.get(id).n += 1;
+    const cur = m.get(id);
+    if (cur.text) continue;
+    const rest = html.slice(x.index + x[0].length);
+    // 自己的字：到下一個開標籤或結尾標籤為止。
+    const own = clean(rest.split(/<\/?[a-z0-9]/i)[0] ?? '');
+    // 字在子元素裡時（`topfix` 那條置頂欄就是），把這一段的標籤全剝掉，
+    // 取**第一段連續 ≥2 個非標點字**。
+    //
+    // 前兩版都在這裡吃過虧：只取第一個子元素的字，`topfix` 拿到一個破折號、`todo-cards`
+    // 拿到圖示那一個字 —— 那不是這一塊的名字。取「第一段有意義的字」才對得上人站在
+    // 螢幕前看到的第一眼。**界線是 300 字**：再往後就可能跨進手足元素，那是別人的字。
+    const stripped = clean(rest.slice(0, 300).replace(/<[^>]*>/g, ' '));
+    const mm = stripped.match(/[^\s—–\-·、。，,.\/|:：（）()\[\]{}"'’“”]{2,}/);
+    const deep = own || (mm ? mm[0] : '');
+    const t = deep.slice(0, 40);
+    // 含 `<` 或 `>` 的一律丟 —— 那是一個沒被剝乾淨的標籤，不是這一塊的字（`topfix` 撞過）。
+    cur.text = (/[<>]/.test(t) ? '' : t).replace(/[\s—–\-·、。，,.\/|:：]+/g, '').length >= 2 ? t : '';
+  }
+  return [...m.values()];
 }
 
 /**
