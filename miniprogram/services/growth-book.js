@@ -419,7 +419,7 @@ function addMomentFailureText(err) {
  *   `GET    /teacher/growth-book/sections`                          本班本学期栏目清单
  *   `POST   /teacher/growth-book/sections`                          新增班级栏目（NONE→d1）
  *   `PATCH  /teacher/growth-book/sections/{section_id}`             改栏目（仅 d1）
- *   `DELETE /teacher/growth-book/sections/{section_id}`             删除草稿栏目（仅 d1）
+ *   `DELETE /teacher/growth-book/sections/{section_id}`             删除新增栏目（编册e1，允许d1／d2）
  *   `PUT    /teacher/growth-book/sections/{section_id}/widgets`     整栏目保存版面（仅 d1）
  *   `POST   /teacher/growth-book/sections/{section_id}/publication` 发布栏目（d1→d2）
  *   `POST   /teacher/growth-book/sections/{section_id}/collection`  发起征集（c1→c2）
@@ -784,7 +784,7 @@ async function updateSection(sectionId, { name, anchorAfter, anchorType }) {
   return decorateSection(row || {});
 }
 
-/** 删除草稿栏目（仅 d1）。d2 之后不可删除 —— 版面已冻结，且可能已有家庭提交（W16）。 */
+/** F19：编册e1时可删除草稿或已发布新增栏目，同时清除该栏目家庭材料。 */
 function deleteSection(sectionId) {
   return api.del(`${SECTIONS_PATH}/${sectionId}`, { action: BOOK_ACTIONS.sectionDelete });
 }
@@ -1330,6 +1330,8 @@ function lockFailureText(err) {
 function sectionFailureText(err) {
   const rule = err && err.details ? String(err.details.rule || '') : '';
   if (rule === 'e2_is_readonly') return '本学期编册已锁定，栏目不能再改';
+  if (rule === 'compilation_locked') return '本学期编册已锁定，栏目不能删除';
+  if (rule === 'invalid_anchor_chain') return '栏目插入位置存在异常，请先修正后再删除';
   if (rule === 'overlap' || rule === 'no_overlap_within_page') return '同一页上有组件重叠，服务端拒绝整个栏目的存档';
   if (rule === 'min_size' || rule === 'min_2x2') return '组件最小 2 × 2 格，请先放大';
   if (rule === 'out_of_grid' || rule === 'within_15x24') return '有组件超出版面网格，请先移回页内';
@@ -1339,7 +1341,7 @@ function sectionFailureText(err) {
   if (rule === 'at_least_one') return '至少放置一个组件';
   const code = err ? err.code : '';
   if (code === 'state_precondition_failed') return '栏目已经发布或编册已经锁定，版面不能再改';
-  if (code === 'not_found') return '这个栏目已经不在，或它已经发布、编册已经锁定';
+  if (code === 'not_found') return '这个栏目已不存在或当前无法访问，请退出重进';
   if (code === 'no_active_term') return '当前没有进行中的学期，暂时不能编栏目';
   return (err && err.userMessage) || '操作失败，请稍后重试';
 }

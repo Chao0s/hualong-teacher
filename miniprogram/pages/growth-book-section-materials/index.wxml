@@ -46,7 +46,7 @@
     <view class="section-actions">
       <view
         class="btn btn--danger"
-        style="opacity:.45"
+        style="{{deleteDisabled ? 'opacity:.45' : ''}}"
         hover-class="btn--hover"
         bindtap="onDeleteSection"
       >删除栏目</view>

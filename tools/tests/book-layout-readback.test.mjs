@@ -31,3 +31,30 @@ test('persist flushes the latest native editor content and formatting before sav
   book.saveWidgets=async(id,widgets,count)=>{saved={widgets,count};return 1;};
   await p.persist();assert.equal(saved.count,2);assert.deepEqual(saved.widgets[0].content,[{t:'最新文字',b:1}]);
 });
+
+test('native editor reload applies alignment to every paragraph and preserves trailing blank lines',()=>{
+  const p=page();let delta;
+  p.editorCtx={setContents(options){delta=options.delta;options.complete();}};
+  p.loadEditor({content:[{t:'第一行',b:1,c:'#189b91'},{t:'\n第二行\n',i:1}],config:{align:'right'}});
+  assert.equal(delta.ops.map(op=>op.insert).join(''),'第一行\n第二行\n\n');
+  assert.equal(delta.ops.filter(op=>op.insert==='\n').length,3);
+  assert.ok(delta.ops.filter(op=>op.insert==='\n').every(op=>op.attributes.align==='right'));
+  assert.deepEqual(delta.ops[0],{insert:'第一行',attributes:{bold:true,color:'#189b91'}});
+  assert.equal(p.settingEditor,false);
+});
+
+test('changing whole-widget alignment flushes latest native text without removing inline styles',()=>{
+  const p=page();p.locked=false;p.selected='text';p.renderCanvas=()=>{};
+  const widget={id:'text',binding:'literal',content:'旧内容',config:{align:'left'}};p.widgets=[widget];
+  let displayed;p.applyLiteral=runs=>{widget.content=runs;};
+  p.editorCtx={
+    getContents(options){options.success({delta:{ops:[{insert:'新一行',attributes:{bold:true}},{insert:'\n'},{insert:'新二行',attributes:{color:'#189b91'}},{insert:'\n'}]}});},
+    setContents(options){displayed=options.delta;options.complete();},
+  };
+  p.onAlign({currentTarget:{dataset:{align:'center'}}});
+  assert.equal(widget.config.align,'center');
+  assert.equal(displayed.ops.map(op=>op.insert).join(''),'新一行\n新二行\n');
+  assert.ok(displayed.ops.filter(op=>op.insert==='\n').every(op=>op.attributes.align==='center'));
+  assert.equal(displayed.ops[0].attributes.bold,true);
+  assert.equal(displayed.ops[2].attributes.color,'#189b91');
+});

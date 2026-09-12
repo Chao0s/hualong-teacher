@@ -90,18 +90,23 @@ function widgetLabel(widget) {
 }
 
 /* run 阵列 ↔ editor 的 delta。原型是 contenteditable 的 DOM ↔ run 阵列。 */
-function runsToDelta(content) {
+function runsToDelta(content, align = 'left') {
   const runs = contentRuns(content);
-  if (!runs.length) return { ops: [{ insert: '\n' }] };
-  return {
-    ops: runs.map((run) => {
-      const attributes = {};
-      if (run.b) attributes.bold = true;
-      if (run.i) attributes.italic = true;
-      if (run.c) attributes.color = run.c;
-      return Object.keys(attributes).length ? { insert: run.t, attributes } : { insert: run.t };
-    }),
-  };
+  const ops = [];
+  runs.forEach((run) => {
+    const attributes = {};
+    if (run.b) attributes.bold = true;
+    if (run.i) attributes.italic = true;
+    if (run.c) attributes.color = run.c;
+    run.t.split('\n').forEach((part, index) => {
+      // editor 的段落对齐写在换行上，外层 text-align 不会覆盖内部段落。
+      if (index) ops.push({ insert: '\n', attributes: { ...attributes, align } });
+      if (part) ops.push(Object.keys(attributes).length ? { insert: part, attributes } : { insert: part });
+    });
+  });
+  // 独立的结尾换行属于 editor；正文已有的末尾换行也要保留。
+  ops.push({ insert: '\n', attributes: { align } });
+  return { ops };
 }
 
 function deltaToRuns(delta) {
@@ -556,6 +561,14 @@ Page({
     if (!widget) return;
     widget.config.align = e.currentTarget.dataset.align;
     this.renderCanvas();
+    if (widget.binding === 'literal' && this.editorCtx) {
+      const ctx = this.editorCtx;
+      ctx.getContents({ success: (res) => {
+        if (this.selected !== widget.id || this.editorCtx !== ctx) return;
+        this.applyLiteral(deltaToRuns(res.delta));
+        this.loadEditor(widget);
+      } });
+    }
   },
 
   onFit(e) {
@@ -595,7 +608,7 @@ Page({
   loadEditor(widget) {
     this.settingEditor = true;
     this.editorCtx.setContents({
-      delta: runsToDelta(widget.content),
+      delta: runsToDelta(widget.content, widget.config && widget.config.align),
       complete: () => { this.settingEditor = false; },
     });
   },

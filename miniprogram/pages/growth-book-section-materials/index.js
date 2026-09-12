@@ -24,12 +24,8 @@
  * 一条 problem 都不产生，那不是「全班都交齐了」，是没有结论。`judged` 为 false
  * 时页面照实说是哪一条挡住的，不把「没有结论」显示成「已完成」。
  *
- * ── 「删除栏目」在已发布的栏目上按不动 ─────────────────────────────────────
- *
- * `book_section.delete` 的 `from_state` 是 `d1`，契约写「d2 之后不可删除 —— 版面
- * 已冻结，且可能已有家庭提交（W16）」。这一页进得来的栏目都是 d2，所以那颗按钮
- * 一直是灰的，旁边写清为什么。原型的「删除时栏目、widget、投稿与引用一并删除」
- * 描述的是草稿栏目，那一颗在版面编辑页。
+ * F19：编册未锁定时，已发布新增栏目也可整栏删除；其版面与家庭投稿同时清除。
+ * 发布后不能继续修改版面，整栏删除由独立的编册锁定规则控制。
  */
 
 const bookApi = require('../../services/growth-book.js');
@@ -76,6 +72,8 @@ Page({
   },
 
   async load() {
+    this.page = null;
+    this.setData({ deleteDisabled: true, deleteNote: '正在读取栏目状态' });
     if (!this.sectionId) {
       this.setData({ loadError: '没有指定栏目，请从编册页点栏目进来', visible: [] });
       return;
@@ -110,15 +108,10 @@ Page({
       judged: page.judged,
       judgeNote: page.judgeNote,
       visible: rows,
-      deleteDisabled: true,
-      /* 两条前置各说各的：`book_section.delete` 的 from_state 是 d1，
-         precondition 是 compilation_status=e1。哪一条挡住就说哪一条，
-         不把没有查过的那一条当成理由。 */
-      deleteNote: page.section.published
-        ? '栏目已发布，版面永久冻结，服务端不接受删除；草稿栏目才可以删。'
-        : (page.compilation.locked
-          ? '本学期编册已锁定，栏目不能再删。'
-          : '这个栏目还是草稿，删除按钮在栏目版面编辑页。'),
+      deleteDisabled: page.compilation.locked || Boolean(this.deleting),
+      deleteNote: page.compilation.locked
+        ? '本学期编册已锁定，栏目不能再删。'
+        : '删除将一并清除本栏目的版面和已收家庭材料，无法恢复。',
     });
   },
 
@@ -151,7 +144,27 @@ Page({
     }
   },
 
-  onDeleteSection() {
-    wx.showToast({ title: this.data.deleteNote, icon: 'none' });
+  async onDeleteSection() {
+    if (this.deleting) return;
+    if (!this.page || this.data.deleteDisabled) {
+      wx.showToast({ title: this.data.deleteNote || '请先重新读取栏目', icon: 'none' });
+      return;
+    }
+    this.deleting = true;
+    this.setData({ deleteDisabled: true });
+    try {
+      await bookApi.deleteSection(this.sectionId);
+      this.page = null;
+      wx.showToast({ title: '栏目已删除', icon: 'none' });
+      wx.navigateBack();
+    } catch (err) {
+      if (err.details && err.details.rule === 'compilation_locked' && this.page) {
+        this.page.compilation.locked = true;
+      }
+      wx.showToast({ title: bookApi.sectionFailureText(err), icon: 'none' });
+    } finally {
+      this.deleting = false;
+      if (this.page) this.render();
+    }
   },
 });
