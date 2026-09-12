@@ -38,6 +38,35 @@ if not errorlevel 1 (
 )
 
 rem ---- 2) swagger UI port rotation (first free of eight) ----
+rem
+rem **先把 3830-3837 上还活着的旧服务收干净，再挑埠。**
+rem
+rem 2026-09-12 实撞：一个更早启动的服务还占着 3830，它载的是**旧码**（`server.mjs` 只在
+rem 启动时读一次模块，没有热加载）。于是这段挑埠逻辑跳开 3830、在 3831 起了新的 ——
+rem 但用户手上那个旧的 3830 分页还在，而**旧码与新码的页面长得一样，只是没有文字**。
+rem 用户连报两次「還是沒有文字」，还去清了浏览器 cache —— 清 cache 当然没用，
+rem 因为**旧的是服务端，不是缓存**。实测两份页面：3830 是 1,103,583 字节（旧），
+rem 3831 是 1,453,839 字节（新）。
+rem
+rem 两个后果：① 用户看不出来自己开的是哪一个；② 每次双击都多留一个孤儿，
+rem 八个占满就整个起不来。所以「挑空闲的」这条思路是错的 —— 应当**先收干净再起一个**。
+echo   stopping any earlier server on 3830-3837 ...
+set "STOPPED=0"
+for %%P in (3830 3831 3832 3833 3834 3835 3836 3837) do (
+  for /f "tokens=5" %%A in ('netstat -ano ^| findstr /C:":%%P " ^| findstr /C:"LISTENING"') do (
+    taskkill /F /PID %%A >nul 2>nul
+    if not errorlevel 1 (
+      echo     stopped PID %%A on port %%P
+      set "STOPPED=1"
+    )
+  )
+)
+if "!STOPPED!"=="1" (
+  echo     an earlier server was serving the code as it was when *it* started.
+  echo     That is why a page can look complete and still carry no text.
+  ping -n 2 127.0.0.1 >nul
+)
+
 set "PICKED="
 for %%P in (3830 3831 3832 3833 3834 3835 3836 3837) do (
   if not defined PICKED (
