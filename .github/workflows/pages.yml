@@ -16,7 +16,9 @@ name: Pages
 
 on:
   push:
-    branches: [master]
+    # 2026-09-12：默认分支由 master 换成 main。这一格不改，页面就不会再重建 ——
+    # 而 CI 不跑是**没有报错**的，站点只是停在旧的一份上（§2 记过同型的坑）。
+    branches: [main]
   workflow_dispatch:
   # Lets hualong-backend republish the docs when the contract changes:
   #   gh api repos/Chao0s/hualong-teacher/dispatches -f event_type=contract-changed
