@@ -301,6 +301,42 @@ cp -r "$DEPS/node_modules/." "<repo>/node_modules/"
 `launch api-doc.bat` names the same directory in its hint, so the launcher and
 this file agree on one location.
 
+## The launcher, and the server it owns
+
+`launch api-doc.bat` (repo root; the real script lives under
+`.claude/skills/hualong-api-test/scripts/`) starts the page-view server, a mock
+for Try-it-out, and a browser. Four things about it cost real time, all on
+2026-09-12.
+
+**The server reads its modules once, at startup. There is no hot reload.** So a
+server keeps serving the code exactly as it was when it started, and the page it
+serves looks identical to the current one — it is simply missing whatever you
+changed. Measured side by side that day: 1,103,583 bytes against 1,453,839. The
+user read the stale one twice and cleared their browser cache in between, which
+cannot help: the stale thing is the server, not the browser.
+
+**Run the launcher ONCE.** It stops the server and starts a new one every time,
+and (for a human) opens a browser tab every time. Calling it eight times to
+check that it works produced 243 browser tabs and a machine that stopped
+responding. When an agent or a script drives it, set `HL_NO_BROWSER=1`; the
+launcher skips the tab and says so.
+
+**It stops any earlier server on 3830-3837 first, then uses 3830.** Do not
+improve that back to picking the first free port: the address then drifts, and an
+old tab silently points at a server running older code. Verdict:
+
+```bash
+netstat -ano | grep LISTENING | grep -E ':383[0-7] '   # exactly one, on 3830
+```
+
+**Comments in that `.bat` must be ASCII.** cmd reads a `.bat` in the console
+codepage and the file is UTF-8, so non-ASCII comment bytes are mis-read: characters
+are eaten across line boundaries and fragments of the next line run as commands.
+The same fault surfaced three ways, each looking unrelated: a bare quote-plus-s,
+a bare quote-plus-em, and quote-plus-etstat — the last one being `netstat` with its
+leading `n` consumed by the line above. It also reprints the startup banner.
+Verdict: count the non-ASCII lines in that file, and 0 is the correct answer.
+Keep the reasoning here, not in the `.bat`.
 ## Reports
 
 A severity-ranked summary goes to the terminal; the full run is written to
