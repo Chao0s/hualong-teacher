@@ -37,13 +37,25 @@ const party = require_(resolve(MP, 'services', 'party.js'));
 const sb = scoreboard();
 const check = sb.check.bind(sb);
 
-/** 超时包装。死锁不会 reject，只会永远挂着 —— 必须自己拆穿它。 */
+/**
+ * 超时包装。死锁不会 reject，只会永远挂着 —— 必须自己拆穿它。
+ *
+ * **计时器不能 unref。** unref 的计时器不让事件循环活着，于是首个 await 永不
+ * settle 时 Node 直接 exit 0、什么也不印 —— 而这一支探针存在的理由正是抓死锁。
+ * 2026-09-12 实测：去掉 unref 之前，它 exit 0、0 行输出；去掉之后它报出
+ * 「离职教师登录 超过 15000ms 没有返回（多半是死锁）」，那正是它在找的东西。
+ *
+ * 不 unref 的代价是成功时进程会多留 ms 毫秒，所以成功路径上主动 clear。
+ */
 function withTimeout(promise, ms, label) {
+  let timer;
   return Promise.race([
-    promise,
-    new Promise((_, reject) => setTimeout(
-      () => reject(new Error(`${label} 超过 ${ms}ms 没有返回（多半是死锁）`)), ms
-    ).unref()),
+    promise.finally(() => clearTimeout(timer)),
+    new Promise((_, reject) => {
+      timer = setTimeout(
+        () => reject(new Error(`${label} 超过 ${ms}ms 没有返回（多半是死锁）`)), ms
+      );
+    }),
   ]);
 }
 
