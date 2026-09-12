@@ -79,6 +79,8 @@ export const declaredOperationIds = () => once('declared', () => {
  * 沒有自己的字（字在子元素裡，例如 `topfix` 那條置頂欄）時，退回**子孫裡的第一段字**，
  * 因為人站在螢幕前看到的就是那一塊的字。兩者都取不到才留空 —— 不填 `?`：
  * 空看得出來，假的分類看不出來。
+ * 2026-09-12 補：自己的那一段**不合格**（只有一個 `›`／`×`／`+` 這樣的符號）時也走同一條
+ * 退路，而不是直接留空 —— 那一格明明下面有字。兩個候選的判據見下面的 `asText`。
  */
 export function intentsOf(protoFile) {
   const file = join(REPO, protoFile);
@@ -104,11 +106,26 @@ export function intentsOf(protoFile) {
     // 拿到圖示那一個字 —— 那不是這一塊的名字。取「第一段有意義的字」才對得上人站在
     // 螢幕前看到的第一眼。**界線是 300 字**：再往後就可能跨進手足元素，那是別人的字。
     const stripped = clean(rest.slice(0, 300).replace(/<[^>]*>/g, ' '));
-    const mm = stripped.match(/[^\s—–\-·、。，,.\/|:：（）()\[\]{}"'’“”]{2,}/);
-    const deep = own || (mm ? mm[0] : '');
-    const t = deep.slice(0, 40);
-    // 含 `<` 或 `>` 的一律丟 —— 那是一個沒被剝乾淨的標籤，不是這一塊的字（`topfix` 撞過）。
-    cur.text = (/[<>]/.test(t) ? '' : t).replace(/[\s—–\-·、。，,.\/|:：]+/g, '').length >= 2 ? t : '';
+    const mm = stripped.match(/[^\s—–\-·、。，,./|:：（）()\[\]{}"'’“”]{2,}/);
+    const deep = mm ? mm[0] : '';
+
+    // 一個候選算不算「字」：含 `<`／`>` 的一律丟 —— 那是一個沒被剝乾淨的標籤，不是
+    // 這一塊的字（`topfix` 撞過）。**單一個漢字也算**：原型上「住」「传」「衣」就是一個字，
+    // 那是螢幕上肉眼可見的標籤，不是圖示；只有一個符號（`›`、`→`、`×`、`+`）才不算。
+    const asText = (s) => {
+      const cand = String(s || '').replace(/\s+/g, ' ').trim().slice(0, 40);
+      if (!cand || /[<>]/.test(cand)) return '';
+      const bare = cand.replace(/[\s—–\-·、。，,.…/|:：]+/g, '');
+      return (/^[\u4e00-\u9fff]$/.test(bare) || bare.length >= 2) ? cand : '';
+    };
+
+    // 第三版（2026-09-12）：判據從「自己的字優先，不合格就留空」改成**逐個候選試** ——
+    // 上一版之下，只有一個 `›`／`×`／`+` 的元素明明下面有字，那一格卻是空的
+    // （581 行裡 73 行，用戶第一眼看的就是這些空格）。
+    // 退回第一段時多一條：**這一段必須含漢字**。那一段常常落在原型的 `<script>` 裡，
+    // 不留這條就會把 `head`、`domain`、`${item.note}` 當成螢幕上的字填進去 —— 假的比空的壞。
+    // 自己的字本來就是空的（`topfix` 那類）不算「退回」：那是元素自己沒有字，與上一版同一種走法。
+    cur.text = asText(own) || (own ? (/[\u4e00-\u9fff]/.test(deep) ? asText(deep) : '') : asText(deep));
   }
   return [...m.values()];
 }

@@ -91,6 +91,79 @@ const THEAD = `<thead><tr>${HEAD.map((h) => `<th>${h}</th>`).join('')}</tr></the
 const swaggerHref = (op) => `/#/${esc((op.tags || [])[0] || '')}/${esc(op.operationId)}`;
 
 /**
+ * 「说人话」里的一段：**每一段各自带来源标签**，取不到就整段不印。
+ *
+ * 五段各有各的来处，不许糊成一块：三句是 ELI10 的（`operation-eli10.tsv`，经 `buildPageView()`），
+ * 两段是契约的（`openapi.yaml` 的 `summary` 与 `description`，经既有的 `operations()` 一并带出来）。
+ * 取不到就整段不印（唯一例外：契约本来就没写 `description` 的，见 `opText`）。
+ *
+ * `white-space:pre-wrap`（见下面 `.seg`）是因为契约 `description` 本身是多行散文：
+ * 折行是它自己的分段，不是渲染器折的。
+ */
+const seg = (label, text) => (text ? `<span class="seg"><b class="src">${label}</b>${esc(text)}</span>` : '');
+
+/**
+ * 这条操作在「按模塊」那边能看到的中文，全摊在一格裡。
+ *
+ * 2026-09-12 用户的原话是「原本的按模塊就有字但居然按屏幕沒有？？？」。实测同一条
+ * `scoreAssessmentItem`：`/` 的 Swagger UI 给 `summary` + 完整契约 `description` + ELI10 三标签，
+ * `/pages` 只给「幹嘛」一句 —— 按屏幕看的人读到的比按模塊少一大半。
+ *
+ * 「碰到誰」本身是多行的（一句「调用:」、一句「影响:」），逐行印，与 `/pages.yaml` 的读法一致。
+ */
+function opText(id, opById, eli10) {
+  const e = eli10.get(id) || {};
+  const op = opById.get(id);
+  return seg('幹嘛', e['幹嘛'] || '')
+    + seg('怎麼走', e['怎麼走'] || '')
+    + String(e['碰到誰'] || '').split('\n').filter(Boolean).map((l) => seg('碰到誰', l)).join('')
+    + seg('契约摘要', (op && op.summary) || '')
+    // 契约里**本来就没有** `description` 的那 19 条（有 summary、没有那段散文）要写明没有 ——
+    // 与「这一段读不到」分开：契约是单一来源、取不到会让整页起不来，所以空只会是「本来没有」。
+    + seg('契约原文', op ? (op.description || '（契约里这条操作没有写 description）') : '');
+}
+
+/**
+ * 「契约里没有这条路径」的那几条，客户端拿它干什么只有客户端能回答：契约里没有这一行、
+ * ELI10 里也没有（那份表按 operationId 索引）。所以这里逐条写一句中文，并写明读的是哪里。
+ *
+ * **新加一条契约外路径要回来补一句**，否则那一格只会说「为什么没有文字」。
+ * 键是 `方法 路径`（与 `screen-operations.tsv` 的 method／path 两列同一形状）。
+ */
+const OFF_CONTRACT_GLOSS = {
+  // 读自 `miniprogram/utils/auth.js`：`postDevSession()`（第 93 行 —— 本行「调用点」那一格
+  // 印的就是它）与 `signIn()` 里 `config.env.devSession` 为真时走它的那一支。
+  // testdata 服务端不连微信、没有 js_code 可换，所以另发一条直发的登录口；
+  // 后端 README §二.3 说它签发的会话与真登录同形，且不绕过任何鉴权。
+  'POST /dev/session': '换一条 dev 会话 —— testdata 服务端专用的直发登录口（没有微信那一层），签发的会话与真登录同形。（读自 <code>miniprogram/utils/auth.js</code> 的 <code>postDevSession()</code>，不是契约。）',
+};
+
+/**
+ * 没有 operationId 的行，第五列不空着。
+ *
+ * 空格子看起来像坏了 —— 2026-09-12 用户第一眼撞上的就是 `utils` 那张卡里的 `POST /dev/session`。
+ * 但它有话说：ELI10 与契约那两段都按 operationId 查，没有 operationId 就三段都查不到。
+ * 这是**正确**的，不是漏填 —— 所以这里写的是「为什么没有」，而不是往格子里填一句编的字。
+ */
+function whyNoText(r) {
+  const cause = r.operation_id ? '这条操作还没有写「说人话」（<code>operation-eli10.tsv</code> 里没有它）'
+    : r.source === 'off-contract' ? '契约里没有这条路径'
+      : r.source === 'planned' ? '契约里还没有这条端点'
+        : r.source === 'no-api' ? '这一屏按设计不调任何操作'
+          : '';
+  return seg('没有文字', `${cause ? `${cause} → ` : ''}没有 operationId；ELI10 三句与契约摘要／原文都按 operationId 查，所以都没有。`)
+    + seg('调用点', r.notes || '')
+    + seg('它干什么', OFF_CONTRACT_GLOSS[`${r.method || ''} ${r.path || ''}`] || '');
+}
+
+/**
+ * 「说人话」这一格的入口。三种表（各屏的七列表、无人认领、由 utils 调）共用这一份 ——
+ * 第五列到处说的都是同一件事。有 id 就摊开五段；没有（或那份 tsv 里还没有这条）
+ * 就把「为什么没有」写出来，格子不会是空的。
+ */
+const whyCell = (r, opById, eli10) => (r.operation_id && opText(r.operation_id, opById, eli10)) || whyNoText(r);
+
+/**
  * 一行「操作」的结论 / 留言控件。
  *
  * **六个选项一份也不抄。** `STATUS_VALUES` 与 `STATUS` 都来自 `tools/lib/feedback.mjs`，
@@ -146,7 +219,9 @@ function opRow(r, opById, eli10) {
   const op = r.operation_id ? opById.get(r.operation_id) : null;
   const href = op ? swaggerHref(op) : '';
   const name = r.source === 'off-contract' ? '（契约里没有）' : r.operation_id || '（契约还没有）';
-  const why = (eli10.get(r.operation_id) || eli10.get(r.key) || {})['幹嘛'] || '';
+  // 第五列现在带的是这条操作的全部中文（ELI10 三句 + 契约摘要 + 契约原文，见 whyCell）。
+  // 从前只有一句「幹嘛」，于是按屏幕看的人读到的比按模塊少一大半。
+  const why = whyCell(r, opById, eli10);
   const trig = r.trigger_wxml ? esc(r.trigger_wxml) : '<i class="mut">随页面加载</i>';
   const flag = r.trigger_flag ? `<b class="chip">${esc(r.trigger_flag)}</b>` : '';
   const gap = r.gap ? `<b class="chip bad">${esc(r.gap)}</b>` : '';
@@ -156,7 +231,7 @@ function opRow(r, opById, eli10) {
     + `<td>${esc(r.method || '')}</td>`
     + `<td>${escPath(r.path)}</td>`
     + `<td>${href ? `<a href="${href}">${esc(name)}</a>` : esc(name)}</td>`
-    + `<td>${esc(why)}</td>`
+    + `<td>${why}</td>`
     + `<td>${trig}${flag}</td>`
     + `<td>${gap}</td>`
     + '</tr>';
@@ -363,30 +438,48 @@ export function pagesPage({ navUrls, omit = [], extra = [], canWrite = true }) {
     // 看不懂的人（朝湃）对不上那是螢幕上的哪一块，也无从判「这条意图配得对不对」。
     //
     // 第二列是**那个元素自己的字**（原型上的可见中文，`intentsOf` 抽的，不是猜的）。
-    // 第三列在 operation 名下面接**那一條操作的说人话**（`operation-eli10.tsv` 的「幹嘛」），
-    // 与下面 API 表第五列同源 —— 同一条操作在两处说的是同一句话。
+    // 第三列在 operation 名下面接**那一條操作的全部中文**（ELI10 三句 + 契约摘要 + 契约原文），
+    // 与下面 API 表第五列同一份 —— 同一条操作在两处说的是同一套话。
     const intentTable = j.pairs.length
       ? `<div class="sec"><h3 class="dim">① 元素（原型上的東西 · 每個元素對到哪條 API）</h3>`
         + `<p class="note">意圖 <b>${j.intents.length}</b> 个 · 操作 <b>${j.ops.length}</b> 条`
         + ` · 对得上 <b>${j.matched}</b> · 待配 <b>${j.unpaired}</b> · 纯读（无触发）<b>${j.pureRead}</b>`
         + (j.tables ? ` · 主表 <code>${esc(j.tables)}</code>` : '')
-        + `。第一栏是原型的 <code>data-intent</code>，第二栏是那个元素在原型上的字，第三栏是对到的操作与它干嘛。`
-        + '两边按**位置**配对，不猜 —— 两边 id 不同源，硬配会造出看着对、其实错的对子。</p>'
-        + '<table class="itbl"><thead><tr><th>意圖（原型標記的）</th><th>元素上的字（原型的原文）</th><th>對到的操作 · 它幹嘛</th></tr></thead><tbody>'
+        + `。第一栏是原型的 <code>data-intent</code>，第二栏是那个元素在原型上的字，`
+        + `第三栏是对到的操作与它的全部中文（与下面 ② 第五列同一份）。`
+        + '两边按**位置**配对，不猜 —— 两边 id 不同源，硬配会造出看着对、其实错的对子。'
+        // `(utils)` 是一张「伪屏」的卡，它没有原型、没有 data-intent —— 不说明「它为什么在这里」，
+        // 读者只会看到一格「没有原型」然后猜。
+        + (screen === '(utils)'
+          ? ' <b>这一「屏」不是一屏：</b><code>miniprogram/utils/</code> 没有页面、没有原型、也没有 <code>data-intent</code>；'
+            + '它出现在这里，是因为 <code>utils/auth.js</code> 自己会发请求（登录那一发），那些请求不属于任何页面 ——'
+            + '不列出来，「按屏幕看」的人就看不到它们存在。'
+          : '')
+        + '</p>'
+        + '<table class="itbl"><thead><tr><th>意圖（原型標記的）</th><th>元素上的字（原型的原文）</th><th>對到的操作 · 全部中文</th></tr></thead><tbody>'
         + j.pairs.map(({ intent, op, offContract }, i) => {
-          const left = intent ? `<code>${esc(intent.id)}</code> <span class="mut">×${intent.n}</span>` : '';
+          // 第一、二两格都空会看起来像坏了 —— 2026-09-12 用户在第一张卡（utils）上撞到的就是这两个空格。
+          // 成因只有两种，两种都写出来，不填假值：
+          //   ① 这一「屏」没有原型（`(utils)` 是伪屏、`login` 的原型还没画）→ 没有 data-intent 可标记，
+          //      也没有「元素上的字」可抽；
+          //   ② 原型在，但意圖比操作少，多出来的那几条操作按位置配不到意圖。
+          const noIntent = j.hasPrototype
+            ? `（操作比意圖多：第 ${i + 1} 条操作没有第 ${i + 1} 个意圖可对）`
+            : '（这一屏没有原型，没有 data-intent）';
+          const left = intent ? `<code>${esc(intent.id)}</code> <span class="mut">×${intent.n}</span>` : `<i class="mut">${noIntent}</i>`;
           const mid = intent
             ? (intent.text
               ? esc(intent.text)
-              : '<i class="mut" title="这一块的文字在子元素里，或只有图标 —— 故留空，不是漏填">—</i>')
-            : '';
-          const why = op && op.operation_id ? ((eli10.get(op.operation_id) || {})['幹嘛'] || '') : '';
+              // 留空要**看得见原因**（用户 2026-09-12 的原话是「還是沒有文字啊」；只有一个 `—`
+              // 看起来就是坏了）。这一块在原型上只有图标、字在子元素里 —— 是这一列的规矩，不是漏填。
+              : '<i class="mut">—（这一块只有图标，或字在子元素里 —— 故留空，不是漏填）</i>')
+            : `<i class="mut">${j.hasPrototype ? '（没有对应的意圖，所以指不到元素）' : '（没有原型，所以没有原型上的字）'}</i>`;
           const right = op
             ? (op.operation_id
               ? `<a href="${swaggerHref(opById.get(op.operation_id) || { operationId: op.operation_id })}">${esc(op.operation_id)}</a>`
                 + (offContract ? ' <b class="chip bad">契约外</b>' : '')
-              : '<i class="mut">（这条操作没有 operation_id）</i>')
-              + (why ? `<br><span class="why">${esc(why)}</span>` : '')
+              : '<i class="mut">（这条操作没有 operation_id —— 为什么，见下面 ② 第五列）</i>')
+              + (op.operation_id ? opText(op.operation_id, opById, eli10) : '')
             : '<i class="mut">待配 —— 这条意圖还没有對到操作</i>';
           return `<tr class="r${offContract ? ' off' : ''}"><td>${left}</td><td>${mid}</td><td>${right}</td></tr>`
             + vRow(canWrite, keyOfIntent(screen, { intent }, i), pick(keyOfIntent(screen, { intent }, i)), evidence, 3);
@@ -436,9 +529,12 @@ export function pagesPage({ navUrls, omit = [], extra = [], canWrite = true }) {
       // 从前这两半没有编号、混在一串同级 h3 里，看不出它们是一件事的两面。
       + intentTable
       + (body
-        ? `<div class="sec grp"><h3 class="dim">② API（客戶端調的 · 每條帶一句它幹嘛）</h3>`
+        ? `<div class="sec grp"><h3 class="dim">② API（客戶端調的 · 每條帶它的全部中文）</h3>`
           + `<p class="note">操作 <b>${rows.length}</b> 条，按下面五段分。每条点开是 Swagger 上的那一頁；`
-          + `第五列「说人话」与上面 ① 第三列同源（<code>operation-eli10.tsv</code>）。</p></div>` + body
+          + `第五列「说人话」是这条操作能看到的全部中文，与上面 ① 第三列同一份，五段各带来源：`
+          + `「幹嘛」「怎麼走」「碰到誰」来自 <code>operation-eli10.tsv</code>（经 <code>buildPageView()</code>），`
+          + `「契约摘要」「契约原文」来自 <code>openapi.yaml</code> 的 <code>summary</code>／<code>description</code>（本仓不复制契约）。`
+          + `取不到的一段整段不印；没有 operationId 的行写清「为什么没有文字」，不留空格子。</p></div>` + body
         : '<p class="note">这一屏没有任何记录，且不是 no-api —— 是一个缺口（缺行与「本来就没有」必须分得开）。</p>')
       + findings
       + '</section>';
@@ -449,7 +545,7 @@ export function pagesPage({ navUrls, omit = [], extra = [], canWrite = true }) {
 
   // 页尾那张「无人认领」也每一行能留结论 —— 它同样是一条一条的操作。
   const unusedRows = unused.map((o) => {
-    const why = (eli10.get(o.operationId) || {})['幹嘛'] || '';
+    const why = whyCell({ operation_id: o.operationId }, opById, eli10);
     const verdict = !serviceReport ? '<i class="mut">没读到裁决报告</i>'
       : unusedNoService.has(o.path) ? '<b class="chip bad">service 层也没写</b>'
         : 'service 层写了，没有页面走得到';
@@ -458,7 +554,7 @@ export function pagesPage({ navUrls, omit = [], extra = [], canWrite = true }) {
       + `<td>${esc(o.method)}</td>`
       + `<td>${escPath(o.path)}</td>`
       + `<td>${esc(o.operationId)}</td>`
-      + `<td>${esc(why)}</td>`
+      + `<td>${why}</td>`
       + `<td>${verdict}</td>`
       + `<td><a href="${swaggerHref(o)}">看操作说明</a></td>`
       + '</tr>'
@@ -471,7 +567,7 @@ export function pagesPage({ navUrls, omit = [], extra = [], canWrite = true }) {
     omit,
     title: '按屏幕看',
     extra,
-    note: '一屏一卡 · API 行 + 意圖行 + 发现 · 每一行都能留结论 · 「说人话」机器交叉核过、无人逐条读过',
+    note: '每行带该操作的全部中文（ELI10 三句 + 契约摘要 + 契约原文） · 每一行都能留结论 · 「说人话」机器交叉核过、无人逐条读过',
   });
 
   // ── kind → 中文 的对照表：17 种全部列出来，0 条也列 ─────────────────────
@@ -559,8 +655,16 @@ export function pagesPage({ navUrls, omit = [], extra = [], canWrite = true }) {
  /* 第二欄是原型上的原文，用正文体 —— 它不是机器标识符，是给人读的中文。 */
  .itbl td:nth-child(2){font:13px/1.5 var(--sans);color:var(--ink2)}
  .itbl td:nth-child(3){font:12.5px/1.5 var(--mono)}
- /* 操作名下面那行「它幹嘛」，与 ② 的第五列同一句话，所以同一套字。 */
- .itbl .why{display:block;margin-top:2px;font:12.5px/1.5 var(--sans);color:var(--ink3)}
+ /* 第五列／① 第三列的几段中文：**一段一行、各带来源标签**。五段来源不同
+    （「幹嘛」「怎麼走」「碰到誰」来自 operation-eli10.tsv，「契约摘要」「契约原文」来自
+    openapi.yaml），糊成一整块就读不出哪句是契约原文 —— 所以要分得出来。
+    white-space:pre-wrap 是留给契约 description 的：它自己是多行散文，折行是它自己的分段。
+    字体在这里定成正文体：.itbl td:nth-child(3) 是等宽（给 operationId 用的），
+    中文段落不能跟着等宽走。 */
+ .seg{display:block;margin-top:3px;font-family:var(--sans);white-space:pre-wrap}
+ .seg:first-child{margin-top:0}
+ .src{display:inline-block;min-width:56px;margin-right:6px;
+      font:600 11px/1.6 var(--sans);letter-spacing:.04em;color:var(--ink4)}
  .itbl tr.off td:nth-child(3){color:var(--warn)}
 
  .chip{display:inline-block;font:600 11px/1.6 var(--sans);border-radius:5px;
@@ -672,7 +776,7 @@ export function pagesPage({ navUrls, omit = [], extra = [], canWrite = true }) {
   .tbl td:nth-child(5)::before{content:"说人话"} .tbl td:nth-child(6)::before{content:"触发"}
   .tbl td:nth-child(7)::before{content:"缺口"}
   .itbl td:nth-child(1)::before{content:"意圖"} .itbl td:nth-child(2)::before{content:"元素上的字"}
-  .itbl td:nth-child(3)::before{content:"操作 · 幹嘛"}
+  .itbl td:nth-child(3)::before{content:"操作 · 中文"}
   /* 留结论那一行不分列，所以不要给它生成列名。 */
   .tbl tr.vtr>td::before,.itbl tr.vtr>td::before{content:none}
   .tbl tr.vtr,.itbl tr.vtr{border-bottom:0;padding:0 0 9px}
@@ -732,7 +836,7 @@ ${utilsCalled.length ? `<section class="card" id="utils">
       + `<td>${esc(o.method)}</td>`
       + `<td>${escPath(o.path)}</td>`
       + `<td>${esc(o.operationId)}</td>`
-      + `<td>${esc((eli10.get(o.operationId) || {})['幹嘛'] || '')}</td>`
+      + `<td>${whyCell({ operation_id: o.operationId }, opById, eli10)}</td>`
       + '<td><i class="mut">随页面加载</i></td>'
       + '<td><b class="chip">由 utils 调</b></td>'
       + '</tr>'
