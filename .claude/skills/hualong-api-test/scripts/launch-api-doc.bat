@@ -39,17 +39,26 @@ if not errorlevel 1 (
 
 rem ---- 2) swagger UI port rotation (first free of eight) ----
 rem
-rem **先把 3830-3837 上还活着的旧服务收干净，再挑埠。**
+rem ** Stop any earlier server on 3830-3837 first, then pick a port. **
 rem
-rem 2026-09-12 实撞：一个更早启动的服务还占着 3830，它载的是**旧码**（`server.mjs` 只在
-rem 启动时读一次模块，没有热加载）。于是这段挑埠逻辑跳开 3830、在 3831 起了新的 ——
-rem 但用户手上那个旧的 3830 分页还在，而**旧码与新码的页面长得一样，只是没有文字**。
-rem 用户连报两次「還是沒有文字」，还去清了浏览器 cache —— 清 cache 当然没用，
-rem 因为**旧的是服务端，不是缓存**。实测两份页面：3830 是 1,103,583 字节（旧），
-rem 3831 是 1,453,839 字节（新）。
+rem 2026-09-12: a server started earlier was still holding 3830, serving the code
+rem as it was when IT started - server.mjs reads its modules once at startup and
+rem has no hot reload. This block used to skip 3830 and start a second server on
+rem 3831, while the tab the user already had open kept showing 3830. The two pages
+rem look identical; the old one is simply missing text. Measured: 3830 was
+rem 1,103,583 bytes, 3831 was 1,453,839 bytes. The user cleared their browser
+rem cache twice, which cannot help - the stale thing is the server.
 rem
-rem 两个后果：① 用户看不出来自己开的是哪一个；② 每次双击都多留一个孤儿，
-rem 八个占满就整个起不来。所以「挑空闲的」这条思路是错的 —— 应当**先收干净再起一个**。
+rem Two consequences, both fixed by stopping first: the user could not tell which
+rem server they were reading, and every double-click left another orphan behind
+rem until all eight ports were busy and the launcher refused to start.
+rem
+rem NOTE: comments in this file are ASCII on purpose. cmd parses a UTF-8 .bat in
+rem the console codepage, and Chinese comment bytes get mis-read - characters are
+rem eaten across line boundaries and fragments of the next line run as commands.
+rem Observed: `'s' is not recognized` and `'etstat' is not recognized` (the `n`
+rem of netstat consumed by the previous line). A .bat is not a safe place for
+rem non-ASCII comments; the reasoning belongs in docs, not here.
 echo   stopping any earlier server on 3830-3837 ...
 set "STOPPED=0"
 for %%P in (3830 3831 3832 3833 3834 3835 3836 3837) do (
@@ -64,14 +73,26 @@ for %%P in (3830 3831 3832 3833 3834 3835 3836 3837) do (
 if "!STOPPED!"=="1" (
   echo     an earlier server was serving the code as it was when *it* started.
   echo     That is why a page can look complete and still carry no text.
-  ping -n 2 127.0.0.1 >nul
 )
 
+rem Wait for the kernel to release the listening socket: measured about 1 second.
+rem A fixed 3-second wait, deliberately not a polling goto loop - that was tried
+rem and did not work, cmd behaves badly with goto inside parenthesised blocks.
+if "!STOPPED!"=="1" ping -n 4 127.0.0.1 >nul
+
+rem Prefer 3830 so the address never drifts. Only fall back if something we did
+rem not start is holding it.
 set "PICKED="
-for %%P in (3830 3831 3832 3833 3834 3835 3836 3837) do (
-  if not defined PICKED (
-    netstat -ano | findstr /C:":%%P " | findstr /C:"LISTENING" >nul 2>nul
-    if errorlevel 1 set "PICKED=%%P"
+netstat -ano | findstr /C:":3830 " | findstr /C:"LISTENING" >nul 2>nul
+if errorlevel 1 (
+  set "PICKED=3830"
+) else (
+  echo   [WARN] port 3830 is held by something we did not start - falling back.
+  for %%P in (3831 3832 3833 3834 3835 3836 3837) do (
+    if not defined PICKED (
+      netstat -ano | findstr /C:":%%P " | findstr /C:"LISTENING" >nul 2>nul
+      if errorlevel 1 set "PICKED=%%P"
+    )
   )
 )
 if not defined PICKED (
@@ -91,11 +112,13 @@ if defined HL_DRYRUN (
 )
 
 rem ---- 3a) refresh the two spec tables BEFORE serving ----
-rem /pages 与 /roles 是**每次请求现读** db/spec 的两份 tsv 的（screen-operations.tsv、operation-eli10.tsv）。
-rem 所以改了小程序页面之后要重扫一次，否则页面上还是旧数据 —— 这段就是那一步，省得手打。
-rem It scans the pages under miniprogram/ and the contract. The page count is measured,
-rem never written down here - it changes with every screen added.
-rem 顺带它把「客户端调了、契约里没有的路径」直接打在这里（下面那几行 ④），那正是要看的信号。
+rem /pages and /roles re-read the two tsv files under db/spec on EVERY request
+rem (screen-operations.tsv, operation-eli10.tsv). So after changing a mini-program
+rem page you must re-scan, or the page keeps showing the old data. This step is
+rem that re-scan, so nobody has to type it by hand. It scans the pages under
+rem miniprogram/ and the contract. The page count is measured, never written down
+rem here - it changes with every screen added. It also prints the "client calls a
+rem path the contract does not have" rows right here; those are the signal to read.
 echo   refreshing the spec tables ^(npm run emit:screens^) ...
 if defined HL_NO_REFRESH (
   echo   [skipped] HL_NO_REFRESH is set
@@ -135,9 +158,11 @@ echo   Ctrl+C to stop
 echo.
 
 rem open the browser after the server has bound, in a hidden background shell.
-rem 用 `ping -n 3` 而不是 `timeout /t 2`：从 bash／MSYS 启动时 PATH 里 coreutils 的 `timeout` 会盖掉
-rem Windows 那个，于是这一步报 `timeout: invalid time interval '/t'` 而**浏览器不会打开** ——
-rem 在 Explorer 里双击又没事，所以很难发现。ping 两边都在，不挑 PATH。
+rem Use `ping -n 3` rather than `timeout /t 2`: when launched from bash/MSYS the
+rem coreutils `timeout` on PATH shadows the Windows one, so this step reports
+rem `timeout: invalid time interval '/t'` and THE BROWSER DOES NOT OPEN. Double-
+rem clicking in Explorer is fine, which makes it hard to spot. `ping` exists on
+rem both sides and does not depend on PATH.
 start "" /b cmd /c "ping -n 3 127.0.0.1 >nul & start http://127.0.0.1:!PICKED!/pages"
 
 node tools\swagger\server.mjs
