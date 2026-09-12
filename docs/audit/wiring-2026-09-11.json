@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-11T19:56:53.811Z",
+  "generatedAt": "2026-09-11T20:19:53.138Z",
   "contract": "G:\\My Drive\\Workplace\\China KG Platform\\hualong-backend\\api\\openapi.yaml",
   "pages": [
     {
@@ -1915,6 +1915,46 @@
   ],
   "contractUnused": [
     {
+      "key": "contract:GET /library/resources/{resource_id}/cases",
+      "method": "GET",
+      "path": "/library/resources/{resource_id}/cases",
+      "tags": "library",
+      "action": "",
+      "blockedOn": "",
+      "summary": "这个资源被哪些案例引用（只读）",
+      "verdict": null,
+      "falsePositive": null,
+      "context": {
+        "description": "G109（2026-09-12 已决）。原型 `screens/resource-detail.html` 第 87-95 行的「课程应用」 小节要列出引用了本资源的案例。反查 `db_case.resource_ids`。 **范围沿用 `listCases` 自己的可见规则**，不另立一套：这些案例本来就在案例库里， 可见性不该因为入口不同而改变。同园、`case_status='s3'`。 代价写在 GAPS.md G109：那条 predicate 要与 `listCases` 保持一致，一边改要两边一起改。 资源本身不可见时回 404，不回空数组 —— 「没有相关案例」与「你看不到这个资源」 是两件事，回空会让前者冒充后者。",
+        "registry": null,
+        "page": "",
+        "pageTitle": "",
+        "path": "",
+        "button": "",
+        "who": ""
+      }
+    },
+    {
+      "key": "contract:GET /teacher/growth-book/sections/{section_id}/submissions",
+      "method": "GET",
+      "path": "/teacher/growth-book/sections/{section_id}/submissions",
+      "tags": "growth-book",
+      "action": "",
+      "blockedOn": "",
+      "summary": "本班幼儿交上来的栏目素材（只读）",
+      "verdict": null,
+      "falsePositive": null,
+      "context": {
+        "description": "G112（2026-09-12 已决）。原型 `screens/growth-book-section-materials.html` 第 61 行 每条记录有「查看」，点开要看家长写的正文与照片。 **范围是本班幼儿交的**（教师的自己的范围）。栏目本身是**园所级** —— `db_school_book_section` 只有 `school_id` 与 `release_id`、**没有 `class_id`** —— 所以范围落在「哪些幼儿」，不是「哪班哪栏」。这与教师在名册、评估、在园时光 各处能看到的孩子一致。 只回**已提交**的（`submitted_at` 非空）。`submitted_at IS NULL` 是家庭共用草稿， 契约明写「不计齐备、不向教师返回内容」（见 `autosaveBookMaterial` 的描述）—— 本条不改变它。",
+        "registry": null,
+        "page": "",
+        "pageTitle": "",
+        "path": "",
+        "button": "",
+        "who": ""
+      }
+    },
+    {
       "key": "contract:GET /growth-book/books/{growth_book_id}/manifest",
       "method": "GET",
       "path": "/growth-book/books/{growth_book_id}/manifest",
@@ -2001,6 +2041,26 @@
       }
     },
     {
+      "key": "contract:GET /training/home",
+      "method": "GET",
+      "path": "/training/home",
+      "tags": "training",
+      "action": "",
+      "blockedOn": "",
+      "summary": "教研培训首页聚合（轮播与推荐都由事实派生，不是可管理的清单）",
+      "verdict": null,
+      "falsePositive": null,
+      "context": {
+        "description": "G111（2026-09-12 已决）。原型 `screens/training-center.html` 第 43-145 行要三块： 一个轮播、推荐资源 3 卡、推荐案例 3 卡。 **「推荐」按最新派生，不是人工挑的。** 这条由 `getPartyHome`（党建首页聚合）的先例 直接回答：它原文写「轮播由事实派生，不是可管理的推荐清单」，且 `db_party_feature` **已由 F7 拔除，不得重建**，也没有手工排序、排期或跨类型混排。照它做。 三类各回最新若干条，顺序 `published_at DESC, id DESC`（训练用 `start_at DESC`）， 不足 3 条就回实际笔数。完整列表走各自的集合端点（`/trainings`、`/library/resources`、 `/library/cases`）。 本端点是 persist=0 聚合，**",
+        "registry": null,
+        "page": "",
+        "pageTitle": "",
+        "path": "",
+        "button": "",
+        "who": ""
+      }
+    },
+    {
       "key": "contract:GET /scales/{scale_code}/{scale_version}",
       "method": "GET",
       "path": "/scales/{scale_code}/{scale_version}",
@@ -2061,7 +2121,7 @@
     "review": 10,
     "falsePositives": 10,
     "decided": 17,
-    "contractTeacherOps": 105,
-    "contractUnused": 6
+    "contractTeacherOps": 108,
+    "contractUnused": 9
   }
 }
