@@ -21,7 +21,8 @@
 
 import { createRequire } from 'node:module';
 import { resolve, dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { createHash } from 'node:crypto';
 import { writeFileSync, unlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { installWxStub, scoreboard } from './lib/wx-stub.mjs';
@@ -40,6 +41,7 @@ const guard = require_(resolve(MP, 'utils', 'guard.js'));
 const api = require_(resolve(MP, 'utils', 'request.js'));
 const config = require_(resolve(MP, 'config.js'));
 const { Client } = require_(resolve(TESTDATA, 'node_modules', 'pg'));
+const {getObject,removeObject}=await import(pathToFileURL(resolve(TESTDATA,'server/lib/local-media.mjs')));
 
 // `--base <url>` 把请求改打到另一个端口。改了服务端要重启才生效，而 3860 那扇窗口
 // 是别人开的；起一个 3861 验完再关。`utils/request.js` 每次发出前都现读
@@ -178,14 +180,16 @@ async function main() {
     [cover.fileId],
   )).rows[0];
   check('封面落库为 f1（图片）', fileRow.file_type === 'f1', `实际 ${fileRow.file_type}`);
-  check('file_size 等于送出去的字节数', fileRow.file_size === PNG_BYTES.length,
-    `实际 ${fileRow.file_size}，送出 ${PNG_BYTES.length}`);
+  const storedBytes=await getObject(fileRow.bucket,fileRow.object_key);
+  check('file_size 等于处理后成品字节数', fileRow.file_size === storedBytes.length,
+    `实际 ${fileRow.file_size}，成品 ${storedBytes.length}`);
+  check('file_hash 对应处理后成品',fileRow.file_hash===createHash('sha256').update(storedBytes).digest('hex'));
   check('file_hash 是 64 位十六进制（该列 NOT NULL 且无默认值）',
     /^[0-9a-f]{64}$/.test(fileRow.file_hash || ''), `实际 ${fileRow.file_hash}`);
-  check('object_key 落在 incoming/ 前缀',
-    String(fileRow.object_key).startsWith('incoming/'), `实际 ${fileRow.object_key}`);
-  check('storage_provider=p1、visibility=v1',
-    fileRow.storage_provider === 'p1' && fileRow.visibility === 'v1',
+  check('object_key 落在 processed/ 前缀',
+    String(fileRow.object_key).startsWith('processed/'), `实际 ${fileRow.object_key}`);
+  check('storage_provider=p2、visibility=v1',
+    fileRow.storage_provider === 'p2' && fileRow.visibility === 'v1',
     `实际 ${fileRow.storage_provider}/${fileRow.visibility}`);
   check('uploader_type=c1 且 uploaded_by 是登录教师 1',
     fileRow.uploader_type === 'c1' && fileRow.uploaded_by === 1,
@@ -704,7 +708,8 @@ async function cleanup() {
   }
   // 文件行排在事件行后面：db_content_access_event.file_id 有 fk_cae_file。
   for (const id of made.files) {
-    await db.query('DELETE FROM db_file WHERE file_id=$1', [id]);
+    const deleted=await db.query('DELETE FROM db_file WHERE file_id=$1 RETURNING bucket,object_key,storage_provider', [id]);
+    for(const row of deleted.rows)if(row.storage_provider==='p2')await removeObject(row.bucket,row.object_key);
   }
   // 序列回退，让下一次灌库/生成不出现空洞
   await db.query("SELECT setval('db_resource_resource_id_seq', (SELECT max(resource_id) FROM db_resource))");

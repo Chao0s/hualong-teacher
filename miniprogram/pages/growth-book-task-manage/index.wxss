@@ -73,8 +73,7 @@
 }
 
 .record__title {
-  flex: 1;
-  min-width: 0;
+  display: block;
   font-size: 24rpx;
   font-weight: 600;
 }
@@ -84,6 +83,9 @@
   color: var(--danger);
   font-size: 22rpx;
 }
+
+.record__main { flex: 1; min-width: 0; }
+.record__meta { display: block; margin-top: 8rpx; color: var(--muted); font-size: 22rpx; line-height: 1.5; }
 
 .empty {
   padding: 24rpx 0;

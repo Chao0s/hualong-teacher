@@ -25,6 +25,7 @@
         <text>添加</text>
       </view>
       <view class="photo photo-thumb" wx:for="{{photos}}" wx:key="fileId">
+        <image class="photo-image" src="{{item.previewUrl}}" mode="aspectFit" />
         <text class="photo-label">{{item.label}}</text>
       </view>
     </scroll-view>

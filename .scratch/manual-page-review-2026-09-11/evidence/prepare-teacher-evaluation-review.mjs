@@ -28,7 +28,6 @@ try {
   const ctx={scope:{derived:identity},config:{today:health.today}};
   const query=async(sql,args)=>(await db.query(sql,args)).rows[0];
   const summaryBefore=await api.get('/home-school/progress');
-  const recordBefore=await api.get('/growth-records');
   const before=await teacherEvaluationProgress(ctx,query);
   assert.ok(before.term_id&&before.items.length>=6);
   const children=before.items.slice(0,6).map(r=>r.child_id);
@@ -88,10 +87,16 @@ try {
   await db.query('COMMIT');committed=true;
   writeFileSync(backup,JSON.stringify({...saved,applications:history,state:'committed'},null,2)+'\n');
   assert.deepEqual(await api.get('/home-school/progress'),summaryBefore);
-  assert.deepEqual(await api.get('/growth-records'),recordBefore);
+  const records=await api.get('/growth-records');
+  for (let i=0;i<6;i++) {
+    const record=records.items.find(r=>r.child_id===children[i]);
+    assert.ok(record);
+    if(cases[i][1]) assert.equal(record.teacher_term_status,'c1');
+    if(cases[i][2]) assert.equal(record.comprehensive_assessment_status,'c1');
+  }
   const actual=await api.get('/teacher-evaluations/progress');
   assert.deepEqual(actual,after);
-  console.log(JSON.stringify({month:after.eval_month,term:after.term_id,rows:after.items.slice(0,6).map(r=>({childId:r.child_id,completed:fields.map(f=>r[f]==='h1')})),newScores:created.scores.length,newMessages:created.messages.length,otherReviewFixturesUnchanged:true}));
+  console.log(JSON.stringify({month:after.eval_month,term:after.term_id,rows:after.items.slice(0,6).map(r=>({childId:r.child_id,completed:fields.map(f=>r[f]==='h1')})),newScores:created.scores.length,newMessages:created.messages.length,homeSchoolUnchanged:true,growthRecordRefreshed:true}));
 } catch(err) {
   if(!committed) await db.query('ROLLBACK');
   throw err;

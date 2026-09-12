@@ -352,7 +352,7 @@
                       "page":  "growth-book-task-manage",
                       "title":  "亲子时光管理",
                       "route":  "pages/growth-book-task-manage/index",
-                      "directService":  false,
+                      "directService":  true,
                       "ticket":  11
                   },
                   {
@@ -393,6 +393,8 @@
               ],
     "scope":  "teacher-only",
     "externalBacklogCount":  1,
-    "activeTicket":  1,
-    "implementation":  "ticket 01 overview, growth-record and teacher-evaluation implemented; manual recheck and growth-record aggregate refresh verification pending"
+    "activeTicket":  12,
+    "activeTickets": [12],
+    "activeChecks": ["12A", "12B", "12C"],
+    "implementation":  "Ticket 11 confirmed and closed. Ticket 12 layout GET, rich-text styles and explicit page count implemented; existing widgets preserved by additive migration, isolated DDL/seed verification and real roundtrip/negative checks passed. Drafts 15/16 prepared for geometry, text and blank-page native review; publication/collection remains for next batch"
 }

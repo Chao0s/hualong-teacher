@@ -29,6 +29,7 @@ Page({
     avg: '—',
     progressHint: '',
     readonly: false,
+    pendingWrites: 0,
   },
 
   async onLoad(options) {
@@ -50,14 +51,22 @@ Page({
   async loadChild() {
     const child = this.data.children[this.data.childIndex];
     if (!child) return;
+    const epoch = (this.childEpoch || 0) + 1;
+    this.childEpoch = epoch;
+    this.setData({ childId: child.childId, domains: [], readonly: false });
     const detail = await assess.getChildAssessment(child.childId);
+    if (epoch !== this.childEpoch) return;
     this.setData({ childId: child.childId, ...this.viewOf(detail) });
   },
 
   /** service 的返回值直接摊进 data，页面一格都不再算。 */
-  viewOf(detail) {
+  viewOf(detail, preserveOpen = false) {
+    const opened = new Map(this.data.domains.map((domain) => [domain.id, domain.open]));
     return {
-      domains: detail.domains,
+      domains: detail.domains.map((domain) => ({
+        ...domain,
+        open: preserveOpen ? Boolean(opened.get(domain.id)) : domain.open,
+      })),
       avg: detail.avg,
       progressHint: detail.progressHint,
       // 已完成的那一份改分服务端现在会回 404（见 service 的头注），提示语照实说。
@@ -74,8 +83,14 @@ Page({
     }
   },
 
+  onUnload() {
+    this.disposed = true;
+    this.childEpoch = (this.childEpoch || 0) + 1;
+  },
+
   onToggleDomain(e) {
     const di = e.currentTarget.dataset.di;
+    if (!this.data.domains[di]) return;
     this.setData({ [`domains[${di}].open`]: !this.data.domains[di].open });
   },
 
@@ -87,23 +102,35 @@ Page({
    */
   async onScoreTap(e) {
     const { di, ii, score } = e.currentTarget.dataset;
-    const item = this.data.domains[di].items[ii];
-    const before = { score: item.score, rated: item.rated };
-    this.setData({
-      [`domains[${di}].items[${ii}].score`]: Number(score),
-      [`domains[${di}].items[${ii}].rated`]: true,
-    });
-    try {
-      // 服务端算出来的 completedCount 才是权威，所以整份重取。
-      const fresh = await assess.scoreItem(this.data.childId, item.id, score);
-      this.setData(this.viewOf(fresh));
-    } catch (err) {
-      this.setData({
-        [`domains[${di}].items[${ii}].score`]: before.score,
-        [`domains[${di}].items[${ii}].rated`]: before.rated,
+    const item = this.data.domains[di] && this.data.domains[di].items[ii];
+    if (!item || this.data.readonly) return;
+    const childId = this.data.childId;
+    const epoch = this.childEpoch;
+    const sameChild = () => this.data.childId === childId && this.childEpoch === epoch;
+    this.setData({ pendingWrites: this.data.pendingWrites + 1 });
+    // 按点击顺序保存，避免较早请求最后返回覆盖新分数；切换幼儿后旧请求只落库，不改新页面。
+    const save = async () => {
+      const current = sameChild() && this.data.domains[di] && this.data.domains[di].items[ii];
+      const before = current ? { score: current.score, rated: current.rated } : null;
+      if (before) this.setData({
+        [`domains[${di}].items[${ii}].score`]: Number(score),
+        [`domains[${di}].items[${ii}].rated`]: true,
       });
-      wx.showToast({ title: assess.scoreFailureText(err), icon: 'none' });
-    }
+      try {
+        const fresh = await assess.scoreItem(childId, item.id, score);
+        if (sameChild()) this.setData(this.viewOf(fresh, true));
+      } catch (err) {
+        if (sameChild() && before) this.setData({
+          [`domains[${di}].items[${ii}].score`]: before.score,
+          [`domains[${di}].items[${ii}].rated`]: before.rated,
+        });
+        wx.showToast({ title: assess.scoreFailureText(err), icon: 'none' });
+      } finally {
+        if (!this.disposed) this.setData({ pendingWrites: Math.max(0, this.data.pendingWrites - 1) });
+      }
+    };
+    this.scoreQueue = (this.scoreQueue || Promise.resolve()).then(save, save);
+    return this.scoreQueue;
   },
 
   /**
@@ -111,6 +138,6 @@ Page({
    * 按钮留着（教师会找它），文案照实说已经保存到哪一步。
    */
   onSave() {
-    wx.showToast({ title: this.data.progressHint, icon: 'none' });
+    wx.showToast({ title: this.data.pendingWrites ? '评分正在保存，请稍候' : this.data.progressHint, icon: 'none' });
   },
 });

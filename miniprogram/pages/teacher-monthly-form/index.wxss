@@ -1,4 +1,17 @@
 @import '/styles/home-school-common.wxss';
+
+.photo-demo {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  padding: 6rpx 8rpx;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 20rpx;
+  text-align: center;
+}
 @import '/styles/album-sheet.wxss';
 
 /* 填写月度评价 —— 页面本身没有额外样式，全部来自上面两份共用样式。 */

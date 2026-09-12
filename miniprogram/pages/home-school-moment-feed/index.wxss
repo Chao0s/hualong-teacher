@@ -107,6 +107,8 @@
   display: block;
 }
 
+.feed-photo--hover { opacity: 0.8; }
+
 /* 超出预览的张数角标。卡片只放得下 3 格，其余在选照片浮层里。 */
 .feed-more {
   display: flex;

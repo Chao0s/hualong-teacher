@@ -1,6 +1,6 @@
 @import '/styles/home-school-common.wxss';
 
-/* 发布家长测评 —— 页面本身没有额外样式，全部来自共用样式。 */
+/* 发布家长测评：单行起步的标题与月份选择。 */
 
 .page {
   padding: 24rpx 32rpx 56rpx;
@@ -8,6 +8,22 @@
 
 .form-label--first {
   margin-top: 0;
+}
+
+.title-field {
+  min-height: 88rpx;
+}
+
+.title-input {
+  width: 100%;
+  min-height: 40rpx;
+  padding: 0;
+  border: 0;
+  box-sizing: content-box;
+  background: transparent;
+  color: var(--fg);
+  font-size: 26rpx;
+  line-height: 40rpx;
 }
 
 .full {
@@ -28,7 +44,7 @@
   font-size: 26rpx;
 }
 
-/* 期间那一格是派生值，不给控件 —— 做成不可点的样子，别让人以为能改 */
+/* 学期期间取当前学期，只读；月度期间使用月份选择器。 */
 .select--readonly {
   color: var(--muted);
   background: var(--accent-light);

@@ -38,6 +38,7 @@
       <text class="prog-cell prog-cell--name">幼儿</text>
       <text class="prog-cell">在园时光</text>
       <text class="prog-cell">亲子活动</text>
+      <text class="prog-cell">成长册</text>
     </view>
     <view class="prog-row" wx:for="{{rows}}" wx:key="childId" wx:for-item="row">
       <text class="prog-cell prog-cell--name">{{row.name}}</text>

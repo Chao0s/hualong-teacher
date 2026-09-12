@@ -34,11 +34,8 @@
  * 契约里**没有任何一条端点写得了它**（`DELETE /materials/{id}` 倒是会连带清掉那一批
  * 引用）。所以本页不再画那个浮层：画了就是假装存下去了。页顶那一句把这件事说出来。
  *
- * ── 「移出」不在这一页 ─────────────────────────────────────────────────────
- *
- * `DELETE /materials/{growth_material_id}` 要的是登记行的 id，且删除不可恢复、界面要两段
- * 确认（decision.md 2026-08-13 第六轮）—— 那一整套在「在园时光管理」页上。这一页只加，
- * 已经收进来的那些点了只说一句，不重复发。
+ * 已收录活动可确认移出，DELETE 使用素材登记 id，保留原活动和周进度。
+ * 移出清除本次收录及主题归类；重新加入会建立新的未归类记录。锁定编册由后端拒绝修改。
  */
 
 const co = require('../../services/co-education');
@@ -72,18 +69,20 @@ Page({
     loading: true,
     loadingMore: false,
     error: '',
+    bookStateReady: false,
+    bookStateError: false,
   },
 
   onLoad() {
-    // 已经收进本学期编册的 moment_id。取不到就留空集：那时每张卡都显示「收进成长册」，
-    // 重复点会被服务端以 `source_already_in_compilation` 挡回来，不会多收一条。
+    // 同时保存活动 id 与素材登记 id；移出接口必须使用后者。
     this.inBook = new Set();
+    this.materialByMoment = new Map();
     this.load();
   },
 
   onShow() {
     // 从在园时光管理页移出一条再回来，收录状态就变了，所以每次显示都重取一次。
-    if (!this.data.loading) this.loadBookState();
+    if (!this.data.loading && !this.bookActionBusy) this.loadBookState();
   },
 
   async load() {
@@ -153,48 +152,66 @@ Page({
     });
   },
 
-  /**
-   * 点「+N」角标，看这条动态的全部照片。
-   *
-   * 卡片上只铺 `PREVIEW_PHOTOS` 张，角标只是交代还有几张，点不开等于没交代。
-   * 全套 `file_id` 就在卡上，所以不再拉一次详情；前三张的地址也已经换过，
-   * 当 `known` 传下去，只补剩下那些。
-   *
-   * 地址是短链（§8.4，约 5 分钟），所以每次点都重新取，不缓存进列表数据。
-   */
+  /** 点缩略图从该图开始；+N从第4张开始。短链每次重取，保留fileId对应关系。 */
   async onPreviewPhotos(e) {
+    if (this.previewing) return;
     const id = Number(e.currentTarget.dataset.id);
     const card = this.data.moments.find((m) => m.id === id);
     if (!card || !card.fileIds.length) return;
-
-    const known = new Map(card.photos.map((p) => [p.fileId, p.url]).filter(([, url]) => url));
-    const urls = await co.photoUrls(card.fileIds, card.photoOwner, known);
-    if (!urls.length) {
-      wx.showToast({ title: '照片暂时打不开，请稍后重试', icon: 'none' });
-      return;
+    const selectedId = e.currentTarget.dataset.fileId === undefined
+      ? card.fileIds[Math.min(PREVIEW_PHOTOS, card.fileIds.length - 1)]
+      : Number(e.currentTarget.dataset.fileId);
+    if (!card.fileIds.includes(selectedId)) return;
+    this.previewing = true;
+    wx.showLoading({ title: '正在打开照片', mask: true });
+    try {
+      // 不复用缩略图旧地址，避免页面停留超过签名有效期后黑屏。
+      const photos = await Promise.all(card.fileIds.map(async (fileId) => ({
+        fileId, url: await co.photoUrl(fileId, card.photoOwner),
+      })));
+      const selected = photos.find((photo) => photo.fileId === selectedId);
+      if (!selected || !selected.url) {
+        wx.showToast({ title: '这张照片暂时打不开，请稍后重试', icon: 'none' });
+        return;
+      }
+      const urls = photos.filter((photo) => photo.url).map((photo) => photo.url);
+      wx.hideLoading();
+      wx.previewImage({
+        urls, current: selected.url,
+        fail: () => wx.showToast({ title: '照片预览失败，请重试', icon: 'none' }),
+      });
+    } catch (err) {
+      wx.showToast({ title: (err && err.userMessage) || '照片暂时打不开，请稍后重试', icon: 'none' });
+    } finally {
+      wx.hideLoading();
+      this.previewing = false;
     }
-    // 从角标那一张往后看：它交代的就是「预览之外还有这些」。
-    // 有的地址可能没取回来，所以按长度收一下，不硬用 PREVIEW_PHOTOS。
-    wx.previewImage({ urls, current: urls[Math.min(PREVIEW_PHOTOS, urls.length - 1)] });
   },
 
   /**
    * 哪些已经收进本学期编册 —— 问服务端。
    *
    * `listMaterials('m1')` 是名册型整取、不分页（§3.5），所以这一份就是全部，
-   * 不必跟着 feed 的游标翻。取不到就留空集并说一句：把「读失败」显示成「都没收」
-   * 会让教师去重收一遍，而那一发会被服务端挡回来。
+   * 不必跟着 feed 的游标翻。取不到时暂停收录操作，不能把读失败当作尚未收录。
    */
   async loadBookState() {
+    const seq = (this.bookStateSeq || 0) + 1;
+    this.bookStateSeq = seq;
+    this.setData({ bookStateReady: false, bookStateError: false });
     try {
       const items = await bookApi.listMaterials(bookApi.SOURCE_MOMENT);
-      this.inBook = new Set(items.map((row) => row.momentId).filter((id) => id !== null));
+      if (seq !== this.bookStateSeq) return false;
+      this.materialByMoment = new Map(items.filter((row) => row.momentId !== null).map((row) => [row.momentId, row.id]));
+      this.inBook = new Set(this.materialByMoment.keys());
+      this.setData({ bookStateReady: true });
       this.markCards();
+      return true;
     } catch (err) {
-      if (guard.endSessionOnAuthFailure(err)) return;
-      this.inBook = new Set();
-      this.markCards();
-      wx.showToast({ title: '收录状态读不到，卡片上的标记可能不准', icon: 'none' });
+      if (seq !== this.bookStateSeq) return false;
+      this.setData({ bookStateReady: false, bookStateError: true });
+      if (guard.endSessionOnAuthFailure(err)) return false;
+      wx.showToast({ title: '收录状态读取失败，请点击重试', icon: 'none' });
+      return false;
     }
   },
 
@@ -213,29 +230,48 @@ Page({
    * 这五句每一句都指着教师做得到的下一步。
    */
   async onAddToBook(e) {
+    if (this.bookActionBusy) return;
     const id = Number(e.currentTarget.dataset.id);
-    if (this.inBook.has(id)) {
-      wx.showToast({ title: '这则活动已经收进本学期成长册', icon: 'none' });
+    const card = this.data.moments.find((m) => m.id === id);
+    if (!card) return;
+    if (!this.data.bookStateReady) {
+      await this.loadBookState();
       return;
     }
-    wx.showLoading({ title: '正在收进成长册', mask: true });
+    this.bookActionBusy = true;
+    // 使操作前发出的旧读取失效，避免成功后被旧收录状态覆盖。
+    this.bookStateSeq = (this.bookStateSeq || 0) + 1;
+    const removing = this.inBook.has(id);
     try {
-      await bookApi.addMoment(id);
-      wx.hideLoading();
-    } catch (err) {
-      wx.hideLoading();
-      if (guard.endSessionOnAuthFailure(err)) return;
-      // 「已经收过了」不是失败：把它标上，教师就不会再点第二次。
-      if (err.details && err.details.rule === 'source_already_in_compilation') {
+      if (removing) {
+        const ok = await new Promise((resolve) => wx.showModal({
+          title: '移出成长册？',
+          content: `将《${card.title}》移出本学期成长册，清除它的主题归类。原活动、照片和本周上传进度保留，之后可以重新加入。`,
+          confirmText: '移出', cancelText: '取消',
+          success: (res) => resolve(Boolean(res.confirm)), fail: () => resolve(false),
+        }));
+        if (!ok) return;
+        wx.showLoading({ title: '正在移出成长册', mask: true });
+        await bookApi.removeMaterial(this.materialByMoment.get(id));
+        this.materialByMoment.delete(id);
+        this.inBook.delete(id);
+      } else {
+        wx.showLoading({ title: '正在收进成长册', mask: true });
+        const material = await bookApi.addMoment(id);
+        this.materialByMoment.set(id, material.growth_material_id);
         this.inBook.add(id);
-        this.markCards();
       }
-      wx.showToast({ title: bookApi.addMomentFailureText(err), icon: 'none' });
-      return;
+      this.markCards();
+      wx.showToast({ title: removing ? '已移出成长册' : '已收进本学期成长册', icon: 'none' });
+    } catch (err) {
+      if (guard.endSessionOnAuthFailure(err)) return;
+      // 重复收录、另一设备刚移出或锁定时重读真实状态，不伪造成功。
+      await this.loadBookState();
+      wx.showToast({ title: removing ? bookApi.actionFailureText(err) : bookApi.addMomentFailureText(err), icon: 'none' });
+    } finally {
+      wx.hideLoading();
+      this.bookActionBusy = false;
     }
-    this.inBook.add(id);
-    this.markCards();
-    wx.showToast({ title: '已收进本学期成长册', icon: 'none' });
   },
 
   /**
@@ -272,6 +308,7 @@ Page({
       // 服务端删源在园时光时连带解除入册关系（契约 v0.7），所以本页只把这一条从
       // 收录名单里去掉，不再发一次移出。
       this.inBook.delete(id);
+      if (this.materialByMoment) this.materialByMoment.delete(id);
 
       this.setData({ moments: this.data.moments.filter((m) => m.id !== id) });
       wx.showToast({ title: '已删除', icon: 'none' });
@@ -301,12 +338,12 @@ function toCard(m, index) {
     // 预览格子。数量来自真实的 file_id，地址随后由 fillPhotos 逐张填上 ——
     // 先有格子后有图，这样布局不会在图片陆续到达时跳动。
     photos: m.fileIds.slice(0, PREVIEW_PHOTOS).map((fileId) => ({ fileId, url: '' })),
-    // 全部 file_id 留在卡上：选照片浮层直接用，不必再拉一次详情。
+    // 全部 file_id 留在卡上：大图预览直接用，不必再拉一次详情。
     fileIds: m.fileIds,
     // 取地址要交上去的宿主那一对（授权参数）。service 给的，页面不拼。
     photoOwner: m.photoOwner,
     photoCount: m.fileIds.length,
-    // 超出预览的那些只在选照片浮层里出现，卡片上用一个角标交代还有几张。
+    // 超出前三张的照片在大图预览中查看，卡片角标说明还有几张。
     moreCount: Math.max(0, m.fileIds.length - PREVIEW_PHOTOS),
     /**
      * 卡片左下那一行：`YYYY-MM-DD HH:mm`，垃圾桶紧跟其后。

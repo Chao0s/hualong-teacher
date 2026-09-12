@@ -21,7 +21,7 @@
  *
  * 三个都补上，但补法不同：
  *
- *   期间   **派生，不给控件**。月度取园所今天所在的月，学期取会话的当前学期。
+ *   期间   月度默认园所本月，教师可选择其他月份；学期取会话的当前学期。
  *          它是不透明字符串，**不当日期解析**（§1.2）—— `2025-2026-2` 不是日期。
  *   标题   派生一个默认值，**给一格让教师改**。它要进家长端的列表，得看得懂。
  *   时间   **只挑日期，不挑钟点**。`start_at` 在库里是 `TIMESTAMP NOT NULL`，所以仍要存一个
@@ -37,6 +37,7 @@
 
 const co = require('../../services/co-education');
 const guard = require('../../utils/guard');
+const auth = require('../../utils/auth');
 const session = require('../../utils/session');
 const time = require('../../utils/time');
 
@@ -59,6 +60,7 @@ Page({
     typeIndex: 0,
     period: '',
     periodLabel: '',
+    month: '',
     title: '',
     prompt: '请家长结合本月亲子任务、幼儿在家表现与照片记录，补充孩子的兴趣、生活习惯和成长变化。',
 
@@ -79,6 +81,11 @@ Page({
     this.setData({ loading: true, failed: '' });
     try {
       await guard.requireSession();
+      const context = await auth.refreshContext();
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(context.school_today || '')) {
+        throw new Error('暂时无法取得园所日期，请重试');
+      }
+      this.schoolToday = context.school_today;
       if (!this.data.period) this.resetWindowFields();
       const history = await co.parentEvalPeriods({});
       this.setData({ history, loading: false });
@@ -87,7 +94,7 @@ Page({
       this.setData({
         history: [],
         loading: false,
-        failed: err.userMessage || '过往进度加载失败，请稍后重试',
+        failed: err.userMessage || err.message || '过往进度加载失败，请稍后重试',
       });
     }
   },
@@ -99,30 +106,41 @@ Page({
    * 假期里没有进行中的学期，此时学期评价开不了窗，照实说明。
    */
   resetWindowFields() {
-    const now = Date.now();
+    if (!this.schoolToday) return;
     const monthly = this.data.typeIndex === 0;
     const term = session.getCurrentTerm();
 
-    const period = monthly ? time.currentMonthKey(now) : (term ? term.term_id : '');
-    const today = time.todayLocalDate(now);
+    const today = this.schoolToday;
+    const month = this.data.month || today.slice(0, 7);
+    const period = monthly ? month : (term ? term.term_id : '');
     const due = time.addLocalDays ? time.addLocalDays(today, DEFAULT_DAYS) : '';
 
     this.setData({
       period,
+      month,
       periodLabel: co.evalPeriodLabelOf(period),
-      title: monthly
+      title: this.titleEdited ? this.data.title : monthly
         ? `${co.evalPeriodLabelOf(period)}家长月度评价`
         : `${period} 学期末家长评价`,
-      startDate: today,
-      dueDate: due || today,
+      startDate: this.data.startDate || today,
+      dueDate: this.data.dueDate || due || today,
     });
   },
 
   onTypeChange(e) {
+    if (this.data.publishing) return;
     this.setData({ typeIndex: Number(e.detail.value) }, () => this.resetWindowFields());
   },
 
+  onMonthChange(e) {
+    if (this.data.publishing || this.data.typeIndex !== 0) return;
+    const month = e.detail.value;
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month || '')) return;
+    this.setData({ month }, () => this.resetWindowFields());
+  },
+
   onTitleInput(e) {
+    this.titleEdited = true;
     this.setData({ title: e.detail.value });
   },
 
@@ -161,31 +179,32 @@ Page({
       return;
     }
 
-    const ok = await new Promise((resolve) => {
-      wx.showModal({
-        title: '发布家长评价',
-        content: `将给本班每名在园幼儿各开一份「${form.title}」，家长立刻能看到。`
-          + '已经开过的不会被覆盖。',
-        confirmText: '发布',
-        success: (r) => resolve(r.confirm),
-        fail: () => resolve(false),
-      });
-    });
-    if (!ok) return;
-
     this.setData({ publishing: true });
     try {
+      const ok = await new Promise((resolve) => {
+        wx.showModal({
+          title: '发布家长评价',
+          content: `将给本班每名在园幼儿各开一份「${form.title}」，家长立刻能看到。`
+            + `\n评价期间：${co.evalPeriodLabelOf(form.period)}。`
+            + '已经开过的不会被覆盖。',
+          confirmText: '发布',
+          success: (r) => resolve(r.confirm),
+          fail: () => resolve(false),
+        });
+      });
+      if (!ok) return;
+
       const n = await co.openParentEvaluationWindow(form);
-      this.setData({ publishing: false });
       wx.showToast({ title: `已发布，共 ${n} 名幼儿`, icon: 'none' });
-      this.refresh();
+      await this.refresh();
     } catch (err) {
-      this.setData({ publishing: false });
       wx.showModal({
         title: '发布失败',
         content: err.userMessage || '请稍后重试',
         showCancel: false,
       });
+    } finally {
+      this.setData({ publishing: false });
     }
   },
 

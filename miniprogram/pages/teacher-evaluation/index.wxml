@@ -16,6 +16,9 @@
   </view>
 
   <view class="sec">本班幼儿进度</view>
+  <picker wx:if="{{monthOptions.length}}" data-ui="context.local" mode="selector" range="{{monthLabels}}" value="{{monthIndex}}" bindchange="onMonthChange">
+    <view class="select month-select">评价月份：{{monthLabels[monthIndex]}}</view>
+  </picker>
   <text class="hint" wx:if="{{loading}}">正在加载本班幼儿进度…</text>
   <view class="hint" wx:elif="{{error}}" bindtap="onRetry">{{error}}　点此重试</view>
   <text class="hint" wx:elif="{{!termId}}">当前不在学期内，暂无本学期评价进度。</text>
@@ -23,7 +26,7 @@
   <view class="table-wrap" wx:else>
     <view class="prog-row prog-row--head">
       <text class="prog-cell prog-cell--name">幼儿</text>
-      <text class="prog-cell">本月评价</text>
+      <text class="prog-cell">{{monthHeading}}</text>
       <text class="prog-cell">学期评估</text>
       <text class="prog-cell">综合评估</text>
       <text class="prog-cell">教师寄语</text>

@@ -46,3 +46,7 @@ captures/_extracted/
 
 # playwright-cli 的快照目录（.playwright-cli/page-*.yml），工具产物，可随时重生成。
 .playwright-cli/
+
+# DevTools automator-generated workspace and its root reference file.
+/.weapp-vite/
+/tsconfig.json

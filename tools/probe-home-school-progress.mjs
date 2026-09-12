@@ -33,20 +33,23 @@ try {
   assert.ok(children.length, 'test teacher needs nonempty roster');
   assert.deepEqual(body.children.map((r)=>r.child_id),children.map((r)=>r.child_id));
   const tasks = (await db.query("SELECT parent_task_id FROM db_parent_task WHERE school_id=$1 AND class_id=$2 AND publish_status IN ('s2','s3') AND published_at<=NOW() ORDER BY published_at DESC,parent_task_id DESC LIMIT 1",[teacher.school_id,teacher.class_id])).rows;
+  const term=session.getCurrentTerm();
   assert.equal(body.latest_parent_task_id,tasks[0]?.parent_task_id ?? null);
   let completed=0, reminded=0;
   for (const row of body.children) {
     const count = Number((await db.query("SELECT count(DISTINCT m.moment_id) AS n FROM db_moment m JOIN db_moment_upload u USING(moment_id) WHERE u.child_id=$1 AND m.class_id=$2 AND m.school_id=$3 AND m.publish_status='s3' AND m.week_key=$4",[row.child_id,teacher.class_id,teacher.school_id,body.week_key])).rows[0].n);
     const submitted = (await db.query("SELECT 1 FROM db_parent_task_submission WHERE child_id=$1 AND parent_task_id=$2 AND submission_status='c1'",[row.child_id,body.latest_parent_task_id])).rowCount>0;
+    const bookDone = (await db.query("SELECT 1 FROM db_growth_book WHERE child_id=$1 AND school_id=$2 AND class_id=$3 AND term_id=$4 AND book_status='b2'",[row.child_id,teacher.school_id,teacher.class_id,term?.term_id ?? null])).rowCount>0;
     assert.equal(row.moment_weekly_complete_count,count);
     assert.equal(row.moment_status,count>=2?'h1':'h2');
     assert.equal(row.parent_task_status,submitted?'h1':'h2');
-    assert.deepEqual(Object.keys(row).sort(),['child_id','child_name','moment_weekly_complete_count','moment_status','parent_task_status'].sort());
-    completed+=Number(count>=2)+Number(submitted);
-    reminded+=Number(count<2||!submitted);
+    assert.equal(row.growth_book_status,bookDone?'h1':'h2');
+    assert.deepEqual(Object.keys(row).sort(),['child_id','child_name','moment_weekly_complete_count','moment_status','parent_task_status','growth_book_status'].sort());
+    completed+=Number(count>=2)+Number(submitted)+Number(bookDone);
+    reminded+=Number(count<2||!submitted||!bookDone);
   }
   assert.equal(body.child_count,children.length);
-  assert.equal(body.average_completion,Math.round(completed*10000/(children.length*2))/100);
+  assert.equal(body.average_completion,Math.round(completed*10000/(children.length*3))/100);
   assert.equal(body.reminder_count,reminded);
   const spoof = unwrap(await (await fetchProgress(session.getToken(),'?class_id=2&school_id=999&week_key=1999-W01')).json());
   assert.deepEqual(spoof,body,'client query cannot choose another class or week');
@@ -60,8 +63,8 @@ try {
   assert.equal(mapped.rows.length,body.child_count);
   assert.deepEqual(mapped.metrics.map((r)=>r.value),[String(body.child_count),`${body.average_completion}%`,String(body.reminder_count)]);
   for (let i=0;i<mapped.rows.length;i++) {
-    assert.equal(mapped.rows[i].cells.length,2);
-    assert.deepEqual(mapped.rows[i].cells.map((c)=>c.state),[body.children[i].moment_status,body.children[i].parent_task_status].map((s)=>s==='h1'?'done':'miss'));
+    assert.equal(mapped.rows[i].cells.length,3);
+    assert.deepEqual(mapped.rows[i].cells.map((c)=>c.state),[body.children[i].moment_status,body.children[i].parent_task_status,body.children[i].growth_book_status].map((s)=>s==='h1'?'done':'miss'));
   }
   let definition;
   globalThis.Page = (page) => { definition=page; };
@@ -80,7 +83,7 @@ try {
   await page.load();
   assert.equal(page.data.error,'');
   assert.equal(page.data.rows.length,body.child_count);
-  console.log(`PASS: HTTP authorization/scope, ${body.child_count} roster rows and both computed states, metrics, client mapping, page reload/error/recovery. No UI rendering tested.`);
+  console.log(`PASS: HTTP authorization/scope, ${body.child_count} roster rows and three computed states, metrics, client mapping, page reload/error/recovery. No UI rendering tested.`);
 } finally {
   await db.end();
 }

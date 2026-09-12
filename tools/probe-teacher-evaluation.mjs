@@ -31,7 +31,14 @@ for(const row of board.rows) {
   if(expected[3]) assert.ok(await assess.getTeacherMessage(row.childId));
 }
 const original=await api.get(path);
-assert.deepEqual(await api.get(path,{query:{class_id:2,teacher_id:2,term_id:'1999-2000-1',eval_month:'1999-01'}}),original);
+assert.deepEqual(await api.get(path,{query:{class_id:2,teacher_id:2,term_id:'1999-2000-1'}}),original);
+await assert.rejects(()=>api.get(path,{query:{eval_month:'1999-01'}}),err=>err.code==='validation_failed');
+for(const month of raw.month_options) {
+  const selected=await assess.teacherEvaluationBoard({month});
+  const matrix=await co.monthEvalBoard({month});
+  assert.equal(selected.month,month);
+  for(const row of selected.rows) assert.equal(row.states[0],matrix.rows.find(r=>r.childId===row.childId)?.states[0] || 'miss');
+}
 const login=await fetch(config.env.baseUrl+'/dev/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({surface:'parent',subject_id:1})});
 assert.equal(login.status,201);
 const parent=await login.json();
@@ -42,7 +49,7 @@ await page.refresh();assert.deepEqual(page.data.rows,board.rows);
 const load=assess.teacherEvaluationBoard;
 assess.teacherEvaluationBoard=async()=>{throw new Error('probe failure');};
 await page.refresh();assert.equal(page.data.error,'probe failure');assert.deepEqual(page.data.rows,[]);
-assess.teacherEvaluationBoard=async()=>({termId:null,rows:[]});
+assess.teacherEvaluationBoard=async()=>({termId:null,month:raw.eval_month,monthOptions:[],rows:[]});
 await page.refresh();assert.equal(page.data.error,'');assert.equal(page.data.termId,null);
 assess.teacherEvaluationBoard=load;
 await page.refresh();assert.deepEqual(page.data.rows,board.rows);

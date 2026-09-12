@@ -2,13 +2,13 @@
 
      原型每条动态贴 3-5 张写着「穿绳」「装袋」的占位图。契约的 Moment 只回
      file_id 数组，地址要逐张换（见 index.js 头注），所以缩略图先画格子、
-     地址回来一张填一张；余下的点「+N」角标看大图。 -->
+     地址回来一张填一张；每张缩略图及「+N」角标均可打开大图。 -->
 <view class="page">
 
   <!-- 收进去的是这则活动的标题、正文与日期三个副本（服务端从来源抄）。选哪几张照片
        进册今天没有落点：契约里没有一条端点写得了 db_growth_material 的照片引用。
        所以这里照实说，不画选照片浮层。见 index.js 头注。 -->
-  <view class="hint hint--top">点动态右下角的「收进成长册」，这则活动就进本学期成长册的「在园时光」栏目（全班共用），收的是活动标题、正文与日期。选哪几张照片进册今天还做不到。收进来之后到「在园时光管理」页归入主题，也在那一页移出。这一页只列已发布的动态。</view>
+  <view class="hint hint--top">点「收进成长册」将活动加入本学期成长册，点「移出成长册」取消收录，原活动和上传进度保留。加入后可到「在园时光管理」归入主题；重新加入需重新归类。当前收录活动标题、正文与日期，暂不支持选择入册照片。</view>
 
   <view class="moment-card" wx:for="{{moments}}" wx:key="id" wx:for-item="m">
     <view>
@@ -25,10 +25,11 @@
       <!-- 缩略图。格子数来自真实的 file_id，地址随后逐张填上（§8.4 每次重验），
            所以 url 为空时先显示灰底，不让布局在图片陆续到达时跳动。 -->
       <view class="photo-grid {{m.photos.length <= 2 ? 'photo-grid--two' : ''}}" wx:if="{{m.photos.length}}">
-        <view class="feed-photo" wx:for="{{m.photos}}" wx:key="fileId" wx:for-item="p">
+        <view class="feed-photo" wx:for="{{m.photos}}" wx:key="fileId" wx:for-item="p"
+          data-id="{{m.id}}" data-file-id="{{p.fileId}}" bindtap="onPreviewPhotos" hover-class="feed-photo--hover">
           <image class="feed-photo__img" wx:if="{{p.url}}" src="{{p.url}}" mode="aspectFill" lazy-load />
         </view>
-        <view class="feed-more" wx:if="{{m.moreCount}}" data-id="{{m.id}}" bindtap="onPreviewPhotos">+{{m.moreCount}}</view>
+        <view class="feed-more" wx:if="{{m.moreCount}}" data-id="{{m.id}}" data-file-id="{{m.fileIds[3]}}" bindtap="onPreviewPhotos" hover-class="feed-photo--hover">+{{m.moreCount}}</view>
       </view>
 
       <view class="moment-foot">
@@ -53,7 +54,7 @@
           class="add-material {{m.inBook ? 'add-material--on' : ''}}"
           data-id="{{m.id}}"
           bindtap="onAddToBook"
-        >{{m.inBook ? '✓ 已收进成长册' : '+ 收进成长册'}}</view>
+        >{{!bookStateReady ? (bookStateError ? '重试收录状态' : '读取中…') : (m.inBook ? '− 移出成长册' : '+ 收进成长册')}}</view>
       </view>
     </view>
   </view>

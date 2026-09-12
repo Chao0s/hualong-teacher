@@ -98,6 +98,7 @@
  */
 
 const api = require('../utils/request');
+const co = require('./co-education');
 
 const MATERIALS_PATH = '/teacher/growth-book/materials';
 const TOPIC_ASSIGNMENT_PATH = '/teacher/growth-book/materials/topic-assignment';
@@ -220,6 +221,43 @@ async function loadTimeManage() {
     topicCount: topics.length,
     activityCount: materials.length,
     ungroupedCount: ungrouped.length,
+  };
+}
+
+/** 本班、本学期亲子收录；遍历全部分页，两支选择取并集，定稿状态来自服务端。 */
+async function loadTaskManage() {
+  async function allPages(read) {
+    const rows = []; const seen = new Set(); let cursor;
+    do {
+      const page = await read(cursor); rows.push(...page.items); cursor = page.nextCursor;
+      if (cursor && seen.has(cursor)) throw new Error('列表分页异常，请重试');
+      if (cursor) seen.add(cursor);
+    } while (cursor);
+    return rows;
+  }
+  const [compilation, check, roster, tasks, submissions] = await Promise.all([
+    ensureCompilation(), precheck(), co.classRoster(),
+    allPages((cursor) => co.listTasks({ cursor, limit: 100 })),
+    allPages((cursor) => co.listCommunityFeed({ cursor, limit: 100 })),
+  ]);
+  const taskIds = new Set(tasks.filter((task) => task.termId === compilation.termId).map((task) => task.id));
+  const books = new Map(check.children.map((child) => [child.childId, child]));
+  const groups = new Map(roster.map((child) => [child.childId, []]));
+  for (const post of submissions) {
+    if (!taskIds.has(post.taskId) || !groups.has(post.childId) || (!post.included && !post.parentIncluded)) continue;
+    const state = books.get(post.childId);
+    const locked = !state || state.published;
+    groups.get(post.childId).push({
+      id: post.id, title: post.taskTitle, date: post.submittedLabel,
+      teacherIncluded: post.included, parentIncluded: post.parentIncluded,
+      sourceLabel: post.included ? (post.parentIncluded ? '教师、家长均已收录' : '教师已收录') : '家长已收录',
+      canRemove: post.included && !locked && !post.underCheck,
+      lockReason: !state ? '暂时无法确认成长册状态' : state.published ? '成长册已定稿，不能修改' : post.underCheck ? '内容检查中，暂不能修改' : '',
+      removeLabel: post.parentIncluded ? '取消教师收录' : '移出',
+    });
+  }
+  return { termId: compilation.termId,
+    children: roster.map((child) => ({ id: child.childId, name: child.name, initial: child.name.slice(-1), tasks: groups.get(child.childId) })),
   };
 }
 
@@ -762,17 +800,32 @@ function widgetPlainText(content) {
  * 把编辑器里的一个 widget 换成契约的 `BookWidgetWrite`。
  *
  * `config` 逐键照 DDL 的 `db_book_widget.config` 列注释：文字 `{font_size, align}`，
- * 图片 `{fit}`。加粗、斜体与颜色**没有落点，所以不发** —— 发了服务端也存不下，
- * 而存不下的东西发出去就是假装存下去了。
+ * 图片 `{fit}`。literal富文本样式存为正文的UTF-16区间，正文仍只存content。
  */
 function toWidgetWrite(widget) {
   const isText = widget.type === 'text';
-  const config = isText
+  const config = { ...(widget._wireConfig || {}), ...(isText
     ? {
       font_size: (widget.config && widget.config.size) || 14,
       align: (widget.config && widget.config.align) || 'left',
     }
-    : { fit: (widget.config && widget.config.fit) || 'cover' };
+    : { fit: (widget.config && widget.config.fit) || 'cover' }) };
+  delete config.text_styles;
+  if (isText && widget.binding === 'literal' && Array.isArray(widget.content)) {
+    let offset = 0;
+    const styles = [];
+    widget.content.forEach((run) => {
+      const start = offset; offset += String(run.t || '').length;
+      if (offset > start && (run.b || run.i || run.c)) {
+        const style = { start, end: offset };
+        if (run.b) style.b = true;
+        if (run.i) style.i = true;
+        if (run.c) style.c = run.c;
+        styles.push(style);
+      }
+    });
+    if (styles.length) config.text_styles = styles;
+  }
   return {
     page_index: widget.page || 0,
     grid_x: widget.x,
@@ -793,12 +846,45 @@ function toWidgetWrite(widget) {
  * 服务端会自己重跑一次重叠检测并**拒绝整个栏目的存档**（W6）——
  * 前端的标红与置灰只是体验，不是完整性边界。回的是这一发存下了几个组件。
  */
-async function saveWidgets(sectionId, widgets) {
+async function saveWidgets(sectionId, widgets, pageCount) {
+  const body = { widgets: (widgets || []).map(toWidgetWrite) };
+  if (pageCount !== undefined) body.page_count = pageCount;
   const data = await api.put(`${SECTIONS_PATH}/${sectionId}/widgets`, {
     action: BOOK_ACTIONS.widgetSave,
-    body: { widgets: (widgets || []).map(toWidgetWrite) },
+    body,
   });
   return ((data && (data.widgets || data.items)) || []).length;
+}
+
+/** 完整版面回读。读失败不使用默认组件代替，保留未知配置以避免再次保存时丢失。 */
+async function getWidgets(sectionId) {
+  const data = await api.get(`${SECTIONS_PATH}/${sectionId}/widgets`);
+  if (!data || !Array.isArray(data.widgets) || !Number.isInteger(data.page_count) || data.page_count < 1 || data.page_count > 200
+    || !['d1', 'd2'].includes(data.section_status) || !['e1', 'e2'].includes(data.compilation_status)) {
+    throw new Error('已存版面数据不完整，请重试');
+  }
+  const widgets = data.widgets.map((row) => {
+    const config = row.config || {};
+    const text = row.content || '';
+    let content = text;
+    if (row.binding_key === 'literal' && Array.isArray(config.text_styles) && config.text_styles.length) {
+      content = []; let offset = 0;
+      config.text_styles.forEach((style) => {
+        if (style.start > offset) content.push({ t: text.slice(offset, style.start) });
+        const run = { t: text.slice(style.start, style.end) };
+        if (style.b) run.b = 1;
+        if (style.i) run.i = 1;
+        if (style.c) run.c = style.c;
+        content.push(run); offset = style.end;
+      });
+      if (offset < text.length) content.push({ t: text.slice(offset) });
+    }
+    return { id: `saved-${row.widget_id}`, page: row.page_index, x: row.grid_x, y: row.grid_y,
+      w: row.grid_w, h: row.grid_h, type: row.widget_type, binding: row.binding_key, content,
+      config: { ...config, size: config.font_size || 14 }, _wireConfig: config };
+  });
+  return { widgets, pageCount: data.page_count,
+    published: data.section_status === 'd2', locked: data.section_status === 'd2' || data.compilation_status === 'e2' };
 }
 
 /**
@@ -1286,6 +1372,7 @@ module.exports = {
   listMaterials,
   listTopics,
   loadTimeManage,
+  loadTaskManage,
   addMoment,
   assignTopic,
   removeMaterial,
@@ -1317,6 +1404,7 @@ module.exports = {
   updateSection,
   deleteSection,
   saveWidgets,
+  getWidgets,
   publishSection,
   withdrawCollection,
   remindSection,

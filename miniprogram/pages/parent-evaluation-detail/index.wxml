@@ -68,10 +68,10 @@
         <view class="sheet__line">家长打开　{{detail.readLabel}}</view>
         <view class="sheet__line">提交时间　{{detail.submittedLabel}}</view>
 
-        <view class="sheet__sec">教师出的题</view>
-        <text class="sheet__body">{{detail.prompt || '（开窗时没有写提示）'}}</text>
+        <view class="sheet__sec">评价要求</view>
+        <text class="sheet__body">{{detail.prompt || '（未填写评价要求）'}}</text>
 
-        <view class="sheet__sec">家长写的</view>
+        <view class="sheet__sec">家长评价</view>
         <text class="sheet__body" wx:if="{{detail.hasText}}">{{detail.text}}</text>
         <text class="sheet__body sheet__body--muted" wx:else>这位家长还没有提交。草稿不对教师显示。</text>
       </block>

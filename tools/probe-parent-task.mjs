@@ -20,6 +20,7 @@
  */
 
 import { createRequire } from 'node:module';
+import assert from 'node:assert/strict';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { installWxStub, scoreboard } from './lib/wx-stub.mjs';
@@ -45,9 +46,9 @@ const has = sb.has.bind(sb);
 const db = new Client(DB_URL);
 const made = [];
 
-// 数据集基线（STATS.md）。教师 1 是 1 班主班，班上 10 名在园幼儿。
-const BASE = { task: 60, submission: 522 };
-const CLASS_SIZE = 10;
+// 人工审核期间记录持续变化，只核对本次测试前后的基线，不要求重新灌种子数据。
+let BASE;
+let CLASS_SIZE;
 // 数据集的「今天」是 2026-04-25，当前学期 2025-2026-2（02-23 ~ 07-10）。
 // 上学期 2025-2026-1 是 2025-09-01 ~ 2026-01-16，两个学期之间 01-17 ~ 02-22 是空档。
 const CURRENT_TERM = '2025-2026-2';
@@ -103,11 +104,12 @@ async function refuses(label, id, act, expectCode, expectFrom) {
 }
 
 async function main() {
+  assert.match(new URL(DB_URL).pathname,/test/i,'probe only runs against a named test database');
   await db.connect();
   const base = await counts();
+  BASE=base;
+  CLASS_SIZE=(await db.query("SELECT count(*)::int AS n FROM db_child WHERE class_id=1 AND enrollment_status='e1'")).rows[0].n;
   console.log(`基线：parent_task=${base.task} submission=${base.submission}`);
-  check('基线与 STATS.md 一致',
-    base.task === BASE.task && base.submission === BASE.submission, JSON.stringify(base));
 
   const ctx = await guard.requireSession();
   check('登录成功，角色为 teacher', ctx.role === 'teacher', `role=${ctx.role}`);
@@ -464,13 +466,9 @@ async function cleanup() {
     await db.query('DELETE FROM db_parent_task_submission WHERE parent_task_id=$1', [id]);
     await db.query('DELETE FROM db_parent_task WHERE parent_task_id=$1', [id]);
   }
-  // 序列回退，让下一次灌库不出现空洞。
-  await db.query("SELECT setval('db_parent_task_parent_task_id_seq', (SELECT max(parent_task_id) FROM db_parent_task))");
-  await db.query("SELECT setval('db_parent_task_submission_parent_task_submission_id_seq', (SELECT max(parent_task_submission_id) FROM db_parent_task_submission))");
-
   const after = await counts();
   console.log(`清理后：parent_task=${after.task} submission=${after.submission}`);
-  check('逐表行数回到 STATS.md 的基线',
+  check('逐表行数回到本次测试开始时的基线',
     after.task === BASE.task && after.submission === BASE.submission, JSON.stringify(after));
 }
 

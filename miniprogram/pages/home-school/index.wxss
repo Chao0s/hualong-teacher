@@ -10,13 +10,13 @@
   margin-bottom: 16rpx;
 }
 
-/* 三列：姓名与两项状态。空心/实心含义仅作用于本页。 */
+/* 四列：姓名与三项状态。空心/实心含义仅作用于本页。 */
 .prog-row {
-  grid-template-columns: minmax(0, 1.2fr) repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1.2fr) repeat(3, minmax(0, 1fr));
 }
 
 .prog-cell {
-  padding: 22rpx 12rpx;
+  padding: 22rpx 6rpx;
   font-size: 26rpx;
 }
 

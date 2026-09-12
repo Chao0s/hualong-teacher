@@ -1,80 +1,53 @@
-/**
- * 亲子时光管理 —— 原型 screens/growth-book-task-manage.html 的小程序版本。
- *
- * 每名幼儿进册的亲子活动存在 config.taskSelections[childId] 里，教师只能删不能加，
- * 加是在亲子任务那条线上做的。判定与存取都走 utils/growth-book.js。
- *
- * window.confirm 换成 wx.showModal，所以删除拆成两步。
- */
-
-const {
-  BOOK_CHILDREN,
-  BOOK_TASKS,
-  defaultTaskSelections,
-  readBookConfig,
-  writeBookConfig,
-} = require('../../utils/growth-book.js');
-
+/** 亲子时光管理：本班本学期实际收录，取消只修改教师分支。 */
+const book = require('../../services/growth-book');
+const co = require('../../services/co-education');
+const guard = require('../../utils/guard');
 Page({
-  data: {
-    children: [],
+  data: { children: [], termId: '', loading: true, error: '', busy: false },
+  onShow() { this.load(); },
+  async load() {
+    const seq = (this.loadSeq || 0) + 1; this.loadSeq = seq;
+    this.setData({ loading: true, error: '', children: [] });
+    try {
+      await guard.requireSession(); const result = await book.loadTaskManage();
+      if (seq !== this.loadSeq) return;
+      this.setData({ ...result, loading: false,
+        children: result.children.map((child) => ({ ...child, open: child.id === this.openChildId })),
+      });
+    } catch (err) {
+      if (seq !== this.loadSeq) return;
+      guard.endSessionOnAuthFailure(err);
+      this.setData({ loading: false, error: err.userMessage || err.message || '亲子时光读取失败，请重试' });
+    }
   },
-
-  onLoad() {
-    const config = readBookConfig();
-    config.taskSelections = config.taskSelections || defaultTaskSelections();
-    this.config = config;
-    this.openChildId = null;
-    this.render();
-  },
-
-  /**
-   * 这一页读不到编册锁没锁。
-   *
-   * 编册状态是 `db_growth_book_compilation.compilation_status`，只有服务端说了算。
-   * 这一页整页仍是原型数据 —— 教师读不到任何一笔家长提交的内容，也拿不到它的 id
-   * （后端 `db/GAPS.md` **G70**），所以本学期进册的亲子活动一条也取不到。
-   * 既然写入这一侧一条端点都调不了，就没有需要闸住的写入。
-   */
-  locked() {
-    return false;
-  },
-
-  render() {
-    const config = this.config;
-    this.setData({
-      children: BOOK_CHILDREN.map((child) => ({
-        id: child.id,
-        name: child.name,
-        initial: child.name.slice(-1),
-        open: this.openChildId === child.id,
-        tasks: (config.taskSelections[child.id] || [])
-          .map((id) => BOOK_TASKS.find((task) => task.id === id))
-          .filter(Boolean),
-      })),
-    });
-  },
-
+  onRetry() { this.load(); },
   onToggleChild(e) {
-    const { id } = e.currentTarget.dataset;
+    const id = Number(e.currentTarget.dataset.id);
     this.openChildId = this.openChildId === id ? null : id;
-    this.render();
+    this.setData({ children: this.data.children.map((child) => ({ ...child, open: child.id === this.openChildId })) });
   },
-
-  onRemoveTask(e) {
-    if (this.locked()) return;
-    const { child: childId, task: taskId } = e.currentTarget.dataset;
-    const task = BOOK_TASKS.find((item) => item.id === taskId);
-    wx.showModal({
-      content: `从这名幼儿的成长册中删除“${task.title}”？`,
-      success: (res) => {
-        if (!res.confirm) return;
-        this.config.taskSelections[childId] =
-          (this.config.taskSelections[childId] || []).filter((id) => id !== taskId);
-        writeBookConfig(this.config);
-        this.render();
-        wx.showToast({ title: '已从该幼儿成长册删除', icon: 'none' });
-      },
-    });
+  async onRemoveTask(e) {
+    if (this.data.busy) return;
+    const child = this.data.children.find((row) => row.id === Number(e.currentTarget.dataset.child));
+    const task = child && child.tasks.find((row) => row.id === Number(e.currentTarget.dataset.task));
+    if (!task || !task.canRemove) return;
+    this.setData({ busy: true });
+    try {
+      const confirmed = await new Promise((resolve) => wx.showModal({
+        title: '取消教师收录？',
+        content: `取消${child.name}《${task.title}》的教师收录，原投稿和照片保留。`
+          + (task.parentIncluded ? '家长也已收录，因此这条仍会保留在成长册中。' : '确认后将从该幼儿的亲子时光中移出。'),
+        confirmText: '确认', cancelText: '取消',
+        success: (res) => resolve(Boolean(res.confirm)), fail: () => resolve(false),
+      }));
+      if (!confirmed) return;
+      await co.setBookInclusion(task.id, { included: false, fileIds: [] });
+      await this.load();
+      wx.showToast({ title: task.parentIncluded ? '已取消教师收录，家长收录保留' : '已移出亲子时光', icon: 'none' });
+    } catch (err) {
+      if (guard.endSessionOnAuthFailure(err)) return;
+      await this.load();
+      wx.showToast({ title: co.bookInclusionFailureText(err), icon: 'none' });
+    } finally { this.setData({ busy: false }); }
   },
 });

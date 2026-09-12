@@ -73,9 +73,9 @@ try {
   assert.deepEqual(after.children.map((r)=>r.moment_weekly_complete_count),targetCounts.map((r)=>r.count));
   assert.deepEqual(after.children.map((r)=>r.moment_status),targetCounts.map((r)=>r.count>=2?'h1':'h2'));
   assert.deepEqual(after.children.map((r)=>r.parent_task_status),before.children.map((r)=>r.parent_task_status));
-  const complete=after.children.reduce((n,r)=>n+Number(r.moment_status==='h1')+Number(r.parent_task_status==='h1'),0);
-  assert.equal(after.average_completion,Math.round(complete*10000/(after.child_count*2))/100);
-  assert.equal(after.reminder_count,after.children.filter((r)=>r.moment_status==='h2'||r.parent_task_status==='h2').length);
+  const complete=after.children.reduce((n,r)=>n+Number(r.moment_status==='h1')+Number(r.parent_task_status==='h1')+Number(r.growth_book_status==='h1'),0);
+  assert.equal(after.average_completion,Math.round(complete*10000/(after.child_count*3))/100);
+  assert.equal(after.reminder_count,after.children.filter((r)=>r.moment_status==='h2'||r.parent_task_status==='h2'||r.growth_book_status==='h2').length);
   const weekly = await api.get('/moments/weekly-coverage');
   assert.deepEqual(weekly.items.map((r)=>r.covered_count),targetCounts.map((r)=>r.count));
   console.log(JSON.stringify({created:made,week:after.week_key,rows:after.children.map((r)=>({childId:r.child_id,count:r.moment_weekly_complete_count,momentStatus:r.moment_status,parentStatus:r.parent_task_status})),metrics:{child_count:after.child_count,average_completion:after.average_completion,reminder_count:after.reminder_count}}));

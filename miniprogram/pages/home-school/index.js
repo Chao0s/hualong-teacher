@@ -1,4 +1,4 @@
-/** 家园社共育 —— 本班两项进度，状态与汇总由后端实时派生。 */
+/** 家园社共育 —— 本班三项进度，状态与汇总由后端实时派生。 */
 
 const co = require('../../services/co-education');
 const guard = require('../../utils/guard');

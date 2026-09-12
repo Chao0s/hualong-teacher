@@ -119,10 +119,13 @@ Page({
 
   /** 回填这一格已有的那一笔。没有就是新建。 */
   async loadExisting() {
+    const seq = (this.evalLoadSeq || 0) + 1;
+    this.evalLoadSeq = seq;
     const month = this.data.months[this.data.monthIndex].key;
     const child = this.roster[this.data.childIndex];
     try {
       const one = await co.monthEvalRow({ month, childId: child.childId });
+      if (seq !== this.evalLoadSeq) return;
       if (!one) {
         // 这一格还没有记录：清空表单，等着新建。
         this.setData({
@@ -144,15 +147,18 @@ Page({
       });
       this.fillPhotoUrls();
     } catch (err) {
+      if (seq !== this.evalLoadSeq) return;
       this.setData({ error: err.userMessage || '这一格取不到，请稍后重试' });
     }
   },
 
   fillPhotoUrls() {
+    const seq = this.evalLoadSeq;
+    const owner = this.data.evalPhotoOwner;
     this.data.imported.forEach(async (p, i) => {
-      const url = await co.photoUrl(p.fileId, this.data.evalPhotoOwner);
-      if (!url) return;
-      this.setData({ [`imported[${i}].url`]: url });
+      const url = await co.photoUrl(p.fileId, owner);
+      if (!url || seq !== this.evalLoadSeq || this.data.imported[i]?.fileId !== p.fileId) return;
+      this.setData({ [`imported[${i}].url`]: url, [`imported[${i}].demo`]: url.includes('/_placeholder/') });
     });
   },
 
@@ -180,6 +186,8 @@ Page({
 
   async onOpenAlbum() {
     if (this.data.readonly) return;
+    const seq = (this.albumLoadSeq || 0) + 1;
+    this.albumLoadSeq = seq;
     const child = this.roster[this.data.childIndex];
     this.setData({
       albumOpen: true,
@@ -212,17 +220,19 @@ Page({
       const groups = [...byWeek.entries()]
         .filter(([, photos]) => photos.length)
         .map(([title, photos]) => ({ title, photos }));
-      if (!this.data.albumOpen) return;
+      if (!this.data.albumOpen || seq !== this.albumLoadSeq) return;
       this.setData({ albumLoading: false, visibleGroups: groups });
 
       groups.forEach((g, gi) => {
         g.photos.forEach(async (p, pi) => {
           const url = await co.photoUrl(p.fileId, p.owner);
-          if (!url || !this.data.albumOpen) return;
-          this.setData({ [`visibleGroups[${gi}].photos[${pi}].url`]: url });
+          if (!url || !this.data.albumOpen || seq !== this.albumLoadSeq) return;
+          this.setData({ [`visibleGroups[${gi}].photos[${pi}].url`]: url,
+            [`visibleGroups[${gi}].photos[${pi}].demo`]: url.includes('/_placeholder/') });
         });
       });
     } catch (err) {
+      if (seq !== this.albumLoadSeq) return;
       this.setData({ albumLoading: false, error: err.userMessage || '相册取不到' });
     }
   },
@@ -259,6 +269,7 @@ Page({
   },
 
   onCloseAlbum() {
+    this.albumLoadSeq = (this.albumLoadSeq || 0) + 1;
     this.setData({ albumOpen: false });
   },
 
@@ -272,6 +283,7 @@ Page({
       albumOpen: false,
       imported: chosen.map((p, i) => ({
         fileId: p.fileId, label: `照片 ${i + 1}`, url: p.url || '',
+        demo: Boolean(p.demo),
       })),
     });
   },

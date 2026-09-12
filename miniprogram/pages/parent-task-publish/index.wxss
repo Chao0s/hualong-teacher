@@ -44,6 +44,23 @@
   margin-top: 0;
 }
 
+/* 外框负责留白和边框；原生 textarea 根据实际换行增高，不设置固定高度。 */
+.input {
+  min-height: 88rpx;
+}
+
+.task-input {
+  width: 100%;
+  min-height: 40rpx;
+  padding: 0;
+  border: 0;
+  box-sizing: content-box;
+  background: transparent;
+  color: var(--fg);
+  font-size: 26rpx;
+  line-height: 40rpx;
+}
+
 .select--empty {
   color: var(--muted);
 }

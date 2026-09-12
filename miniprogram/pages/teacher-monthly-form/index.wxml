@@ -38,10 +38,11 @@
       <view class="photo imported" wx:for="{{imported}}" wx:key="fileId">
         <image class="photo__img" wx:if="{{item.url}}" src="{{item.url}}" mode="aspectFill" lazy-load />
         <text wx:else>{{item.label}}</text>
+        <text class="photo-demo" wx:if="{{item.demo}}">示例图片</text>
         <view class="remove" wx:if="{{!readonly}}" catchtap="onRemoveImported" data-fileid="{{item.fileId}}">×</view>
       </view>
     </scroll-view>
-    <view class="empty-hint" wx:else>尚未导入照片，点击下方按钮从该幼儿的相册中选择。</view>
+    <view class="empty-hint" wx:else>{{readonly ? '这份评价未关联照片。' : '尚未导入照片，点击下方按钮从该幼儿的相册中选择。'}}</view>
 
     <block wx:if="{{!readonly}}">
       <view class="btn btn--blue full" hover-class="btn--hover" bindtap="onOpenAlbum">选择照片</view>
@@ -89,6 +90,7 @@
         >
           <image class="album-photo__img" wx:if="{{item.url}}" src="{{item.url}}" mode="aspectFill" lazy-load />
           <text class="album-photo__label" wx:else>{{item.label}}</text>
+          <text class="photo-demo" wx:if="{{item.demo}}">示例图片</text>
           <view class="album-photo__tick {{item.sel ? '' : 'album-photo__tick--off'}}">✓</view>
         </view>
       </view>

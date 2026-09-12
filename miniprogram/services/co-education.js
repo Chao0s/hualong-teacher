@@ -56,7 +56,7 @@ const MOMENT_STATUS = { s1: '草稿', s3: '已发布', s5: '已撤回' };
 // 周覆盖的完成线：§4 规则 1／Q59-c3。**>=2 才算完成**，0 与 1 都是未完成。
 const COVERED_DONE_AT = 2;
 
-/** 教师端总览：两项状态和三个汇总均由同一次后端查询计算。 */
+/** 教师端总览：三项状态和三个汇总均由同一次后端查询计算。 */
 async function homeSchoolProgress() {
   const result = await api.get('/home-school/progress');
   if (!result || !Array.isArray(result.children)
@@ -76,7 +76,7 @@ async function homeSchoolProgress() {
     rows: result.children.map((child) => ({
       childId: child.child_id,
       name: child.child_name,
-      cells: [statusCell(child.moment_status), statusCell(child.parent_task_status)],
+      cells: [statusCell(child.moment_status), statusCell(child.parent_task_status), statusCell(child.growth_book_status)],
     })),
   };
 }
@@ -283,12 +283,32 @@ async function classRoster() {
  * 学期边界来自会话的 `current_term`（§6.4）。假期中没有进行中的学期，此时返回空 ——
  * 调用方据此禁用发布入口，服务端也会独立回 `409 no_active_term`。
  *
- * @param {number} nowMs 时刻（UTC 毫秒）。必填，本模块不读时钟——不可注入就测不了跨日。
+ * @param {number} nowMs 时刻（UTC 毫秒），旧调用者的回退值。
+ * @param {string} schoolToday 后端SessionContext.school_today；发布页加载及提交前均刷新，优先于设备时钟。
  */
-function defaultMomentDate(nowMs) {
+function defaultMomentDate(nowMs, schoolToday) {
   const term = session.getCurrentTerm();
   if (!term) return '';
-  return time.clampLocalDate(time.todayLocalDate(nowMs), term.start_date, term.end_date);
+  return time.clampLocalDate(schoolToday || time.todayLocalDate(nowMs), term.start_date, term.end_date);
+}
+
+/** 发布失败只按稳定字段/规则码解释，不把undefined字段名拼进提示。 */
+function momentPublishFailureText(err) {
+  const details = (err && err.details) || {};
+  if (err && err.code === 'no_active_term') return '当前没有进行中的学期，暂不能发布活动';
+  if (details.field === 'moment_date') {
+    if (details.rule === 'moment_date_not_after_school_today') return '活动日期晚于园所当前日期，请重试发布';
+    if (details.rule === 'moment_date_in_current_term') return '活动日期不在当前学期，请重新进入发布页';
+    return '活动日期无效，请重新进入发布页';
+  }
+  if (details.field === 'moment_title') return '请填写有效的活动名称（最多50字）';
+  if (details.field === 'child_id') return '请重新选择本班参与活动的幼儿';
+  if (details.field === 'moment_content') return '请填写活动评语或添加照片';
+  if (details.field === 'file_id') {
+    if (details.rule === 'moment_image_limit') return '照片最多9张';
+    return '所选照片无效或不属于当前账号，请重新上传';
+  }
+  return (err && (err.userMessage || err.message)) || '发布失败，请稍后重试';
 }
 
 /* ── 写 ──────────────────────────────────────────────────────────────────── */
@@ -805,6 +825,7 @@ function decorateFeedRow(row) {
 
     // 「加入成长册」按钮的当前状态。写它走 setBookInclusion()。
     included: Boolean(row.teacher_book_included),
+    parentIncluded: Boolean(row.parent_book_included),
   };
 }
 
@@ -841,6 +862,11 @@ function setBookInclusion(submissionId, { included, fileIds }) {
     action: 'parent_task_submission.book_include_teacher',
     body: { teacher_book_included: included, file_id: fileIds || [] },
   });
+}
+
+function bookInclusionFailureText(err) {
+  if (err && err.details && err.details.rule === 'target_book_finalized') return '这名幼儿的成长册已定稿，不能再改变收录';
+  return (err && err.userMessage) || '收录操作失败，请重试';
 }
 
 /* ══ 家长评价完成情况 ═══════════════════════════════════════════════════════
@@ -1305,6 +1331,7 @@ module.exports = {
   COVERED_DONE_AT,
   allowedActions,
   defaultMomentDate,
+  momentPublishFailureText,
   listMoments,
   getMoment,
   photoUrl,
@@ -1338,6 +1365,7 @@ module.exports = {
   TIME_WINDOWS,
   listCommunityFeed,
   setBookInclusion,
+  bookInclusionFailureText,
 
   // 家长评价完成情况
   PARENT_EVAL_TYPE,

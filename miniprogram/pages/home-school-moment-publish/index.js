@@ -20,7 +20,7 @@
  *    `db_moment_upload` 行会被删除。所以每次保存都送完整集合。
  *
  * 2. **`moment_date` 必须落在当前学期且不晚于园所今天**。默认值由
- *    `services/co-education.defaultMomentDate()` 夹进学期，理由见那里。
+ *    刷新会话取得的school_today决定，不用设备日期冒充测试后端的今天。
  *
  * 3. **照片选完当场就传**。`file_id` 收的是**已经落库的** id，所以列表里只放
  *    传成功的那几张：一个看着像已上传、实际什么都没发生的条目，比少一张糟得多。
@@ -34,6 +34,7 @@
 const co = require('../../services/co-education');
 const media = require('../../services/media');
 const guard = require('../../utils/guard');
+const auth = require('../../utils/auth');
 
 Page({
   data: {
@@ -54,10 +55,9 @@ Page({
 
   async onLoad() {
     try {
-      await guard.requireSession();
       // 假期中没有进行中的学期：契约 §6.4 允许客户端预先禁用写入，服务端仍会
       // 独立回 409 no_active_term。这是礼貌，不是关卡。
-      const date = co.defaultMomentDate(Date.now());
+      const date = await this.publicationDate();
       if (!date) {
         this.setData({
           loading: false,
@@ -78,13 +78,24 @@ Page({
       if (guard.endSessionOnAuthFailure(err)) return;
       this.setData({
         loading: false,
-        error: err.userMessage || '名单加载失败，请稍后重试',
+        error: err.userMessage || err.message || '名单加载失败，请稍后重试',
       });
     }
   },
 
   onRetry() {
+    this.setData({loading: true, error: '', canWrite: true});
     this.onLoad();
+  },
+
+  async publicationDate() {
+    await guard.requireSession();
+    const context = await auth.refreshContext();
+    if (!context.current_term) return '';
+    if (typeof context.school_today !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(context.school_today)) {
+      throw new Error('无法取得园所日期，请刷新后重试');
+    }
+    return co.defaultMomentDate(Date.now(), context.school_today);
   },
 
   onTitleInput(e) {
@@ -157,6 +168,7 @@ Page({
         added.push({
           fileId: file.fileId,
           label: `照片 ${this.data.photos.length + added.length + 1}`,
+          previewUrl: picked[i].tempFilePath,
         });
       } catch (err) {
         if (guard.endSessionOnAuthFailure(err)) {
@@ -195,31 +207,38 @@ Page({
     // 发布前确认。**这一步取代了草稿** —— 内容一旦发出去，家长立刻看得到，
     // 而且发布后正文、日期、图片与幼儿名单永久唯读（F16），改不了只能删掉重发。
     // 所以把要发的东西摆出来让人重看一眼，比事后补救便宜。
-    const confirmed = await this.confirmPublish(childIds.length);
-    if (!confirmed) return;
-
     this.setData({ publishing: true });
-    wx.showLoading({ title: '正在发布', mask: true });
+    wx.showLoading({ title: '正在核对发布信息', mask: true });
+    let published = false;
     try {
+      const date = await this.publicationDate();
+      if (!date) throw new Error('当前没有进行中的学期，暂不能发布活动');
+      this.setData({date});
+      wx.hideLoading();
+      const confirmed = await this.confirmPublish(childIds.length);
+      if (!confirmed) return;
+      wx.showLoading({ title: '正在发布', mask: true });
       await co.publish({
         title: this.data.title,
         content: this.data.content,
-        date: this.data.date,
+        date,
         childIds,
         fileIds,
       });
+      published = true;
       wx.hideLoading();
-      this.setData({ publishing: false });
       wx.showToast({ title: '已发布', icon: 'success' });
       setTimeout(() => wx.navigateBack(), 800);
     } catch (err) {
       wx.hideLoading();
-      this.setData({ publishing: false });
       if (guard.endSessionOnAuthFailure(err)) return;
       wx.showToast({
-        title: err.userMessage || '发布失败，请稍后重试',
+        title: co.momentPublishFailureText(err),
         icon: 'none',
       });
+    } finally {
+      wx.hideLoading();
+      if (!published) this.setData({publishing: false});
     }
   },
 

@@ -81,6 +81,8 @@ Page({
   },
 
   async refresh() {
+    const seq = (this.loadSeq || 0) + 1;
+    this.loadSeq = seq;
     const timeKey = this.data.timeOptions[this.data.timeIndex].key;
     const typeKey = this.data.typeOptions[this.data.typeIndex].key;
 
@@ -92,6 +94,7 @@ Page({
         timeWindow: timeKey === 'all' ? undefined : timeKey,
         limit: 100,
       });
+      if (seq !== this.loadSeq) return;
       const visible = page.items.map((row) => ({
         id: row.id,
         initial: row.initial,
@@ -114,6 +117,7 @@ Page({
       this.setData({ visible, loading: false });
       this.fillPhotos(visible);
     } catch (err) {
+      if (seq !== this.loadSeq) return;
       this.setData({ visible: [], loading: false, failed: err.userMessage || '社区共育加载失败，请稍后重试' });
     }
   },
@@ -131,28 +135,41 @@ Page({
     });
   },
 
-  /**
-   * 点「+N」角标，看这条投稿的全部照片。
-   *
-   * 卡片上只铺 `PREVIEW_PHOTOS` 张，角标只是交代还有几张，点不开等于没交代。
-   * 全套 `file_id` 就在卡上（`fileIds`），前三张的地址 `fillPhotos` 已经换过，
-   * 当 `known` 传下去，只补剩下那些。
-   *
-   * 地址是短链（§8.4，约 5 分钟），所以每次点都重新取，不缓存进列表数据。
-   */
+  /** 每张缩略图从所点照片打开；+N从第4张开始。每次重取短链，保持照片ID对应。 */
   async onPreviewPhotos(e) {
-    // 按 id 找回，不用下标：换筛选时 `visible` 会整个换掉。`fillPhotos` 同理。
+    if (this.previewing) return;
     const id = Number(e.currentTarget.dataset.id);
     const post = this.data.visible.find((x) => x.id === id);
-    if (!post || !post.fileIds.length) return;
-
-    const known = new Map(post.photos.map((p) => [p.fileId, p.url]).filter(([, url]) => url));
-    const urls = await co.photoUrls(post.fileIds, post.photoOwner, known);
-    if (!urls.length) {
-      wx.showToast({ title: '照片暂时打不开，请稍后重试', icon: 'none' });
-      return;
+    if (!post || post.underCheck || !post.fileIds.length) return;
+    const selectedId = e.currentTarget.dataset.fileId === undefined
+      ? post.fileIds[Math.min(PREVIEW_PHOTOS, post.fileIds.length - 1)]
+      : Number(e.currentTarget.dataset.fileId);
+    if (!post.fileIds.includes(selectedId)) return;
+    this.previewing = true;
+    wx.showLoading({ title: '正在打开照片', mask: true });
+    try {
+      const photos = await Promise.all(post.fileIds.map(async (fileId) => ({
+        fileId, url: await co.photoUrl(fileId, post.photoOwner),
+      })));
+      // 筛选后该投稿已离开列表时，不再弹出旧投稿的预览。
+      if (!this.data.visible.some((row) => row.id === id)) return;
+      const selected = photos.find((photo) => photo.fileId === selectedId);
+      if (!selected || !selected.url) {
+        wx.showToast({ title: '这张照片暂时打不开，请稍后重试', icon: 'none' });
+        return;
+      }
+      wx.hideLoading();
+      wx.previewImage({
+        urls: photos.filter((photo) => photo.url).map((photo) => photo.url),
+        current: selected.url,
+        fail: () => wx.showToast({ title: '照片预览失败，请重试', icon: 'none' }),
+      });
+    } catch (err) {
+      wx.showToast({ title: (err && err.userMessage) || '照片暂时打不开，请稍后重试', icon: 'none' });
+    } finally {
+      wx.hideLoading();
+      this.previewing = false;
     }
-    wx.previewImage({ urls, current: urls[Math.min(PREVIEW_PHOTOS, urls.length - 1)] });
   },
 
   /**
@@ -162,25 +179,24 @@ Page({
    * 服务端复验 file_id 是该笔提交已冻结附件的子集。
    */
   async onToggleMaterial(e) {
-    const post = this.data.visible[Number(e.currentTarget.dataset.index)];
-    if (!post) return;
+    const id = Number(e.currentTarget.dataset.id);
+    const post = this.data.visible.find((row) => row.id === id);
+    if (!post || post.underCheck || this.inclusionBusy) return;
 
     const next = !post.included;
+    this.inclusionBusy = true;
     try {
       await co.setBookInclusion(post.id, {
         included: next,
-        fileIds: next ? post.fileIds : [],
+        fileIds: next ? [...new Set(post.fileIds)] : [],
       });
+      // 操作完成后重读同一筛选的真实状态，避免旧列表把成功状态覆盖。
+      await this.refresh();
+      wx.showToast({ title: next ? '已加入成长册' : '已移出成长册', icon: 'none' });
     } catch (err) {
-      wx.showToast({ title: err.userMessage || '操作失败，请稍后重试', icon: 'none' });
-      return;
+      wx.showToast({ title: co.bookInclusionFailureText(err), icon: 'none' });
+    } finally {
+      this.inclusionBusy = false;
     }
-
-    const at = this.data.visible.findIndex((x) => x.id === post.id);
-    this.setData({ [`visible[${at}].included`]: next });
-    wx.showToast({
-      title: next ? `已加入成长册（${post.photoCount} 张照片）` : '已移出成长册',
-      icon: 'none',
-    });
   },
 });

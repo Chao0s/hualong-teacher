@@ -1,0 +1,11 @@
+{
+  "license": "CC BY-SA 3.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+  "modifications": "Images are resized proportionally and re-encoded to JPEG with metadata removed by the local upload processor. Image derivatives retain CC BY-SA 3.0.",
+  "images": [
+    {"key":"sunflower","label":"向日葵","file":"Sunflower_from_Silesia2.jpg","author":"Pudelek; edited by Yzmo","page":"https://commons.wikimedia.org/wiki/File:Sunflower_from_Silesia2.jpg","url":"https://upload.wikimedia.org/wikipedia/commons/4/41/Sunflower_from_Silesia2.jpg"},
+    {"key":"gull","label":"海鸥","file":"Gull_portrait_ca_usa.jpg","author":"Dschwen","page":"https://commons.wikimedia.org/wiki/File:Gull_portrait_ca_usa.jpg","url":"https://upload.wikimedia.org/wikipedia/commons/9/9a/Gull_portrait_ca_usa.jpg"},
+    {"key":"cat","label":"小猫","file":"Felis_catus-cat_on_snow.jpg","author":"Von.grzanka","page":"https://commons.wikimedia.org/wiki/File:Felis_catus-cat_on_snow.jpg","url":"https://upload.wikimedia.org/wikipedia/commons/b/b6/Felis_catus-cat_on_snow.jpg"},
+    {"key":"mountain","label":"山景","file":"Fronalpstock_big.jpg","author":"Hannes Röst","page":"https://commons.wikimedia.org/wiki/File:Fronalpstock_big.jpg","url":"https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3f/Fronalpstock_big.jpg/1280px-Fronalpstock_big.jpg"}
+  ]
+}

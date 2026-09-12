@@ -41,10 +41,11 @@
         <!-- 格子数来自真实的 file_id，地址随后逐张填上（§8.4 每次重验），
              url 为空时先显示灰底，不让布局在图片陆续到达时跳动。 -->
         <view class="photo-grid {{post.photos.length <= 2 ? 'photo-grid--two' : ''}}" wx:if="{{post.photos.length}}">
-          <view class="feed-photo" wx:for="{{post.photos}}" wx:key="fileId" wx:for-item="p">
+          <view class="feed-photo" wx:for="{{post.photos}}" wx:key="fileId" wx:for-item="p"
+            data-id="{{post.id}}" data-file-id="{{p.fileId}}" bindtap="onPreviewPhotos" hover-class="feed-photo--hover">
             <image class="feed-photo__img" wx:if="{{p.url}}" src="{{p.url}}" mode="aspectFill" lazy-load />
           </view>
-          <view class="feed-more" wx:if="{{post.moreCount}}" data-id="{{post.id}}" bindtap="onPreviewPhotos">+{{post.moreCount}}</view>
+          <view class="feed-more" wx:if="{{post.moreCount}}" data-id="{{post.id}}" data-file-id="{{post.fileIds[3]}}" bindtap="onPreviewPhotos" hover-class="feed-photo--hover">+{{post.moreCount}}</view>
         </view>
 
         <view class="moment-foot">
@@ -52,9 +53,9 @@
           <text class="moment-foot__task">{{post.taskTitle}}</text>
           <view
             class="add-material {{post.included ? 'add-material--on' : ''}}"
-            data-index="{{pi}}"
+            data-id="{{post.id}}"
             bindtap="onToggleMaterial"
-          >{{post.included ? '✓ 已加入（' + post.photoCount + ' 张）' : '+ 加入成长册'}}</view>
+          >{{post.included ? '− 移出成长册' : '+ 加入成长册'}}</view>
         </view>
       </view>
     </view>

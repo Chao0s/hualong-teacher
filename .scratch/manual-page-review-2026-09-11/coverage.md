@@ -57,7 +57,7 @@
 | `comprehensive-assessment-class-report` | 班级评估报告 | 是 | [08 幼儿综合评估保存、明细与雷达图](drafts/08-child-assessment.md) |
 | `growth-book` | 成长册 | 是 | [13 成长册样本、编册锁定与定稿开放](drafts/13-book-publish.md) |
 | `growth-book-time-manage` | 在园时光管理 | 是 | [10 在园活动入册与主题管理](drafts/10-book-moments.md) |
-| `growth-book-task-manage` | 亲子时光管理 | 否 | [11 亲子时光管理的示例与真实收录区分](drafts/11-book-family.md) |
+| `growth-book-task-manage` | 亲子时光管理 | 是 | [11 亲子时光管理的真实收录与取消](drafts/11-book-family.md) |
 | `growth-book-section-materials` | 栏目投稿 | 是 | [12 自定义栏目排版、征集与提醒家长](drafts/12-book-sections.md) |
 | `growth-book-edit` | 2026 春季学期编册 | 是 | [13 成长册样本、编册锁定与定稿开放](drafts/13-book-publish.md) |
 | `growth-book-sample` | 成长册样本 | 否 | [13 成长册样本、编册锁定与定稿开放](drafts/13-book-publish.md) |
@@ -76,7 +76,7 @@
 - **08 幼儿综合评估保存、明细与雷达图**：`miniprogram/pages/growth-comprehensive-assessment/index.wxml`；`miniprogram/pages/growth-comprehensive-assessment/index.js`；`miniprogram/pages/comprehensive-assessment-report/index.wxml`。
 - **09 社区共育投稿阅读与逐幼儿收录**：`miniprogram/pages/community-coeducation/index.js`；`miniprogram/pages/community-coeducation/index.wxml`。
 - **10 在园活动入册与主题管理**：`miniprogram/pages/home-school-moment-feed/index.js`；`miniprogram/pages/growth-book-time-manage/index.wxml`。
-- **11 亲子时光管理的示例与真实收录区分**：`miniprogram/pages/growth-book-task-manage/index.js`。
+- **11 亲子时光管理的真实收录与取消**：`miniprogram/pages/growth-book-task-manage/index.js`。
 - **12 自定义栏目排版、征集与提醒家长**：`miniprogram/pages/growth-book-section-edit/index.wxml`；`miniprogram/pages/growth-book-section-materials/index.js`；`decision.md`。
 - **13 成长册样本、编册锁定与定稿开放**：`miniprogram/pages/growth-book-view/index.js`；`miniprogram/pages/growth-book-edit/index.wxml`；`miniprogram/pages/growth-book/index.wxml`；`miniprogram/app.json`。
 - **外部参考14 家长实际收发与跨幼儿范围联验**：`../hualong-parent/README.md`；`miniprogram/pages/teacher-term-evaluation/index.js`；`decision.md`。

@@ -5,7 +5,7 @@
 
      原型只有「评价类型」与「评价说明」两格，而 DDL 上 evaluation_period、
      evaluation_title、start_at 都是 NOT NULL —— 那张表单在原型里根本提交不成功。
-     期间派生不给控件（它是不透明字符串，不当日期解析），标题与时间补了控件。 -->
+     月度期间可选择月份，学期期间取当前学期；标题与时间可填写。 -->
 <view class="page">
 
   <view class="chunk">
@@ -15,11 +15,16 @@
     </picker>
 
     <text class="form-label">评价期间</text>
-    <view class="select select--readonly">{{periodLabel || '算不出期间，请检查当前学期'}}</view>
-    <text class="hint">按类型自动算：月度取本月，学期取当前学期。一名幼儿一个期间只有一份。</text>
+    <picker wx:if="{{typeIndex === 0}}" mode="date" fields="month" value="{{month}}" bindchange="onMonthChange" disabled="{{publishing}}" data-ui="context.local">
+      <view class="select">{{periodLabel || '请选择评价月份'}}　›</view>
+    </picker>
+    <view wx:else class="select select--readonly">{{periodLabel || '算不出期间，请检查当前学期'}}</view>
+    <text class="hint">月度评价默认本月，可点击选择其他月份；学期评价使用当前学期。一名幼儿一个期间只有一份。</text>
 
     <text class="form-label">评价标题</text>
-    <input class="input" maxlength="100" value="{{title}}" bindinput="onTitleInput" />
+    <view class="input title-field">
+      <textarea class="title-input" auto-height maxlength="100" value="{{title}}" bindinput="onTitleInput" />
+    </view>
 
     <!-- 只挑日期。库里仍存一个钟点（TIMESTAMP NOT NULL），但那个钟点对家长
          没有区别，固定成开始 08:00、截止 21:00，见 index.js 的 START_CLOCK。 -->

@@ -2,6 +2,11 @@
      一名幼儿一张卡，点整行展开或收起他的亲子时光；同时只展开一名。 -->
 <view class="page">
 
+  <view class="empty" wx:if="{{loading}}">正在读取亲子时光…</view>
+  <view class="empty" wx:elif="{{error}}" bindtap="onRetry">{{error}}　点此重试</view>
+  <block wx:else>
+  <text class="hint">当前学期：{{termId}}。教师和家长的收录独立；取消教师收录不会删除原投稿。</text>
+
   <view class="sec sec--first">幼儿名单</view>
 
   <view class="child-card" wx:for="{{children}}" wx:key="id" wx:for-item="child">
@@ -14,11 +19,17 @@
 
     <view class="records" wx:if="{{child.open}}">
       <view class="record" wx:for="{{child.tasks}}" wx:key="id" wx:for-item="task">
-        <text class="record__title">{{task.title}}</text>
-        <view class="record__del" data-child="{{child.id}}" data-task="{{task.id}}" bindtap="onRemoveTask">删除</view>
+        <view class="record__main">
+          <text class="record__title">{{task.title}}</text>
+          <text class="record__meta">{{task.date}} · {{task.sourceLabel}}</text>
+          <text class="record__meta" wx:if="{{task.lockReason}}">{{task.lockReason}}</text>
+        </view>
+        <view class="record__del" wx:if="{{task.canRemove}}" data-child="{{child.id}}" data-task="{{task.id}}" bindtap="onRemoveTask">{{task.removeLabel}}</view>
       </view>
       <view class="empty" wx:if="{{!child.tasks.length}}">暂无亲子时光</view>
     </view>
   </view>
+  <view class="empty" wx:if="{{!children.length}}">本班暂无在园幼儿。</view>
+  </block>
 
 </view>

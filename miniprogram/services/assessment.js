@@ -243,8 +243,8 @@ function decorateDomains(domains) {
 }
 
 /** 教师评价总览：年月与四个二元状态均由后端决定。 */
-async function teacherEvaluationBoard() {
-  const data=await api.get('/teacher-evaluations/progress');
+async function teacherEvaluationBoard({ month } = {}) {
+  const data=await api.get('/teacher-evaluations/progress', {query: month ? {eval_month:month} : undefined});
   if(!data || !Array.isArray(data.items) || !/^\d{4}-\d{2}$/.test(data.eval_month)) {
     throw new Error('教师评价进度数据不完整，请稍后重试');
   }
@@ -252,6 +252,7 @@ async function teacherEvaluationBoard() {
   return {
     termId:data.term_id,
     month:data.eval_month,
+    monthOptions:data.month_options || [data.eval_month],
     rows:data.items.map(row=>({
       childId:row.child_id,
       name:row.child_name,

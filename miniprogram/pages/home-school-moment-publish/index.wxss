@@ -79,12 +79,19 @@
   line-height: 1;
 }
 
-/* 原型用 ::before 叠了几层 color-mix 渐变当假照片，这里换成算好的定值渐变。 */
 .photo-thumb {
-  background:
-    radial-gradient(circle at 26% 34%, #4bb3aa 0 18rpx, transparent 20rpx),
-    linear-gradient(145deg, transparent 0 52%, #d5ecdb 53% 100%),
-    linear-gradient(135deg, var(--accent-light), var(--green-light));
+  background: var(--surface);
+}
+
+.photo-image {
+  width: 100%;
+  height: 100%;
+}
+
+.photo-thumb .photo-label {
+  right: auto;
+  min-height: 32rpx;
+  font-size: 20rpx;
 }
 
 /* ── 涉及幼儿 ──────────────────────────────────────────────────────────── */

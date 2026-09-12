@@ -163,8 +163,11 @@
 
 .new-topic__input {
   min-width: 0;
-  padding: 20rpx 24rpx;
-  border: 1rpx solid var(--border);
+  height: 88rpx;
+  min-height: 88rpx;
+  line-height: 40rpx;
+  padding: 22rpx 24rpx;
+  border: 2rpx solid var(--border);
   border-radius: 24rpx;
   background: #fff;
   font-size: 24rpx;
@@ -177,6 +180,7 @@
 .new-topic__btn {
   display: flex;
   align-items: center;
+  min-height: 88rpx;
   padding: 0 28rpx;
   border-radius: 24rpx;
   background: var(--accent);
@@ -196,8 +200,11 @@
 .search {
   flex: 1;
   min-width: 0;
-  padding: 20rpx 24rpx;
-  border: 1rpx solid var(--border);
+  height: 88rpx;
+  min-height: 88rpx;
+  line-height: 40rpx;
+  padding: 22rpx 24rpx;
+  border: 2rpx solid var(--border);
   border-radius: 24rpx;
   background: #fff;
   font-size: 24rpx;

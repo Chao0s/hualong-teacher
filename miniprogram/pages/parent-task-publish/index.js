@@ -41,6 +41,7 @@
 
 const co = require('../../services/co-education');
 const guard = require('../../utils/guard');
+const auth = require('../../utils/auth');
 
 /**
  * 钟点固定，不给控件。
@@ -81,13 +82,16 @@ Page({
         await this.loadDraft();
       } else {
         // 新建：开始日期默认园所今天，截止留空（`due_at` 可空）。
-        const parts = co.taskPickerParts(co.defaultTaskStart(Date.now()));
-        this.setData({ startDate: parts.date, loading: false });
+        const context = await auth.refreshContext();
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(context.school_today || '')) {
+          throw new Error('暂时无法取得园所日期，请重试');
+        }
+        this.setData({ startDate: context.school_today, loading: false });
       }
       wx.setNavigationBarTitle({ title: this.taskId ? '编辑草稿' : '发布新任务' });
     } catch (err) {
       if (guard.endSessionOnAuthFailure(err)) return;
-      this.setData({ loading: false, error: err.userMessage || '加载失败，请稍后重试' });
+      this.setData({ loading: false, error: err.userMessage || err.message || '加载失败，请稍后重试' });
     }
   },
 

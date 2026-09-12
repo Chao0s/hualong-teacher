@@ -90,7 +90,7 @@
   <view class="summary-card">
     <view>
       <view class="avg">{{avg}}</view>
-      <text class="hint">{{progressHint}}</text>
+      <text class="hint">{{pendingWrites ? '评分保存中…' : progressHint}}</text>
     </view>
     <view class="btn" hover-class="btn--hover" bindtap="onSave">保存评估</view>
   </view>
