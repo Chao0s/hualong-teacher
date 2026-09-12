@@ -163,7 +163,23 @@ rem coreutils `timeout` on PATH shadows the Windows one, so this step reports
 rem `timeout: invalid time interval '/t'` and THE BROWSER DOES NOT OPEN. Double-
 rem clicking in Explorer is fine, which makes it hard to spot. `ping` exists on
 rem both sides and does not depend on PATH.
-start "" /b cmd /c "ping -n 3 127.0.0.1 >nul & start http://127.0.0.1:!PICKED!/pages"
+rem ---- browser: OFF by default when this is driven by a script ----
+rem
+rem 2026-09-12: this launcher opens a browser tab every time it runs, and it was
+rem run about eight times in a row while debugging. The result was 243 Edge tabs
+rem and a machine that stopped responding. The tab step had no guard.
+rem
+rem So: opening the browser is now skipped when HL_NO_BROWSER is set, and any
+rem automated caller MUST set it. A human double-clicking still gets the tab,
+rem which is the point of the launcher.
+rem
+rem If you are an agent or a script: run this ONCE. It stops the server and starts
+rem a new one every time, so calling it in a loop is what caused the crash above.
+if defined HL_NO_BROWSER (
+  echo   [skipped] opening the browser ^(HL_NO_BROWSER is set^)
+) else (
+  start "" /b cmd /c "ping -n 3 127.0.0.1 >nul & start http://127.0.0.1:!PICKED!/pages"
+)
 
 node tools\swagger\server.mjs
 
