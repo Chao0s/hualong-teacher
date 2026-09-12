@@ -71,7 +71,16 @@ function wxLogin() {
 async function postSession(jsCode, phoneCode) {
   const body = { surface: config.SURFACE, js_code: jsCode };
   if (phoneCode) body.phone_code = phoneCode;
-  return api.request('POST', '/auth/session', { body, anonymous: true });
+  // `skipAuthRetry` 与 `anonymous` 是两件事，两个都要。
+  //
+  // `anonymous` 只跳过 Authorization 标头（见 request.js 的 `!opts.anonymous`）。
+  // 它**不**跳过 401 的重登分支 —— 那个看的是 `!opts.skipAuthRetry`。
+  // 少了后者，登录端点自己回 401 时会去 await `ensureSession()`，而那个 promise
+  // 正是当前这次登录 —— 它在等自己，永远不返回也不超时。
+  //
+  // 2026-09-12 实测：`/dev/session` 对离职教师（teacher_id 13）改成回 401 之后，
+  // 这条死锁才第一次显形 —— 之前它照发 token，死锁在下一步。
+  return api.request('POST', '/auth/session', { body, anonymous: true, skipAuthRetry: true });
 }
 
 /**
@@ -84,6 +93,8 @@ async function postDevSession() {
   const issued = await api.request('POST', '/dev/session', {
     body: { surface: config.SURFACE, subject_id: config.devSubjectId },
     anonymous: true,
+    // 与 `postSession` 同一条理由：登录端点的 401 不能触发重登，否则它在等自己。
+    skipAuthRetry: true,
   });
   return { session_token: issued.token };
 }
