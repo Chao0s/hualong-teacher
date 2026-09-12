@@ -167,8 +167,16 @@ async function main() {
   check('回包里有一个非空 url', Boolean(link.url), '空的');
 
   // 有效期：不超过 5 分钟。资源／案例那条 bearer 短链是 30 分钟，两套不能混。
+  //
+  // **`now()` 是 UTC，而我们要的是园所墙上的时间。** 从前这里写
+  // `to_char(now(), …) || '+08:00'`，等于把 UTC 盖上一个 +08:00 的标签，比真实的
+  // 本地时间**早 8 小时**（库的 `show timezone` 是 `Etc/UTC`，实测差 480 分钟）。
+  // 于是「提前几分钟」这个数永远多 480，两条断言必然红 —— 而服务端是对的。
+  //
+  // 这是 §7.6 那条教训的镜像：写下来的是「按名字分派，不按类型」，
+  // 而这里是**按名字贴时区**。要么问库要本地时间，要么别贴那个后缀。
   const nowWire = (await db.query(
-    `SELECT to_char(now(), 'YYYY-MM-DD"T"HH24:MI:SS') || '+08:00' AS w`)).rows[0].w;
+    `SELECT to_char(now() AT TIME ZONE 'Asia/Shanghai', 'YYYY-MM-DD"T"HH24:MI:SS') || '+08:00' AS w`)).rows[0].w;
   const aheadMin = (Date.parse(link.expiresAt) - Date.parse(nowWire)) / 60000;
   check('expires_at 落在 5 分钟那一档（>0 且 <=6 分钟）',
     aheadMin > 0 && aheadMin <= 6, `实际提前 ${aheadMin.toFixed(1)} 分钟`);
