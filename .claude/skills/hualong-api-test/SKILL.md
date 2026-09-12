@@ -128,7 +128,7 @@ A checker that only reads should hold neither.
 
 ```
 node .claude/skills/hualong-api-test/run.mjs             # the fast set
-node .claude/skills/hualong-api-test/run.mjs --all       # all ten
+node .claude/skills/hualong-api-test/run.mjs --all       # all eleven
 node .claude/skills/hualong-api-test/run.mjs cos db      # named layers
 ```
 
@@ -139,7 +139,7 @@ names are printed on every run, so a partial run cannot look like a full one.
 | Set | Layers | Needs |
 | --- | --- | --- |
 | fast | `contract` `wire` `cover` `proto` `repo` | nothing — no credentials, no cloud, no GUI |
-| full | all ten | the box, the bucket, or DevTools, per layer |
+| full | all eleven | the box, the bucket, or DevTools, per layer |
 
 | Layer | Needs | Checks |
 | --- | --- | --- |
@@ -152,7 +152,31 @@ names are printed on every run, so a partial run cannot look like a full one.
 | `cos` | `COS_*` env | bucket ACL and policy, SSE, CORS, backup presence and freshness, and one anonymous read attempt |
 | `vm` | `ubuntu` shell | sshd hardening in force, `devtunnel` restrictions, nginx exposure, disk |
 | `api` | tunnel | live HTTP against the contract. Self-skips while `3001` is unanswered |
-| `render` | WeChat DevTools | that each screen actually draws — the question no other layer can answer |
+| `probes` | a live testdata server | the 18 probe scripts, plus the backend's seven authorisation groups. Self-skips when nothing answers, and prints the commands that raise the stack |
+| `render` | WeChat DevTools | that each screen actually draws **and that what it draws is content, not a failure**. The project is copied off Google Drive first — see below |
+
+### The render layer needs the project off Google Drive
+
+DevTools reads **stale source** through the Drive mount. Same bytes, two paths:
+
+| project opened at | compiles |
+|---|---|
+| `G:\My Drive\...` | the **previous** revision |
+| `%LOCALAPPDATA%\Temp\...` | the current one |
+
+**Nothing reports it.** The compile cache updates, the AppID resolves, and the
+runner prints `跑通 56 屏` — for code from before your edit. `cli cache --clean
+compile` does not help, and neither does restarting DevTools.
+
+So `tools/render-pages.mjs` copies `project.config.json` and `miniprogram/` to
+`%LOCALAPPDATA%/hl-render-project` — deleted first, so a page removed from the
+repo cannot linger — and hands the IDE that path. **Do not simplify it back to
+opening the repository directly.** That is the bug this replaced, and finding it
+took an hour of ruling out four other explanations.
+
+The symptoms of a stale compile: a page renders data you deleted, or
+`page.data()` lacks a key you just added. When a rendering result looks wrong in
+a way the source cannot explain, suspect this first.
 
 ### Where the page-level views come from
 

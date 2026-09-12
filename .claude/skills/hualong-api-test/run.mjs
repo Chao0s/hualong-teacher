@@ -2,7 +2,7 @@
  * Entry point.
  *
  *   node .claude/skills/hualong-api-test/run.mjs              the fast set
- *   node .claude/skills/hualong-api-test/run.mjs --all        all ten layers
+ *   node .claude/skills/hualong-api-test/run.mjs --all        all eleven layers
  *   node .claude/skills/hualong-api-test/run.mjs cos db       named layers
  *
  * **Two sets, declared here so nobody has to remember them.** The fast set is
@@ -39,8 +39,9 @@ import { wire } from './layers/wire.mjs';
 import { cover } from './layers/cover.mjs';
 import { proto } from './layers/proto.mjs';
 import { render } from './layers/render.mjs';
+import { probes } from './layers/probes.mjs';
 
-const LAYERS = { contract, wire, cover, proto, repo, db, cos, vm, api, render };
+const LAYERS = { contract, wire, cover, proto, repo, db, cos, vm, api, render, probes };
 
 /** Run after every change. No credentials, no cloud, no GUI. */
 const FAST = ['contract', 'wire', 'cover', 'proto', 'repo'];
@@ -59,7 +60,7 @@ const chosen = argv.includes('--all') ? Object.keys(LAYERS) : (asked.length ? as
 
 const run = new Run();
 console.log(`hualong-api-test — layers: ${chosen.join(', ')}`);
-console.log(`(${chosen.length === FAST.length && !asked.length ? 'fast set; --all for the full ten' : `${chosen.length} of ${Object.keys(LAYERS).length}`})\n`);
+console.log(`(${chosen.length === FAST.length && !asked.length ? 'fast set; --all for the full eleven' : `${chosen.length} of ${Object.keys(LAYERS).length}`})\n`);
 
 const perLayer = {};
 for (const name of chosen) {
