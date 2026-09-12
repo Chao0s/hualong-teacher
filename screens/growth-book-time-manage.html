@@ -24,24 +24,24 @@
   <div class="nav-bar"><a class="back" href="growth-book-edit.html">‹</a><div class="nav-title">在园时光管理</div><span></span></div>
   <div class="scroll">
     <div class="count-line">
-      <div class="count-pill">主题<b id="topicCount">0</b></div>
+      <div class="count-pill" data-intent="growth-book-time-manage.count-pill">主题<b id="topicCount">0</b></div>
       <div class="count-pill">全部活动<b id="activityCount">0</b></div>
       <div class="count-pill">未归类<b id="ungroupedCount">0</b></div>
     </div>
 
     <div class="sec">主题</div>
     <div id="topics"></div>
-    <div class="new-topic">
-      <input class="mutating" id="newTopicName" maxlength="30" placeholder="输入新主题名称" data-ui="growth_book_time_topic.title">
+    <div class="new-topic" data-intent="growth-book-time-manage.new-topic">
+      <input class="mutating" id="newTopicName" maxlength="30" placeholder="输入新主题名称" data-ui="growth_book_time_topic.title" data-intent="growth-book-time-manage.mutating">
       <button class="mutating" id="createTopic">新建主题</button>
     </div>
 
     <div class="sec">未归类成长素材</div>
     <div class="toolbar">
-      <input class="search" id="search" type="search" data-ui="growth_material.name_query" placeholder="搜索活动名称">
-      <button class="select-all mutating" id="selectAll">全选结果</button>
+      <input class="search" id="search" type="search" data-ui="growth_material.name_query" placeholder="搜索活动名称" data-intent="growth-book-time-manage.search">
+      <button class="select-all mutating" id="selectAll" data-intent="growth-book-time-manage.select-all">全选结果</button>
     </div>
-    <div class="batch">
+    <div class="batch" data-intent="growth-book-time-manage.batch">
       <span id="selectedCount">已选 0 项</span>
       <select id="targetTopic" class="mutating" data-ui="growth_material.topic"></select>
       <button id="assign" class="mutating" data-ui="growth_material.topic">归入主题</button>
@@ -105,9 +105,9 @@ function activityRow(item, selectable) {
     ? `<input class="mutating" type="checkbox" data-pick="${item.id}" data-ui="growth_material.photo_select"${selected.has(item.id) ? ' checked' : ''}>`
     : '';
   const action = selectable
-    ? `<button class="text-button danger mutating" data-remove="${item.id}" data-ui="growth_material.photo_select">${pendingRemoveId === item.id ? '确认删除' : '删除'}</button>`
+    ? `<button class="text-button danger mutating" data-remove="${item.id}" data-ui="growth_material.photo_select" data-intent="growth-book-time-manage.text-button">${pendingRemoveId === item.id ? '确认删除' : '删除'}</button>`
     : `<button class="text-button mutating" data-undo="${item.id}" data-ui="growth_material.topic">撤销</button>`;
-  return `<div class="activity">${check}<b>${item.title}</b><time>${item.date}</time>${action}</div>`;
+  return `<div class="activity" data-intent="growth-book-time-manage.activity">${check}<b>${item.title}</b><time>${item.date}</time>${action}</div>`;
 }
 
 function visibleUngrouped() {
@@ -120,9 +120,9 @@ function render() {
   document.getElementById('topics').innerHTML = topics.map(topic => {
     const items = config.material.filter(item => item.topicId === topic.id).sort(byOldest);
     const heading = editingTopicId === topic.id
-      ? `<input class="topic-title-input mutating" maxlength="30" value="${topic.title}" data-topic-title="${topic.id}" data-ui="growth_book_time_topic.title"><button class="text-button mutating" data-save-rename="${topic.id}">保存</button><button class="text-button mutating" data-cancel-rename="${topic.id}">取消</button>`
-      : `<b>${topic.title}</b><span class="count">${items.length} 项</span><button class="text-button mutating" data-rename="${topic.id}">重命名</button><button class="text-button danger mutating" data-delete="${topic.id}">删除</button>`;
-    return `<section class="topic"><div class="topic-head">${heading}</div>${items.length ? items.map(item => activityRow(item, false)).join('') : '<div class="empty">暂无活动</div>'}</section>`;
+      ? `<input class="topic-title-input mutating" maxlength="30" value="${topic.title}" data-topic-title="${topic.id}" data-ui="growth_book_time_topic.title" data-intent="growth-book-time-manage.topic-title-input"><button class="text-button mutating" data-save-rename="${topic.id}">保存</button><button class="text-button mutating" data-cancel-rename="${topic.id}">取消</button>`
+      : `<b>${topic.title}</b><span class="count" data-intent="growth-book-time-manage.count">${items.length} 项</span><button class="text-button mutating" data-rename="${topic.id}">重命名</button><button class="text-button danger mutating" data-delete="${topic.id}">删除</button>`;
+    return `<section class="topic" data-intent="growth-book-time-manage.topic"><div class="topic-head">${heading}</div>${items.length ? items.map(item => activityRow(item, false)).join('') : '<div class="empty">暂无活动</div>'}</section>`;
   }).join('');
 
   const visible = visibleUngrouped();

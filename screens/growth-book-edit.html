@@ -24,17 +24,17 @@
   <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
   <div class="nav-bar"><a class="back" href="growth-book.html">‹</a><div class="nav-title">2026 春季学期编册</div><span></span></div>
   <div class="scroll">
-    <div class="sec">实时预览 <span class="preview-label">陈小明</span></div>
-    <div class="book preview-book" id="book"></div>
-    <div class="controls preview-controls">
+    <div class="sec">实时预览 <span class="preview-label" data-intent="growth-book-edit.preview-label">陈小明</span></div>
+    <div class="book preview-book" id="book" data-intent="growth-book-edit.book"></div>
+    <div class="controls preview-controls" data-intent="growth-book-edit.controls">
       <button class="nav-btn" id="prev" aria-label="上一页">‹</button>
       <div class="page-indicator" id="indicator">1 / 1</div>
       <button class="nav-btn" id="next" aria-label="下一页">›</button>
     </div>
 
-    <div class="sec">栏目管理 <a class="more" id="addSection" href="growth-book-section-edit.html?new=1">＋ 新建栏目</a></div>
+    <div class="sec">栏目管理 <a class="more" id="addSection" href="growth-book-section-edit.html?new=1" data-intent="growth-book-edit.more">＋ 新建栏目</a></div>
     <div class="section-list" id="outline"></div>
-    <button class="btn primary lock-button" id="lock" data-ui="growth_book_compilation.status">锁定编册</button>
+    <button class="btn primary lock-button" id="lock" data-ui="growth_book_compilation.status" data-intent="growth-book-edit.btn">锁定编册</button>
   </div>
   <div class="toast" id="toast"></div>
 </div>
@@ -69,7 +69,7 @@ function render(keepPage = false) {
     <div class="section-row">
       <input type="checkbox" data-toggle-section="${item.key}" data-custom="${item.custom ? '1' : '0'}"
         data-ui="growth_book_compilation.enabled_sections"${item.on ? ' checked' : ''}${locked() ? ' disabled' : ''}>
-      <a class="section-link" href="${sectionHref(item)}"><b>${item.name}</b><span class="go">›</span></a>
+      <a class="section-link" href="${sectionHref(item)}"><b>${item.name}</b><span class="go" data-intent="growth-book-edit.go">›</span></a>
     </div>`).join('');
   viewer.load(previewChild.name, config, keepPage, previewChild);
   const on = locked();

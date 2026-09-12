@@ -59,22 +59,22 @@
   <div class="nav-bar"><a class="back" href="growth-record.html">‹</a><div class="nav-title">成长册</div><span></span></div>
   <div class="scroll">
     <div class="sec">成长册内容</div>
-    <a class="summary-card" href="growth-book-edit.html">
-      <span class="grow">
+    <a class="summary-card" href="growth-book-edit.html" data-intent="growth-book.summary-card">
+      <span class="grow" data-intent="growth-book.grow">
         <b id="sumTitle">已收录 0 项内容</b>
         <span class="list" id="sumList"></span>
       </span>
-      <span class="pill" id="tplState">草稿</span>
-      <span class="enter">编辑样板 ›</span>
+      <span class="pill" id="tplState" data-intent="growth-book.pill">草稿</span>
+      <span class="enter" data-intent="growth-book.enter">编辑样板 ›</span>
     </a>
 
     <div class="action-row" style="margin-bottom:12px">
-      <a class="btn" href="growth-book-sample.html">成长册样本</a>
+      <a class="btn" href="growth-book-sample.html" data-intent="growth-book.btn">成长册样本</a>
       <button class="btn primary" id="openFinalize">全班定稿</button>
     </div>
-    <div class="hint" id="finalizeGate" style="margin:-6px 0 12px" hidden>模版尚未发布，只能预览；请先在编辑样板中完整预览并发布班级模板。</div>
+    <div class="hint" id="finalizeGate" style="margin:-6px 0 12px" hidden data-intent="growth-book.hint">模版尚未发布，只能预览；请先在编辑样板中完整预览并发布班级模板。</div>
 
-    <div class="chunk">
+    <div class="chunk" data-intent="growth-book.chunk">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div>
           <div style="font-size:15px;font-weight:600">班级定稿进度</div>
@@ -92,8 +92,8 @@
         <tbody id="tableBody"></tbody>
       </table>
     </div>
-    <div class="dot-legend" aria-label="栏目进度状态说明">
-      <span class="item"><i class="dot-cell done"></i>完成</span>
+    <div class="dot-legend" aria-label="栏目进度状态说明" data-intent="growth-book.dot-legend">
+      <span class="item" data-intent="growth-book.item"><i class="dot-cell done" data-intent="growth-book.dot-cell"></i>完成</span>
       <span class="item"><i class="dot-cell miss"></i>未完成</span>
     </div>
     <div class="hint" style="padding:0 12px 8px">只显示在学期编册页中已经勾选的栏目。</div>
@@ -103,7 +103,7 @@
   <div class="sheet" id="finalizeSheet" aria-hidden="true">
     <div class="sheet-head">
       <h2>全班定稿并开放</h2>
-      <button class="close" id="closeFinalize" aria-label="关闭">×</button>
+      <button class="close" id="closeFinalize" aria-label="关闭" data-intent="growth-book.close">×</button>
     </div>
     <label class="check-row">
       <div>全选</div>
@@ -175,7 +175,7 @@ function renderTable() {
         : childSectionReady(section.key, child, config);
       return `<td><span class="dot-cell ${ok ? 'done' : 'miss'}" title="${ok ? '完成' : '未完成'}" aria-label="${ok ? '完成' : '未完成'}"></span></td>`;
     }).join('');
-    return `<tr><td class="name">${child.name}</td>${cells}</tr>`;
+    return `<tr><td class="name" data-intent="growth-book.name">${child.name}</td>${cells}</tr>`;
   }).join('');
   document.getElementById('bookTable').style.minWidth = Math.max(320, 120 + cols.length * 82) + 'px';
 }
@@ -204,9 +204,9 @@ function renderSheet() {
     const published = bookChildPublished(child, config);
     const ok = canFinalize(child) && !published;
     const issues = childIssues(child);
-    return `<label class="check-row${ok ? '' : ' blocked'}">
+    return `<label class="check-row${ok ? '' : ' blocked'}" data-intent="growth-book.check-row">
       <div>${child.name}<div style="font-size:11px;font-weight:400;color:var(--muted);margin-top:3px">${estimateText(child)} · ${published ? '已定稿开放' : (issues.join('；') || '内容齐备')}</div></div>
-      <input type="checkbox" class="child-check" data-ui="context.local" data-child="${child.id}" ${ok ? 'checked' : 'disabled'}>
+      <input type="checkbox" class="child-check" data-ui="context.local" data-child="${child.id}" ${ok ? 'checked' : 'disabled'} data-intent="growth-book.child-check">
     </label>`;
   }).join('');
   finalizeList.querySelectorAll('.child-check').forEach(item => item.addEventListener('change', syncSelectAll));

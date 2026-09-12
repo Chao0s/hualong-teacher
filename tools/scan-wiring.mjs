@@ -9,9 +9,10 @@
  *                                         # screen-operations.tsv 与 operation-eli10.tsv，
  *                                         # 不写审计报告（--emit 与报告是两条路）
  *
- * 审核结论写在 docs/audit/wiring.allowlist.json（PRD 决策 5）。每条发现有一个稳定的 key
- * （`页:层:元素`），命中的规则会填进「结论」列；标 误报 的折叠到报告末尾。
- * .html 是带注释框的检视器：填的结论存在浏览器 localStorage，可导出成 allowlist.json。
+ * 审核结论写在 docs/audit/checker-feedback.tsv（PRD 决策 5；2026-09-12 起十层共用一份）。
+ * 每条发现有一个稳定的 key（`页:层:元素` 或 `<方法> <路径>`），命中的规则会填进「结论」列；
+ * 标 误报 的折叠到报告末尾。
+ * .html 是带注释框的检视器：填的结论**直接写回那份 tsv**（另有一条 HTTP 路由读它、写它）。
  *
  * 六层检查，各自能查出什么、查不出什么：
  *
@@ -499,10 +500,35 @@ function scanService(file) {
 
 /* ── L5：原型 HTML 的交互描述 ─────────────────────────────────────────────── */
 
+/**
+ * 原型的交互意圖。
+ *
+ * **第一信號是 `data-intent`**（2026-09-12 起）：709 個標記，55 份原型，
+ * 由 `.scratch/mark-intents.mjs` 寫入（票 #86）。為什麼需要它：
+ * 56 份原型裡只有 **158 個 `<button>`、3 個 `onclick`**，而 `home.html` 連一個 `<button>`
+ * 都沒有 —— 它的意圖寫在 `class="quick-item"` 這種類名上。舊讀取器只認 `<button>`，
+ * 於是 `trigger_prototype` 只有 29／142 行有值，而那不是原型沉默，是**讀取器看不見**。
+ *
+ * **舊信號保留為兜底**（`buttons`／`links`／`listeners`／`onclicks`／`dataActions`）：
+ * 沒標到的原型仍然讀得出東西，而兩邊不一致時正好看得出來。
+ *
+ * 同一 id 出現 N 次 = **一個意圖套在 N 筆資料上**（`dot-link ×24` 是點圓點，不是 24 個意圖），
+ * 所以回 `repeats` 而不是只回一個集合。
+ */
 function prototypeInteractions(name) {
   const file = join(REPO, 'screens', `${name}.html`);
   if (!existsSync(file)) return null;
   const html = read(file);
+
+  // ── 第一信號：data-intent ──────────────────────────────────────────────
+  const intentCounts = new Map();
+  for (const m of html.matchAll(/data-intent="([^"]+)"/g)) {
+    intentCounts.set(m[1], (intentCounts.get(m[1]) ?? 0) + 1);
+  }
+  const intents = [...intentCounts.entries()].map(([id, n]) => ({ id, n }));
+  const repeats = intents.filter((i) => i.n > 1);
+
+  // ── 舊信號（兜底，也當交叉核對）────────────────────────────────────────
   const buttons = [...html.matchAll(/<button\b([^>]*)>([^<]*)/g)]
     .map((m) => ({ text: m[2].replace(/\s+/g, ' ').trim(), attrs: m[1].trim() }))
     .filter((b) => b.text && !/^[×✕‹›]$/.test(b.text) && !/['"+$]/.test(b.text));
@@ -516,7 +542,14 @@ function prototypeInteractions(name) {
   const onclicks = (html.match(/\bonclick=/g) || []).length;
   const dataActions = [...html.matchAll(/data-(action|send|preview|picker|filter|type)="([^"{}$+']*)"/g)]
     .map((m) => `${m[1]}=${m[2]}`);
-  return { buttons, links: [...new Set(links)], listeners, onclicks, dataActions: [...new Set(dataActions)] };
+
+  return {
+    intents,
+    repeats,
+    // 標了幾個 DOM 節點 —— 與 intents.length 的差就是「重複」
+    intentNodes: [...intentCounts.values()].reduce((a, b) => a + b, 0),
+    buttons, links: [...new Set(links)], listeners, onclicks, dataActions: [...new Set(dataActions)],
+  };
 }
 
 /* ── 自测（PRD §6）───────────────────────────────────────────────────────── */
@@ -636,15 +669,21 @@ function handlerNote(pageName, handler) {
   return GLOSSARY.handlers[`${pageName}.${handler}`] || GLOSSARY.handlers[`${pageName}.*`] || '';
 }
 
-/* ── 审核结论（PRD 决策 5：sticky allowlist）──────────────────────────────── */
-
-const ALLOWLIST_PATH = join(REPO, 'docs', 'audit', 'wiring.allowlist.json');
-const allowlist = new Map();
-if (existsSync(ALLOWLIST_PATH)) {
-  for (const r of JSON.parse(read(ALLOWLIST_PATH)).rules || []) allowlist.set(r.key, r);
-}
-const verdictOf = (key) => allowlist.get(key) || null;
-const verdictText = (v) => (v ? `${v.status}${v.reason ? `：${v.reason}` : ''}${v.author ? `（${v.author} ${v.updated_at || ''}）` : ''}` : '');
+/* ── 審核結論（PRD 決策 5：sticky allowlist）────────────────────────────────
+ *
+ * **2026-09-12 換了儲存。** 從前是人手填在 HTML 檢視器裡 → localStorage → 導出成
+ * `docs/audit/wiring.allowlist.json`。現在是 `docs/audit/checker-feedback.tsv`，
+ * 十層共用、表單直接寫回、另有一條 HTTP 路由讀寫。
+ *
+ * 舊檔的 38 條**逐欄原樣遷進來了**（比對過：0 處不符），舊檔退役。
+ * 為什麼只能有一份：兩個儲存一定會漂，而這一整輪撞到的毛病一半是「第二份不該存在」。
+ *
+ * 欄名也換了：`reason` → `note`、`author` → `reviewer`（與十層共用一份時的語義對齊）。
+ */
+const { readFeedback } = await import('./lib/feedback.mjs');
+const feedback = readFeedback();
+const verdictOf = (key) => feedback.get(key) || null;
+const verdictText = (v) => (v ? `${v.status}${v.note ? `：${v.note}` : ''}${v.reviewer ? `（${v.reviewer} ${v.updated_at || ''}）` : ''}` : '');
 const isFalsePositive = (v) => v && /^(误报|誤報|FALSE_POSITIVE)$/i.test(v.status);
 
 /* ── 逐页汇总 ─────────────────────────────────────────────────────────────── */
@@ -895,7 +934,7 @@ md.push(`# 接线扫描 ${date}`, '', `契约：\`${report.contract}\``, '', '##
 md.push(`| 页面 | ${report.summary.pages}（已接 service ${report.summary.wired}，未接 ${report.summary.pages - report.summary.wired}） |`);
 md.push(`| 确定 | ${report.summary.sure} |`, `| 高疑 | ${report.summary.likely} |`, `| 待审 | ${report.summary.review} |`);
 md.push(`| 契约教师可调操作 | ${report.summary.contractTeacherOps}，其中无 service 调用 ${report.summary.contractUnused} |`);
-md.push(`| 已有审核结论（wiring.allowlist.json） | ${report.summary.decided}，其中判误报 ${report.summary.falsePositives}（折叠在文末） |`, '');
+md.push(`| 已有审核结论（docs/audit/checker-feedback.tsv） | ${report.summary.decided}，其中判误报 ${report.summary.falsePositives}（折叠在文末） |`, '');
 md.push('等级：**确定** = 机器能证明（handler 不存在、路径不在契约、请求体键不在 schema）；**高疑** = 有交互外观无事件、占位 handler、writes=yes 无写入；**待审** = 原型有小程序无、只改本地状态、契约有客户端未用。', '');
 md.push('查不出的：元素与事件都没有、原型里也没有的功能；handler 调了 service 但逻辑写错的；渲染。', '');
 md.push('「结论」列留给审核：写「接」「不建（DO-NOT-BUILD n）」「阻于 Gnn」「误报」之一。', '');

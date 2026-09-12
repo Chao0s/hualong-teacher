@@ -243,16 +243,26 @@ console.log('[7] 《指南》量表只有一份');
 // 两个后端检查器读的是 TSV，本文件此前只查 `miniprogram/` 的语法，**谁都不加载 tools/ 下的模块**，
 // 所以一个 SyntaxError 能穿过全部闸门，只在真起服务渲染时炸。
 // 探针（tools/probe-*.mjs）会加载 services/utils，但它们在 `npm test` 之外，且不覆盖 swagger 这一层。
-console.log('[8] tools/ 下的 JS 语法');
+//
+// 2026-09-12 又咬了一次，咬在**这个检查自己漏掉的地方**：做按屏检测技能时，
+// `.claude/skills/hualong-api-test/layers/proto.mjs` 少了一个收尾花括号，
+// 而这一段的目录清单里没有 `.claude/skills` —— 于是它照样全绿。
+// 所以下面改成**递归**扫：新增目录不用回来改这份清单，也就不会再漏。
+console.log('[8] tools/ 与 .claude/skills 下的 JS 语法');
 {
   const { spawnSync } = require('child_process');
-  const dirs = ['tools', path.join('tools', 'lib'), path.join('tools', 'swagger'), 'scripts'];
+  const roots = ['tools', 'scripts', path.join('.claude', 'skills')];
   const files = [];
-  for (const d of dirs) {
-    const abs = path.join(__dirname, '..', d);
-    if (!fs.existsSync(abs)) continue;
-    for (const f of fs.readdirSync(abs)) if (/\.(mjs|js)$/.test(f)) files.push(path.join(d, f));
-  }
+  const walk = (rel) => {
+    const abs = path.join(__dirname, '..', rel);
+    if (!fs.existsSync(abs)) return;
+    for (const e of fs.readdirSync(abs, { withFileTypes: true })) {
+      const next = path.join(rel, e.name);
+      if (e.isDirectory()) { if (e.name !== 'node_modules') walk(next); }
+      else if (/\.(mjs|js)$/.test(e.name)) files.push(next);
+    }
+  };
+  for (const r of roots) walk(r);
   let ok = 0;
   for (const f of files) {
     const r = spawnSync(process.execPath, ['--check', path.join(__dirname, '..', f)], { encoding: 'utf8' });
@@ -260,6 +270,27 @@ console.log('[8] tools/ 下的 JS 语法');
     else ok++;
   }
   console.log(`  ${files.length} 个文件，${ok} 个通过语法检查`);
+}
+
+// 9) 登录页的行为
+//
+// 为什么加这一段：`tools/check-login-page.mjs` 起先是一份写在 %TEMP% 的一次性夹具 ——
+// **团队重跑不到的东西不算验证**。它把未经修改的 page 装进 vm、只桩 wx 与两支 utils，
+// 验三条出口（已登录不重发登录／409 才亮手机号／503 走安全阻断文案）。
+// 它不联网，所以与 tools/probe-*.mjs 那一族分开命名。
+console.log('[9] 登录页行为');
+{
+  const { spawnSync } = require('child_process');
+  const r = spawnSync(process.execPath, [path.join(__dirname, 'check-login-page.mjs')], { encoding: 'utf8' });
+  const tail = (s) => (s || '').trim().split('\n').filter(Boolean).pop() || '';
+  const out = tail(r.stdout);
+  if (r.status !== 0) {
+    // 页面加载就崩时最后一句话在 stderr（栈顶那一行）——只读 stdout 会得到一条空消息，
+    // 而「✗ ... 失败：（空）」比没有更坏：看不出坏在哪。
+    const err = (r.stderr || '').trim().split('\n').find((l) => /Error|error|✗|x /.test(l)) || tail(r.stderr);
+    bad(`check-login-page 失败：${out || err || `退出码 ${r.status}`}`);
+  }
+  console.log(`  ${out || tail(r.stderr) || '(无输出)'}`);
 }
 
 console.log(fail === 0 ? '\n=== 全部通过 ===' : `\n=== 失败 ${fail} 项 ===`);

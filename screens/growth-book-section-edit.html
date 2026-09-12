@@ -105,13 +105,13 @@
   <div class="nav-bar"><a class="back" href="growth-book-edit.html">‹</a><div class="nav-title" id="navTitle">栏目版面</div><span></span></div>
   <div class="scroll">
     <div id="editorPanel">
-    <div class="field-label">栏目名称（同时作为活动标题）</div>
-    <input class="input" id="sectionName" maxlength="10" placeholder="如：入学第一天、园长寄语" data-ui="growth_book_section.name_input">
+    <div class="field-label" data-intent="growth-book-section-edit.field-label">栏目名称（同时作为活动标题）</div>
+    <input class="input" id="sectionName" maxlength="10" placeholder="如：入学第一天、园长寄语" data-ui="growth_book_section.name_input" data-intent="growth-book-section-edit.input">
     <div class="field-label">插入位置</div>
-    <select class="select" id="sectionAfter" data-ui="growth_book_section.anchor_select"></select>
+    <select class="select" id="sectionAfter" data-ui="growth_book_section.anchor_select" data-intent="growth-book-section-edit.select"></select>
     <div class="tool-row">
       <div class="page-tabs" id="pageTabs"></div>
-      <button class="tool-btn" id="addPage" data-ui="book_widget.page_index">+ 页</button>
+      <button class="tool-btn" id="addPage" data-ui="book_widget.page_index" data-intent="growth-book-section-edit.tool-btn">+ 页</button>
       <button class="tool-btn" id="delPage">删页</button>
     </div>
     <div class="tool-row">
@@ -123,10 +123,10 @@
       <button class="tool-btn" id="zoomIn">+</button>
     </div>
 
-    <div class="warn" id="warn" hidden></div>
+    <div class="warn" id="warn" hidden data-intent="growth-book-section-edit.warn"></div>
     <div class="canvas-wrap" id="canvasWrap">
-      <div class="a4" id="a4">
-        <div class="a4-margin"></div>
+      <div class="a4" id="a4" data-intent="growth-book-section-edit.a4">
+        <div class="a4-margin" data-intent="growth-book-section-edit.a4-margin"></div>
         <div class="grid-area" id="gridArea">
           <svg class="grid-lines" id="gridLines" preserveAspectRatio="none"></svg>
         </div>
@@ -134,12 +134,12 @@
     </div>
     <div class="meta-row" id="metaRow"></div>
 
-    <div class="drawer" id="drawer"></div>
-    <div class="hint" style="padding:8px 2px 10px">拖动组件移动，拖右下角把手缩放，最小 2 × 2 格。网格 15 × 24 格，一格 10mm；组件占几格就是几公分，长宽比即占格之比。边距 30mm / 28.5mm 留给美术边框，组件不能放进去。</div>
+    <div class="drawer" id="drawer" data-intent="growth-book-section-edit.drawer"></div>
+    <div class="hint" style="padding:8px 2px 10px" data-intent="growth-book-section-edit.hint">拖动组件移动，拖右下角把手缩放，最小 2 × 2 格。网格 15 × 24 格，一格 10mm；组件占几格就是几公分，长宽比即占格之比。边距 30mm / 28.5mm 留给美术边框，组件不能放进去。</div>
     </div>
 
-    <div class="state-actions draft" id="draftActions">
-      <button class="btn" id="save">保存手稿</button>
+    <div class="state-actions draft" id="draftActions" data-intent="growth-book-section-edit.state-actions">
+      <button class="btn" id="save" data-intent="growth-book-section-edit.btn">保存手稿</button>
       <button class="btn danger" id="deleteSection">删除栏目</button>
       <button class="btn primary" id="publish">发布征集</button>
     </div>
@@ -221,7 +221,7 @@ function renderCanvas() {
     el.style.height = widget.h * g.cell + 'px';
     el.textContent = widgetLabel(widget);
     el.dataset.id = widget.id;
-    if (!locked) el.innerHTML += '<span class="handle" data-resize></span>';
+    if (!locked) el.innerHTML += '<span class="handle" data-resize data-intent="growth-book-section-edit.handle"></span>';
     area.appendChild(el);
   });
   document.getElementById('zoomLabel').textContent = zoom.toFixed(1) + '×';
@@ -258,7 +258,7 @@ function widgetLabel(widget) {
 }
 function renderTabs() {
   document.getElementById('pageTabs').innerHTML = Array.from({ length: pageCount }, (_, i) =>
-    `<button class="tool-btn${i === page ? ' on' : ''}" data-page="${i}">第 ${i + 1} 页</button>`).join('');
+    `<button class="tool-btn${i === page ? ' on' : ''}" data-page="${i}" data-intent="growth-book-section-edit.tool-btn">第 ${i + 1} 页</button>`).join('');
   document.getElementById('delPage').disabled = locked || pageCount < 2;
 }
 /* 存档闸门：重叠、无来源、bound 型框太小，任何一项成立都关掉保存（W6 / W18） */
@@ -309,24 +309,24 @@ function renderDrawer() {
       <div class="rt-bar">
         <button data-cmd="bold" title="加粗"><b>B</b></button>
         <button data-cmd="italic" title="斜体"><i>I</i></button>
-        <span class="sep"></span>
-        ${TEXT_COLORS.map(c => `<button class="sw" data-color="${c}" style="background:${c}" title="${c}"></button>`).join('')}
+        <span class="sep" data-intent="growth-book-section-edit.sep"></span>
+        ${TEXT_COLORS.map(c => `<button class="sw" data-color="${c}" style="background:${c}" title="${c}" data-intent="growth-book-section-edit.sw"></button>`).join('')}
         <span class="sep"></span>
         <select data-size data-ui="book_widget.style_panel" title="字级（整个组件）">
           ${[10,12,14,18,24].map(n => `<option value="${n}"${(cfg.size || 14) === n ? ' selected' : ''}>${n}pt</option>`).join('')}
         </select>
         <span class="sep"></span>
         ${[['left','靠左','左'],['center','置中','中'],['right','靠右','右']].map(([v, t, icon]) =>
-          `<button data-align="${v}" class="${(cfg.align || 'left') === v ? 'on' : ''}" title="${t}" style="font-size:12px">${icon}</button>`).join('')}
+          `<button data-align="${v}" class="${(cfg.align || 'left') === v ? 'on' : ''}" title="${t}" style="font-size:12px" >${icon}</button>`).join('')}
       </div>
       <div class="rt" id="literalText" contenteditable
-           style="font-size:${cfg.size || 14}px;text-align:${cfg.align || 'left'}">${runsToHtml(widget.content)}</div>` : ''}
+           style="font-size:${cfg.size || 14}px;text-align:${cfg.align || 'left'}" data-intent="growth-book-section-edit.rt">${runsToHtml(widget.content)}</div>` : ''}
     ${widget.type === 'image' && widget.binding === 'collected' ? `
       <div class="field-label">征集比例（家长端的裁剪框按此出框）</div>
-      <div class="seg" id="ratioSeg">
-        ${IMAGE_RATIOS.map(r => `<button data-ratio="${r.w}:${r.h}" class="${widget.w * r.h === widget.h * r.w ? 'on' : ''}">${r.w}:${r.h}</button>`).join('')}
+      <div class="seg" id="ratioSeg" data-intent="growth-book-section-edit.seg">
+        ${IMAGE_RATIOS.map(r => `<button data-ratio="${r.w}:${r.h}" class="${widget.w * r.h === widget.h * r.w ? 'on' : ''}" >${r.w}:${r.h}</button>`).join('')}
       </div>
-      <div class="cap">家长在手机上按 ${ratioText(widget)} 裁好才提交，进册后不会变形也不会被二次裁切，因此这里不需要设定显示方式。</div>` : ''}
+      <div class="cap" data-intent="growth-book-section-edit.cap">家长在手机上按 ${ratioText(widget)} 裁好才提交，进册后不会变形也不会被二次裁切，因此这里不需要设定显示方式。</div>` : ''}
     ${widget.type === 'text' ? `
       ${widget.binding === 'literal' ? '' : `
         <div class="rt-bar" style="margin-top:10px">
@@ -346,10 +346,10 @@ function renderDrawer() {
       <div class="field-label">显示方式</div>
       <div class="seg" id="fitSeg">
         ${[['fill','拉伸'],['cover','裁切填满'],['crop','自订裁切']].map(([v, t]) =>
-          `<button data-fit="${v}" class="${(cfg.fit || 'cover') === v ? 'on' : ''}">${t}</button>`).join('')}
+          `<button data-fit="${v}" class="${(cfg.fit || 'cover') === v ? 'on' : ''}" >${t}</button>`).join('')}
       </div>
       <div class="cap">「${bind.name}」的照片不经成长册的裁剪工具，比例不定，需要指定对不上框时怎么放。</div>`}
-    <button class="btn-del" id="delWidget">删除此组件</button>`;
+    <button class="btn-del" id="delWidget" data-intent="growth-book-section-edit.btn-del">删除此组件</button>`;
   if (locked) box.querySelectorAll('select,textarea,button').forEach(el => { el.disabled = true; });
 }
 

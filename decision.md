@@ -1085,12 +1085,16 @@ api/action-registry.tsv（动作登记表）的 target_table / also_writes
 
 | 计数 | 值 | 出处 |
 |---|---|---|
-| 契约 | 137 paths／167 operations／153 schemas | `npm run spec:inventory` |
-| 教师端可达操作 | 104 | 同上 |
-| 教师端屏幕 | 55（46 已接 service，9 未接） | `docs/audit/wiring-2026-09-10.md` |
-| 教师端写屏 | 20（只读 36） | `hualong-backend/db/spec/screens.tsv` 的 `writes` 列 |
-| 动作登记表 | 135 行 | `hualong-backend/api/action-registry.tsv` |
-| 屏幕登记表 | 84 行（教师 57／家长 18／管理端 9） | 同上 `screens.tsv` |
+| 契约规模 | **不写在这里** —— 一改就过期 | `node tools/spec-inventory.mjs` |
+| 教师端可达操作 | **不写在这里** | 同上 |
+| 教师端屏幕 | **不写在这里** | `npm run scan:wiring` 第一行的「页面 N（已接 M）」 |
+| 教师端写屏 | **不写在这里** | `hualong-backend/db/spec/screens.tsv` 的 `writes` 列，数 `yes` |
+| 动作登记表 | **不写在这里** | `awk 'END{print NR-1}' hualong-backend/api/action-registry.tsv` |
+| 屏幕登记表 | **不写在这里** | `awk 'END{print NR-1}' hualong-backend/db/spec/screens.tsv`；按 `role` 分 teacher／parent／admin |
+
+**这张表从前写着具体的数，而 2026-09-12 一量，六个里有四个是错的**（登记表 84→85、
+教师 57→58、写屏 20→32，而「管理端 9」那格的 `role` 其实是 `admin` 不是 `admin-pc`）。
+所以现在只留**去哪量**，不留量出来的数 —— 写下来的当天就开始误导人。
 
 **一条容易搞错的判据：** `require('../../services/…')` **不等于已接**。`home-school`（「家园社共育」，底部导航那一项）`require` 了 `co-education`，却**一次都没调用**，扫描器判它未接——**扫描器是对的**。按「有没有 require」数得 47，按「有没有真调用」数才得 46。
 
@@ -1283,6 +1287,26 @@ if (!op || !op.operationId) continue;   // ← 路径不在契约里的调用，
 ### 一条实测修正
 
 `docs/audit/wiring-2026-09-10.md` 说「已接 46」。实测是 **47**，扫描器的 `wired` 判据是「真的调用过 service」，不是「有没有 `require`」：`home-school` 页 `require` 了 `co-education` 却一次都没调用，扫描器因此判它未接 —— **扫描器是对的**。按「有没有 require」数得 47，按「有没有真调用」数得 46。本轮两份表与扫描器一致在 **47**。
+
+## 2026-09-12：原型在家园总览那一格是过期的，按屏幕看时要知道
+
+同事那条线的交接（`docs/handoff/2026-09-12-ticket-01-next-session.md`）与 `decision.md` 的两条
+2026-09-12 记录都写着同一件事：**主页的家园社共育总览现在只有三列**（幼儿、在园时光、亲子活动），
+用户原话是「现在主页中已经没有成长档案了，因为界定不清楚」。代码与契约（`GET /home-school/progress`）
+都已经按两列进度走。
+
+**但两处还留着旧概念，读的人会撞上：**
+
+| 哪里 | 现状 | 该怎么读 |
+|---|---|---|
+| **原型** `screens/home-school.html` | 表头仍是**五列**，多出「成长档案」「成长册」两格，文案有「已定稿／未定稿／进行中」 | **过期**。以代码与契约的**三列**为准 |
+| **代码** | 仍有一个叫「成长档案」的快捷入口，与旧 `growth-record` 路由 | 路由还在 ≠ 用户认可这个概念。**不得据此恢复主页旧列**（交接原文） |
+
+这一条要写下来的原因：`/pages` 的**每张卡头都链到原型**（那正是「對齊」要的），所以点进去的人
+会看到五列，而我的表说这一屏只调一条两项进度的端点 —— 看起来像对不上。**不是对不上，是原型过期了。**
+
+**我的表记的是代码**（`home-school` → `getTeacherHomeSchoolProgress`），这是对的，没有改。
+要改的是原型，而那不归这张表管。
 
 ## 2026-09-12：人工审核01，圆点图例与底部说明复查
 

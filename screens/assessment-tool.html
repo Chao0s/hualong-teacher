@@ -132,17 +132,17 @@
   <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
   <div class="nav-bar"><a class="back" href="home.html">‹</a><div class="nav-title">质量评估</div><span></span></div>
 
-  <div class="topfix">
-    <div class="summary">
-      <div class="dial" id="dial"><span class="dial-txt" id="dialTxt">—</span></div>
+  <div class="topfix" data-intent="assessment-tool.topfix">
+    <div class="summary" data-intent="assessment-tool.summary">
+      <div class="dial" id="dial" data-intent="assessment-tool.dial"><span class="dial-txt" id="dialTxt" data-intent="assessment-tool.dial-txt">—</span></div>
       <div class="sum-right">
-        <div class="sum-lvl">总体等级 <b id="sumLvl">未开始</b></div>
-        <div class="sum-count" id="sumCount">已评 0 / 120 项 · 保育教育质量指导手册</div>
+        <div class="sum-lvl" data-intent="assessment-tool.sum-lvl">总体等级 <b id="sumLvl">未开始</b></div>
+        <div class="sum-count" id="sumCount" data-intent="assessment-tool.sum-count">已评 0 / 120 项 · 保育教育质量指导手册</div>
         <div class="bar"><i id="sumBar" style="width:0%"></i></div>
       </div>
     </div>
-    <div class="filters" id="filters">
-      <button class="chip on" data-f="all">全部 <b id="cAll">120</b></button>
+    <div class="filters" id="filters" data-intent="assessment-tool.filters">
+      <button class="chip on" data-f="all" data-intent="assessment-tool.chip">全部 <b id="cAll">120</b></button>
       <button class="chip" data-f="todo">未评 <b id="cTodo">120</b></button>
       <button class="chip" data-f="low">低分 <b id="cLow">0</b></button>
     </div>
@@ -152,12 +152,12 @@
     <div class="empty" id="empty" hidden></div>
   </main>
 
-  <div class="footbar">
+  <div class="footbar" data-intent="assessment-tool.footbar">
     <div class="foot-score">
-      <div class="n" id="footScore">—<small> 分</small></div>
-      <div class="l" id="footLvl">尚未开始评价</div>
+      <div class="n" id="footScore" data-intent="assessment-tool.n">—<small> 分</small></div>
+      <div class="l" id="footLvl" data-intent="assessment-tool.l">尚未开始评价</div>
     </div>
-    <button class="save-btn" id="saveBtn" data-od-id="assessment-save">保存</button>
+    <button class="save-btn" id="saveBtn" data-od-id="assessment-save" data-intent="assessment-tool.save-btn">保存</button>
   </div>
   <div class="toast" id="toast">已保存</div>
 </div>
@@ -191,7 +191,7 @@
     var head=document.createElement('button'); head.className='sec-head'; head.type='button';
     head.innerHTML='<span class="sec-idx">'+(si+1)+'</span>'
       +'<span class="sec-name">'+sec.name+'</span>'
-      +'<span class="sec-meta" data-secmeta>'+'</span><span class="chev">›</span>';
+      +'<span class="sec-meta" data-secmeta>'+'</span><span class="chev" data-intent="assessment-tool.chev">›</span>';
     head.addEventListener('click',function(){ secEl.classList.toggle('open'); });
     secEl.appendChild(head);
 
@@ -213,28 +213,28 @@
     var cur=SCORES[ind.id];
     // head
     var head=document.createElement('button'); head.className='ind-head'; head.type='button';
-    head.innerHTML='<span class="ind-code">'+ind.code+'</span>'
-      +'<span class="ind-title">'+ind.title+'</span>'
-      +'<span class="chip-score" data-chip>'+chipText(cur)+'</span>';
+    head.innerHTML='<span class="ind-code" data-intent="assessment-tool.ind-code">'+ind.code+'</span>'
+      +'<span class="ind-title" data-intent="assessment-tool.ind-title">'+ind.title+'</span>'
+      +'<span class="chip-score" data-chip data-intent="assessment-tool.chip-score">'+chipText(cur)+'</span>';
     head.addEventListener('click',function(){ el.classList.toggle('open'); });
     el.appendChild(head);
     // body
     var b=document.createElement('div'); b.className='ind-body';
-    var legend='<div class="legend">评分：1 '+LABELS[1]+' · 3 '+LABELS[3]+' · 5 '+LABELS[5]+'（2、4 为过渡分）</div>';
-    var btns='<div class="scores">';
-    OPTS.forEach(function(o){ btns+='<button type="button" class="sbtn" data-s="'+o.score+'"><span class="n">'+o.score+'</span><span class="l">'+o.label+'</span></button>'; });
+    var legend='<div class="legend" data-intent="assessment-tool.legend">评分：1 '+LABELS[1]+' · 3 '+LABELS[3]+' · 5 '+LABELS[5]+'（2、4 为过渡分）</div>';
+    var btns='<div class="scores" data-intent="assessment-tool.scores">';
+    OPTS.forEach(function(o){ btns+='<button type="button" class="sbtn" data-s="'+o.score+'" data-intent="assessment-tool.sbtn"><span class="n">'+o.score+'</span><span class="l">'+o.label+'</span></button>'; });
     btns+='</div>';
-    var eviHint='<div class="evi-hint">该评分（1 分 / 5 分）需保存图像资料或特例作为评价依据。</div>';
-    var rub='<button type="button" class="rub-toggle"><span class="a">›</span>评分标准（1 / 3 / 5 分锚点）</button>'
-      +'<div class="rubric">'
+    var eviHint='<div class="evi-hint" data-intent="assessment-tool.evi-hint">该评分（1 分 / 5 分）需保存图像资料或特例作为评价依据。</div>';
+    var rub='<button type="button" class="rub-toggle" data-intent="assessment-tool.rub-toggle"><span class="a" data-intent="assessment-tool.a">›</span>评分标准（1 / 3 / 5 分锚点）</button>'
+      +'<div class="rubric" data-intent="assessment-tool.rubric">'
       + rrow('1',ind.r1) + rrow('3',ind.r3) + rrow('5',ind.r5)
       +'</div>';
-    var evi='<div class="field-lbl">佐证图片</div>'
-      +'<label class="evi-add"><b>＋</b> 添加佐证'
+    var evi='<div class="field-lbl" data-intent="assessment-tool.field-lbl">佐证图片</div>'
+      +'<label class="evi-add" data-intent="assessment-tool.evi-add"><b>＋</b> 添加佐证'
       +'<input type="file" accept="image/*" multiple hidden data-evi data-ui="assessment.item.evidence"></label>'
-      +'<span class="evi-count" data-evicount></span>';
+      +'<span class="evi-count" data-evicount data-intent="assessment-tool.evi-count"></span>';
     var note='<div class="field-lbl">评价记录</div>'
-      +'<textarea class="note" data-note data-ui="assessment.item.note" maxlength="300" placeholder="记录观察到的现象、特例或改进建议…">'+(NOTES[ind.id]||'')+'</textarea>';
+      +'<textarea class="note" data-note data-ui="assessment.item.note" maxlength="300" placeholder="记录观察到的现象、特例或改进建议…" data-intent="assessment-tool.note">'+(NOTES[ind.id]||'')+'</textarea>';
     b.innerHTML=legend+btns+eviHint+rub+evi+note;
     el.appendChild(b);
 
@@ -262,7 +262,7 @@
     return el;
   }
 
-  function rrow(k,txt){ return '<div class="rrow r'+k+'"><span class="rk">'+k+'分</span><span>'+(txt||'—')+'</span></div>'; }
+  function rrow(k,txt){ return '<div class="rrow r'+k+'" data-intent="assessment-tool.rrow"><span class="rk" data-intent="assessment-tool.rk">'+k+'分</span><span>'+(txt||'—')+'</span></div>'; }
   function chipText(v){ return v?(v+'分 '+LABELS[v]):'未评'; }
   function chipCls(v){ if(!v) return ''; if(v<=2) return 's-low'; if(v===3) return 's-mid'; return 's-high'; }
   function markSel(el,v){ el.querySelectorAll('.sbtn').forEach(function(x){ x.classList.toggle('sel', +x.dataset.s===v); }); }

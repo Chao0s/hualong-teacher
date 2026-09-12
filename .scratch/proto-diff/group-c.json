@@ -1,0 +1,132 @@
+{
+  "group": "c-growth-book-assessment-org-task",
+  "scope": {
+    "screens": [
+      "growth-book", "growth-book-edit", "growth-book-time-manage", "growth-book-task-manage",
+      "growth-book-section-edit", "growth-book-section-materials", "growth-book-view", "growth-book-sample",
+      "assessment-tool", "growth-record", "teacher-monthly-evaluation", "teacher-monthly-form",
+      "teacher-term-evaluation", "teacher-term-form", "growth-comprehensive-assessment",
+      "comprehensive-assessment-form", "comprehensive-assessment-report", "comprehensive-assessment-class-report",
+      "teacher-evaluation", "parent-evaluation-publish", "parent-evaluation-detail",
+      "teacher-tasks", "teacher-task-detail",
+      "comprehensive-coordination", "coordination-file-list", "teacher-profile"
+    ],
+    "org_note": "org（教师/班级/幼儿名册）在教师端原型里没有独立名册页 —— screens/ 下无任何教师端名册屏幕，名册维护全在管理端 index.html#org。教师端唯一落在「用户管理」模块的是 teacher-profile（个人档案）。因此本组 org 只覆盖 teacher-profile，比对结果为空。"
+  },
+  "missing": [
+    {
+      "screen": "teacher-task-detail",
+      "file": "screens/teacher-task-detail.html",
+      "evidence": "第 51-57 行「提交材料 / 反馈」卡片：`<h3>提交材料 / 反馈</h3>`「教师只需按分工上传照片、记录、说明或反馈。提交后进入管理端审核与汇总。」＋ `<button class=\"primary\" data-action=\"已进入材料提交\">提交材料</button>`。",
+      "why": "映射表 teacher-task-detail 只有 getTask / acceptTaskAssignment / completeTaskAssignment / getFileUrl 四条，没有这一颗；契约 task 族只有 /tasks、/tasks/{id}、/acceptance、/completion，db_task_assign 一个文件列都没有（GAPS.md G89 逐字登记：「提交材料」无列、无端点、无 owner_object）。小程序 wxml 只有 onAccept / onComplete 两颗，也没有这颗按钮 —— 原型有、映射与实作都没有。",
+      "guess_operation": "无（G89）。要接先拍板三件事：材料挂 db_task_assign 还是 db_task、用哪个 usage_key（G72/G76 同族）、提交材料与完成谁在前。"
+    },
+    {
+      "screen": "growth-book-section-materials",
+      "file": "screens/growth-book-section-materials.html",
+      "evidence": "第 61 行每条记录：已完成那行渲染 `<button data-view>查看</button>`；第 75-78 行点「查看」后展开 `.detail`，渲染 `submission.images`（2 张照片）与 `submission.text`（家长正文）。",
+      "why": "映射表该屏只有 listBookSections / precheckClassBooks / remindSectionCollection / ensureCompilation，没有读投稿的操作。契约里回 BookMaterialSubmission 的只有家长端的 `PUT /parent/growth-book/sections/{section_id}/submissions`（x-hualong-roles: [parent]），教师端一条读都没有；BookSection 只回 collected_slot_count，ClassPrecheck 只回问题码不回内容 —— 与 GAPS.md G70（教师读不到任何一笔家长提交的内容，也拿不到它的 id）同族。小程序已把「查看」与照片正文整块撤掉（pages/growth-book-section-materials/index.js 头注）。",
+      "guess_operation": "无（契约缺一条教师侧读该栏目投稿的端点；应与 G70 / G108 同批设计）"
+    },
+    {
+      "screen": "coordination-file-list",
+      "file": "screens/coordination-file-list.html",
+      "evidence": "第 219 行每张卡片右侧 `<a href=\"data:text/plain…\" download=\"…\">下载</a>`；第 236-238 行预览弹层「附件 / 主文件 · X.txt」＋ `<a … download>下载</a>`。",
+      "why": "映射表该屏只有 listCoordDocuments 与 getCoordDocument 两条读，没有取档调用。契约 `GET /media/files/{file_id}/url` 写明：教师端取档且 owner 落在 k3—k7（含综合协调文档 k6）时同事务写一笔 db_content_access_event(downloaded)，正是这颗按钮的落点。小程序里客户端一半已备好（services/media.js），coordination-file-list/index.js 头注写明修法顺序「先改读 GET /coordination/documents 拿到 file_refs，再照 party-activity-detail 那一支补 onDownload」，而映射表里没有那一行。",
+      "guess_operation": "getFileUrl（GET /media/files/{file_id}/url?owner_object=db_coord_document&owner_id=…）"
+    },
+    {
+      "screen": "growth-book-task-manage",
+      "file": "screens/growth-book-task-manage.html",
+      "evidence": "第 45-46 行每条亲子时光记录：`<button data-remove-task=\"${task.id}\" data-child-id=\"${child.id}\" data-ui=\"growth_book.task.teacher_included\">删除</button>`；第 59 行确认文案「从这名幼儿的成长册中删除『X』？」。",
+      "why": "映射表该屏是全表唯一一行 `source=planned`：operation_id 为空、path `/teacher/growth-book/task-items`、notes 写「契约没有这一条；路径是目标形态」，也就是这不是真实契约操作。契约里 db_growth_book_task_item 有表无端点（GAPS.md G108，2026-09-11 登记）；小程序 index.js 连 services/ 都没 require，仍走 wx.setStorageSync 的本机状态。",
+      "guess_operation": "无（G108 两条出路之一：补一对读写 db_growth_book_task_item 的端点）。注意不能直接复用 setTeacherBookInclusion —— 它按 parent_task_submission_id 寻址，而看板行不带这个 id（G70）。"
+    },
+    {
+      "screen": "teacher-term-evaluation",
+      "file": "screens/teacher-term-evaluation.html",
+      "evidence": "第 124 行 `<button class=\"outline-btn\" id=\"openExport\">选择操作</button>`；第 179-181 行弹层两颗动作 `<button class=\"btn green\" id=\"exportReport\">导出报告</button>` / `<button class=\"btn blue\" id=\"sendParent\">发给家长</button>`，勾选框带 data-ui=\"eval_export.child_select\"。",
+      "why": "映射表该屏只有 listTermEvaluations 一条读，没有任何导出／发送操作；契约 §11.1 明写「任何 /export 端点」都不定义 → GAPS.md G36（AMBIGUOUS：F17 是否连带取消这两个弹层，不选边）。旁证：screens.tsv 第 37 行为它写的 db_eval_export_action 是一个全库从未出现过的名字（G67）。",
+      "guess_operation": "无（G36 拍板前不得接）"
+    },
+    {
+      "screen": "growth-comprehensive-assessment",
+      "file": "screens/growth-comprehensive-assessment.html",
+      "evidence": "第 270 行 `<button class=\"outline-btn\" id=\"openExport\">导出报告</button>`；第 276-305 行弹层，第 303 行 `<button class=\"btn primary\" id=\"confirmExport\">导出</button>`，勾选框带 data-ui=\"eval_export.child_select\"。",
+      "why": "同上一条：G36 两个导出弹层里的第二个。映射表该屏只有 listChildAssessments 一条读，没有任何导出操作，契约也不定义 /export 端点。",
+      "guess_operation": "无（G36）"
+    },
+    {
+      "screen": "teacher-term-form",
+      "file": "screens/teacher-term-form.html",
+      "evidence": "第 140-143 行「关联月度评价照片 / 选择照片」＋ `<div class=\"empty-hint\">尚未导入照片，点击下方按钮从该幼儿的相册中选择。</div>`；第 148-195 行相册弹层按 3—7 月分组、第 192-193 行「取消／导入」。",
+      "why": "映射表该屏只有 getTermEvaluation / submitTermEvaluation / listTermEvaluations 三条，照片来源（该幼儿的月度评价相册）没有任何读调用。小程序把入口置灰并写明待接入（pages/teacher-term-form/index.js 头注：`GET /children/{child_id}/term-evaluation` 现在不回 file_id，服务端漂移由 #30 修），而 action-registry 里 term_eval.submit 的前置逐字写着 photo_file_ids_from_child_album。",
+      "guess_operation": "无（先修 #30 让学期评价回 file_id，或明确用 listMonthEvals 取该幼儿月度评价照片）"
+    },
+    {
+      "screen": "teacher-evaluation",
+      "file": "screens/teacher-evaluation.html",
+      "evidence": "第 69-88 行「本班幼儿进度」表：幼儿 × 本月评价／学期评估／综合评估／教师寄语 四列圆点（第 76-81 行逐行写死 6 名幼儿与圆点）。",
+      "why": "映射表该屏是 `no-api` 空行，notes 只写「只有一个 onEntryTap，1 次导航」，完全没有这张表；契约里也没有任何一个四列聚合端点（screens.tsv 记它 persist=0 聚合 db_teacher_eval_home；DATABASE_SPEC §4 的 E4 要求聚合层进度一律二元）。同形状的 growth-record 矩阵有 listGrowthRecords，这一屏没有。",
+      "guess_operation": "无（契约无聚合端点；若做，口径是 E4 的二元进度）"
+    }
+  ],
+  "invented": [
+    {
+      "operation_id": "publishMonthEval",
+      "screen": "teacher-monthly-form",
+      "why": "原型 screens/teacher-monthly-form.html 第 148 行只有一颗提交按钮 `<button class=\"btn primary\">保存评价</button>`，整页没有任何发布入口。映射表却给了两条写：saveMonthEvalDraft（trigger_wxml「保存草稿」）与 publishMonthEval（trigger_wxml「发布给家长」），小程序 wxml 第 48-49 行也确实并排两颗（保存草稿／发布给家长）。发布这条边由 F25 定（e1｜e2→e3，e2 作废），方向大概率是对的，但「存」与「发」是两个动作这件事**原型里没有依据**，是我们自己把一颗按钮拆成了两颗，需要确认不是发明出来的中间态。"
+    }
+  ],
+  "unsure": [
+    {
+      "screen": "growth-book-section-edit",
+      "file": "screens/growth-book-section-edit.html",
+      "evidence": "第 154 行 `let section = (config.custom||[]).find(item => item.id === sectionId)`、第 173 行 `let widgets = JSON.parse(JSON.stringify(sectionWidgets(section)))`、第 179-181 行回填栏目名与插入位置 —— 已存版面是读得回来的。",
+      "why": "映射表该屏对 widgets 只有 `PUT …/sections/{section_id}/widgets`（整份替换），没有读。GAPS.md G96 已登记「只写得进去、读不回来，第二次保存必定覆盖」，小程序本轮改成已存在的栏目从空画布开始（index.js 第 206 行 `this.widgets = section ? [] : defaultWidgets()`）。算 missing 还是已知的暂缓，取决于 G96 怎么收口，故列 unsure。",
+      "guess_operation": "无（G96 建议补 `GET …/sections/{section_id}/widgets`）"
+    },
+    {
+      "screen": "growth-book-edit",
+      "file": "screens/growth-book-edit.html",
+      "evidence": "第 27-33 行「实时预览 陈小明」＋上一页／下一页，第 74 行 `viewer.load(previewChild.name, config, keepPage, previewChild)` —— 预览与栏目勾选联动。",
+      "why": "映射表该屏只有栏目清单／素材／主题三条读与三条写，没有任何取版式的调用。正本要 `GET /growth-book/books/{growth_book_id}/manifest`（与 /pages/{ordinal}），两条都标着 x-hualong-blocked-on 0/12 released layout pack（G93）。小程序保留本机样张并在屏幕上说明（pages/growth-book-edit/index.js 头注）。是缺口还是已知阻断，列 unsure。",
+      "guess_operation": "GET /growth-book/books/{growth_book_id}/manifest（被 G93 阻断）"
+    },
+    {
+      "screen": "growth-book-view",
+      "file": "screens/growth-book-view.html",
+      "evidence": "第 18-21 行抬头三格（`growth_book.child` 幼儿名、`growth_book.period` 中二班 · 2026 春季学期、`growth_book.status` 可预览/已定稿）＋第 22-27 行整本翻页。",
+      "why": "映射表该屏只登记 precheckClassBooks 一条。小程序实际读三条：姓名由 `/moments/weekly-coverage` 派生、学期取 auth/session 的 current_term、状态取 precheck 的 book_status（pages/growth-book-view/index.js 头注），其中两条端点在表里只挂在别的屏；翻页正本要 manifest/pages，被 G93 阻断。",
+      "guess_operation": "无（读端点跨屏挂 + G93 阻断）"
+    },
+    {
+      "screen": "parent-evaluation-publish",
+      "file": "screens/parent-evaluation-publish.html",
+      "evidence": "第 24-39 行「过往月份进度」三张 list-card，每张写「总体完成 82% · 23/28 已提交」并 href 到 parent-evaluation-detail.html。",
+      "why": "映射表该屏只有 openParentEvaluationWindow 一条写；这张列表要的读是 listParentEvaluationsForTeacher（GET /home-school/parent-evaluations），在表里只挂在 parent-evaluation-detail 那一屏。跨屏挂同一端点算不算缺口，要看 group-a 定的口径，故列 unsure。",
+      "guess_operation": "listParentEvaluationsForTeacher"
+    },
+    {
+      "screen": "growth-book-time-manage",
+      "file": "screens/growth-book-time-manage.html",
+      "evidence": "第 41 行 `<input class=\"search\" id=\"search\" type=\"search\" data-ui=\"growth_material.name_query\" placeholder=\"搜索活动名称\">`，第 42-48 行配套「全选结果 / 选择主题 / 归入主题」。",
+      "why": "映射表该屏没有检索操作；契约 `GET /teacher/growth-book/materials` 只有 source_type 一个查询参数，没有名称查询。GAPS.md G39 说这一页的搜索「有 spec 支持」并绑到 db_growth_material.title，但那是展示绑定、不是查询参数。若确定按客户端过滤实现（小程序做法）就不是缺口，故列 unsure。",
+      "guess_operation": "无（客户端过滤，或契约补 name 查询参数）"
+    },
+    {
+      "screen": "teacher-task-detail",
+      "file": "screens/teacher-task-detail.html",
+      "evidence": "原型第 46-47 行两颗独立按钮 `<button data-state=\"已接受\">接受</button>` / `<button data-state=\"完成\">完成</button>`；小程序 teacher-task-detail/index.wxml 第 83 / 90 行也是 onAccept / onComplete 两颗各自成对。",
+      "why": "映射表 completeTaskAssignment 那一行的 trigger_wxml 写成「接受任务」（与 acceptTaskAssignment 同一格），trigger_flag 也是「只wxml」。原型与 wxml 两边都是两颗各自的按钮 —— 疑似映射表查这一格时抄了上一行。不是漏调用，是映射表一格写错。",
+      "guess_operation": "不适用（映射表订正：trigger_wxml 应为「完成」）"
+    },
+    {
+      "screen": "growth-book-section-materials / growth-book-section-edit / growth-book-edit",
+      "file": "screens/growth-book-section-materials.html",
+      "evidence": "原型「栏目投稿」「栏目版面」「编册」三屏都没有开册控件（后者只有第 37 行「锁定编册」与第 35 行「＋ 新建栏目」）。",
+      "why": "映射表却在这三屏各挂了一条 `ensureCompilation = POST /teacher/growth-book/compilation`（trigger_wxml/trigger_prototype 都空，notes 分别是 onShow()／onLoad()／onToggleSection()）。契约明写这一条是 NONE→e1 的建行 —— growth-book-view 的实作头注因此特意不调它：「一页写着预览的屏幕打开一次就写一行库」。页面打开即建行在原型里没有任何入口，是不是有意为之（拿 compilation_id 才能读栏目）要拍板，故列 unsure。",
+      "guess_operation": "不适用（若保留，应在映射表写出这是隐式建行；若不保留，改读既有编册）"
+    }
+  ]
+}

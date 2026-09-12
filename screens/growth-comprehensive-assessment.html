@@ -240,34 +240,34 @@
   <div class="nav-bar"><a class="back" href="teacher-evaluation.html">‹</a><div class="nav-title">综合评估</div><span></span></div>
   <div class="scroll">
     <div class="sec">综合评估</div>
-    <section class="chunk assessment-start">
+    <section class="chunk assessment-start" data-intent="growth-comprehensive-assessment.chunk">
       <div>
         <h2>开始评估</h2>
         <p>选择幼儿后，按健康、语言、社会、科学、艺术五大领域完成李克特量表评分。</p>
       </div>
-      <a class="btn primary" href="comprehensive-assessment-form.html">开始</a>
+      <a class="btn primary" href="comprehensive-assessment-form.html" data-intent="growth-comprehensive-assessment.btn">开始</a>
     </section>
 
     <section class="assessment-grid" aria-label="班级综合评估概况">
-      <div class="assessment-card">
+      <div class="assessment-card" data-intent="growth-comprehensive-assessment.assessment-card">
         <div>
           <h3>进度</h3>
           <p>中二班综合评估已完成人数</p>
         </div>
-        <div class="ratio" id="doneRatio">0/5</div>
+        <div class="ratio" id="doneRatio" data-intent="growth-comprehensive-assessment.ratio">0/5</div>
       </div>
       <a class="assessment-card" href="comprehensive-assessment-class-report.html">
         <div>
           <h3>班级评估</h3>
           <p>查看五大领域汇总分析与强弱项报告</p>
         </div>
-        <div class="arrow">›</div>
+        <div class="arrow" data-intent="growth-comprehensive-assessment.arrow">›</div>
       </a>
     </section>
 
     <div class="section-head">
       <div class="sec">个人进度</div>
-      <button class="outline-btn" id="openExport">导出报告</button>
+      <button class="outline-btn" id="openExport" data-intent="growth-comprehensive-assessment.outline-btn">导出报告</button>
     </div>
     <div id="progressList"></div>
   </div>
@@ -276,7 +276,7 @@
   <div class="sheet" id="exportSheet" aria-hidden="true">
     <div class="sheet-head">
       <h2>导出综合评估报告</h2>
-      <button class="close" id="closeExport" aria-label="关闭">×</button>
+      <button class="close" id="closeExport" aria-label="关闭" data-intent="growth-comprehensive-assessment.close">×</button>
     </div>
     <label class="check-row">
       <div>全选<span>导出所有已完成和草稿儿童</span></div>
@@ -284,7 +284,7 @@
     </label>
     <label class="check-row">
       <div>陈小明<span>已完成 · 可导出</span></div>
-      <input type="checkbox" class="child-check" data-ui="eval_export.child_select" checked>
+      <input type="checkbox" class="child-check" data-ui="eval_export.child_select" checked data-intent="growth-comprehensive-assessment.child-check">
     </label>
     <label class="check-row">
       <div>李雨萱<span>草稿 · 可导出当前版本</span></div>
@@ -319,11 +319,11 @@ function renderProgress() {
       : state === 'draft' ? `已填写 ${rated}/${AssessStore.TOTAL} 题，可继续完成`
       : '尚未开始填写';
     const action = state === 'done'
-      ? `<a class="small-btn" href="comprehensive-assessment-report.html?child=${child.id}">查看</a>`
+      ? `<a class="small-btn" href="comprehensive-assessment-report.html?child=${child.id}" data-intent="growth-comprehensive-assessment.small-btn">查看</a>`
       : `<a class="small-btn" href="comprehensive-assessment-form.html?child=${child.id}">${state === 'draft' ? '继续' : '填写'}</a>`;
-    return `<div class="student">
-      <div><div class="student-name">${child.name}</div><div class="student-sub">${sub}</div></div>
-      <span class="pill ${state}">${LABEL[state]}</span>
+    return `<div class="student" data-intent="growth-comprehensive-assessment.student">
+      <div><div class="student-name" data-intent="growth-comprehensive-assessment.student-name">${child.name}</div><div class="student-sub" data-intent="growth-comprehensive-assessment.student-sub">${sub}</div></div>
+      <span class="pill ${state}" data-intent="growth-comprehensive-assessment.pill">${LABEL[state]}</span>
       ${action}
     </div>`;
   }).join('');

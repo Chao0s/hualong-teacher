@@ -75,18 +75,18 @@
   <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
   <div class="nav-bar"><a class="back" href="home-school-moments.html">‹</a><div class="nav-title">发布活动</div><span></span></div>
   <div class="scroll">
-    <div class="chunk form-card">
+    <div class="chunk form-card" data-intent="home-school-moment-publish.chunk">
       <label>活动名称</label>
-      <input class="input" id="momentTitle" maxlength="50" data-ui="moment_publish.title" value="端午手作：艾草香囊">
+      <input class="input" id="momentTitle" maxlength="50" data-ui="moment_publish.title" value="端午手作：艾草香囊" data-intent="home-school-moment-publish.input">
       <label>活动评语</label>
-      <textarea class="textarea" id="momentContent" maxlength="600" data-ui="moment_publish.content">孩子们能主动选择材料，尝试闻一闻、摸一摸艾草，并在穿绳和装袋环节互相提醒，整体参与度较高。</textarea>
+      <textarea class="textarea" id="momentContent" maxlength="600" data-ui="moment_publish.content" data-intent="home-school-moment-publish.textarea">孩子们能主动选择材料，尝试闻一闻、摸一摸艾草，并在穿绳和装袋环节互相提醒，整体参与度较高。</textarea>
       <label>添加照片（最多 9 张）</label>
       <div class="photo-row moment-upload-row">
-        <div class="photo add-photo"><span class="plus">+</span><span>添加</span></div>
-        <div class="photo photo-thumb"><span class="photo-label">手作过程</span></div>
+        <div class="photo add-photo" data-intent="home-school-moment-publish.photo"><span class="plus" data-intent="home-school-moment-publish.plus">+</span><span>添加</span></div>
+        <div class="photo photo-thumb"><span class="photo-label" data-intent="home-school-moment-publish.photo-label">手作过程</span></div>
         <div class="photo photo-thumb group"><span class="photo-label">小组合影</span></div>
       </div>
-      <div class="hint" id="saveState" style="margin-top:10px">已自动保存</div>
+      <div class="hint" id="saveState" style="margin-top:10px" data-intent="home-school-moment-publish.hint">已自动保存</div>
     </div>
 
     <div class="chunk">
@@ -101,7 +101,7 @@
       <div class="table-wrap" style="margin-top:12px">
         <table class="prog-table">
           <thead><tr><th style="text-align:left">班级人数</th><th>已勾选</th><th>占比</th></tr></thead>
-          <tbody><tr><td class="name">小一班</td><td id="selectedCount">7人</td><td id="selectedRate"><span class="status done">88%</span></td></tr></tbody>
+          <tbody><tr><td class="name" data-intent="home-school-moment-publish.name">小一班</td><td id="selectedCount">7人</td><td id="selectedRate"><span class="status done" data-intent="home-school-moment-publish.status">88%</span></td></tr></tbody>
         </table>
       </div>
     </div>
@@ -111,7 +111,7 @@
       <!-- 每个勾选格 = 一行 db_moment_upload（01 home-spec.md child_select_rule）。
            child_id 在教师端属 scoped，服务端须把 class_id=$ctx_class 内联进同一条 predicate 重验。 -->
       <div class="check-grid compact-checks" id="childChecks">
-        <label class="check-card"><input type="checkbox" data-ui="moment_publish.child_select" checked>陈小明</label>
+        <label class="check-card" data-intent="home-school-moment-publish.check-card"><input type="checkbox" data-ui="moment_publish.child_select" checked>陈小明</label>
         <label class="check-card"><input type="checkbox" data-ui="moment_publish.child_select" checked>李雨萱</label>
         <label class="check-card"><input type="checkbox" data-ui="moment_publish.child_select" checked>张力轩</label>
         <label class="check-card"><input type="checkbox" data-ui="moment_publish.child_select" checked>王子涵</label>
@@ -122,7 +122,7 @@
       </div>
     </div>
 
-    <button class="btn primary sticky-action" id="publishMoment" type="button">发布活动</button>
+    <button class="btn primary sticky-action" id="publishMoment" type="button" data-intent="home-school-moment-publish.btn">发布活动</button>
   </div>
 </div>
 <script>

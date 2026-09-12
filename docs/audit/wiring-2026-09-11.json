@@ -1,7 +1,44 @@
 {
-  "generatedAt": "2026-09-11T15:43:42.040Z",
+  "generatedAt": "2026-09-11T20:19:53.138Z",
   "contract": "G:\\My Drive\\Workplace\\China KG Platform\\hualong-backend\\api\\openapi.yaml",
   "pages": [
+    {
+      "name": "login",
+      "title": "登录",
+      "wired": false,
+      "writes": "no",
+      "context": {
+        "title": "登录",
+        "path": "启动页（`app.json` 第一项）。已登录就直接跳首页；会话失效时 `guard.endSessionOnAuthFailure` 也 reLaunch 过来。手机号那一步等 G1",
+        "module": "登录",
+        "role": "",
+        "flow": ""
+      },
+      "events": 2,
+      "prototype": null,
+      "findings": [
+        {
+          "key": "login:L1:<button class=\"phone-btn\"> bindgetphonenumber=\"onGetPhoneNumber\"「验证手机号」",
+          "level": "likely",
+          "layer": "L1",
+          "line": 24,
+          "what": "<button class=\"phone-btn\"> bindgetphonenumber=\"onGetPhoneNumber\"「验证手机号」",
+          "detail": "handler 无 setData、无导航、无 service 调用，只弹提示或为空",
+          "verdict": null,
+          "falsePositive": null,
+          "context": {
+            "page": "login",
+            "title": "登录",
+            "path": "启动页（`app.json` 第一项）。已登录就直接跳首页；会话失效时 `guard.endSessionOnAuthFailure` 也 reLaunch 过来。手机号那一步等 G1",
+            "module": "登录",
+            "role": "",
+            "flow": "",
+            "button": "验证手机号",
+            "note": ""
+          }
+        }
+      ]
+    },
     {
       "name": "home",
       "title": "首页",
@@ -111,8 +148,8 @@
           "verdict": {
             "key": "assessment-tool:L1:<view class=\"chip {{mode === item.key ? 'chip--on' : ''}}\"> bindtap=\"onFilterTap\"",
             "status": "误报",
-            "reason": "误报的成因不是「开发中」字样 —— assessment-tool/index.js 全文没有这四个字。scan-wiring.mjs:269 的 PLACEHOLDER_RE 带 i 旗标，于是模式里的 TODO 命中了本页自己的筛选键 todo（index.js:55「未评」，:275、:294 各用一次）。onFilterTap（:174）是纯本地切换，不写库。判定仍是误报；正则的 i 旗标归 #8（它是那份词表的主人）",
-            "author": "Lin",
+            "note": "误报的成因不是「开发中」字样 —— assessment-tool/index.js 全文没有这四个字。scan-wiring.mjs:269 的 PLACEHOLDER_RE 带 i 旗标，于是模式里的 TODO 命中了本页自己的筛选键 todo（index.js:55「未评」，:275、:294 各用一次）。onFilterTap（:174）是纯本地切换，不写库。判定仍是误报；正则的 i 旗标归 #8（它是那份词表的主人）",
+            "reviewer": "Lin",
             "updated_at": "2026-09-09"
           },
           "falsePositive": true,
@@ -318,8 +355,8 @@
           "verdict": {
             "key": "party-brand-detail:L2:<text class=\"chip\">",
             "status": "误报",
-            "reason": "品牌详情第 27 行的 .chips 里是只读标签；同页第 15 行的 .chip 带 bindtap=\"onRetry\" 是真按钮。同一个类名两用，词表分不开 —— 全仓 15 处 class=\"chip\" 里 9 处是筛选器或重试，删掉这个词那 9 处就没有任何分支兜得住",
-            "author": "Lin",
+            "note": "品牌详情第 27 行的 .chips 里是只读标签；同页第 15 行的 .chip 带 bindtap=\"onRetry\" 是真按钮。同一个类名两用，词表分不开 —— 全仓 15 处 class=\"chip\" 里 9 处是筛选器或重试，删掉这个词那 9 处就没有任何分支兜得住",
+            "reviewer": "Lin",
             "updated_at": "2026-09-09"
           },
           "falsePositive": true,
@@ -668,8 +705,8 @@
           "verdict": {
             "key": "case-library:L5:原型按钮「小班」",
             "status": "误报",
-            "reason": "13 个筛选片小程序里全都在，由 wx:for 从 services/library 的枚举表渲染（index.wxml:6-37），文案不在 wxml 字面量里 —— L5 只查文本包含。真缺陷在服务端忽略 case_field 与 case_area（13 片里 10 片点了不筛），已由后端 G84 修毕；→ #21",
-            "author": "Lin",
+            "note": "13 个筛选片小程序里全都在，由 wx:for 从 services/library 的枚举表渲染（index.wxml:6-37），文案不在 wxml 字面量里 —— L5 只查文本包含。真缺陷在服务端忽略 case_field 与 case_area（13 片里 10 片点了不筛），已由后端 G84 修毕；→ #21",
+            "reviewer": "Lin",
             "updated_at": "2026-09-09"
           },
           "falsePositive": true,
@@ -694,8 +731,8 @@
           "verdict": {
             "key": "case-library:L5:原型按钮「中班」",
             "status": "误报",
-            "reason": "13 个筛选片小程序里全都在，由 wx:for 从 services/library 的枚举表渲染（index.wxml:6-37），文案不在 wxml 字面量里 —— L5 只查文本包含。真缺陷在服务端忽略 case_field 与 case_area（13 片里 10 片点了不筛），已由后端 G84 修毕；→ #21",
-            "author": "Lin",
+            "note": "13 个筛选片小程序里全都在，由 wx:for 从 services/library 的枚举表渲染（index.wxml:6-37），文案不在 wxml 字面量里 —— L5 只查文本包含。真缺陷在服务端忽略 case_field 与 case_area（13 片里 10 片点了不筛），已由后端 G84 修毕；→ #21",
+            "reviewer": "Lin",
             "updated_at": "2026-09-09"
           },
           "falsePositive": true,
@@ -720,8 +757,8 @@
           "verdict": {
             "key": "case-library:L5:原型按钮「大班」",
             "status": "误报",
-            "reason": "13 个筛选片小程序里全都在，由 wx:for 从 services/library 的枚举表渲染（index.wxml:6-37），文案不在 wxml 字面量里 —— L5 只查文本包含。真缺陷在服务端忽略 case_field 与 case_area（13 片里 10 片点了不筛），已由后端 G84 修毕；→ #21",
-            "author": "Lin",
+            "note": "13 个筛选片小程序里全都在，由 wx:for 从 services/library 的枚举表渲染（index.wxml:6-37），文案不在 wxml 字面量里 —— L5 只查文本包含。真缺陷在服务端忽略 case_field 与 case_area（13 片里 10 片点了不筛），已由后端 G84 修毕；→ #21",
+            "reviewer": "Lin",
             "updated_at": "2026-09-09"
           },
           "falsePositive": true,
@@ -746,8 +783,8 @@
           "verdict": {
             "key": "case-library:L5:原型按钮「区域」",
             "status": "误报",
-            "reason": "13 个筛选片小程序里全都在，由 wx:for 从 services/library 的枚举表渲染（index.wxml:6-37），文案不在 wxml 字面量里 —— L5 只查文本包含。真缺陷在服务端忽略 case_field 与 case_area（13 片里 10 片点了不筛），已由后端 G84 修毕；→ #21",
-            "author": "Lin",
+            "note": "13 个筛选片小程序里全都在，由 wx:for 从 services/library 的枚举表渲染（index.wxml:6-37），文案不在 wxml 字面量里 —— L5 只查文本包含。真缺陷在服务端忽略 case_field 与 case_area（13 片里 10 片点了不筛），已由后端 G84 修毕；→ #21",
+            "reviewer": "Lin",
             "updated_at": "2026-09-09"
           },
           "falsePositive": true,
@@ -772,8 +809,8 @@
           "verdict": {
             "key": "case-library:L5:原型按钮「主题探究」",
             "status": "误报",
-            "reason": "13 个筛选片小程序里全都在，由 wx:for 从 services/library 的枚举表渲染（index.wxml:6-37），文案不在 wxml 字面量里 —— L5 只查文本包含。真缺陷在服务端忽略 case_field 与 case_area（13 片里 10 片点了不筛），已由后端 G84 修毕；→ #21",
-            "author": "Lin",
+            "note": "13 个筛选片小程序里全都在，由 wx:for 从 services/library 的枚举表渲染（index.wxml:6-37），文案不在 wxml 字面量里 —— L5 只查文本包含。真缺陷在服务端忽略 case_field 与 case_area（13 片里 10 片点了不筛），已由后端 G84 修毕；→ #21",
+            "reviewer": "Lin",
             "updated_at": "2026-09-09"
           },
           "falsePositive": true,
@@ -798,8 +835,8 @@
           "verdict": {
             "key": "case-library:L5:原型按钮「家园社共育」",
             "status": "误报",
-            "reason": "13 个筛选片小程序里全都在，由 wx:for 从 services/library 的枚举表渲染（index.wxml:6-37），文案不在 wxml 字面量里 —— L5 只查文本包含。真缺陷在服务端忽略 case_field 与 case_area（13 片里 10 片点了不筛），已由后端 G84 修毕；→ #21",
-            "author": "Lin",
+            "note": "13 个筛选片小程序里全都在，由 wx:for 从 services/library 的枚举表渲染（index.wxml:6-37），文案不在 wxml 字面量里 —— L5 只查文本包含。真缺陷在服务端忽略 case_field 与 case_area（13 片里 10 片点了不筛），已由后端 G84 修毕；→ #21",
+            "reviewer": "Lin",
             "updated_at": "2026-09-09"
           },
           "falsePositive": true,
@@ -824,8 +861,8 @@
           "verdict": {
             "key": "case-library:L5:原型按钮「数字化」",
             "status": "误报",
-            "reason": "13 个筛选片小程序里全都在，由 wx:for 从 services/library 的枚举表渲染（index.wxml:6-37），文案不在 wxml 字面量里 —— L5 只查文本包含。真缺陷在服务端忽略 case_field 与 case_area（13 片里 10 片点了不筛），已由后端 G84 修毕；→ #21",
-            "author": "Lin",
+            "note": "13 个筛选片小程序里全都在，由 wx:for 从 services/library 的枚举表渲染（index.wxml:6-37），文案不在 wxml 字面量里 —— L5 只查文本包含。真缺陷在服务端忽略 case_field 与 case_area（13 片里 10 片点了不筛），已由后端 G84 修毕；→ #21",
+            "reviewer": "Lin",
             "updated_at": "2026-09-09"
           },
           "falsePositive": true,
@@ -1014,7 +1051,7 @@
         "role": "全班成长档案齐备度总览",
         "flow": "只读派生：月评、学期评、综合评估齐不齐"
       },
-      "events": 1,
+      "events": 2,
       "prototype": {
         "buttons": 0,
         "listeners": 0,
@@ -1025,7 +1062,7 @@
     {
       "name": "teacher-evaluation",
       "title": "教师评价",
-      "wired": false,
+      "wired": true,
       "writes": "no",
       "context": {
         "title": "教师评价",
@@ -1034,7 +1071,7 @@
         "role": "教师评价入口：月度、学期、综合、寄语",
         "flow": "聚合入口"
       },
-      "events": 1,
+      "events": 2,
       "prototype": {
         "buttons": 0,
         "listeners": 0,
@@ -1091,8 +1128,8 @@
           "verdict": {
             "key": "teacher-monthly-form:L5:原型按钮「保存评价」",
             "status": "误报",
-            "reason": "原型只有一个按钮，状态机要两个：month_eval.save_draft（PUT /home-school/month-evals，NONE|e1→e1）与 month_eval.publish（POST …/publication，e1|e2→e3）。保留「保存草稿」「发布给家长」两个按钮，「草稿」取自 DDL 的 e1=draft草稿（F25）",
-            "author": "Lin",
+            "note": "原型只有一个按钮，状态机要两个：month_eval.save_draft（PUT /home-school/month-evals，NONE|e1→e1）与 month_eval.publish（POST …/publication，e1|e2→e3）。保留「保存草稿」「发布给家长」两个按钮，「草稿」取自 DDL 的 e1=draft草稿（F25）",
+            "reviewer": "Lin",
             "updated_at": "2026-09-09"
           },
           "falsePositive": true,
@@ -1219,8 +1256,8 @@
           "verdict": {
             "key": "teacher-message-detail:L5:原型跳转 → teacher-message.html",
             "status": "接",
-            "reason": "→ #22",
-            "author": "Lin",
+            "note": "→ #22",
+            "reviewer": "Lin",
             "updated_at": "2026-09-08"
           },
           "falsePositive": false,
@@ -1346,8 +1383,8 @@
           "verdict": {
             "key": "growth-comprehensive-assessment:L5:原型跳转 → comprehensive-assessment-report.html",
             "status": "接",
-            "reason": "→ #22",
-            "author": "Lin",
+            "note": "→ #22",
+            "reviewer": "Lin",
             "updated_at": "2026-09-08"
           },
           "falsePositive": false,
@@ -1434,8 +1471,8 @@
           "verdict": {
             "key": "comprehensive-assessment-report:L5:原型跳转 → growth-comprehensive-assessment.html",
             "status": "接",
-            "reason": "→ #22",
-            "author": "Lin",
+            "note": "→ #22",
+            "reviewer": "Lin",
             "updated_at": "2026-09-08"
           },
           "falsePositive": false,
@@ -1522,8 +1559,8 @@
           "verdict": {
             "key": "growth-book:L6:screens.tsv writes=yes",
             "status": "接",
-            "reason": "审核人对 screens.tsv 的理解见 #24；→ #27",
-            "author": "Lin",
+            "note": "审核人对 screens.tsv 的理解见 #24；→ #27",
+            "reviewer": "Lin",
             "updated_at": "2026-09-08"
           },
           "falsePositive": false,
@@ -1589,8 +1626,8 @@
           "verdict": {
             "key": "growth-book-task-manage:L6:screens.tsv writes=yes",
             "status": "接",
-            "reason": "审核人对 screens.tsv 的理解见 #24；→ #27",
-            "author": "Lin",
+            "note": "审核人对 screens.tsv 的理解见 #24；→ #27",
+            "reviewer": "Lin",
             "updated_at": "2026-09-08"
           },
           "falsePositive": false,
@@ -1862,7 +1899,7 @@
     },
     {
       "file": "/miniprogram/services/assessment.js",
-      "calls": 16,
+      "calls": 17,
       "findings": [],
       "unusedExports": [
         "itemMap",
@@ -1877,6 +1914,46 @@
     }
   ],
   "contractUnused": [
+    {
+      "key": "contract:GET /library/resources/{resource_id}/cases",
+      "method": "GET",
+      "path": "/library/resources/{resource_id}/cases",
+      "tags": "library",
+      "action": "",
+      "blockedOn": "",
+      "summary": "这个资源被哪些案例引用（只读）",
+      "verdict": null,
+      "falsePositive": null,
+      "context": {
+        "description": "G109（2026-09-12 已决）。原型 `screens/resource-detail.html` 第 87-95 行的「课程应用」 小节要列出引用了本资源的案例。反查 `db_case.resource_ids`。 **范围沿用 `listCases` 自己的可见规则**，不另立一套：这些案例本来就在案例库里， 可见性不该因为入口不同而改变。同园、`case_status='s3'`。 代价写在 GAPS.md G109：那条 predicate 要与 `listCases` 保持一致，一边改要两边一起改。 资源本身不可见时回 404，不回空数组 —— 「没有相关案例」与「你看不到这个资源」 是两件事，回空会让前者冒充后者。",
+        "registry": null,
+        "page": "",
+        "pageTitle": "",
+        "path": "",
+        "button": "",
+        "who": ""
+      }
+    },
+    {
+      "key": "contract:GET /teacher/growth-book/sections/{section_id}/submissions",
+      "method": "GET",
+      "path": "/teacher/growth-book/sections/{section_id}/submissions",
+      "tags": "growth-book",
+      "action": "",
+      "blockedOn": "",
+      "summary": "本班幼儿交上来的栏目素材（只读）",
+      "verdict": null,
+      "falsePositive": null,
+      "context": {
+        "description": "G112（2026-09-12 已决）。原型 `screens/growth-book-section-materials.html` 第 61 行 每条记录有「查看」，点开要看家长写的正文与照片。 **范围是本班幼儿交的**（教师的自己的范围）。栏目本身是**园所级** —— `db_school_book_section` 只有 `school_id` 与 `release_id`、**没有 `class_id`** —— 所以范围落在「哪些幼儿」，不是「哪班哪栏」。这与教师在名册、评估、在园时光 各处能看到的孩子一致。 只回**已提交**的（`submitted_at` 非空）。`submitted_at IS NULL` 是家庭共用草稿， 契约明写「不计齐备、不向教师返回内容」（见 `autosaveBookMaterial` 的描述）—— 本条不改变它。",
+        "registry": null,
+        "page": "",
+        "pageTitle": "",
+        "path": "",
+        "button": "",
+        "who": ""
+      }
+    },
     {
       "key": "contract:GET /growth-book/books/{growth_book_id}/manifest",
       "method": "GET",
@@ -1964,6 +2041,26 @@
       }
     },
     {
+      "key": "contract:GET /training/home",
+      "method": "GET",
+      "path": "/training/home",
+      "tags": "training",
+      "action": "",
+      "blockedOn": "",
+      "summary": "教研培训首页聚合（轮播与推荐都由事实派生，不是可管理的清单）",
+      "verdict": null,
+      "falsePositive": null,
+      "context": {
+        "description": "G111（2026-09-12 已决）。原型 `screens/training-center.html` 第 43-145 行要三块： 一个轮播、推荐资源 3 卡、推荐案例 3 卡。 **「推荐」按最新派生，不是人工挑的。** 这条由 `getPartyHome`（党建首页聚合）的先例 直接回答：它原文写「轮播由事实派生，不是可管理的推荐清单」，且 `db_party_feature` **已由 F7 拔除，不得重建**，也没有手工排序、排期或跨类型混排。照它做。 三类各回最新若干条，顺序 `published_at DESC, id DESC`（训练用 `start_at DESC`）， 不足 3 条就回实际笔数。完整列表走各自的集合端点（`/trainings`、`/library/resources`、 `/library/cases`）。 本端点是 persist=0 聚合，**",
+        "registry": null,
+        "page": "",
+        "pageTitle": "",
+        "path": "",
+        "button": "",
+        "who": ""
+      }
+    },
+    {
       "key": "contract:GET /scales/{scale_code}/{scale_version}",
       "method": "GET",
       "path": "/scales/{scale_code}/{scale_version}",
@@ -1974,8 +2071,8 @@
       "verdict": {
         "key": "contract:GET /scales/{scale_code}/{scale_version}",
         "status": "不建",
-        "reason": "客户端不需要这个端点。版本对客户端是只读展示物 —— ChildAssessmentItemWrite 只有 score 一个字段，scale_code／scale_version 由服务端在首次评分时写入，客户端从不发送；而端点唯一的实质载荷（124 题的题干与锚点）已经在包内 miniprogram/data/guide-scale.js，那是本仓库唯一的一份（#20）。版本维度保留（E2：历史评估必须绑定填写时所用的版本），端点也不删 —— PC 端与将来改版都可能用它。改从接口取要先解决两条后端缺口：ScaleItem 缺 measurement_note 与 reference_table（G27 要求必须显示给教师），以及现役 (scale_code, scale_version) 无权威落点",
-        "author": "Lin",
+        "note": "客户端不需要这个端点。版本对客户端是只读展示物 —— ChildAssessmentItemWrite 只有 score 一个字段，scale_code／scale_version 由服务端在首次评分时写入，客户端从不发送；而端点唯一的实质载荷（124 题的题干与锚点）已经在包内 miniprogram/data/guide-scale.js，那是本仓库唯一的一份（#20）。版本维度保留（E2：历史评估必须绑定填写时所用的版本），端点也不删 —— PC 端与将来改版都可能用它。改从接口取要先解决两条后端缺口：ScaleItem 缺 measurement_note 与 reference_table（G27 要求必须显示给教师），以及现役 (scale_code, scale_version) 无权威落点",
+        "reviewer": "Lin",
         "updated_at": "2026-09-09"
       },
       "falsePositive": false,
@@ -2000,8 +2097,8 @@
       "verdict": {
         "key": "contract:GET /children/{child_id}/growth-record",
         "status": "不建",
-        "reason": "#19 决定不接：成长档案页只要班级整表，单条无页面使用；service 头注写明本模块不接",
-        "author": "Lin",
+        "note": "#19 决定不接：成长档案页只要班级整表，单条无页面使用；service 头注写明本模块不接",
+        "reviewer": "Lin",
         "updated_at": "2026-09-10"
       },
       "falsePositive": false,
@@ -2017,14 +2114,14 @@
     }
   ],
   "summary": {
-    "pages": 55,
-    "wired": 47,
+    "pages": 56,
+    "wired": 48,
     "sure": 0,
-    "likely": 9,
+    "likely": 10,
     "review": 10,
     "falsePositives": 10,
     "decided": 17,
-    "contractTeacherOps": 104,
-    "contractUnused": 6
+    "contractTeacherOps": 108,
+    "contractUnused": 9
   }
 }

@@ -1,0 +1,104 @@
+{
+  "group": "b-home-school-moment",
+  "scope": {
+    "screens_checked": [
+      "home-school (家园社共育)",
+      "parent-tasks (亲子任务)",
+      "parent-task-detail (任务详情)",
+      "parent-task-publish (发布新任务)",
+      "parent-evaluation-detail (测评进度)",
+      "parent-evaluation-publish (发布家长测评)",
+      "teacher-monthly-evaluation (教师月度评价)",
+      "teacher-monthly-form (填写月度评价)",
+      "community-coeducation (社区共育)",
+      "home-school-moments (在园时光)",
+      "home-school-moment-feed (全部活动)",
+      "home-school-moment-publish (发布活动)"
+    ],
+    "mapping_file": "hualong-backend/db/spec/screen-operations.tsv",
+    "contract_file": "hualong-backend/api/openapi.yaml",
+    "note": "映射表里这 12 屏共 29 行；source 全为 gen，没有 planned／no-api／off-contract 行需要排除。"
+  },
+  "missing": [
+    {
+      "screen": "home-school",
+      "file": "screens/home-school.html",
+      "evidence": "第 80–81 行表头是五列：幼儿｜在园时光｜亲子任务｜成长档案｜成长册；第 85–90 行每个幼儿都填了这两格，文案为「已完成」「进行中」「已定稿」「未定稿」。",
+      "why": "映射表这一屏只有一行 getTeacherHomeSchoolProgress（GET /home-school/progress），契约的 TeacherHomeSchoolProgressRow 只回 child_name／moment_status／parent_task_status 三个字段，端点描述第 3085 行明写「不返回成长档案或成长册状态」。也就是原型那两列在原配里没有任何对应的调用或字段——不是漏抄一行，是这一屏要显示的东西比契约给的宽。",
+      "guess_operation": "成长册那列可读 GET /teacher/growth-book/precheck 或 DB 的 growth_book_status；成长档案那列契约里今天没有对应端点"
+    },
+    {
+      "screen": "parent-evaluation-publish",
+      "file": "screens/parent-evaluation-publish.html",
+      "evidence": "第 24–39 行「过往月份进度」：三条 list-card，文案如「2026年6月家长月度评价／总体完成 82% · 23/28 已提交」（5 月 93% · 26/28，4 月 100% · 28/28）。",
+      "why": "映射表这一屏只有一行 openParentEvaluationWindow（POST /home-school/parent-evaluations）。但页面代码 miniprogram/pages/parent-evaluation-publish/index.js:83 确实在 onShow() 里调 co.parentEvalPeriods({})，而该函数（services/co-education.js:942）第一句就是 await listParentEvaluations()，即 GET /home-school/parent-evaluations。所以真实调用存在、这只是映射表漏登记一行 listParentEvaluationsForTeacher。",
+      "guess_operation": "listParentEvaluationsForTeacher"
+    },
+    {
+      "screen": "teacher-monthly-evaluation",
+      "file": "screens/teacher-monthly-evaluation.html",
+      "evidence": "第 29–34 行矩阵的行是全班名册，六个幼儿逐行列出（陈小明、李雨萱、张力轩、王子涵、赵佳怡、刘浩然）；第 42 行文案「月份列由已录入的评价月份自动生成」。",
+      "why": "映射表这一屏只有一行 listMonthEvals（GET /home-school/month-evals，只提供有记录的格子）。名册那一半来自 services/co-education.js:1168 的 `for (const child of await classRoster())`，而 classRoster（同文件 :267）内部走 weeklyCoverage() → GET /moments/weekly-coverage。也就是这一屏实际会打第二个端点，映射表没登记。",
+      "guess_operation": "getMomentWeeklyCoverage（页面用月评矩阵时隐式调用）"
+    }
+  ],
+  "invented": [
+    {
+      "operation_id": "closeParentTask",
+      "screen": "parent-task-detail",
+      "why": "原型 screens/parent-task-detail.html 全文 42 行，一个 button／a／data-action 都没有，只有 pill 标题、三个 metric 和一张提交表；全 screens/*.html 里 grep「结束任务」「关闭任务」零命中。而客户端的 miniprogram/pages/parent-task-detail/index.wxml:65 有一个「结束任务」按钮 bindtap=onClose。契约里 closeParentTask（s2→s3、F11／Q60-l）是真的，但没有任何原型入口——这条操作是客户端自己发明的入口。"
+    },
+    {
+      "operation_id": "deleteMoment",
+      "screen": "home-school-moment-feed",
+      "why": "原型 screens/home-school-moment-feed.html 每张卡片只有「+ 加入成长册」一个控件（第 78／96／114 行），底部面板只有取消／加入（第 129–130 行）；grep「删除／trash」在 home-school-moment*.html 与 community-coeducation.html 零命中。客户端的 miniprogram/pages/home-school-moment-feed/index.wxml:47 加了一个垃圾桶图标 bindtap=onDelete，映射表登记 deleteMoment（DELETE /moments/{moment_id}）。原型没有对应的删除入口。"
+    },
+    {
+      "operation_id": "publishMonthEval",
+      "screen": "teacher-monthly-form",
+      "why": "原型 screens/teacher-monthly-form.html 第 148 行只有一个提交控件「保存评价」；整页没有「发布给家长」四个字。客户端的 miniprogram/pages/teacher-monthly-form/index.wxml:49 多了一个「发布给家长」按钮 bindtap=onPublish，映射表登记 publishMonthEval（POST /home-school/month-evals/{id}/publication）。原型那一下「保存评价」只对得上 saveMonthEvalDraft（PUT /home-school/month-evals，只wxml），发布这一步没有原型入口。（它可以被 e1→e3 状态机证明是必要的，但必要不等于原型有。）"
+    },
+    {
+      "operation_id": "updateParentTaskDraft",
+      "screen": "parent-task-publish",
+      "why": "原型里进「发布新任务」页只有一条路径：screens/parent-tasks.html:58 的 publish-card → parent-task-publish.html，永远是空白新表单；同一页第 68–87 行的四条历史任务卡片全部 href=parent-task-detail.html，没有一条带着 id 回到发布页。也就是原型没有任何「点回草稿接着改」的入口。客户端的 miniprogram/pages/parent-task-publish/index.wxml:83 有「存为草稿」按钮，映射表为它登记 createParentTask 与 updateParentTaskDraft（PATCH /home-school/parent-tasks/{id}），其中 updateParentTaskDraft 明确是在改一份已存在的草稿 —— 原型没有这条入口。"
+    }
+  ],
+  "unsure": [
+    {
+      "screen": "parent-evaluation-detail",
+      "file": "screens/parent-evaluation-detail.html",
+      "evidence": "原型第 26–37 行的表格四列是幼儿｜已读｜已完成｜提交内容预览，行不可点（无 a、无 data-action、无 role=button）；映射表登记 getParentEvaluationForTeacher，notes 写 handler onRowTap()。",
+      "why": "按定义它算「发明」：原型没有可点的行。但契约 getParentEvaluationForTeacher 的描述（openapi.yaml:3473，G73 的解）明写看板端点不回 evaluation_text，逐条读正文走这一个出口；而原型第 29–34 行确实逐行显示了正文预览（「能主动整理玩具」）。客户端的 wxml 头注也自己写了「原型是四列……改成点一行取一笔，弹层显示」。所以更可能是「原型元素有、原型的交互没有」，不是凭空发明。请人裁。",
+      "guess_operation": "getParentEvaluationForTeacher"
+    },
+    {
+      "screen": "parent-task-publish",
+      "file": "screens/parent-task-publish.html",
+      "evidence": "原型第 82 行唯一的按钮文案是「发布给家长」，第 119–124 行的脚本点下去却把第 83 行的提示点亮为「已生成任务草稿，可在发布前继续调整」，按钮自身也改成「已生成草稿」。",
+      "why": "一个按钮，原型自己的文案与行为互相矛盾（标签说发布、结果是草稿）。映射表把同一个 handler onPublish() 摊到三个写操作上（createParentTask、publishParentTask、updateParentTaskDraft），trigger 列又只认「存为草稿」。哪一行对应原型那一下判定不了。",
+      "guess_operation": "createParentTask 与 publishParentTask 二选一"
+    },
+    {
+      "screen": "home-school-moment-feed",
+      "file": "screens/home-school-moment-feed.html",
+      "evidence": "原型第 185 行：confirmBtn.textContent = count ? `加入（${count}）` : (item ? '移出成长资料' : '加入')；第 214–216 行确认移出后 toast「已移出成长资料」。",
+      "why": "本页确实有一条移出路径，而映射表没有把任何移出操作挂到这一屏。不过移出操作本身在契约里存在（deleteGrowthMaterial，DELETE /teacher/growth-book/materials/{growth_material_id}），映射表把它登记在 growth-book-time-manage（在园时光管理）上；客户端的 index.js:37 也写「「移出」不在这一页」。这到底是刻意的重定位还是本页漏项，需要人裁。",
+      "guess_operation": "deleteGrowthMaterial"
+    },
+    {
+      "screen": "home-school-moment-publish",
+      "file": "screens/home-school-moment-publish.html",
+      "evidence": "原型第 89 行有「已自动保存」提示，第 146–155 行的 autoSave() 只改这行字，不发任何请求；输入标题、评语、勾选幼儿都会触发。",
+      "why": "提示语说的是「保存」，但原型没有真的保存，契约里也没有动态草稿端点（/moments 下只有 listMoments／publishMoment／getMoment／deleteMoment／weekly-coverage；客户端 index.js 头注写「服务端不存草稿（契约 v0.7）」）。按 CLAUDE.md §8「没有数据源就不要渲染」这一格该去掉提示，不算漏调用；但它是原型上唯一一处声称持久化的文案，所以登记在此而不是丢掉。",
+      "guess_operation": "无（不建议新增端点）"
+    },
+    {
+      "screen": "community-coeducation",
+      "file": "screens/community-coeducation.html",
+      "evidence": "原型第 162–184 行有两个筛选：时间（第 169–174 行，全部时间／本周／本月／更早）与任务类别（第 178–182 行，全部任务／日常任务／社区任务）；映射表 listCommunityFeed 那一行的 notes 只写「handler onTimeChange()」。",
+      "why": "操作没漏——契约的 listCommunityFeed 同时收 parent_task_type（enum t1,t2）与 time_window（enum week,month,earlier），一个端点覆盖两个筛选项，客户端 index.js 也确有 onTypeChange。缺的是映射表这一格的记录：同一个操作的两个绑定（onTimeChange／onTypeChange）只写了一个。属于文档级缺口，不是调用缺口。",
+      "guess_operation": "listCommunityFeed（补 notes 即可）"
+    }
+  ]
+}

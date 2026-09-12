@@ -60,11 +60,16 @@ const HTTP_METHODS = ['get', 'post', 'put', 'patch', 'delete', 'head', 'options'
  * to_state (save-draft vs publish are two exits of the same dialog), so the
  * registry has several rows where the contract has one path.
  *
+ * While `summary` existed here from the start, `description` did not: it is the
+ * long prose Swagger UI shows on the operation page. The `/pages` view renders
+ * that same text for the same operation, and it must come from this one reader
+ * rather than a second read of the contract (one contract, one reader).
+ *
  * @returns {Array<{
  *   method: string, path: string, operationId: string|null, tags: string[],
  *   roles: string[], actions: string[], permission: string|null,
  *   blockedOn: string[], successCodes: string[], allCodes: string[],
- *   hasPathParams: boolean, summary: string|null
+ *   hasPathParams: boolean, summary: string|null, description: string|null
  * }>}
  */
 export function operations(spec = loadSpec()) {
@@ -87,6 +92,7 @@ export function operations(spec = loadSpec()) {
         allCodes: codes,
         hasPathParams: path.includes('{'),
         summary: op.summary || null,
+        description: op.description || null,
         // `security: []` overrides the document default and marks the operation
         // as pre-session. Only the login endpoint carries it, and it is exactly
         // why that one operation has no x-hualong-roles: there is no role yet.

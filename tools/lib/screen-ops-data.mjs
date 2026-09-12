@@ -48,6 +48,9 @@ function backendRoot() {
   );
 }
 const BACKEND = backendRoot();
+/** 這一支是「後端在哪」的**唯一**決定處（候選表、當場失敗的理由都寫在上面的 backendRoot）。
+ *  `tools/lib/intent-join.mjs` 從這裡取，不再自己抄一份候選表。 */
+export const BACKEND_DIR = BACKEND;
 const SPEC = join(BACKEND, 'db', 'spec');
 
 /**
@@ -73,16 +76,74 @@ export function readTsv(path) {
   return lines.slice(1).filter(Boolean).map((l) => Object.fromEntries(l.split('\t').map((v, i) => [head[i], v ?? ''])));
 }
 
-/** 页面中文标题：各页 index.json 的 navigationBarTitleText 是权威。 */
+/**
+ * 页面名 —— **以原型里肉眼可见的字为权威**。
+ *
+ * 用户 2026-09-11 裁定：页名要让读的人能对回原型，所以取原型**界面上真能看见**的那几个字，
+ * 不是 `<title>` 元数据、不是 class 名、不是代码里的 label。
+ *
+ * 三套名字曾经并存，实测差在哪（56 屏）：
+ *   ① 原型可见标题（本函数现在取的）—— `.nav-bar` 48 屏、`header.nav` 7 屏
+ *   ② 各页 `index.json` 的 `navigationBarTitleText`（小程序导航栏）
+ *   ③ `screens.tsv` 的 `module` 列（后端登记表的模块名，粗一档）
+ * 实测 ① 与 ② **55/56 逐字相同、0 不同**（第 56 屏是 login，还没有原型）——
+ * 也就是说这套名字本来就对得上，**缺的是把出处写出来让人能查**。
+ *
+ * 一个提醒给下一个改这里的人：`<title>` **不能当来源**。它的格式不统一 ——
+ * `party-study-detail.html` 是「党建学习 · 文件预览」（父模块 · 本页），
+ * 而 `school-affairs.html` 是「党建管理部 · 幼儿园教师端」（本页 · 站名）。
+ * 按 `·` 切会取错一半。而且它在浏览器标签页上，手机框里根本看不见。
+ */
 export function screenTitles() {
-  const app = JSON.parse(read(join(REPO, 'miniprogram', 'app.json')));
   const out = new Map();
+  const teacher = readTsv(join(SPEC, 'screens.tsv'))
+    .filter((r) => r.role === 'teacher' && r.surface === 'miniprogram');
+
+  // 原型里可见的标题容器，按优先级试。每个都是手机框里真能看见的元素。
+  const PATTERNS = [
+    [/<div[^>]*class="[^"]*\bnav-bar\b[^"]*"[^>]*>([\s\S]*?)<\/div>/i, '.nav-bar'],
+    [/<header[^>]*class="[^"]*\bnav\b[^"]*"[^>]*>([\s\S]*?)<\/header>/i, 'header.nav'],
+  ];
+  const asText = (s) => String(s).replace(/<[^>]+>/g, ' ').replace(/&[a-z]+;/g, ' ').replace(/\s+/g, ' ').trim();
+  const NAV_GLYPH = /^[\s‹<←›»·~—\-–|]+/;
+
+  const visibleTitle = (protoFile) => {
+    const f = join(REPO, protoFile);
+    if (!existsSync(f)) return { title: '', source: '原型文件不在' };
+    const html = read(f);
+    for (const [re, label] of PATTERNS) {
+      const m = html.match(re);
+      if (!m) continue;
+      const t = asText(m[1]).replace(NAV_GLYPH, '').trim();
+      if (t) return { title: t, source: label };
+    }
+    return { title: '', source: '原型无可标识题' };
+  };
+
+  const mpTitle = (name) => {
+    const f = join(REPO, 'miniprogram', 'pages', name, 'index.json');
+    if (!existsSync(f)) return '';
+    try { return JSON.parse(read(f)).navigationBarTitleText || ''; } catch { return ''; }
+  };
+
+  // 取自 app.json 的页面清单，保证目录里每一屏都有条目（含以后新加的）
+  const app = JSON.parse(read(join(REPO, 'miniprogram', 'app.json')));
   for (const p of app.pages) {
     const name = p.split('/')[1];
-    const f = join(REPO, 'miniprogram', p.replace(/\/index$/, ''), 'index.json');
-    let title = name;
-    if (existsSync(f)) { try { title = JSON.parse(read(f)).navigationBarTitleText || name; } catch { /* 坏 json 就用目录名 */ } }
-    out.set(name, title);
+    const reg = teacher.find((r) => (r.mp_file || '').includes(`/pages/${name}/`));
+    const vis = reg ? visibleTitle(reg.screen_file) : { title: '', source: '未登记' };
+    const mp = mpTitle(name);
+    const title = vis.title || mp || name;
+    out.set(name, {
+      title,
+      // 出处，给人查的：原型里来自哪个元素 / 退回小程序导航栏 / 都没有就退回目录名
+      source: vis.title ? `原型 ${vis.source}` : (mp ? '小程序 navigationBarTitleText' : '目录名'),
+      protoFile: reg ? reg.screen_file : '',
+      mpFile: reg ? reg.mp_file : `miniprogram/pages/${name}/index.wxml`,
+      // 两者不同时记下来 —— 今天实测是 0，但规则要能在将来抓住它
+      differsFromMp: Boolean(vis.title && mp && vis.title !== mp),
+      mpTitle: mp,
+    });
   }
   return out;
 }
@@ -91,7 +152,10 @@ export function buildPageView() {
   const screenOps = readTsv(join(SPEC, 'screen-operations.tsv'));
   const eli10 = new Map(readTsv(join(SPEC, 'operation-eli10.tsv')).map((r) => [r.key, r]));
   const ops = operations(loadSpec());
-  const titles = screenTitles();
+  const titleInfo = screenTitles();
+  // `titles` 保持**纯字符串**（既有调用方都当字符串用，改了会连带动 pages-view）；
+  // 富信息放 `titleInfo`：出处、原型文件名、与小程序导航栏是否不一致。
+  const titles = new Map([...titleInfo].map(([k, v]) => [k, v.title]));
   const opById = new Map(ops.map((o) => [o.operationId, o]));
 
   // 屏幕 → 它的行，按状态排
@@ -151,7 +215,7 @@ export function buildPageView() {
   }
 
   return {
-    screenOps, byScreen, eli10, ops, opById, titles, callers, unused, notTeacher,
+    screenOps, byScreen, eli10, ops, opById, titles, titleInfo, callers, unused, notTeacher,
     unusedNoService, serviceReport: wiringFile, utilsCalled,
   };
 }

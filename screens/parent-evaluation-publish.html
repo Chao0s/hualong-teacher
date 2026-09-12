@@ -11,21 +11,21 @@
   <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
   <div class="nav-bar"><a class="back" href="growth-record.html">‹</a><div class="nav-title">发布家长测评</div><span></span></div>
   <div class="scroll">
-    <div class="chunk form-card">
+    <div class="chunk form-card" data-intent="parent-evaluation-publish.chunk">
       <label>评价类型</label>
-      <select class="select" data-ui="parent_evaluation.type_select"><option>月度评价</option><option>学期评价</option></select>
+      <select class="select" data-ui="parent_evaluation.type_select" data-intent="parent-evaluation-publish.select"><option>月度评价</option><option>学期评价</option></select>
       <!-- 教师在这里写的是给家长看的「评价说明」= db_parent_evaluation.evaluation_prompt，
            不是家长回填的 evaluation_text（那两个控件在家长端 monthly-/term-evaluation.html）。 -->
       <label>评价说明</label>
-      <textarea class="textarea" maxlength="1000" data-ui="parent_evaluation.prompt">请家长结合本月亲子任务、幼儿在家表现与照片记录，补充孩子的兴趣、生活习惯和成长变化。</textarea>
-      <div style="margin-top:12px"><button class="btn primary" style="width:100%">发布给家长</button></div>
+      <textarea class="textarea" maxlength="1000" data-ui="parent_evaluation.prompt" data-intent="parent-evaluation-publish.textarea">请家长结合本月亲子任务、幼儿在家表现与照片记录，补充孩子的兴趣、生活习惯和成长变化。</textarea>
+      <div style="margin-top:12px"><button class="btn primary" style="width:100%" data-intent="parent-evaluation-publish.btn">发布给家长</button></div>
     </div>
 
     <div class="sec">过往月份进度</div>
     <a class="list-card" href="parent-evaluation-detail.html">
-      <div class="mark">6月</div>
+      <div class="mark" data-intent="parent-evaluation-publish.mark">6月</div>
       <div class="list-main"><div class="list-title">2026年6月家长月度评价</div><div class="list-meta">总体完成 82% · 23/28 已提交</div></div>
-      <div class="chev">›</div>
+      <div class="chev" data-intent="parent-evaluation-publish.chev">›</div>
     </a>
     <a class="list-card" href="parent-evaluation-detail.html">
       <div class="mark green">5月</div>

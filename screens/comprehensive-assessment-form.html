@@ -57,40 +57,40 @@
 <body>
 <div class="phone">
   <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
-  <div class="mini-menu"><span>•••</span><span>○</span></div>
+  <div class="mini-menu" data-intent="comprehensive-assessment-form.mini-menu"><span>•••</span><span>○</span></div>
   <div class="nav-bar">
     <a href="growth-comprehensive-assessment.html" aria-label="返回综合评估"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></a>
     <div class="nav-title">开始综合评估</div>
     <span></span>
   </div>
   <div class="scroll">
-    <section class="chunk">
-      <div class="field" style="margin-bottom:0">
-        <div class="label">评估对象</div>
-        <select class="select" id="child" data-ui="child_assessment.child_select"></select>
+    <section class="chunk" data-intent="comprehensive-assessment-form.chunk">
+      <div class="field" style="margin-bottom:0" data-intent="comprehensive-assessment-form.field">
+        <div class="label" data-intent="comprehensive-assessment-form.label">评估对象</div>
+        <select class="select" id="child" data-ui="child_assessment.child_select" data-intent="comprehensive-assessment-form.select"></select>
       </div>
     </section>
 
     <div class="sec">领域打分</div>
     <section class="chunk" style="padding:12px 14px">
       <div style="font-size:12px;font-weight:700;margin-bottom:6px">评分说明（1—5 分）</div>
-      <div class="anchors">
-        <div class="anchor"><b>1</b><span>达到 3~4 岁年龄段典型水平</span></div>
+      <div class="anchors" data-intent="comprehensive-assessment-form.anchors">
+        <div class="anchor" data-intent="comprehensive-assessment-form.anchor"><b>1</b><span>达到 3~4 岁年龄段典型水平</span></div>
         <div class="anchor"><b>3</b><span>达到 4~5 岁年龄段典型水平</span></div>
         <div class="anchor"><b>5</b><span>达到 5~6 岁年龄段典型水平</span></div>
         <div class="anchor"><b>2 / 4</b><span>介于相邻锚点之间的过渡水平，由教师依据实际表现判断</span></div>
       </div>
-      <div class="hint">依据《3-6岁儿童学习与发展指南》教师评定量表，共 5 大领域 124 题。</div>
+      <div class="hint" data-intent="comprehensive-assessment-form.hint">依据《3-6岁儿童学习与发展指南》教师评定量表，共 5 大领域 124 题。</div>
     </section>
     <div id="domains"></div>
 
-    <div class="summary">
-      <div class="summary-card">
+    <div class="summary" data-intent="comprehensive-assessment-form.summary">
+      <div class="summary-card" data-intent="comprehensive-assessment-form.summary-card">
         <div>
-          <div class="avg" id="avg">—</div>
+          <div class="avg" id="avg" data-intent="comprehensive-assessment-form.avg">—</div>
           <div class="hint" id="progressHint">已评 0/124 · 草稿自动保存</div>
         </div>
-        <button class="btn" id="save">保存评估</button>
+        <button class="btn" id="save" data-intent="comprehensive-assessment-form.btn">保存评估</button>
       </div>
     </div>
   </div>
@@ -133,7 +133,7 @@ function refTable(item) {
       <td>${cell(row.g[0])}</td><td>${cell(row.g[1])}</td>
     </tr>`).join('')}
   </table>
-  <div class="ref-note">${item.note}</div>`;
+  <div class="ref-note" data-intent="comprehensive-assessment-form.ref-note">${item.note}</div>`;
 }
 
 const childSelect = document.getElementById('child');
@@ -149,25 +149,25 @@ childSelect.addEventListener('change', () => {
 
 function render() {
   domainWrap.innerHTML = domains.map((domain, di) => `
-    <section class="domain" data-domain="${di}">
+    <section class="domain" data-domain="${di}" data-intent="comprehensive-assessment-form.domain">
       <div class="domain-head">
-        <div class="domain-title">${domain.name}</div>
-        <div class="domain-meta">
-          <span class="score" id="score-${di}"></span>
-          <span class="caret">›</span>
+        <div class="domain-title" data-intent="comprehensive-assessment-form.domain-title">${domain.name}</div>
+        <div class="domain-meta" data-intent="comprehensive-assessment-form.domain-meta">
+          <span class="score" id="score-${di}" data-intent="comprehensive-assessment-form.score"></span>
+          <span class="caret" data-intent="comprehensive-assessment-form.caret">›</span>
         </div>
       </div>
       <div class="domain-body">
-      ${domain.items.map(item => `<div class="item">
-          <div class="item-name">${item.name}${item.m ? '<span class="item-tag">实测换算</span>' : ''}</div>
-          <div class="item-q">${item.q}</div>
+      ${domain.items.map(item => `<div class="item" data-intent="comprehensive-assessment-form.item">
+          <div class="item-name" data-intent="comprehensive-assessment-form.item-name">${item.name}${item.m ? '<span class="item-tag" data-intent="comprehensive-assessment-form.item-tag">实测换算</span>' : ''}</div>
+          <div class="item-q" data-intent="comprehensive-assessment-form.item-q">${item.q}</div>
           <div class="anchors">
             <div class="anchor"><b>1</b><span>${item.a['1']}</span></div>
             <div class="anchor"><b>3</b><span>${item.a['3']}</span></div>
             <div class="anchor"><b>5</b><span>${item.a['5']}</span></div>
           </div>
           ${item.ref ? refTable(item) : ''}
-          <div class="scale">
+          <div class="scale" data-intent="comprehensive-assessment-form.scale">
             ${[1,2,3,4,5].map(num => `
               <input type="radio" name="s-${item.id}" id="s-${item.id}-${num}" value="${num}" data-ui="child_assessment.item.score_button" ${scores[item.id] === num ? 'checked' : ''}>
               <label for="s-${item.id}-${num}">${num}</label>

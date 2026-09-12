@@ -23,9 +23,10 @@
  */
 import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { screenTitles } from './screen-ops-data.mjs';
 
 const HEAD_SCREEN_OPS = [
-  'screen', 'mp_file', 'screen_title', 'state', 'operation_id', 'method', 'path',
+  'screen', 'mp_file', 'screen_title', 'title_source', 'state', 'operation_id', 'method', 'path',
   'source', 'trigger_wxml', 'trigger_prototype', 'trigger_flag', 'gap', 'notes',
 ];
 const HEAD_ELI10 = ['key', '幹嘛', '怎麼走', '碰到誰', 'derived_from'];
@@ -46,21 +47,43 @@ function unionBody(page, name) {
   return union;
 }
 
-/** 取 `function NAME(...) { ... }` 的整段函数体（花括号配平）。取不到返回空串。 */
+/**
+ * 取 `function NAME(...) { ... }` 的整段函数体（花括号配平）。取不到返回空串。
+ *
+ * **必须先跳过参数表，再找函数体的 `{`。** 第一版直接 `indexOf('{', 定义处)`，
+ * 于是参数里的解构花括号被当成了函数体开头 —— `parentEvalPeriods({ limit } = {})`
+ * 取到的是 `{ limit }`（9 字节），而真正的函数体 977 字节。
+ *
+ * 后果不是「少几行」，是**间接调用这一条链断在那里**：直接调 `listParentEvaluations()`
+ * 的页面照样登记得到（名字对得上），而绕着 `parentEvalPeriods()` 调的
+ * `parent-evaluation-publish`（「发布家长测评」）就漏了 —— 实测它确实漏了。
+ * 这个代码库里 `({ x } = {})` 这种签名很常见，所以影响面不小。
+ */
 function bodyOf(src, name) {
   const re = new RegExp(`(?:^|\\n)(?:async\\s+)?function\\s+${name}\\s*\\(`);
   const m = re.exec(src);
   if (!m) return '';
-  const open = src.indexOf('{', m.index);
-  if (open < 0) return '';
-  let depth = 0;
-  for (let i = open; i < src.length; i++) {
+  // 先配平跳过参数表（跳过字符串与模板字面量里的括号）
+  let i = src.indexOf('(', m.index);
+  if (i < 0) return '';
+  let pdepth = 0;
+  for (; i < src.length; i++) {
     const ch = src[i];
-    if (ch === '{') depth++;
-    else if (ch === '}') { depth--; if (depth === 0) return src.slice(open, i + 1); }
+    if (ch === '(') pdepth++;
+    else if (ch === ')') { pdepth--; if (pdepth === 0) { i++; break; } }
     else if (ch === '`') { const j = src.indexOf('`', i + 1); i = j < 0 ? src.length : j; }
     else if (ch === "'" || ch === '"') { const j = src.indexOf(ch, i + 1); i = j < 0 ? src.length : j; }
-    else if (ch === '/' && src[i + 1] === '/') { const j = src.indexOf('\n', i); i = j < 0 ? src.length : j; }
+  }
+  const open = src.indexOf('{', i);
+  if (open < 0) return '';
+  let depth = 0;
+  for (let k = open; k < src.length; k++) {
+    const ch = src[k];
+    if (ch === '{') depth++;
+    else if (ch === '}') { depth--; if (depth === 0) return src.slice(open, k + 1); }
+    else if (ch === '`') { const j = src.indexOf('`', k + 1); k = j < 0 ? src.length : j; }
+    else if (ch === "'" || ch === '"') { const j = src.indexOf(ch, k + 1); k = j < 0 ? src.length : j; }
+    else if (ch === '/' && src[k + 1] === '/') { const j = src.indexOf('\n', k); k = j < 0 ? src.length : j; }
   }
   return '';
 }
@@ -148,7 +171,16 @@ const normText = (s) => String(s || '')
  *
  * 「原型无按钮」与「只wxml」不是一回事：前者是**没有可比的东西**，后者是**有个不一样的东西**。
  */
-function matchPrototype(protoTexts, trigger, protoExists) {
+/**
+ * 把 wxml 的觸發文案對到原型那一句。
+ *
+ * **2026-09-12 起多一個輸入：`intentCount`（原型標了幾個 `data-intent`）。**
+ * 為什麼要它：這個函式從前只比對**按鈕文案**，所以「文案不匹配」與「原型根本沒有這個控件」
+ * 會落到同一個旗標（`原型无按钮`／`只wxml`）—— 前者是比對失敗，後者是**缺意圖**，
+ * 兩件不同的事。現在原型有機讀意圖標記（709 個，票 #86），分得開了：
+ * 原型標了意圖而文案對不上時，說「有意圖未對上」，**不再斷言原型沒有**。
+ */
+function matchPrototype(protoTexts, trigger, protoExists, intentCount = 0) {
   if (!trigger) return { text: '', flag: '' };
   if (protoTexts.includes(trigger)) return { text: trigger, flag: '' };
   const nTrigger = normText(trigger);
@@ -163,6 +195,10 @@ function matchPrototype(protoTexts, trigger, protoExists) {
     }
   }
   if (!protoExists) return { text: '', flag: '原型无文件' };
+  // 原型標了意圖、只是文案沒對上 —— 這是**比對失敗**，不是原型沒有。
+  // 旗標只放**類別**：早先寫成「原型有意圖未對上（7）」，於是一列分成 28 種值，
+  // 那一欄就不能當分類數了。數字屬於資料，不屬於旗標。
+  if (intentCount > 0) return { text: '', flag: '原型有意圖未對上' };
   if (!protoTexts.length) return { text: '', flag: '原型无按钮' };
   return { text: '', flag: '只wxml' };
 }
@@ -181,7 +217,12 @@ export function emitScreenOperations(ctx) {
   // 客户端调了、契约里没有的调用。**不是垃圾** —— 它是「页面要用而契约没有」那一桶的事实来源。
   // 声明要排在 utils 那一段之前：utils 也会往这里投，`const` 之后用会 TDZ。
   const offContract = [];
-  const titles = new Map(pages.map((p) => [p.name, p.title]));
+  // 页名与它的出处：**与 /pages 用同一个权威**（`screenTitles()`，以原型可见字为准）。
+  // 第一版这里自己造了张 `titles`（取自各页 index.json），于是生成器与视图是**两份实现** ——
+  // 今天它们恰好一致（实测 55/56 逐字相同、0 不同），但那正是会漂开的那种结构。
+  const titleInfo = screenTitles();
+  const titleOf = (n) => (titleInfo.get(n) || {}).title || n;
+  const sourceOf = (n) => (titleInfo.get(n) || {}).source || '';
   const utilsCallers = new Map();
   if (utilsDir && existsSync(utilsDir)) {
     for (const f of readdirSync(utilsDir).filter((x) => x.endsWith('.js'))) {
@@ -297,12 +338,13 @@ export function emitScreenOperations(ctx) {
 
     for (const [opId, hit] of hits) {
       const trigger = [...hit.triggers][0] || '';
-      const proto1 = matchPrototype(protoTexts, trigger, proto !== null);
+      const proto1 = matchPrototype(protoTexts, trigger, proto !== null, proto ? proto.intents.length : 0);
       const fn = [...hit.handlers][0];
       genRows.push({
         screen: p.name,
         mp_file: (screensTsv.get(p.name) || {}).mp_file || `miniprogram/pages/${p.name}/index.wxml`,
-        screen_title: p.title,
+        screen_title: titleOf(p.name),
+        title_source: sourceOf(p.name),
         state: stateOf({ handler: fn, trigger, op: hit.op }),
         operation_id: opId,
         method: hit.op.method,
@@ -331,7 +373,8 @@ export function emitScreenOperations(ctx) {
     return [...byKey.values()].map((o) => ({
       screen: o.screen,
       mp_file: o.screen === '(utils)' ? `miniprogram/${o.file}` : (screensTsv.get(o.screen) || {}).mp_file || `miniprogram/pages/${o.screen}/index.wxml`,
-      screen_title: o.screen === '(utils)' ? 'utils（不经页面）' : titles.get(o.screen) || o.screen,
+      screen_title: o.screen === '(utils)' ? 'utils（不经页面）' : titleOf(o.screen),
+      title_source: o.screen === '(utils)' ? '伪屏' : sourceOf(o.screen),
       state: '',
       operation_id: '',
       method: o.verb,

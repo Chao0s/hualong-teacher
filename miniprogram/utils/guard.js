@@ -20,11 +20,9 @@
  *    SILENTLY: the tap does nothing and nothing is logged. Keeping the old list
  *    would have made five destinations dead.
  *
- * 2. **No redirectToLogin.** There is no `pages/login/index` in this build. The
- *    testdata environment signs itself in on first need (`utils/auth.ensureSession`),
- *    so the answer to a dead session is to drop it and get another, not to send
- *    the user to a page that does not exist. When a real login page lands, this
- *    is the one function that changes.
+ * 2. **redirectToLogin 现在有了。** `pages/login/index` 已建、并且是启动页（`app.json`
+ *    的第一项）。会话失效时 `endSessionOnAuthFailure` 会清票并 reLaunch 过去 ——
+ *    见那个函数的注释。此前没有登录页，跳转被拿掉，代价是每个页面 401 后留一张白页。
  */
 
 const session = require('./session');
@@ -95,32 +93,37 @@ function canReachModule(moduleId) {
 }
 
 /**
- * Drop a dead session.
+ * Drop a dead session, then send the teacher to the login page.
  *
  * Returns true ONLY when it actually sent the user somewhere — that is the
  * contract callers rely on when they write
  * `if (endSessionOnAuthFailure(err)) return;`. Returning true means "handled,
  * stop rendering"; returning false means "still your error, show it".
  *
- * ── 这个函数为什么现在恒返回 false ───────────────────────────────────────────
+ * ── 这里为什么重新开始跳转（2026-09-12）───────────────────────────────────────
  *
- * 归档版在这里 `wx.reLaunch` 到 `pages/login/index`，返回 true 是对的：页面正在
- * 离开，不渲染任何东西是应该的。**这个工程没有登录页**，跳转那一句被拿掉了 ——
- * 但当时 `return true` 留了下来，于是每个页面的 catch 变成「清掉会话，然后一言
- * 不发地空着」。开发者工具里看到的就是一张白页，没有报错、没有重试入口。
+ * 登录页 `pages/login/index` 建起来了、并且成了启动页，所以当初拿掉的那一句跳转
+ * 可以放回来。归档版的形状是对的：清掉会话 → `wx.reLaunch` 到登录页 → 返回 true，
+ * 因为页面正在离开，不渲染任何东西是应该的。
+ *
+ * **上一版恒返回 false 的那段时间的代价**，写在这里免得再犯：那时没有登录页，
+ * 跳转被拿掉了而 `return true` 留着，于是每个页面的 catch 变成「清掉会话，然后
+ * 一言不发地空着」—— 开发者工具里就是一张白页，没有报错、没有重试入口。
  *
  * 真正的自动恢复在 `utils/request.js` 里：devSession 环境下 401 会就地重新签票
  * 并重放一次。所以一个 401 **能走到这里**，就说明那次恢复已经失败了 —— 那不是
- * 可以静默吞掉的情况，是必须让教师看见的情况。因此这里只负责清掉死会话，把
- * 「显示什么」交回页面。
+ * 可以静默吞掉的情况，是必须让教师看见的情况。
  *
- * 将来真有了登录页，在这里加 `wx.reLaunch` 并改回 `return true`：那时候
- * 「已经处理掉了」才重新成立。
+ * **不会自己跳自己**：登录页自己不调这个函数（它把失败画在页面上、给重试按钮），
+ * 所以登录失败时不会 reLaunch 到登录页形成循环。
  */
 function endSessionOnAuthFailure(err) {
   if (!(err instanceof ApiError) || !err.isAuthFailure) return false;
   session.clear();
-  return false;
+  // reLaunch 到登录页。本工程没有原生 tabBar（底部五项是 components/hl-tabbar），
+  // 所以 reLaunch 是这里通行的跳法 —— hl-tabbar 自己切页用的也是它。
+  wx.reLaunch({ url: '/pages/login/index' });
+  return true;
 }
 
 /**

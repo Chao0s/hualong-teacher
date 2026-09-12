@@ -128,6 +128,7 @@ export async function contract(runReport) {
         layer: 'contract',
         severity: known ? 'medium' : 'high',
         kind: known ? 'known-gap' : 'undeclared-path',
+        subject: `${client.name} ${normalise(p)}`,
         what: known
           ? `${client.name} calls ${p} — registered gap: ${known}`
           : `${client.name} calls ${p}, which the contract does not declare`,
@@ -138,15 +139,37 @@ export async function contract(runReport) {
       layer: 'contract',
       severity: 'low',
       kind: 'coverage',
+      subject: `coverage-${client.name}`,
       what: `${client.name}: ${seen.size} distinct path(s) called across ${files.length} service file(s)`,
     });
   }
+
+  // ── 登記的 known-gap 必須還是缺口 ────────────────────────────────────────
+  //
+  // 這一格從前只被**用**來降級嚴重度（上面的 `KNOWN[normalise(p)]`），從不被**檢查**。
+  // 於是契約補上那條路徑之後，登記項還留著，而登記表宣稱它是缺口 —— 那是一個
+  // 靜默關掉的檢查，正是本倉反覆撞到的物種。SKILL.md 從前就宣稱有這條檢查，
+  // 而它不存在（2026-09-12 抓到）。
+  //
+  // 第一例：`/training/home` 進了契約（v0.31，G111），而 `known-gaps.json` 仍登記它。
+  const staleKnown = Object.keys(KNOWN).filter((k) => declared.has(normalise(k)));
+  for (const k of staleKnown) {
+    runReport.add({
+      layer: 'contract', severity: 'high', kind: 'stale-expectation',
+      subject: normalise(k),
+      what: `a registered known-gap is no longer a gap — the contract declares ${k}`,
+      detail: `known-gaps.json lists ${k} as「客户端调了、契约没声明的一条路径」。\n` +
+        `契約現在聲明它了，所以這一條描述的是一件已經不存在的事。\n` +
+        `刪掉它：登記表留著一條已閉合的缺口，就是把它自己的用途抵消掉。`,
+    });
+  }
+  console.log(`   [contract/known-gaps] ${Object.keys(KNOWN).length} registered, ${staleKnown.length} no longer a gap`);
 
   // The mock is the engine, not a target: it is how all 128 declared paths get
   // exercised without a service to exercise them against.
   try {
     await run('node', ['--test', 'tests/api-coverage.test.mjs'], { cwd: REPO, timeout: 120000 });
-    runReport.add({ layer: 'contract', severity: 'low', kind: 'coverage', what: 'every declared operation answers its declared success code against the mock' });
+    runReport.add({ layer: 'contract', severity: 'low', kind: 'coverage', subject: 'mock-alignment', what: 'every declared operation answers its declared success code against the mock' });
   } catch (err) {
     const out = String(err.stdout || err.message);
     const fail = out.split('\n').find((l) => l.includes('not ok') || l.includes('AssertionError')) || 'see the report';
@@ -154,6 +177,7 @@ export async function contract(runReport) {
       layer: 'contract',
       severity: 'medium',
       kind: 'mock-regression',
+      subject: 'mock-alignment',
       what: 'the contract no longer agrees with the mock',
       detail: fail.trim(),
     });

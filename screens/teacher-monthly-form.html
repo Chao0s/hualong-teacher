@@ -128,9 +128,9 @@
   <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
   <div class="nav-bar"><a class="back" href="teacher-monthly-evaluation.html">‹</a><div class="nav-title">填写月度评价</div><span></span></div>
   <div class="scroll">
-    <div class="chunk form-card">
+    <div class="chunk form-card" data-intent="teacher-monthly-form.chunk">
       <label>评价月份</label>
-      <select class="select" id="monthSelect" data-ui="month_eval.month_select">
+      <select class="select" id="monthSelect" data-ui="month_eval.month_select" data-intent="teacher-monthly-form.select">
         <option value="3">3月</option>
         <option value="4">4月</option>
         <option value="5">5月</option>
@@ -140,11 +140,11 @@
       <label>评价幼儿</label>
       <select class="select" id="childSelect" data-ui="month_eval.child_select"><option>陈小明</option><option>李雨萱</option><option>张力轩</option></select>
       <label>评价内容</label>
-      <textarea class="textarea" maxlength="500" data-ui="month_eval.textarea">本月在集体活动中愿意主动表达，能与同伴协商材料使用，整理习惯有明显进步。</textarea>
+      <textarea class="textarea" maxlength="500" data-ui="month_eval.textarea" data-intent="teacher-monthly-form.textarea">本月在集体活动中愿意主动表达，能与同伴协商材料使用，整理习惯有明显进步。</textarea>
       <label>关联在园时光照片</label>
       <div class="photo-row" id="importedRow"></div>
       <div class="empty-hint" id="emptyHint">尚未导入照片，点击下方按钮从该幼儿的相册中选择。</div>
-      <button class="btn blue" style="width:100%" id="openAlbum">选择照片</button>
+      <button class="btn blue" style="width:100%" id="openAlbum" data-intent="teacher-monthly-form.btn">选择照片</button>
       <div style="margin-top:14px"><button class="btn primary" style="width:100%">保存评价</button></div>
     </div>
   </div>
@@ -153,13 +153,13 @@
   <div class="sheet" id="albumSheet" aria-hidden="true">
     <div class="sheet-head">
       <h2 id="albumTitle">陈小明的在园时光相册</h2>
-      <button class="close" id="closeAlbum" aria-label="关闭">×</button>
+      <button class="close" id="closeAlbum" aria-label="关闭" data-intent="teacher-monthly-form.close">×</button>
     </div>
     <div class="album-scroll">
       <div class="album-group" data-month="3">
         <div class="group-title">第2周</div>
         <div class="album-grid">
-          <div class="album-photo" data-label="晨间锻炼">晨间锻炼</div>
+          <div class="album-photo" data-label="晨间锻炼" data-intent="teacher-monthly-form.album-photo">晨间锻炼</div>
           <div class="album-photo" data-label="搭建游戏">搭建游戏</div>
         </div>
       </div>

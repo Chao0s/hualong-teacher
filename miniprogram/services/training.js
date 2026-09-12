@@ -52,6 +52,8 @@
 const api = require('../utils/request');
 const time = require('../utils/time');
 const media = require('./media');
+// 推荐卡的色表与标签走 library 那一份（不另抄）—— 见 library.js 的导出注释。
+const library = require('./library');
 
 const TRAINING_PATH = '/trainings';
 const PARTICIPATION_PATH = '/training-participations';
@@ -304,6 +306,87 @@ function whyCannotSubmitFeedback(text) {
   return '';
 }
 
+/* ── 教研培训首页（G111） ────────────────────────────────────────────────── */
+
+/**
+ * 轮播的配色跟着**阶段**走，不是按序号取的。
+ *
+ * 阶段由服务端按园所时区派生（F9），所以同一条研修在不同日子可能是不同颜色 ——
+ * 那是对的：颜色在这里说的是「快开始 / 正在开 / 已结束」。
+ */
+const PHASE_TONE = { upcoming: 'b1', ongoing: 'b2', history: 'b3' };
+
+/** 轮播是一条横条。正文最长 2000 字，原样塞进去会把版面压垮。 */
+const BANNER_DESC_MAX = 60;
+
+/** 轮播卡。原型的 `.banner-img` 绑 tone／kicker／title／desc 四个键。 */
+function bannerCard(row) {
+  const content = row.training_content || '';
+  return {
+    tone: PHASE_TONE[row.training_phase] || 'b1',
+    kicker: TRAINING_PHASE[row.training_phase] || '',
+    title: row.training_title || '',
+    desc: content.length > BANNER_DESC_MAX ? `${content.slice(0, BANNER_DESC_MAX)}…` : content,
+  };
+}
+
+/**
+ * 推荐卡。原型的 `.resource-card` 与 `.case-card` 绑的是**同一组六个键**
+ * （glyph／tone／name／badge／meta／summary），所以塑形只写一条。
+ *
+ * `meta` 里原型写的「关联 N 个案例」**这里不拼** —— 那个数要 G109 那个端点
+ * （`GET /library/resources/{id}/cases`），首页聚合没有回它。缺的数不编，
+ * 少一格好过编一个像真的。
+ */
+function recommendCard({ name = '', summary = '', tone = 'accent', badge = '', metaParts = [] }) {
+  return {
+    glyph: name.slice(0, 1),
+    tone,
+    name,
+    badge,
+    meta: metaParts.filter(Boolean).join(' · '),
+    summary,
+  };
+}
+
+function resourceRecommendation(row) {
+  return recommendCard({
+    name: row.resource_name,
+    summary: row.resource_explain,
+    tone: library.TAG_TONE[row.resource_tag] || 'accent',
+    badge: library.RESOURCE_TAG[row.resource_tag] || '',
+    metaParts: [library.RESOURCE_TYPE[row.resource_type], library.gradeLabel(row.grade)],
+  });
+}
+
+function caseRecommendation(row) {
+  // `gradeLabel` 吃数组。案例的 `case_grade` 可能已经是数组，也可能是一个值。
+  const grades = Array.isArray(row.case_grade) ? row.case_grade : [row.case_grade];
+  return recommendCard({
+    name: row.case_name,
+    summary: row.case_intro,
+    tone: library.FIELD_TONE[row.case_field] || 'accent',
+    badge: library.CASE_FIELD[row.case_field] || '',
+    metaParts: [library.CASE_FIELD[row.case_field], library.gradeLabel(grades)],
+  });
+}
+
+/**
+ * `GET /training/home` —— 教研培训首页的三块内容，一次取回。
+ *
+ * **不做二次筛选、不做二次排序。** 服务端的「推荐」是按最新派生的
+ * （`getPartyHome` 的先例：`db_party_feature` 已由 F7 拔除、不得重建），
+ * 客户端再挑一次就变成两套规则，而两套规则一定会漂。
+ */
+async function getTrainingHome() {
+  const row = await api.get('/training/home');
+  return {
+    banners: (row.carousel || []).map(bannerCard),
+    resources: (row.recommended_resources || []).map(resourceRecommendation),
+    cases: (row.recommended_cases || []).map(caseRecommendation),
+  };
+}
+
 module.exports = {
   FEEDBACK_MAX,
   submitFeedback,
@@ -312,6 +395,7 @@ module.exports = {
   TRAINING_PHASE,
   PARTICIPATION_STATUS,
   allowedActions,
+  getTrainingHome,
   listTrainings,
   getTraining,
   listFeedback,

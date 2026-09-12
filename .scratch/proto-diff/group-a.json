@@ -1,0 +1,67 @@
+{
+  "group": "a-party-library-training",
+  "missing": [
+    {
+      "screen": "resource-detail",
+      "screen_title": "资源详情",
+      "file": "screens/resource-detail.html",
+      "evidence": "第 87-95 行「课程应用」小节，两张 link-card 指向 case-detail.html（「祠堂里的故事」「砖雕纹样拓印」）。整页没有别的动作。",
+      "why": "原型在资源详情里列出「这个资源被哪些案例用了」。我们的映射表给 resource-detail 只登记了两行（screen-operations.tsv 第 88 行 createResourceDownloadLink、第 89 行 getResource），没有任何一条取关联案例。契约也装不下：openapi.yaml 第 6576 行 Resource schema 只有 cover_file_id / word_file_id，没有反向的 case ids；关系是单向的（db_case.resource_ids）。services/library.js 头注第 3 条明写「不发明它，getResource().links 恒为空数组」（第 183 行 links: []），页面据此不渲染这一节。",
+      "guess_operation": "契约缺一条反向查询（如 GET /library/resources/{resource_id}/cases）或 Resource schema 缺 case_ids"
+    },
+    {
+      "screen": "resource-center",
+      "screen_title": "课程资源",
+      "file": "screens/resource-center.html",
+      "evidence": "第 74-78 行 form#searchForm，input#searchInput（placeholder「搜索资源、案例、活动主题」）+ button.search-action「搜索」；第 156-162 行 submit 处理器把关键词推向 resource-library.html?q=<关键词>。",
+      "why": "这是原型里唯一一个真正的搜索提交（resource-library.html 第 60 行的搜索框没有 submit、第 131 行只做本地 input 过滤；而且它连 q 参数都不读）。我们的映射表把 resource-center 整页登记成 no-api（screen-operations.tsv 第 87 行，notes「7 个 handler 全是搜索与导航」），resource-library 只登记 listResources（第 90 行）。契约两端都没有搜索参数：openapi.yaml 第 348-365 行 listResources 只有 resource_tag / grade / resource_status / class_id / mine_only，第 532 行那段 listCases 也只有 case_grade / case_field / case_area。services/library.js 头注第 1 条自己记下了这件事。",
+      "guess_operation": "契约缺 keyword/q 参数（或一个 /library/search），客户端目前在本地对已取回的一页做匹配"
+    },
+    {
+      "screen": "training-center",
+      "screen_title": "教研培训部",
+      "file": "screens/training-center.html",
+      "evidence": "第 43-65 行 section#featuredRecommendation 轮播（3 张，分别写「沙湾留耕堂 · 祠堂空间」「龙舟竞渡」「沙湾砖雕 · 岭南纹样」）；第 88-115 行「推荐资源」3 张卡；第 118-145 行「推荐案例」3 张卡。",
+      "why": "这一页在我们的映射表里是空行（screen-operations.tsv 第 120 行，no-api，notes「6 个 handler 全是轮播与导航」）。原型上有三个内容块要取数，映射表里一条操作都没有。契约也没有对应端点：openapi.yaml 里 grep recommend 零命中；而 screens.tsv 第 12 行给 training-center 登记的主表是 db_training_recommendation，并注明「featured union takes newest 3 from p2/p3; p1 retired」—— 设计上存在一个聚合，端点没写。",
+      "guess_operation": "契约缺一个教研培训首页聚合（轮播 + 推荐资源 + 推荐案例），类似已有的 GET /party/home"
+    },
+    {
+      "screen": "teacher-profile / upload-resource",
+      "screen_title": "个人档案 / 上传资料",
+      "file": "screens/teacher-profile.html",
+      "evidence": "teacher-profile.html 第 94-95 行编辑弹层里「姓名」「任教班级」两个只读回显（注释明写由名冊权威持有）；upload-resource.html 第 59-72 行独立一段「上传人信息」，两个 readback 写死成「陈老师」「大一班」，注释「由登录信息自动带入，不可修改」。",
+      "why": "两页都要会话派生的身份字段，而 screen-operations.tsv 里没有任何一行对应契约的 GET /auth/session（operationId getSession）。全表只有第 2 行的 (utils) 行，登记的却是 POST /dev/session（source=off-contract，注明「契约里没有这条路径」）。契约那边 TeacherProfile schema（openapi.yaml 第 8058 行起）明写「姓名与任教班级不在这里 —— 随会话 scope 下发」。客户端确实在调（utils/auth.js 第 103、193 行 api.get('/auth/session')）。",
+      "guess_operation": "getSession（GET /auth/session）—— 映射表补一行，不是缺接口"
+    }
+  ],
+  "invented": [
+    {
+      "operation_id": "createResourceDownloadLink",
+      "screen": "resource-detail",
+      "why": "原型这一页没有任何下载入口：screens/resource-detail.html 第 63-99 行只有返回箭头、标题、三个 tag、四段正文与两张 case-detail 链接卡，全文没有 <button>、没有 data-action、没有 download 属性。我们有 POST /library/resources/{resource_id}/download-link（screen-operations.tsv 第 88 行，handler onDownloadPlan()），客户端也照做了 —— miniprogram/pages/resource-detail/index.wxml 第 46-47 行的注释原话：「原型这一页没有这个按钮，但契约有 POST …/download-link，那一列也有值」。这是有意识按契约加的一个入口，不是漏接。"
+    },
+    {
+      "operation_id": "listCases / listResources / getResource / getCase",
+      "screen": "upload-resource",
+      "why": "miniprogram/pages/upload-resource/index.wxml 第 13-60 行有一整块「我的上传（#67）」：草稿（含被驳回，带 review_note 驳回理由）与已提交两组，条目 bindtap=onMyUploadTap（第 30、51 行）点进编辑。原型 screens/upload-resource.html 第 40-83 行没有这一块，全页只有：banner、上传目标二选一、上传人信息回显、按目标切换的动态表单、保存草稿／提交审核两个按钮；原型也没有任何「看自己草稿／看驳回理由」的地方。映射表第 130-134 行把这四条读登记在 upload-resource 上，notes 写 handler onMyUploadTap()。这一块是 issue #67 带来的（也是教师端唯一的审核结果面：Resource.review_note / Case.review_note，见 openapi.yaml 第 6600 行附近的 readOnly 描述）。"
+    },
+    {
+      "operation_id": "listMyProfileChanges",
+      "screen": "teacher-profile",
+      "why": "miniprogram/pages/teacher-profile/index.wxml 第 33-44 行有一块「修改申请」：提交时间 + 状态徽章 + 三种状态各一句说明（s3「已写入档案」／s2「管理端审核通过后自动更新档案」／s4「这一份没有通过，可以改好后重新提交」），数据来自 GET /teacher-profile/changes 的第一条（index.js 第 22 行注释）。prototype screens/teacher-profile.html 第 45-81 行只有「基本履历」与「资质与荣誉」两块，没有任何修改状态行；原型对这个状态只有一句 toast（第 241 行「已提交审核，审核通过后自动更新」）。契约那边 TeacherProfile.pending_change 是内嵌的（openapi.yaml 第 8090 行附近：「内嵌是为了让档案页一次读完就能说出『上一次改还在审』—— 少一次往返」），所以我们既是原型没有的入口，也把契约本来想省掉的那一次往返加回来了。"
+    },
+    {
+      "operation_id": "createSession / revokeSession",
+      "screen": "(auth，无页面)",
+      "why": "契约有三个 auth 操作：POST /auth/session（createSession）、GET /auth/session（getSession）、DELETE /auth/session（revokeSession）。整套教师原型没有登录页也没有登出入口 —— 根 index.html 第 58-81 行的屏幕清单只有首页／党建管理／综合协调／教研培训部／家园社共育五个 Tab 页，screens/ 目录里 56 个 html 一个登录页都没有，screens.tsv 的 teacher 行里也没有 auth 屏。我们的映射表里对应 auth 的只有第 2 行 (utils) 的 POST /dev/session（off-contract 的本地后门），createSession 与 revokeSession 一行都没有；客户端也只调了 POST /auth/session（utils/auth.js 第 74 行）与 GET /auth/session（第 103、193 行），没有任何 DELETE 调用点 —— 登出在前后两端都还不存在。"
+    }
+  ],
+  "unsure": [
+    "getPartyHome（GET /party/home）：契约有这一条（openapi.yaml 第 4252 行，聚合轮播 + 三类最新内容），映射表里一行都没有；原型 school-affairs.html 第 69-74 行的 3 张轮播 + 第 145-147 行自动轮播脚本正好是它的入口。但客户端不是「漏调」—— services/party.js 头注第 1 条明写「GET /party/home 的回包形状不合契约…所以 home() 不调 /party/home，改由三条合契约的列表端点并发各取 3 条」，operation-eli10.tsv 第 113 行的『调用』列也写着「无（没有页面调用它）」。所以这更像契约与实作的形状分歧，不像 A（漏接）也不像 B（发明）—— 我没有把握把它归进任何一边。",
+    "case-detail 的「下载Word详案」：原型 screens/case-detail.html 第 152 行是 <a class=\"btn-dl primary\" href=\"#word-plan\">，页内锚点跳到下方内嵌的 Word 版式，不是下载动作；我们按契约接成了 POST /library/cases/{case_id}/download-link（映射表第 6 行）。按钮文案在，动作为锚点 —— 按『名称不同也算有』算冒烟，按『原型没有下载动作』算发明。",
+    "party-study-detail 的两个按钮：原型第 29 行是「在线预览」+「下载文件」两个 button（data-action=预览／下载），我们的客户端两个走同一条链接同一个函数（miniprogram/pages/party-study-detail/index.wxml 第 51-55 行注释：「两个按钮走同一条链接、同一个函数」）。映射表只有一行 getFileUrl 且 trigger 写「在线预览」。下载那一个我们没漏（同一操作覆盖），但也确实不是独立操作 —— 是否要补一行，看对账口径。",
+    "school-affairs 列表行里的「预览／下载」小药丸：原型第 81、86、91 行是惰性的 <span class=\"pill\">，整行才是链接，没有 handler。party 一族映射表里没有任何下载／取链接操作（只有 party-study-detail / party-activity-detail 的 getFileUrl）。它们在原型上看着能点、实际点了没反应，我判它们不构成缺口，但没有十足把握。",
+    "审核（review）组：教师端原型里没有任何审核动作 —— 「审核」只作为下游状态出现在 upload-resource.html 第 42 行 kicker「提交审核」、第 81 行按钮、training-detail.html 第 77 行「审核通过后公开」、teacher-profile.html 第 156 行「提交审核」。契约的 /admin/review/* 五条（openapi.yaml 第 677 行起）是管理端角色，教师原型够不着。教师端唯一的审核结果面是 Resource.review_note / Case.review_note，由「我的上传」那一块呈现 —— 已计入 invented 第二条，不再单列。所以 review 组我报 0 missing、0 invented。",
+    "party-study-detail 的「相关视频学习」：原型第 23-27、43-53 行有视频列表与「复制链接」按钮（外链 12371.cn／xuexi.cn，客户端只复制不内嵌播放）。契约是支持的 —— PartyStudy.video_links 在 openapi.yaml 第 8547 行，第 4321 行还专门写了「客户端只提供复制」。映射表没有独立行，但它随 getPartyStudy 下发，不构成缺口。"
+  ]
+}

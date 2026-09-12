@@ -44,6 +44,32 @@ captures/_extracted/
 .scratch/screen-operations/eli10-facts.jsonl
 .scratch/screen-operations/out/
 
+# ── `.scratch/` 的界线 ──────────────────────────────────────────────────────
+#
+# 这个目录里**源码与产物混在一起**，而从前的规则只写了两条（上一条），所以界线等于
+# 没有人画：2026-09-12 实测 205 个文件里 84 个追踪、121 个没有，**没有一处写得出
+# 谁该进谁不该进**。于是每次 `git status` 都吐几十行噪音，而噪音里藏得下一个真的
+# 忘了推的交付物 —— 那才是这条界线存在的理由。
+#
+# 界线只有一条，判据是「**跑一次命令就回来**」：
+#   产物 → 忽略（下面这些）；说明与一次性脚本 → 追踪（它们记录的是当时为什么那样做，
+#   重跑不出来）。
+#
+# 与之同族的一课：`api/fragments/`（后端）与这里的旧副本 —— 文档指向一份新 clone
+# 看不到的东西，或者同一支工具两处各一份而只有一份是活的。
+.scratch/render/
+.scratch/render-compare/
+.scratch/chain.md
+.scratch/pages-before.html
+.scratch/pages-after.html
+.scratch/review-before.html
+.scratch/st-before.txt
+.scratch/st-after.txt
+.scratch/merge-verify-out.txt
+.scratch/nav-verify-out.txt
+.scratch/review-302.txt
+.scratch/pid*.txt
+
 # playwright-cli 的快照目录（.playwright-cli/page-*.yml），工具产物，可随时重生成。
 .playwright-cli/
 

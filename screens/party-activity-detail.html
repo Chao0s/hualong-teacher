@@ -10,22 +10,22 @@
 </style>
 </head>
 <body><div class="phone">
-  <div class="status"><span>9:41</span><span>WiFi · ▮▮▮</span></div>
+  <div class="status" data-intent="party-activity-detail.status"><span>9:41</span><span>WiFi · ▮▮▮</span></div>
   <header class="nav"><a href="party-activity-list.html">‹</a><h1>活动介绍</h1><span></span></header>
   <main class="scroll">
-    <section class="cover"><h2 id="title">“红色故事进课堂”主题党日</h2><p id="sub">党建活动 · 多功能室</p></section>
-    <section class="card">
-      <div class="row"><span class="label">活动时间</span><span id="time">06-20 15:00</span></div>
+    <section class="cover" data-intent="party-activity-detail.cover"><h2 id="title">“红色故事进课堂”主题党日</h2><p id="sub">党建活动 · 多功能室</p></section>
+    <section class="card" data-intent="party-activity-detail.card">
+      <div class="row"><span class="label" data-intent="party-activity-detail.label">活动时间</span><span id="time">06-20 15:00</span></div>
     </section>
     <section class="card">
       <h3>图文介绍</h3>
       <p id="body">党员教师围绕红色故事资源进行课程转化讨论，形成适合大班幼儿理解的故事讲述、角色扮演和美术表达活动。</p>
-      <div class="article-photos">
+      <div class="article-photos" data-intent="party-activity-detail.article-photos">
         <div class="photo-main">活动现场图</div>
-        <div class="photo-row"><div class="ph">分组研讨</div><div class="ph">成果展示</div></div>
+        <div class="photo-row"><div class="ph" data-intent="party-activity-detail.ph">分组研讨</div><div class="ph">成果展示</div></div>
       </div>
     </section>
-    <section class="card"><h3>附件下载</h3><div class="downloads" id="downloads"></div></section>
+    <section class="card"><h3>附件下载</h3><div class="downloads" id="downloads" data-intent="party-activity-detail.downloads"></div></section>
   </main>
 </div>
 <script>
@@ -49,7 +49,7 @@ var files=attachmentMap[id]||attachmentMap["theme-day"];
 downloads.innerHTML=files.map(function(file){
   var content=d[0]+"\n\n附件："+file[1]+"\n用途："+file[0]+"\n\n这是原型中的示例下载文件，后续可替换为真实附件地址。";
   var href="data:text/plain;charset=utf-8,"+encodeURIComponent(content);
-  return '<a class="download-link" href="'+href+'" download="'+file[1].replace(/\.(docx|pdf|xlsx)$/i,'.txt')+'"><span class="download-title">'+file[1]+'</span><span class="download-action">下载</span></a>';
+  return '<a class="download-link" href="'+href+'" download="'+file[1].replace(/\.(docx|pdf|xlsx)$/i,'.txt')+'" data-intent="party-activity-detail.download-link"><span class="download-title" data-intent="party-activity-detail.download-title">'+file[1]+'</span><span class="download-action" data-intent="party-activity-detail.download-action">下载</span></a>';
 }).join("");
 </script>
 </body></html>

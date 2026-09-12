@@ -1,5 +1,6 @@
 {
   "pages": [
+    "pages/login/index",
     "pages/home/index",
     "pages/upload-resource/index",
     "pages/teacher-tasks/index",

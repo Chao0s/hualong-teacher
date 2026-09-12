@@ -47,9 +47,9 @@
   <div class="nav-bar"><a class="back" href="teacher-evaluation.html">‹</a><div class="nav-title">教师寄语</div><span></span></div>
   <div class="scroll">
     <div class="sec">寄语内容</div>
-    <div class="chunk form-card">
+    <div class="chunk form-card" data-intent="teacher-message.chunk">
       <label for="targetSelect">添加到</label>
-      <select class="select" id="targetSelect" data-ui="teacher_message.child_select">
+      <select class="select" id="targetSelect" data-ui="teacher_message.child_select" data-intent="teacher-message.select">
         <option value="all">全体幼儿</option>
         <option value="chen">陈小明</option>
         <option value="li">李雨萱</option>
@@ -59,9 +59,9 @@
         <option value="liu">刘浩然</option>
       </select>
       <label for="messageText">寄语</label>
-      <textarea class="textarea" id="messageText" maxlength="300" data-ui="teacher_message.textarea" placeholder="写下想对孩子说的话（300字以内，仅支持文字）…"></textarea>
-      <div class="counter" id="counter">0/300</div>
-      <button class="btn primary sticky-action" id="submitMessage">提交寄语</button>
+      <textarea class="textarea" id="messageText" maxlength="300" data-ui="teacher_message.textarea" placeholder="写下想对孩子说的话（300字以内，仅支持文字）…" data-intent="teacher-message.textarea"></textarea>
+      <div class="counter" id="counter" data-intent="teacher-message.counter">0/300</div>
+      <button class="btn primary sticky-action" id="submitMessage" data-intent="teacher-message.btn">提交寄语</button>
     </div>
 
     <div class="sec">完成情况</div>
@@ -69,7 +69,7 @@
       <table class="prog-table">
         <thead><tr><th style="text-align:left">幼儿</th><th>教师寄语</th></tr></thead>
         <tbody>
-          <tr><td class="name">陈小明</td><td><a class="dot-link" href="teacher-message-detail.html?child=chen"><span class="dot-cell done" title="已完成" aria-label="已完成"></span></a></td></tr>
+          <tr><td class="name" data-intent="teacher-message.name">陈小明</td><td><a class="dot-link" href="teacher-message-detail.html?child=chen" data-intent="teacher-message.dot-link"><span class="dot-cell done" title="已完成" aria-label="已完成" data-intent="teacher-message.dot-cell"></span></a></td></tr>
           <tr><td class="name">李雨萱</td><td><button class="dot-link msg-dot" data-child="li" data-name="李雨萱"><span class="dot-cell miss" title="未完成" aria-label="未完成"></span></button></td></tr>
           <tr><td class="name">张力轩</td><td><button class="dot-link msg-dot" data-child="zhang" data-name="张力轩"><span class="dot-cell miss" title="未完成" aria-label="未完成"></span></button></td></tr>
           <tr><td class="name">王子涵</td><td><button class="dot-link msg-dot" data-child="wang" data-name="王子涵"><span class="dot-cell miss" title="未完成" aria-label="未完成"></span></button></td></tr>
@@ -77,12 +77,12 @@
           <tr><td class="name">刘浩然</td><td><a class="dot-link" href="teacher-message-detail.html?child=liu"><span class="dot-cell done" title="已完成" aria-label="已完成"></span></a></td></tr>
         </tbody>
       </table>
-      <div class="dot-legend" aria-label="完成情况说明">
-        <span class="item"><i class="dot-cell done"></i>已完成</span>
+      <div class="dot-legend" aria-label="完成情况说明" data-intent="teacher-message.dot-legend">
+        <span class="item" data-intent="teacher-message.item"><i class="dot-cell done"></i>已完成</span>
         <span class="item"><i class="dot-cell miss"></i>未完成</span>
       </div>
     </div>
-    <div class="hint" style="margin-top:8px">点击圆点可查看该幼儿已提交的寄语；提交后永久只读，未完成则定位到上方填写。</div>
+    <div class="hint" style="margin-top:8px" data-intent="teacher-message.hint">点击圆点可查看该幼儿已提交的寄语；提交后永久只读，未完成则定位到上方填写。</div>
   </div>
   <div class="toast" id="toast">已提交</div>
 </div>

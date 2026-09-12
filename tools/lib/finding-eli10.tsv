@@ -1,0 +1,19 @@
+kind	中文
+coverage	有一批操作没被任何屏幕认领，或没有任何页面调用它。
+check-failed	某一层的检查自己跑挂了，那一层没回答的问题要单独看。
+stale-expectation	登记表还在指着一个已经不存在的东西，这条检查已经不再检查任何东西。
+hardening-off	该开的安全加固没开。
+exposure	有东西暴露在外面了。这是最重的一类。
+data-loss	有数据会被丢掉，或写不进库里。
+schema-drift	契约的字段与数据库的列对不上了。
+migration-drift	迁移脚本与库里的实际结构对不上了。
+gate-red	一道闸门是红的，而且红了一段时间没人处理。
+exposure-surface	对外能碰到的面比该有的多。
+authz-not-built	权限还没实作，谁都能做这件事。
+prototype-behind	原型落后于客户端 —— 是原型少画了，不是客户端多写了。
+over-permission	某个角色拿到了比它该有的更大的权限。
+mock-regression	契约改了，本地 mock 没跟上。
+generated-drift	生成物与产生它的来源对不上了。
+encryption	该加密的东西没加密。
+cors	跨源访问的规则开得太宽，或者该有而没有。
+draws-failure	屏画出来了，但画的是失败提示（例如网络请求失败）—— 只有渲染这一层看得见。

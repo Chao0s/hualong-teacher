@@ -65,28 +65,28 @@
   <main class="scroll">
     <div class="sec"><span>全部文件</span></div>
     <section class="doc-list" id="docList" aria-label="最新文件"></section>
-    <button class="load-more" id="loadMore" type="button">加载更多</button>
+    <button class="load-more" id="loadMore" type="button" data-intent="coordination-file-list.load-more">加载更多</button>
   </main>
 
   <div class="tabs" aria-label="底部导航">
     <a href="home.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span>首页</span></a>
     <a href="school-affairs.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 15.4 7.2 18l.9-5.4-3.9-3.8 5.4-.8L12 3z"/></svg><span>党建管理</span></a>
-    <a class="on" href="comprehensive-coordination.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M4 12h16M4 17h16"/><circle cx="8" cy="7" r="1.5" fill="currentColor"/><circle cx="16" cy="12" r="1.5" fill="currentColor"/><circle cx="11" cy="17" r="1.5" fill="currentColor"/></svg><span>综合协调</span></a>
+    <a class="on" href="comprehensive-coordination.html" data-intent="coordination-file-list.on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M4 12h16M4 17h16"/><circle cx="8" cy="7" r="1.5" fill="currentColor"/><circle cx="16" cy="12" r="1.5" fill="currentColor"/><circle cx="11" cy="17" r="1.5" fill="currentColor"/></svg><span>综合协调</span></a>
     <a href="training-center.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5.5A2.5 2.5 0 016.5 3H20v16H6.5A2.5 2.5 0 014 16.5v-11z"/><path d="M8 7h8M8 11h8M8 15h5"/></svg><span>教研培训</span></a>
     <a href="home-school.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg><span>家园社共育</span></a>
   </div>
 
   <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="previewTitle">
-    <article class="preview">
+    <article class="preview" data-intent="coordination-file-list.preview">
       <div class="preview-head">
         <div>
-          <div class="preview-title" id="previewTitle">文件预览</div>
-          <div class="preview-meta" id="previewMeta"></div>
+          <div class="preview-title" id="previewTitle" data-intent="coordination-file-list.preview-title">文件预览</div>
+          <div class="preview-meta" id="previewMeta" data-intent="coordination-file-list.preview-meta"></div>
         </div>
-        <button class="close" type="button" id="closePreview" aria-label="关闭">×</button>
+        <button class="close" type="button" id="closePreview" aria-label="关闭" data-intent="coordination-file-list.close">×</button>
       </div>
       <div class="preview-body" id="previewBody"></div>
-      <div class="attachment-title">附件</div>
+      <div class="attachment-title" data-intent="coordination-file-list.attachment-title">附件</div>
       <div id="previewAttachments"></div>
     </article>
   </div>
@@ -212,10 +212,10 @@
       var card = document.createElement('article');
       card.className = 'doc-card';
       card.innerHTML =
-        '<div><div class="doc-title">' + doc[0] + '</div>' +
-        '<div class="doc-summary">' + doc[3].slice(0, 100) + '</div></div>' +
-        '<div class="doc-actions">' +
-          '<button class="primary" type="button" data-preview="' + index + '">详情</button>' +
+        '<div><div class="doc-title" data-intent="coordination-file-list.doc-title">' + doc[0] + '</div>' +
+        '<div class="doc-summary" data-intent="coordination-file-list.doc-summary">' + doc[3].slice(0, 100) + '</div></div>' +
+        '<div class="doc-actions" data-intent="coordination-file-list.doc-actions">' +
+          '<button class="primary" type="button" data-preview="' + index + '" data-intent="coordination-file-list.primary">详情</button>' +
           '<a href="' + makeDownload(doc) + '" download="' + doc[0] + '.txt">下载</a>' +
         '</div>';
       docList.appendChild(card);

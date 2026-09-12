@@ -117,17 +117,17 @@
   <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
   <div class="nav-bar"><a class="back" href="teacher-evaluation.html">‹</a><div class="nav-title">教师学期评价</div><span></span></div>
   <div class="scroll">
-    <div class="chunk"><a class="btn primary" href="teacher-term-form.html">添加评价</a></div>
+    <div class="chunk" data-intent="teacher-term-evaluation.chunk"><a class="btn primary" href="teacher-term-form.html" data-intent="teacher-term-evaluation.btn">添加评价</a></div>
 
     <div class="section-head">
       <div class="sec">完成情况</div>
-      <button class="outline-btn" id="openExport">选择操作</button>
+      <button class="outline-btn" id="openExport" data-intent="teacher-term-evaluation.outline-btn">选择操作</button>
     </div>
     <div class="table-wrap">
       <table class="prog-table">
         <thead><tr><th style="text-align:left">幼儿</th><th>学期评价</th></tr></thead>
         <tbody>
-          <tr><td class="name">陈小明</td><td><a class="dot-link" href="teacher-term-form.html?child=chen&view=1"><span class="dot-cell done" title="已完成" aria-label="已完成"></span></a></td></tr>
+          <tr><td class="name" data-intent="teacher-term-evaluation.name">陈小明</td><td><a class="dot-link" href="teacher-term-form.html?child=chen&view=1" data-intent="teacher-term-evaluation.dot-link"><span class="dot-cell done" title="已完成" aria-label="已完成" data-intent="teacher-term-evaluation.dot-cell"></span></a></td></tr>
           <tr><td class="name">李雨萱</td><td><a class="dot-link" href="teacher-term-form.html?child=li"><span class="dot-cell miss" title="未完成" aria-label="未完成"></span></a></td></tr>
           <tr><td class="name">张力轩</td><td><a class="dot-link" href="teacher-term-form.html?child=zhang"><span class="dot-cell miss" title="未完成" aria-label="未完成"></span></a></td></tr>
           <tr><td class="name">王子涵</td><td><a class="dot-link" href="teacher-term-form.html?child=wang&view=1"><span class="dot-cell done" title="已完成" aria-label="已完成"></span></a></td></tr>
@@ -135,18 +135,18 @@
           <tr><td class="name">刘浩然</td><td><a class="dot-link" href="teacher-term-form.html?child=liu&view=1"><span class="dot-cell done" title="已完成" aria-label="已完成"></span></a></td></tr>
         </tbody>
       </table>
-      <div class="dot-legend" aria-label="完成情况说明">
-        <span class="item"><i class="dot-cell done"></i>已完成</span>
+      <div class="dot-legend" aria-label="完成情况说明" data-intent="teacher-term-evaluation.dot-legend">
+        <span class="item" data-intent="teacher-term-evaluation.item"><i class="dot-cell done"></i>已完成</span>
         <span class="item"><i class="dot-cell miss"></i>未完成</span>
       </div>
     </div>
-    <div class="hint" style="margin-top:8px">仅展示当前学期；点击圆点可查看该幼儿的学期评价详情，未完成则进入填写。</div>
+    <div class="hint" style="margin-top:8px" data-intent="teacher-term-evaluation.hint">仅展示当前学期；点击圆点可查看该幼儿的学期评价详情，未完成则进入填写。</div>
   </div>
   <div class="sheet-mask" id="sheetMask"></div>
   <div class="sheet" id="exportSheet" aria-hidden="true">
     <div class="sheet-head">
       <h2>选择评价报告</h2>
-      <button class="close" id="closeExport" aria-label="关闭">×</button>
+      <button class="close" id="closeExport" aria-label="关闭" data-intent="teacher-term-evaluation.close">×</button>
     </div>
     <label class="check-row">
       <div>全选<span>选择当前进度表中的全部幼儿</span></div>
@@ -154,7 +154,7 @@
     </label>
     <label class="check-row">
       <div>陈小明<span>已完成 · 可导出 / 可发送</span></div>
-      <input type="checkbox" class="child-check" data-ui="eval_export.child_select" checked>
+      <input type="checkbox" class="child-check" data-ui="eval_export.child_select" checked data-intent="teacher-term-evaluation.child-check">
     </label>
     <label class="check-row">
       <div>李雨萱<span>未完成 · 仅记录进度</span></div>

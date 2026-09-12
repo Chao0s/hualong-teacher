@@ -50,35 +50,35 @@
 <body>
 <div class="phone">
   <div class="status-bar"><span>9:41</span><span style="font-size:12px">WiFi · ▮▮▮▮</span></div>
-  <div class="mini-menu"><span>•••</span><span>○</span></div>
+  <div class="mini-menu" data-intent="comprehensive-assessment-report.mini-menu"><span>•••</span><span>○</span></div>
   <div class="nav-bar">
     <a href="growth-comprehensive-assessment.html" aria-label="返回综合评估"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></a>
     <div class="nav-title">综合评估结果</div>
     <span></span>
   </div>
   <div class="scroll">
-    <section class="chunk child-card">
+    <section class="chunk child-card" data-intent="comprehensive-assessment-report.chunk">
       <div>
         <h1 id="childName">陈小明</h1>
         <p id="childMeta">中二班 · 2026 春季综合评估</p>
       </div>
-      <div class="badge">已完成</div>
+      <div class="badge" data-intent="comprehensive-assessment-report.badge">已完成</div>
     </section>
 
-    <div class="tab-switch" role="tablist">
-      <button class="on" id="tabResult" role="tab" aria-selected="true">评估结果</button>
+    <div class="tab-switch" role="tablist" data-intent="comprehensive-assessment-report.tab-switch">
+      <button class="on" id="tabResult" role="tab" aria-selected="true" data-intent="comprehensive-assessment-report.on">评估结果</button>
       <button id="tabDetail" role="tab" aria-selected="false">明细</button>
     </div>
 
     <div id="panelResult">
       <div class="sec">五大领域雷达图</div>
       <section class="chunk radar-wrap">
-        <svg class="radar" viewBox="0 0 200 200" aria-label="五大领域雷达图">
+        <svg class="radar" viewBox="0 0 200 200" aria-label="五大领域雷达图" data-intent="comprehensive-assessment-report.radar">
           <g id="grid"></g>
-          <polygon id="radarShape" class="shape" points=""></polygon>
+          <polygon id="radarShape" class="shape" points="" data-intent="comprehensive-assessment-report.shape"></polygon>
           <g id="dots"></g>
         </svg>
-        <div class="legend" id="legend"></div>
+        <div class="legend" id="legend" data-intent="comprehensive-assessment-report.legend"></div>
       </section>
     </div>
 
@@ -88,7 +88,7 @@
     </div>
 
     <div class="btn-row">
-      <a class="btn" href="comprehensive-assessment-form.html">继续评估</a>
+      <a class="btn" href="comprehensive-assessment-form.html" data-intent="comprehensive-assessment-report.btn">继续评估</a>
       <a class="btn primary" href="growth-comprehensive-assessment.html">返回进度</a>
     </div>
   </div>
@@ -131,7 +131,7 @@ function drawGrid() {
   labels.forEach((label, index) => {
     const edge = point(index, 5);
     const text = point(index, 5.78);
-    html += `<line class="axis" x1="${center.x}" y1="${center.y}" x2="${edge[0]}" y2="${edge[1]}"></line>`;
+    html += `<line class="axis" x1="${center.x}" y1="${center.y}" x2="${edge[0]}" y2="${edge[1]}" data-intent="comprehensive-assessment-report.axis"></line>`;
     html += `<text x="${text[0]}" y="${text[1]}" text-anchor="middle" dominant-baseline="middle" font-size="12" fill="#555">${label}</text>`;
   });
   document.getElementById('grid').innerHTML = html;
@@ -141,27 +141,27 @@ function renderRadar() {
   const points = averages.map((avg, index) => point(index, avg || 0));
   document.getElementById('radarShape').setAttribute('points', points.map(p => p.join(',')).join(' '));
   document.getElementById('dots').innerHTML = points
-    .map(p => `<circle class="dot" cx="${p[0]}" cy="${p[1]}" r="3.6"></circle>`).join('');
+    .map(p => `<circle class="dot" cx="${p[0]}" cy="${p[1]}" r="3.6" data-intent="comprehensive-assessment-report.dot"></circle>`).join('');
   document.getElementById('legend').innerHTML = labels.map((label, index) => `
-    <div class="metric"><strong>${label}</strong><span>${averages[index] ? averages[index].toFixed(1) : '未评'}</span></div>
+    <div class="metric" data-intent="comprehensive-assessment-report.metric"><strong>${label}</strong><span>${averages[index] ? averages[index].toFixed(1) : '未评'}</span></div>
   `).join('');
 }
 function renderDetail() {
   document.getElementById('detailList').innerHTML = ASSESS_SCALE.map((domain, di) => `
     <section class="chunk">
       <div class="detail-head">
-        <div class="detail-title">${domain.name}</div>
-        <div class="detail-avg">${averages[di] ? `平均 ${averages[di].toFixed(1)}` : '未评'}</div>
+        <div class="detail-title" data-intent="comprehensive-assessment-report.detail-title">${domain.name}</div>
+        <div class="detail-avg" data-intent="comprehensive-assessment-report.detail-avg">${averages[di] ? `平均 ${averages[di].toFixed(1)}` : '未评'}</div>
       </div>
       ${domain.items.map(item => {
         const score = scores[item.id];
         return `<div class="detail-row">
-          <div class="detail-name">
+          <div class="detail-name" data-intent="comprehensive-assessment-report.detail-name">
             <span>${item.name}</span>
-            ${score ? '' : '<span class="none">未评</span>'}
+            ${score ? '' : '<span class="none" data-intent="comprehensive-assessment-report.none">未评</span>'}
           </div>
           <div class="scale-view" role="img" aria-label="${item.name} 评分 ${score || '未评'}">
-            ${[1,2,3,4,5].map(num => `<span class="${score === num ? 'on' : ''}">${num}</span>`).join('')}
+            ${[1,2,3,4,5].map(num => `<span class="${score === num ? 'on' : ''}" >${num}</span>`).join('')}
           </div>
         </div>`;
       }).join('')}
